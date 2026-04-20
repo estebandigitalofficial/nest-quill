@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
       status: storyRequest.status,
       progressPct: storyRequest.progress_pct,
       statusMessage: storyRequest.status_message ?? '',
+      childName: storyRequest.child_name,
       signedUrl,
       completedAt: storyRequest.completed_at ?? undefined,
     })

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { storyFormSchema, type StoryFormValues } from '@/lib/validators/story-form'
@@ -11,13 +12,6 @@ import ChildStep from './steps/ChildStep'
 import StoryStep from './steps/StoryStep'
 import StyleStep from './steps/StyleStep'
 import ReviewStep from './steps/ReviewStep'
-
-interface SubmitResult {
-  requestId: string
-  status: string
-  childName: string
-  email: string
-}
 
 // Fields validated when clicking "Next" on each step index
 const STEP_FIELDS: (keyof StoryFormValues)[][] = [
@@ -31,8 +25,8 @@ const STEP_FIELDS: (keyof StoryFormValues)[][] = [
 const STEPS = [PlanStep, ChildStep, StoryStep, StyleStep, ReviewStep]
 
 export default function StoryWizard() {
+  const router = useRouter()
   const [step, setStep] = useState(0)
-  const [result, setResult] = useState<SubmitResult | null>(null)
 
   const methods = useForm<StoryFormValues>({
     resolver: zodResolver(storyFormSchema),
@@ -45,7 +39,7 @@ export default function StoryWizard() {
     mode: 'onTouched',
   })
 
-  const { handleSubmit, trigger, setError, getValues, formState: { isSubmitting } } = methods
+  const { handleSubmit, trigger, setError, formState: { isSubmitting } } = methods
 
   const isLastStep = step === STEPS.length - 1
   const StepComponent = STEPS[step]
@@ -77,21 +71,12 @@ export default function StoryWizard() {
         return
       }
 
-      setResult({
-        requestId: json.requestId,
-        status: json.status,
-        childName: data.childName,
-        email: data.userEmail,
-      })
+      router.push(`/story/${json.requestId}`)
     } catch {
       setError('root', {
         message: 'Could not reach the server. Check your connection and try again.',
       })
     }
-  }
-
-  if (result) {
-    return <SuccessScreen {...result} onReset={() => { setResult(null); setStep(0) }} />
   }
 
   return (
@@ -148,43 +133,3 @@ export default function StoryWizard() {
   )
 }
 
-function SuccessScreen({
-  requestId,
-  childName,
-  email,
-  onReset,
-}: SubmitResult & { onReset: () => void }) {
-  const shortId = requestId.slice(0, 8).toUpperCase()
-
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 text-center space-y-5">
-      <div className="text-5xl">📖</div>
-
-      <div>
-        <h2 className="text-2xl font-serif text-gray-900 mb-2">
-          {childName}&apos;s story is in the queue!
-        </h2>
-        <p className="text-gray-500 text-sm">
-          We&apos;ll send the finished book to{' '}
-          <span className="font-medium text-gray-700">{email}</span>.
-        </p>
-      </div>
-
-      <div className="bg-brand-50 border border-brand-100 rounded-xl px-5 py-4">
-        <p className="text-xs text-gray-400 mb-1">Reference number</p>
-        <p className="font-mono text-sm font-semibold text-gray-700">{shortId}</p>
-      </div>
-
-      <p className="text-xs text-gray-400">
-        Story generation is coming soon. You&apos;ll receive an email when it&apos;s ready.
-      </p>
-
-      <button
-        onClick={onReset}
-        className="text-sm text-brand-600 hover:text-brand-700 font-medium underline underline-offset-2"
-      >
-        Create another story
-      </button>
-    </div>
-  )
-}

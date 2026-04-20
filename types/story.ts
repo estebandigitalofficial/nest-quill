@@ -85,8 +85,27 @@ export interface StoryStatusResponse {
   status: StoryStatus
   progressPct: number
   statusMessage: string
+  childName: string
   signedUrl?: string
   completedAt?: string
+}
+
+export interface StoryContentPage {
+  pageNumber: number
+  text: string
+  imagePrompt: string
+  imageStatus: string
+  storagePath: string | null
+}
+
+export interface StoryContentResponse {
+  requestId: string
+  title: string
+  subtitle: string | null
+  authorLine: string
+  dedication: string | null
+  synopsis: string | null
+  pages: StoryContentPage[]
 }
 
 // ─── Generated story structure ───────────────────────────────────────────────
