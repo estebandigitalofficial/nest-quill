@@ -216,12 +216,20 @@ function StoryReader({ story }: { story: StoryContentResponse }) {
       {/* Footer */}
       <div className="text-center py-4 space-y-3">
         <p className="text-sm text-gray-400 font-serif italic">✦ The End ✦</p>
-        <Link
-          href="/create"
-          className="inline-block text-sm font-semibold text-brand-600 hover:text-brand-700 underline underline-offset-2"
-        >
-          Create another story →
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link
+            href="/account"
+            className="inline-block text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 px-5 py-2.5 rounded-xl transition-colors"
+          >
+            View in my account →
+          </Link>
+          <Link
+            href="/create"
+            className="inline-block text-sm font-semibold text-brand-600 hover:text-brand-700 underline underline-offset-2 py-2.5"
+          >
+            Create another story
+          </Link>
+        </div>
       </div>
     </div>
   )
