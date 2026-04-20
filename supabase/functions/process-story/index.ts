@@ -5,18 +5,156 @@
  * Triggered by the Next.js submit route (fire-and-forget POST).
  * Owns the full pipeline state machine for a single story_request.
  *
- * Current state: pipeline shell — transitions through all statuses,
- * logs every stage, ends at 'complete'. AI steps are stubbed with
- * comments showing exactly where Phase 4 code slots in.
+ * Phase 4b (current): DALL-E 3 image generation per story page.
+ * PDF and email delivery are still stubbed — added in later phases.
  */
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-// EDGE_FUNCTION_SECRET is a shared local-dev secret passed via --env-file.
-// Falls back to SUPABASE_SERVICE_ROLE_KEY in production where both sides use the same cloud key.
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!
 const EXPECTED_TOKEN = Deno.env.get('EDGE_FUNCTION_SECRET') ?? SUPABASE_SERVICE_ROLE_KEY
+
+// ── Illustration style → DALL-E style hint map ────────────────────────────────
+
+const STYLE_HINTS: Record<string, string> = {
+  watercolor: 'soft watercolor illustration, gentle washes of color, children\'s picture book style',
+  cartoon: 'bright cartoon illustration, bold outlines, vibrant colors, fun and playful children\'s book style',
+  storybook: 'classic storybook illustration, warm and detailed, fairy-tale aesthetic, painted children\'s book style',
+  pencil_sketch: 'detailed pencil sketch illustration, hand-drawn, soft shading, charming children\'s book style',
+  digital_art: 'clean digital illustration, polished artwork, colorful, modern children\'s book style',
+}
+
+// ── OpenAI helper ─────────────────────────────────────────────────────────────
+
+async function callOpenAI(messages: object[], model = 'gpt-4o'): Promise<string> {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      response_format: { type: 'json_object' },
+      temperature: 0.8,
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`OpenAI error ${res.status}: ${err}`)
+  }
+
+  const json = await res.json()
+  return json.choices[0].message.content
+}
+
+async function generateImage(prompt: string, illustrationStyle: string): Promise<Uint8Array> {
+  const styleHint = STYLE_HINTS[illustrationStyle] ?? STYLE_HINTS.storybook
+  const fullPrompt = `${styleHint}. ${prompt}. Child-safe, no text, no words in image.`
+
+  const res = await fetch('https://api.openai.com/v1/images/generations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'dall-e-3',
+      prompt: fullPrompt,
+      n: 1,
+      size: '1024x1024',
+      quality: 'standard',
+      response_format: 'url',
+    }),
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`DALL-E error ${res.status}: ${err}`)
+  }
+
+  const json = await res.json()
+  const imageUrl = json.data[0].url
+
+  // Download immediately — OpenAI signed URLs expire within ~1 hour
+  const imageRes = await fetch(imageUrl)
+  if (!imageRes.ok) {
+    throw new Error(`Failed to download image from OpenAI URL: ${imageRes.status}`)
+  }
+
+  const buffer = await imageRes.arrayBuffer()
+  return new Uint8Array(buffer)
+}
+
+// ── Story prompt builder ──────────────────────────────────────────────────────
+
+function buildStoryPrompt(request: Record<string, unknown>): object[] {
+  const {
+    child_name,
+    child_age,
+    child_description,
+    story_theme,
+    story_tone,
+    story_moral,
+    story_length,
+    illustration_style,
+    dedication_text,
+  } = request
+
+  const toneList = Array.isArray(story_tone) ? story_tone.join(', ') : story_tone
+  const pageCount = Number(story_length) || 16
+
+  const systemPrompt = `You are a professional children's book author. You write warm, age-appropriate stories for young children.
+
+Your output must be valid JSON matching this exact structure:
+{
+  "title": "string — a short, memorable book title",
+  "subtitle": "string — an optional subtitle (can be empty string)",
+  "author_line": "A Nest & Quill Original",
+  "dedication": "string — a short dedication (only if provided, otherwise empty string)",
+  "synopsis": "string — 2-3 sentence description of the story",
+  "pages": [
+    {
+      "page": 1,
+      "text": "string — the story text for this page (2-4 sentences, age-appropriate)",
+      "image_description": "string — a detailed visual description for an illustrator (what to draw on this page)"
+    }
+  ]
+}
+
+Rules:
+- Write exactly ${pageCount} story pages
+- Keep language simple and age-appropriate for a ${child_age}-year-old
+- Each page should have 2-4 sentences maximum
+- Image descriptions should be vivid, specific, and describe a single scene
+- The illustration style is ${illustration_style} — reflect this in image description language
+- Tone: ${toneList}
+- Do not include page numbers or chapter headings in the text
+- End the story with a satisfying, uplifting conclusion`
+
+  const userPrompt = `Write a children's storybook with these details:
+
+- Main character: ${child_name}, age ${child_age}
+${child_description ? `- About ${child_name}: ${child_description}` : ''}
+- Story theme: ${story_theme}
+- Tone: ${toneList}
+${story_moral ? `- Moral or lesson to include: ${story_moral}` : ''}
+${dedication_text ? `- Dedication: ${dedication_text}` : ''}
+- Length: exactly ${pageCount} pages
+
+Write the full story now.`
+
+  return [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt },
+  ]
+}
+
+// ── Main handler ──────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -35,15 +173,15 @@ Deno.serve(async (req) => {
     return new Response('Bad request', { status: 400 })
   }
 
-  // ── Supabase admin client (bypasses RLS) ──────────────────────────────────
+  // ── Supabase admin client ─────────────────────────────────────────────────
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
-  // ── Idempotency: skip if already claimed and not in a retriable state ─────
+  // ── Fetch the full story request ──────────────────────────────────────────
   const { data: storyRequest, error: fetchError } = await supabase
     .from('story_requests')
-    .select('id, status, worker_id')
+    .select('*')
     .eq('id', requestId)
     .single()
 
@@ -51,6 +189,7 @@ Deno.serve(async (req) => {
     return new Response('Story request not found', { status: 404 })
   }
 
+  // ── Idempotency ───────────────────────────────────────────────────────────
   const retriable = ['queued', 'failed']
   if (storyRequest.worker_id !== null && !retriable.includes(storyRequest.status)) {
     return new Response(
@@ -108,47 +247,165 @@ Deno.serve(async (req) => {
   try {
     await log('pipeline_start', 'Pipeline started')
 
-    // ── Step 1: Generate story text ─────────────────────────────────────────
-    // Phase 4: const story = await generateStoryText(supabase, requestId)
-    //          await supabase.from('generated_stories').insert({ request_id: requestId, ...story })
-    await log('generate_text', 'Story text generation started (stub)')
-    await setStatus('generating_text', 'Writing your story…', 30)
-    await log('generate_text', 'Story text generation complete (stub)', 'info', { stub: true })
+    // ── Step 1: Generate story text ───────────────────────────────────────
+    await log('generate_text', 'Calling OpenAI GPT-4o for story text')
+    const t0 = Date.now()
 
-    // ── Step 2: Generate illustrations ──────────────────────────────────────
-    // Phase 4: for each scene → await generateImage(scene) → uploadToStorage()
-    //          await supabase.from('story_scenes').upsert({ image_url, image_status: 'complete', ... })
-    await setStatus('generating_images', 'Creating your illustrations…', 50)
-    await log('generate_images', 'Illustration generation started (stub)')
-    await log('generate_images', 'Illustration generation complete (stub)', 'info', { stub: true })
+    const messages = buildStoryPrompt(storyRequest)
+    const rawContent = await callOpenAI(messages)
+    const story = JSON.parse(rawContent)
 
-    // ── Step 3: Assemble PDF ─────────────────────────────────────────────────
-    // Phase 4: const pdfPath = await assemblePDF(supabase, requestId)
-    //          await supabase.from('book_exports').insert({ request_id: requestId, storage_path: pdfPath, ... })
-    await setStatus('assembling_pdf', 'Putting your book together…', 80)
-    await log('assemble_pdf', 'PDF assembly started (stub)')
-    await log('assemble_pdf', 'PDF assembly complete (stub)', 'info', { stub: true })
+    const generationTimeMs = Date.now() - t0
 
-    // ── Step 4: Deliver ──────────────────────────────────────────────────────
-    // Phase 4: await sendBookReadyEmail(supabase, requestId)
-    //          await supabase.from('delivery_logs').insert({ ... })
-    await log('deliver', 'Delivery skipped (stub — no PDF yet)')
+    // Validate we got pages
+    if (!story.pages || !Array.isArray(story.pages) || story.pages.length === 0) {
+      throw new Error('OpenAI returned invalid story structure — no pages found')
+    }
 
-    // ── Complete ─────────────────────────────────────────────────────────────
+    await log('generate_text', `Story generated: "${story.title}" (${story.pages.length} pages, ${generationTimeMs}ms)`, 'info', {
+      title: story.title,
+      page_count: story.pages.length,
+      generation_time_ms: generationTimeMs,
+    })
+
+    // Save to generated_stories table
+    const { data: savedStory, error: storyInsertError } = await supabase
+      .from('generated_stories')
+      .insert({
+        request_id: requestId,
+        title: story.title,
+        subtitle: story.subtitle || null,
+        author_line: story.author_line || 'A Nest & Quill Original',
+        dedication: story.dedication || null,
+        synopsis: story.synopsis || null,
+        full_text_json: story.pages,
+        model_used: 'gpt-4o',
+        generation_time_ms: generationTimeMs,
+      })
+      .select('id')
+      .single()
+
+    if (storyInsertError || !savedStory) {
+      throw new Error(`Failed to save story: ${storyInsertError?.message}`)
+    }
+
+    // Save each page as a story_scene row (image generation will fill in image_url later)
+    const sceneRows = story.pages.map((page: Record<string, unknown>) => ({
+      story_id: savedStory.id,
+      request_id: requestId,
+      page_number: page.page,
+      page_text: page.text,
+      image_prompt: page.image_description,
+      image_status: 'pending',
+    }))
+
+    const { error: scenesInsertError } = await supabase
+      .from('story_scenes')
+      .insert(sceneRows)
+
+    if (scenesInsertError) {
+      throw new Error(`Failed to save story scenes: ${scenesInsertError.message}`)
+    }
+
+    await setStatus('generating_text', 'Story written!', 40)
+
+    // ── Step 2: Generate illustrations via DALL-E 3 ───────────────────────
+    await setStatus('generating_images', 'Creating illustrations…', 45)
+    await log('generate_images', `Generating ${sceneRows.length} illustrations with DALL-E 3`)
+
+    // Fetch scenes from DB so we have their UUIDs for updating
+    const { data: scenes, error: sceneFetchError } = await supabase
+      .from('story_scenes')
+      .select('id, page_number, image_prompt')
+      .eq('request_id', requestId)
+      .order('page_number', { ascending: true })
+
+    if (sceneFetchError || !scenes) {
+      throw new Error(`Failed to fetch story scenes: ${sceneFetchError?.message}`)
+    }
+
+    let imagesGenerated = 0
+    let imagesFailed = 0
+
+    for (const scene of scenes) {
+      try {
+        const imageBytes = await generateImage(
+          scene.image_prompt,
+          storyRequest.illustration_style
+        )
+
+        // Upload to private story-images bucket
+        const storagePath = `${requestId}/${scene.page_number}.png`
+        const { error: uploadError } = await supabase.storage
+          .from('story-images')
+          .upload(storagePath, imageBytes, {
+            contentType: 'image/png',
+            upsert: true,
+          })
+
+        if (uploadError) {
+          throw new Error(`Storage upload failed for page ${scene.page_number}: ${uploadError.message}`)
+        }
+
+        // Mark scene complete with storage path
+        await supabase
+          .from('story_scenes')
+          .update({ storage_path: storagePath, image_status: 'complete' })
+          .eq('id', scene.id)
+
+        imagesGenerated++
+
+        // Progress: 45 → 80 spread across pages
+        const progress = Math.round(45 + (imagesGenerated / scenes.length) * 35)
+        await setStatus('generating_images', `Illustrating page ${scene.page_number} of ${scenes.length}…`, progress)
+
+        await log('generate_images', `Page ${scene.page_number} illustrated`, 'info', {
+          page_number: scene.page_number,
+          storage_path: storagePath,
+        })
+      } catch (imgErr) {
+        imagesFailed++
+        const imgMsg = imgErr instanceof Error ? imgErr.message : String(imgErr)
+        console.error(`[process-story] Image failed page ${scene.page_number}:`, imgMsg)
+
+        await supabase
+          .from('story_scenes')
+          .update({ image_status: 'failed' })
+          .eq('id', scene.id)
+
+        await log('generate_images', `Page ${scene.page_number} image failed: ${imgMsg}`, 'warning', {
+          page_number: scene.page_number,
+        })
+      }
+    }
+
+    await log('generate_images', `Illustrations complete: ${imagesGenerated} generated, ${imagesFailed} failed`, 'info', {
+      images_generated: imagesGenerated,
+      images_failed: imagesFailed,
+    })
+
+    // ── Step 3: Assemble PDF (stub — Phase 4c) ────────────────────────────
+    await setStatus('assembling_pdf', 'PDF assembly coming soon…', 80)
+    await log('assemble_pdf', 'PDF assembly skipped (stub — Phase 4c)')
+
+    // ── Step 4: Deliver (stub — Phase 4d) ────────────────────────────────
+    await log('deliver', 'Email delivery skipped (stub — Phase 4d)')
+
+    // ── Complete ──────────────────────────────────────────────────────────
     await supabase
       .from('story_requests')
       .update({
         status: 'complete',
-        status_message: 'Your storybook is ready!',
+        status_message: 'Your story is ready!',
         progress_pct: 100,
         completed_at: new Date().toISOString(),
       })
       .eq('id', requestId)
 
-    await log('pipeline_complete', 'Pipeline finished successfully')
+    await log('pipeline_complete', `Pipeline finished — story + ${imagesGenerated} illustrations saved`)
 
     return new Response(
-      JSON.stringify({ requestId, status: 'complete' }),
+      JSON.stringify({ requestId, status: 'complete', title: story.title }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     )
 
