@@ -1,11 +1,15 @@
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
 import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
 import { cn } from '@/lib/utils/cn'
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
   return (
     <div className="min-h-screen bg-white font-sans">
-      <Nav />
+      <Nav user={user} />
       <Hero />
       <HowItWorks />
       <SamplePreview />
@@ -19,7 +23,7 @@ export default function HomePage() {
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
 
-function Nav() {
+function Nav({ user }: { user: { email?: string } | null }) {
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
       <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -33,6 +37,21 @@ function Nav() {
           >
             Pricing
           </Link>
+          {user ? (
+            <Link
+              href="/account"
+              className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors hidden sm:block"
+            >
+              My stories
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors hidden sm:block"
+            >
+              Sign in
+            </Link>
+          )}
           <Link
             href="/create"
             className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors"
