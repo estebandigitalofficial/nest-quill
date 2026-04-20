@@ -33,21 +33,21 @@ function Nav({ user }: { user: { email?: string } | null }) {
         <div className="flex items-center gap-4">
           <Link
             href="#pricing"
-            className="text-sm text-gray-500 hover:text-gray-700 transition-colors hidden sm:block"
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors hidden md:block"
           >
             Pricing
           </Link>
           {user ? (
             <Link
               href="/account"
-              className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors hidden sm:block"
+              className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
             >
               My stories
             </Link>
           ) : (
             <Link
               href="/login"
-              className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors hidden sm:block"
+              className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
             >
               Sign in
             </Link>
