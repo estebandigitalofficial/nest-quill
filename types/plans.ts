@@ -17,10 +17,11 @@ export interface PlanLimits {
 export interface PlanConfig {
   tier: PlanTier
   displayName: string
-  priceMonthly: number  // in dollars, 0 = free
+  pricingType: 'free' | 'one_time' | 'subscription'
+  priceMonthly: number  // dollars; for one_time = single purchase price
   priceYearly?: number
   limits: PlanLimits
-  features: string[]    // marketing bullet points shown on pricing page
+  features: string[]
   isPopular?: boolean
   cta: string
 }

@@ -11,7 +11,7 @@
 
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
 
-export type PlanTier = 'free' | 'starter' | 'pro' | 'enterprise'
+export type PlanTier = 'free' | 'single' | 'story_pack' | 'story_pro' | 'educator'
 
 export type StoryStatus =
   | 'queued'

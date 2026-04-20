@@ -2,130 +2,157 @@ import type { PlanConfig, PlanLimits } from '@/types/plans'
 import type { PlanTier } from '@/types/database'
 
 /**
- * PLAN CONFIGURATION
+ * PLAN CONFIGURATION — single source of truth for every limit in the app.
  *
- * This is the single source of truth for every limit in the app.
- * To change a limit — edit it here. Nothing else needs to change.
- *
- * These values are used by:
- * - The pricing page (marketing)
- * - The story form (showing/hiding fields)
- * - The submission API (enforcing limits server-side)
- * - The admin dashboard
+ * Used by: pricing UI, story wizard, submission API, admin dashboard.
+ * To change a limit — edit here only.
  */
 export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
   free: {
     tier: 'free',
     displayName: 'Free',
+    pricingType: 'free',
     priceMonthly: 0,
-    cta: 'Start for free',
+    cta: 'Try for free',
     limits: {
       booksPerMonth: 1,
-      maxPagesPerBook: 16,
+      maxPagesPerBook: 8,
       maxIllustrations: 8,
       canAddDedication: false,
-      canDownloadPdf: true,
+      canDownloadPdf: false,
       canOrderPrint: false,
       illustrationStyleCount: 1,
     },
     features: [
-      '1 personalized storybook/month',
-      'Up to 16 pages',
-      '8 AI illustrations',
-      'PDF download',
+      '1 story (one-time trial)',
+      'Up to 8 pages',
       'Watercolor style only',
+      'Watermarked PDF',
+      'Email delivery',
     ],
   },
 
-  starter: {
-    tier: 'starter',
-    displayName: 'Starter',
-    priceMonthly: 14.99,
-    cta: 'Get started',
+  single: {
+    tier: 'single',
+    displayName: 'Single Story',
+    pricingType: 'one_time',
+    priceMonthly: 7.99,
+    cta: 'Buy one story',
+    limits: {
+      booksPerMonth: 1,
+      maxPagesPerBook: 24,
+      maxIllustrations: 24,
+      canAddDedication: true,
+      canDownloadPdf: true,
+      canOrderPrint: false,
+      illustrationStyleCount: 5,
+    },
+    features: [
+      '1 story, yours to keep',
+      'Up to 24 pages',
+      'All illustration styles',
+      'Full PDF download',
+      'Dedication page',
+      'No subscription needed',
+    ],
+  },
+
+  story_pack: {
+    tier: 'story_pack',
+    displayName: 'Story Pack',
+    pricingType: 'subscription',
+    priceMonthly: 9.99,
+    priceYearly: 99,
+    cta: 'Start Story Pack',
     limits: {
       booksPerMonth: 3,
       maxPagesPerBook: 24,
-      maxIllustrations: 12,
-      canAddDedication: false,
+      maxIllustrations: 24,
+      canAddDedication: true,
       canDownloadPdf: true,
       canOrderPrint: false,
-      illustrationStyleCount: 3,
+      illustrationStyleCount: 5,
     },
     features: [
-      '3 storybooks/month',
-      'Up to 24 pages',
-      '12 AI illustrations',
-      'PDF download & email delivery',
-      '3 illustration styles',
+      '3 stories/month',
+      'Up to 24 pages each',
+      'All illustration styles',
+      'Full PDF download',
+      'Dedication page',
+      'Unused stories roll over (up to 2)',
     ],
   },
 
-  pro: {
-    tier: 'pro',
+  story_pro: {
+    tier: 'story_pro',
     displayName: 'Story Pro',
-    priceMonthly: 29.99,
+    pricingType: 'subscription',
+    priceMonthly: 24.99,
+    priceYearly: 249,
     cta: 'Go Pro',
     isPopular: true,
     limits: {
       booksPerMonth: 10,
       maxPagesPerBook: 32,
-      maxIllustrations: 16,
+      maxIllustrations: 32,
       canAddDedication: true,
       canDownloadPdf: true,
       canOrderPrint: true,
       illustrationStyleCount: 5,
     },
     features: [
-      '10 storybooks/month',
-      'Up to 32 pages',
-      '16 AI illustrations',
-      'Personal dedication page',
-      'All 5 illustration styles',
-      'PDF download, email & print ordering',
+      '10 stories/month',
+      'Up to 32 pages each',
+      'All illustration styles',
+      'Full PDF download',
+      'Dedication page',
+      'Priority processing',
+      'Print ordering (coming soon)',
     ],
   },
 
-  enterprise: {
-    tier: 'enterprise',
-    displayName: 'Educator / Commercial',
-    priceMonthly: 0,   // custom — contact us
-    cta: 'Contact us',
+  educator: {
+    tier: 'educator',
+    displayName: 'Educator',
+    pricingType: 'subscription',
+    priceMonthly: 59,
+    priceYearly: 599,
+    cta: 'Start Educator plan',
     limits: {
-      booksPerMonth: 999,
-      maxPagesPerBook: 48,
-      maxIllustrations: 24,
+      booksPerMonth: 40,
+      maxPagesPerBook: 32,
+      maxIllustrations: 32,
       canAddDedication: true,
       canDownloadPdf: true,
       canOrderPrint: true,
       illustrationStyleCount: 5,
     },
     features: [
-      'Unlimited storybooks',
-      'Up to 48 pages',
-      'Custom illustration style',
-      'White-label option',
-      'Bulk classroom use',
-      'Dedicated support',
+      '40 stories/month',
+      'Up to 32 pages each',
+      'All illustration styles',
+      'Classroom & roster management',
+      'Class story library',
+      'Priority processing',
+      'Bulk creation (coming soon)',
     ],
   },
 }
 
-// ─── Helper: get limits for a tier ───────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 export function getPlanLimits(tier: PlanTier): PlanLimits {
   return PLAN_CONFIG[tier].limits
 }
 
-// ─── Helper: get all active plans for pricing page ───────────────────────────
 export function getActivePlans(): PlanConfig[] {
   return Object.values(PLAN_CONFIG)
 }
 
-// ─── Helper: resolve the correct page count for a request ────────────────────
-// Clamps the user's requested length to the plan's max
-export function resolvePageCount(
-  requestedLength: number,
-  tier: PlanTier
-): number {
-  const max = PLAN_CONFIG[tier].limits.maxPagesPerBook
-  return Math.min(requestedLength, max)
+/** Clamps the requested page count to the plan's maximum. */
+export function resolvePageCount(requestedLength: number, tier: PlanTier): number {
+  return Math.min(requestedLength, PLAN_CONFIG[tier].limits.maxPagesPerBook)
 }
+
+/** Plans shown in the story wizard plan selector (educator handled separately). */
+export const WIZARD_PLANS: PlanTier[] = ['free', 'single', 'story_pack', 'story_pro']

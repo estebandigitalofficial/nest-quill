@@ -8,7 +8,7 @@ const ILLUSTRATION_STYLES = [
   'digital_art',
 ] as const
 
-const PLAN_TIERS = ['free', 'starter', 'pro', 'enterprise'] as const
+const PLAN_TIERS = ['free', 'single', 'story_pack', 'story_pro', 'educator'] as const
 const STORY_LENGTHS = [8, 16, 24, 32] as const
 
 export const STORY_TONES = [

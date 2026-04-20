@@ -2,11 +2,8 @@
 
 import { useFormContext } from 'react-hook-form'
 import type { StoryFormValues } from '@/lib/validators/story-form'
-import { PLAN_CONFIG } from '@/lib/plans/config'
+import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
 import { cn } from '@/lib/utils/cn'
-import type { PlanTier } from '@/types/database'
-
-const VISIBLE_PLANS: PlanTier[] = ['free', 'starter', 'pro']
 
 export default function PlanStep() {
   const { watch, setValue } = useFormContext<StoryFormValues>()
@@ -17,12 +14,12 @@ export default function PlanStep() {
       <div>
         <h2 className="text-xl font-serif text-gray-900">Choose your plan</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Start free — you can always upgrade later.
+          Start free — payments are coming soon, all plans are free during beta.
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        {VISIBLE_PLANS.map((tier) => {
+      <div className="grid gap-3 sm:grid-cols-2">
+        {WIZARD_PLANS.map((tier) => {
           const plan = PLAN_CONFIG[tier]
           const isSelected = selected === tier
 
@@ -46,9 +43,7 @@ export default function PlanStep() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-gray-900 text-sm">
-                    {plan.displayName}
-                  </span>
+                  <span className="font-semibold text-gray-900 text-sm">{plan.displayName}</span>
                   {isSelected && (
                     <span className="w-4 h-4 rounded-full bg-brand-500 flex items-center justify-center text-white text-[10px]">
                       ✓
@@ -57,8 +52,13 @@ export default function PlanStep() {
                 </div>
 
                 <p className="text-lg font-bold text-gray-900">
-                  {plan.priceMonthly === 0 ? (
-                    <span>Free</span>
+                  {plan.pricingType === 'free' ? (
+                    'Free'
+                  ) : plan.pricingType === 'one_time' ? (
+                    <>
+                      ${plan.priceMonthly}
+                      <span className="text-xs font-normal text-gray-400"> one-time</span>
+                    </>
                   ) : (
                     <>
                       ${plan.priceMonthly}
@@ -82,7 +82,8 @@ export default function PlanStep() {
       </div>
 
       <p className="text-xs text-gray-400 text-center">
-        Payments coming soon — all plans are free during beta.
+        Are you a teacher?{' '}
+        <span className="text-brand-500 font-medium">Educator plans coming soon.</span>
       </p>
     </div>
   )
