@@ -15,6 +15,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!
 const EXPECTED_TOKEN = Deno.env.get('EDGE_FUNCTION_SECRET') ?? SUPABASE_SERVICE_ROLE_KEY
+const SKIP_IMAGES = Deno.env.get('SKIP_IMAGE_GENERATION') === 'true'
 
 // ── Illustration style → DALL-E style hint map ────────────────────────────────
 
@@ -311,78 +312,79 @@ Deno.serve(async (req) => {
 
     // ── Step 2: Generate illustrations via DALL-E 3 ───────────────────────
     await setStatus('generating_images', 'Creating illustrations…', 45)
-    await log('generate_images', `Generating ${sceneRows.length} illustrations with DALL-E 3`)
-
-    // Fetch scenes from DB so we have their UUIDs for updating
-    const { data: scenes, error: sceneFetchError } = await supabase
-      .from('story_scenes')
-      .select('id, page_number, image_prompt')
-      .eq('request_id', requestId)
-      .order('page_number', { ascending: true })
-
-    if (sceneFetchError || !scenes) {
-      throw new Error(`Failed to fetch story scenes: ${sceneFetchError?.message}`)
-    }
 
     let imagesGenerated = 0
     let imagesFailed = 0
 
-    for (const scene of scenes) {
-      try {
-        const imageBytes = await generateImage(
-          scene.image_prompt,
-          storyRequest.illustration_style
-        )
+    if (SKIP_IMAGES) {
+      await log('generate_images', 'Image generation skipped (SKIP_IMAGE_GENERATION=true)')
+    } else {
+      // Fetch scenes from DB so we have their UUIDs for updating
+      const { data: scenes, error: sceneFetchError } = await supabase
+        .from('story_scenes')
+        .select('id, page_number, image_prompt')
+        .eq('request_id', requestId)
+        .order('page_number', { ascending: true })
 
-        // Upload to private story-images bucket
-        const storagePath = `${requestId}/${scene.page_number}.png`
-        const { error: uploadError } = await supabase.storage
-          .from('story-images')
-          .upload(storagePath, imageBytes, {
-            contentType: 'image/png',
-            upsert: true,
-          })
-
-        if (uploadError) {
-          throw new Error(`Storage upload failed for page ${scene.page_number}: ${uploadError.message}`)
-        }
-
-        // Mark scene complete with storage path
-        await supabase
-          .from('story_scenes')
-          .update({ storage_path: storagePath, image_status: 'complete' })
-          .eq('id', scene.id)
-
-        imagesGenerated++
-
-        // Progress: 45 → 80 spread across pages
-        const progress = Math.round(45 + (imagesGenerated / scenes.length) * 35)
-        await setStatus('generating_images', `Illustrating page ${scene.page_number} of ${scenes.length}…`, progress)
-
-        await log('generate_images', `Page ${scene.page_number} illustrated`, 'info', {
-          page_number: scene.page_number,
-          storage_path: storagePath,
-        })
-      } catch (imgErr) {
-        imagesFailed++
-        const imgMsg = imgErr instanceof Error ? imgErr.message : String(imgErr)
-        console.error(`[process-story] Image failed page ${scene.page_number}:`, imgMsg)
-
-        await supabase
-          .from('story_scenes')
-          .update({ image_status: 'failed' })
-          .eq('id', scene.id)
-
-        await log('generate_images', `Page ${scene.page_number} image failed: ${imgMsg}`, 'warning', {
-          page_number: scene.page_number,
-        })
+      if (sceneFetchError || !scenes) {
+        throw new Error(`Failed to fetch story scenes: ${sceneFetchError?.message}`)
       }
-    }
 
-    await log('generate_images', `Illustrations complete: ${imagesGenerated} generated, ${imagesFailed} failed`, 'info', {
-      images_generated: imagesGenerated,
-      images_failed: imagesFailed,
-    })
+      for (const scene of scenes) {
+        try {
+          const imageBytes = await generateImage(
+            scene.image_prompt,
+            storyRequest.illustration_style
+          )
+
+          const storagePath = `${requestId}/${scene.page_number}.png`
+          const { error: uploadError } = await supabase.storage
+            .from('story-images')
+            .upload(storagePath, imageBytes, {
+              contentType: 'image/png',
+              upsert: true,
+            })
+
+          if (uploadError) {
+            throw new Error(`Storage upload failed for page ${scene.page_number}: ${uploadError.message}`)
+          }
+
+          await supabase
+            .from('story_scenes')
+            .update({ storage_path: storagePath, image_status: 'complete' })
+            .eq('id', scene.id)
+
+          imagesGenerated++
+
+          // Progress: 45 → 80 spread across pages
+          const progress = Math.round(45 + (imagesGenerated / scenes.length) * 35)
+          await setStatus('generating_images', `Illustrating page ${scene.page_number} of ${scenes.length}…`, progress)
+
+          await log('generate_images', `Page ${scene.page_number} illustrated`, 'info', {
+            page_number: scene.page_number,
+            storage_path: storagePath,
+          })
+        } catch (imgErr) {
+          imagesFailed++
+          const imgMsg = imgErr instanceof Error ? imgErr.message : String(imgErr)
+          console.error(`[process-story] Image failed page ${scene.page_number}:`, imgMsg)
+
+          await supabase
+            .from('story_scenes')
+            .update({ image_status: 'failed' })
+            .eq('id', scene.id)
+
+          await log('generate_images', `Page ${scene.page_number} image failed: ${imgMsg}`, 'warning', {
+            page_number: scene.page_number,
+          })
+        }
+      }
+
+      await log('generate_images', `Illustrations complete: ${imagesGenerated} generated, ${imagesFailed} failed`, 'info', {
+        images_generated: imagesGenerated,
+        images_failed: imagesFailed,
+      })
+    }
 
     // ── Step 3: Assemble PDF (stub — Phase 4c) ────────────────────────────
     await setStatus('assembling_pdf', 'PDF assembly coming soon…', 80)
