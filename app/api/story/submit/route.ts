@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -98,8 +98,12 @@ export async function POST(request: NextRequest) {
     // ── 6. Trigger the background processing pipeline ────────────────────────
     // We fire this fetch and do NOT await it.
     // The route handler returns immediately — the pipeline runs in the background.
-    triggerProcessingPipeline(requestId).catch((err) => {
-      console.error('Failed to trigger pipeline for request', requestId, err)
+    after(async () => {
+      try {
+        await triggerProcessingPipeline(requestId)
+      } catch (err) {
+        console.error('Failed to trigger pipeline for request', requestId, err)
+      }
     })
 
     // ── 7. Build the response ────────────────────────────────────────────────
