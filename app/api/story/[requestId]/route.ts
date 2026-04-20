@@ -29,7 +29,9 @@ export async function GET(
 
     const storyReq = storyReqData as unknown as Pick<StoryRequest, 'id' | 'user_id' | 'guest_token' | 'status'>
 
+    const isAdmin = user?.email === process.env.ADMIN_EMAIL
     const isOwner =
+      isAdmin ||
       (user && storyReq.user_id === user.id) ||
       (guestToken && storyReq.guest_token === guestToken)
 

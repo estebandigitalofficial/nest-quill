@@ -37,9 +37,9 @@ export async function GET(request: NextRequest) {
     const storyRequest = data as unknown as StoryRequest
 
     // ── Ownership check ──────────────────────────────────────────────────────
-    // Either the authenticated user owns this request,
-    // or the guest_token cookie matches
+    const isAdmin = user?.email === process.env.ADMIN_EMAIL
     const isOwner =
+      isAdmin ||
       (user && storyRequest.user_id === user.id) ||
       (guestToken && storyRequest.guest_token === guestToken)
 
