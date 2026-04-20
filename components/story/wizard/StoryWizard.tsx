@@ -32,7 +32,7 @@ export default function StoryWizard() {
     resolver: zodResolver(storyFormSchema),
     defaultValues: {
       planTier: 'free',
-      storyLength: 16,
+      storyLength: 8,
       illustrationStyle: 'watercolor',
       storyTone: [],
     },

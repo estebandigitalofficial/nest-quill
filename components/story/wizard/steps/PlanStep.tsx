@@ -27,7 +27,12 @@ export default function PlanStep() {
             <button
               key={tier}
               type="button"
-              onClick={() => setValue('planTier', tier, { shouldValidate: true })}
+              onClick={() => {
+                setValue('planTier', tier, { shouldValidate: true })
+                // Reset story length to the plan's max so it's never pre-set above the limit
+                const maxPages = PLAN_CONFIG[tier].limits.maxPagesPerBook
+                setValue('storyLength', Math.min(maxPages, 16) as 8 | 16 | 24 | 32, { shouldValidate: false })
+              }}
               className={cn(
                 'relative text-left rounded-2xl border-2 px-4 py-4 transition-all',
                 isSelected
