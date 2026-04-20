@@ -18,7 +18,7 @@ export default function LoginPage() {
     setLoading(true)
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       setError(error.message)
@@ -26,7 +26,8 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/account')
+    const isAdmin = data.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+    router.push(isAdmin ? '/admin' : '/account')
     router.refresh()
   }
 
