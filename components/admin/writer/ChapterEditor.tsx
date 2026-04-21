@@ -21,6 +21,10 @@ export default function ChapterEditor({
   const [editContent, setEditContent] = useState('')
   const [savingEdit, setSavingEdit] = useState(false)
   const [mode, setMode] = useState<'preserve_voice' | 'rewrite_free'>('preserve_voice')
+  const [notes, setNotes] = useState(chapter.notes ?? '')
+  const [savingNotes, setSavingNotes] = useState(false)
+  const [notesOpen, setNotesOpen] = useState(!!chapter.notes)
+  const [preflight, setPreflight] = useState<{ sceneId: string; issues: string[] } | null>(null)
 
   const totalWords = scenes.reduce((sum, s) => sum + (s.word_count ?? 0), 0)
 
@@ -53,16 +57,20 @@ export default function ChapterEditor({
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode }),
+        body: JSON.stringify({ mode, chapterNotes: notes }),
       }
     )
 
     if (res.ok) {
+      setPreflight(null)
       router.refresh()
-      // Optimistically update the scene status
       setScenes(prev =>
         prev.map(s => s.id === scene.id ? { ...s, status: 'draft' as const } : s)
       )
+    } else if (res.status === 422) {
+      const json = await res.json()
+      setPreflight({ sceneId: scene.id, issues: json.issues ?? [] })
+      setNotesOpen(true)
     } else {
       const json = await res.json()
       alert(`Generation failed: ${json.error}`)
@@ -99,6 +107,19 @@ export default function ChapterEditor({
     setSavingEdit(false)
   }
 
+  async function saveNotes() {
+    setSavingNotes(true)
+    await fetch(
+      `/api/admin/writer/books/${book.id}/chapters/${chapter.id}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes }),
+      }
+    )
+    setSavingNotes(false)
+  }
+
   async function deleteScene(sceneId: string) {
     if (!confirm('Delete this scene?')) return
     setScenes(prev => prev.filter(s => s.id !== sceneId))
@@ -130,6 +151,52 @@ export default function ChapterEditor({
             Rewrite freely
           </button>
         </div>
+      </div>
+
+      {/* Correction notes */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+        <button
+          onClick={() => setNotesOpen(o => !o)}
+          className="w-full px-5 py-3 flex items-center justify-between text-left"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Correction Notes</span>
+            {notes && <span className="w-1.5 h-1.5 rounded-full bg-brand-500 inline-block" />}
+          </div>
+          <span className="text-xs text-gray-600">{notesOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {notesOpen && (
+          <div className="border-t border-gray-800 px-5 py-4 space-y-3">
+            {preflight && (
+              <div className="bg-yellow-950 border border-yellow-700 rounded-lg px-4 py-3 space-y-2">
+                <p className="text-xs font-bold text-yellow-400 uppercase tracking-widest">Generation blocked — possible fabrication</p>
+                <ul className="space-y-1">
+                  {preflight.issues.map((issue, i) => (
+                    <li key={i} className="text-xs text-yellow-300">• {issue}</li>
+                  ))}
+                </ul>
+                <p className="text-xs text-yellow-600">Add correction notes below to address these, then try generating again.</p>
+              </div>
+            )}
+            <p className="text-xs text-gray-500">Tell the AI what to correct or avoid in this chapter — facts it got wrong, people who weren't there, details it invented.</p>
+            <textarea
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
+              rows={4}
+              placeholder="e.g. My daughter was not present in this chapter. The conversation happened at home, not at a restaurant. Do not mention the neighbor."
+              value={notes}
+              onChange={e => { setNotes(e.target.value); setPreflight(null) }}
+            />
+            <button
+              onClick={saveNotes}
+              disabled={savingNotes}
+              className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {savingNotes ? 'Saving…' : 'Save notes'}
+            </button>
+            <p className="text-xs text-gray-600">These notes are included every time you generate a scene in this chapter.</p>
+          </div>
+        )}
       </div>
 
       {/* Scenes */}

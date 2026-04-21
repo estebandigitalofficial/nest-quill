@@ -26,6 +26,7 @@ export interface WriterChapter {
   title: string
   brief: string
   summary: string | null
+  notes: string | null
   status: WriterChapterStatus
   created_at: string
   updated_at: string

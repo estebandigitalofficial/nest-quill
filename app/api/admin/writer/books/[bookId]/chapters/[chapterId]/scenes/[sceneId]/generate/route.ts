@@ -13,9 +13,11 @@ export async function POST(
   if (!await checkBookOwner(bookId, ctx)) return adminGuardResponse()
 
   let mode: 'preserve_voice' | 'rewrite_free' = 'rewrite_free'
+  let chapterNotes = ''
   try {
     const body = await req.json()
     if (body?.mode === 'preserve_voice') mode = 'preserve_voice'
+    if (body?.chapterNotes) chapterNotes = body.chapterNotes
   } catch { /* no body — use default */ }
 
   const supabase = createAdminClient()
@@ -64,15 +66,19 @@ export async function POST(
     ((currentChapter.writer_scenes as unknown[]) ?? []).length || 1
   ))
 
+  const antiFabrication = `STRICT RULE: Only include people, places, events, and details that are present in the source manuscript. Do not invent characters, add people who were not there, fabricate conversations, or create dramatic details that did not happen. If the source does not mention it, do not add it.`
+
   const systemPrompt = mode === 'preserve_voice'
     ? `You are editing and rewriting a ${book.genre} book while strictly preserving the author's original voice.
 Tone: ${book.tone}
 CRITICAL: You must maintain the author's exact voice — their sentence rhythm, vocabulary level, narrative style, point of view, and personality. Do not substitute your own prose style. Improve clarity, flow, and structure, but every sentence should still sound like the original author wrote it.
-Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.`
+Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.
+${antiFabrication}`
     : `You are a professional author writing a ${book.genre} book.
 Tone: ${book.tone}
 Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.
-Maintain complete consistency with everything established in prior chapters and scenes.`
+Maintain complete consistency with everything established in prior chapters and scenes.
+${antiFabrication}`
 
   // If a source manuscript exists, find the most relevant excerpt (~15k chars around chapter mention)
   let sourceExcerpt = ''
@@ -97,6 +103,7 @@ Full outline:
 ${outline}
 
 ${previousSummaries ? `Previous chapters (summaries):\n${previousSummaries}\n` : ''}
+${chapterNotes ? `CORRECTION NOTES FOR THIS CHAPTER (follow these exactly):\n${chapterNotes}\n` : ''}
 ${previousScenes ? `Earlier in Chapter ${currentChapter.chapter_number} (${currentChapter.title}):\n${previousScenes}\n` : ''}
 ${sourceInstruction}
 Now write the next scene in Chapter ${currentChapter.chapter_number}: ${currentChapter.title}
@@ -104,6 +111,44 @@ Scene brief: ${scene.brief}
 Target length: approximately ${targetWords} words.
 
 Write only the scene content. No headings.`
+
+  // Pre-flight fabrication check (gpt-4o-mini, cheap) — catches invented details before spending on full generation
+  if (sourceExcerpt) {
+    const preCheckPrompt = `You are a fact-checker for a memoir. Your job is to catch fabricated details BEFORE a scene is written.
+
+Source manuscript excerpt (what actually happened):
+${sourceExcerpt.slice(0, 4000)}
+
+Scene brief: ${scene.brief}
+${chapterNotes ? `Author's correction notes: ${chapterNotes}` : ''}
+
+Does the scene brief or correction notes ask the AI to include people, places, or events that are NOT mentioned in the source excerpt above?
+Respond ONLY with valid JSON: {"safe": true} if everything is grounded, or {"safe": false, "issues": ["issue 1", "issue 2"]} if fabrication risks are found.`
+
+    try {
+      const preRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [{ role: 'user', content: preCheckPrompt }],
+          temperature: 0,
+          max_tokens: 200,
+          response_format: { type: 'json_object' },
+        }),
+      })
+      if (preRes.ok) {
+        const preJson = await preRes.json()
+        const check = JSON.parse(preJson.choices[0].message.content)
+        if (check.safe === false && Array.isArray(check.issues) && check.issues.length > 0) {
+          return NextResponse.json(
+            { error: 'Pre-flight check flagged fabrication risks', issues: check.issues },
+            { status: 422 }
+          )
+        }
+      }
+    } catch { /* if pre-check fails, proceed with generation anyway */ }
+  }
 
   await supabase
     .from('writer_scenes')
