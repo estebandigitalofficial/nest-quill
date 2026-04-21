@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
 import type { WriterBook } from '@/types/writer'
+import DeleteBookButton from '@/components/admin/writer/DeleteBookButton'
 
 export default async function WriterPage() {
   const ctx = await getAdminContext()
@@ -74,6 +75,7 @@ export default async function WriterPage() {
                     </div>
                     {/* Action links — sit above the invisible full-card link */}
                     <div className="flex gap-1.5 relative z-10">
+                      <DeleteBookButton bookId={book.id} />
                       <Link
                         href={`/admin/writer/${book.id}/read`}
                         className="text-[11px] px-2.5 py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
