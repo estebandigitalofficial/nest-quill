@@ -73,42 +73,82 @@ export default function BookPageClient({
     </div>
   )
 
+  const readBg = '#f7f4ef'
+
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      <header className="border-b border-gray-800 px-6 h-14 flex items-center justify-between sticky top-0 bg-gray-950 z-10">
+    <div
+      className="min-h-screen text-gray-100 transition-colors duration-300"
+      style={{ background: mode === 'read' ? readBg : undefined }}
+    >
+      <header
+        className="px-6 h-14 flex items-center justify-between sticky top-0 z-10 transition-colors duration-300"
+        style={mode === 'read'
+          ? { background: readBg, borderBottom: '1px solid #e7e2d9' }
+          : { background: '#030712', borderBottom: '1px solid #1f2937' }
+        }
+      >
         <div className="flex items-center gap-3">
-          <Link href="/admin/writer" className="text-xs text-gray-500 hover:text-gray-300">← Books</Link>
-          <span className="text-gray-700">/</span>
-          <span className="font-semibold text-white truncate max-w-xs">{book.title}</span>
+          <Link
+            href="/admin/writer"
+            className={`text-xs transition-colors ${mode === 'read' ? 'text-stone-400 hover:text-stone-700' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            ← Books
+          </Link>
+          <span className={mode === 'read' ? 'text-stone-300' : 'text-gray-700'}>/</span>
+          <span
+            className={`font-serif truncate max-w-xs ${mode === 'read' ? 'text-stone-800 text-sm' : 'font-semibold text-white text-sm'}`}
+          >
+            {book.title}
+          </span>
         </div>
         <div className="flex items-center gap-3">
           {/* Mode toggle */}
-          <div className="flex bg-gray-900 border border-gray-800 rounded-lg p-0.5">
+          <div
+            className="flex rounded-lg p-0.5 transition-colors duration-300"
+            style={mode === 'read'
+              ? { background: '#ede9e1', border: '1px solid #d6d0c8' }
+              : { background: '#111827', border: '1px solid #1f2937' }
+            }
+          >
             <button
               onClick={() => setMode('edit')}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${mode === 'edit' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+              className="text-xs font-medium px-3 py-1.5 rounded-md transition-colors"
+              style={mode === 'edit'
+                ? { background: '#374151', color: '#fff' }
+                : mode === 'read'
+                  ? { color: '#78716c' }
+                  : { color: '#6b7280' }
+              }
             >
               Edit
             </button>
             <button
               onClick={() => setMode('read')}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-colors ${mode === 'read' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+              className="text-xs font-medium px-3 py-1.5 rounded-md transition-colors"
+              style={mode === 'read'
+                ? { background: '#d6d0c8', color: '#292524' }
+                : { color: '#6b7280' }
+              }
             >
               Read
             </button>
           </div>
-          <a
-            href={`/api/admin/writer/books/${book.id}/export-epub`}
-            className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
-          >
-            Export ePub
-          </a>
-          <a
-            href={`/api/admin/writer/books/${book.id}/export`}
-            className="bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
-          >
-            Export Markdown
-          </a>
+          {mode === 'edit' && (
+            <>
+              <a
+                href={`/api/admin/writer/books/${book.id}/export-epub`}
+                className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
+              >
+                Export ePub
+              </a>
+              <a
+                href={`/api/admin/writer/books/${book.id}/export`}
+                className="bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
+              >
+                Export Markdown
+              </a>
+            </>
+          )}
         </div>
       </header>
 
