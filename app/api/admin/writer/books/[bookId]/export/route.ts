@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireAdmin, adminGuardResponse } from '@/lib/admin/guard'
+import { requireAdmin, checkBookOwner, adminGuardResponse } from '@/lib/admin/guard'
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ bookId: string }> }
 ) {
-  try { await requireAdmin() } catch { return adminGuardResponse() }
+  let ctx
+  try { ctx = await requireAdmin() } catch { return adminGuardResponse() }
 
   const { bookId } = await params
+  if (!await checkBookOwner(bookId, ctx)) return adminGuardResponse()
+
   const supabase = createAdminClient()
 
   const { data: book } = await supabase
@@ -25,7 +28,6 @@ export async function GET(
     .eq('book_id', bookId)
     .order('chapter_number', { ascending: true })
 
-  // Build Markdown
   const lines: string[] = []
 
   lines.push(`# ${book.title}`)

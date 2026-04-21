@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireAdmin, adminGuardResponse } from '@/lib/admin/guard'
+import { requireAdmin, checkBookOwner, adminGuardResponse } from '@/lib/admin/guard'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ bookId: string; chapterId: string }> }
 ) {
-  try { await requireAdmin() } catch { return adminGuardResponse() }
+  let ctx
+  try { ctx = await requireAdmin() } catch { return adminGuardResponse() }
 
   const { bookId, chapterId } = await params
+  if (!await checkBookOwner(bookId, ctx)) return adminGuardResponse()
+
   const body = await request.json()
   const { scene_number, brief } = body
 
@@ -31,9 +34,12 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ bookId: string; chapterId: string }> }
 ) {
-  try { await requireAdmin() } catch { return adminGuardResponse() }
+  let ctx
+  try { ctx = await requireAdmin() } catch { return adminGuardResponse() }
 
-  const { chapterId } = await params
+  const { bookId, chapterId } = await params
+  if (!await checkBookOwner(bookId, ctx)) return adminGuardResponse()
+
   const body = await request.json()
   const supabase = createAdminClient()
 

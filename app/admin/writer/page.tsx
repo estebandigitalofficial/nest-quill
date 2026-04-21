@@ -1,19 +1,21 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getAdminContext } from '@/lib/admin/guard'
 import type { WriterBook } from '@/types/writer'
 
 export default async function WriterPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.email !== process.env.ADMIN_EMAIL) redirect('/')
+  const ctx = await getAdminContext()
+  if (!ctx) redirect('/')
 
   const adminSupabase = createAdminClient()
-  const { data: books } = await adminSupabase
-    .from('writer_books')
-    .select('*')
-    .order('updated_at', { ascending: false })
+  let query = adminSupabase.from('writer_books').select('*, owner:owner_id(email)').order('updated_at', { ascending: false })
+
+  if (!ctx.isSuperAdmin) {
+    query = query.eq('owner_id', ctx.userId)
+  }
+
+  const { data: books } = await query
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -45,7 +47,7 @@ export default async function WriterPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {(books as WriterBook[]).map((book) => (
+            {(books as (WriterBook & { owner?: { email: string } | null })[]).map((book) => (
               <Link
                 key={book.id}
                 href={`/admin/writer/${book.id}`}
@@ -63,6 +65,12 @@ export default async function WriterPage() {
                   <span>{book.target_chapters} chapters</span>
                   <span>·</span>
                   <span>~{(book.target_chapters * book.target_words_per_chapter).toLocaleString()} words</span>
+                  {ctx.isSuperAdmin && book.owner?.email && (
+                    <>
+                      <span>·</span>
+                      <span className="text-gray-700">{book.owner.email.split('@')[0]}</span>
+                    </>
+                  )}
                 </div>
               </Link>
             ))}

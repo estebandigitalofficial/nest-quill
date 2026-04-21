@@ -12,6 +12,7 @@ export interface WriterBook {
   target_chapters: number
   target_words_per_chapter: number
   status: WriterBookStatus
+  owner_id: string | null
   created_at: string
   updated_at: string
 }

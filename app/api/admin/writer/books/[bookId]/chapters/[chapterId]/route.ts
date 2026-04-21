@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireAdmin, adminGuardResponse } from '@/lib/admin/guard'
+import { requireAdmin, checkBookOwner, adminGuardResponse } from '@/lib/admin/guard'
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ bookId: string; chapterId: string }> }
 ) {
-  try { await requireAdmin() } catch { return adminGuardResponse() }
+  let ctx
+  try { ctx = await requireAdmin() } catch { return adminGuardResponse() }
 
-  const { chapterId } = await params
+  const { bookId, chapterId } = await params
+  if (!await checkBookOwner(bookId, ctx)) return adminGuardResponse()
+
   const body = await request.json()
   const supabase = createAdminClient()
 
@@ -27,9 +30,12 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ bookId: string; chapterId: string }> }
 ) {
-  try { await requireAdmin() } catch { return adminGuardResponse() }
+  let ctx
+  try { ctx = await requireAdmin() } catch { return adminGuardResponse() }
 
-  const { chapterId } = await params
+  const { bookId, chapterId } = await params
+  if (!await checkBookOwner(bookId, ctx)) return adminGuardResponse()
+
   const supabase = createAdminClient()
   const { error } = await supabase.from('writer_chapters').delete().eq('id', chapterId)
 

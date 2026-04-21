@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { requireAdmin, adminGuardResponse } from '@/lib/admin/guard'
+import { requireAdmin, checkBookOwner, adminGuardResponse } from '@/lib/admin/guard'
 
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ bookId: string; chapterId: string; sceneId: string }> }
 ) {
-  try { await requireAdmin() } catch { return adminGuardResponse() }
+  let ctx
+  try { ctx = await requireAdmin() } catch { return adminGuardResponse() }
 
   const { bookId, chapterId, sceneId } = await params
+  if (!await checkBookOwner(bookId, ctx)) return adminGuardResponse()
+
   const supabase = createAdminClient()
 
-  // Fetch book
   const { data: book } = await supabase
     .from('writer_books')
     .select('*')
@@ -20,14 +22,12 @@ export async function POST(
 
   if (!book) return NextResponse.json({ error: 'Book not found' }, { status: 404 })
 
-  // Fetch all chapters with their scenes for context
   const { data: chapters } = await supabase
     .from('writer_chapters')
     .select('*, writer_scenes(*)')
     .eq('book_id', bookId)
     .order('chapter_number', { ascending: true })
 
-  // Fetch current scene
   const { data: scene } = await supabase
     .from('writer_scenes')
     .select('*')
@@ -36,22 +36,18 @@ export async function POST(
 
   if (!scene) return NextResponse.json({ error: 'Scene not found' }, { status: 404 })
 
-  // Fetch current chapter
   const currentChapter = chapters?.find(c => c.id === chapterId)
   if (!currentChapter) return NextResponse.json({ error: 'Chapter not found' }, { status: 404 })
 
-  // Build outline string
   const outline = (chapters ?? []).map((ch: Record<string, unknown>) =>
     `Chapter ${ch.chapter_number}: ${ch.title} — ${ch.brief}`
   ).join('\n')
 
-  // Build previous chapter summaries for context
   const previousSummaries = (chapters ?? [])
     .filter((ch: Record<string, unknown>) => (ch.chapter_number as number) < currentChapter.chapter_number && ch.summary)
     .map((ch: Record<string, unknown>) => `Chapter ${ch.chapter_number} summary: ${ch.summary}`)
     .join('\n')
 
-  // Build previous scenes in current chapter
   const previousScenes = ((currentChapter.writer_scenes as unknown[]) ?? [])
     .filter((s: unknown) => (s as { scene_number: number }).scene_number < scene.scene_number && (s as { content: string | null }).content)
     .sort((a: unknown, b: unknown) => (a as { scene_number: number }).scene_number - (b as { scene_number: number }).scene_number)
@@ -62,7 +58,6 @@ export async function POST(
     ((currentChapter.writer_scenes as unknown[]) ?? []).length || 1
   ))
 
-  // Build the prompt
   const systemPrompt = `You are a professional author writing a ${book.genre} book.
 Tone: ${book.tone}
 Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.
@@ -82,7 +77,6 @@ Target length: approximately ${targetWords} words.
 
 Write only the scene content. No headings.`
 
-  // Mark as generating
   await supabase
     .from('writer_scenes')
     .update({ status: 'generating' })
@@ -118,7 +112,6 @@ Write only the scene content. No headings.`
     const wordCount = content.split(/\s+/).length
     const generationTimeMs = Date.now() - t0
 
-    // Save version before overwriting
     if (scene.content) {
       const { data: versions } = await supabase
         .from('writer_scene_versions')
@@ -136,7 +129,6 @@ Write only the scene content. No headings.`
       })
     }
 
-    // Save new content
     await supabase
       .from('writer_scenes')
       .update({
@@ -149,7 +141,6 @@ Write only the scene content. No headings.`
       })
       .eq('id', sceneId)
 
-    // Update chapter status
     await supabase
       .from('writer_chapters')
       .update({ status: 'in_progress', updated_at: new Date().toISOString() })
