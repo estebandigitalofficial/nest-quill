@@ -16,6 +16,8 @@ export default function ChapterEditor({
   const [scenes, setScenes] = useState<WriterScene[]>(chapter.scenes)
   const [addingScene, setAddingScene] = useState(false)
   const [newSceneBrief, setNewSceneBrief] = useState('')
+  const [newSceneContent, setNewSceneContent] = useState('')
+  const [showContentInput, setShowContentInput] = useState(false)
   const [generatingId, setGeneratingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
@@ -37,7 +39,7 @@ export default function ChapterEditor({
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scene_number: nextNumber, brief: newSceneBrief }),
+        body: JSON.stringify({ scene_number: nextNumber, brief: newSceneBrief, content: newSceneContent.trim() || undefined }),
       }
     )
 
@@ -45,6 +47,8 @@ export default function ChapterEditor({
       const scene = await res.json()
       setScenes(s => [...s, scene])
       setNewSceneBrief('')
+      setNewSceneContent('')
+      setShowContentInput(false)
       setAddingScene(false)
     }
   }
@@ -305,9 +309,25 @@ export default function ChapterEditor({
               value={newSceneBrief}
               onChange={e => setNewSceneBrief(e.target.value)}
             />
+            <button
+              type="button"
+              onClick={() => setShowContentInput(v => !v)}
+              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            >
+              {showContentInput ? '− Remove content' : '+ Paste your own content'}
+            </button>
+            {showContentInput && (
+              <textarea
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                rows={8}
+                placeholder="Paste or type the scene content here — skips AI generation"
+                value={newSceneContent}
+                onChange={e => setNewSceneContent(e.target.value)}
+              />
+            )}
             <div className="flex gap-2">
               <button
-                onClick={() => { setAddingScene(false); setNewSceneBrief('') }}
+                onClick={() => { setAddingScene(false); setNewSceneBrief(''); setNewSceneContent(''); setShowContentInput(false) }}
                 className="flex-1 text-sm text-gray-500 py-2 rounded-lg border border-gray-700 hover:border-gray-500 transition-colors"
               >
                 Cancel

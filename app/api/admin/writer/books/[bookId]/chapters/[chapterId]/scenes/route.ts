@@ -13,16 +13,19 @@ export async function POST(
   if (!await checkBookOwner(bookId, ctx)) return adminGuardResponse()
 
   const body = await request.json()
-  const { scene_number, brief } = body
+  const { scene_number, brief, content } = body
 
   if (!scene_number || !brief) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
+  const wordCount = content ? content.trim().split(/\s+/).length : null
+  const status = content ? 'draft' : 'pending'
+
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('writer_scenes')
-    .insert({ book_id: bookId, chapter_id: chapterId, scene_number, brief })
+    .insert({ book_id: bookId, chapter_id: chapterId, scene_number, brief, content: content || null, word_count: wordCount, status })
     .select()
     .single()
 
