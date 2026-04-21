@@ -16,7 +16,7 @@ export async function POST(
 
   const { data: book } = await supabase
     .from('writer_books')
-    .select('*')
+    .select('*, source_text')
     .eq('id', bookId)
     .single()
 
@@ -63,6 +63,16 @@ Tone: ${book.tone}
 Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.
 Maintain complete consistency with everything established in prior chapters and scenes.`
 
+  // If a source manuscript exists, find the most relevant excerpt (~3000 words around chapter mention)
+  let sourceExcerpt = ''
+  if (book.source_text) {
+    const src = book.source_text as string
+    const chapterMarker = `chapter ${currentChapter.chapter_number}`
+    const idx = src.toLowerCase().indexOf(chapterMarker)
+    const start = idx > -1 ? Math.max(0, idx - 200) : 0
+    sourceExcerpt = src.slice(start, start + 15000).trim()
+  }
+
   const userPrompt = `Book: "${book.title}"
 Premise: ${book.premise}
 
@@ -71,6 +81,7 @@ ${outline}
 
 ${previousSummaries ? `Previous chapters (summaries):\n${previousSummaries}\n` : ''}
 ${previousScenes ? `Earlier in Chapter ${currentChapter.chapter_number} (${currentChapter.title}):\n${previousScenes}\n` : ''}
+${sourceExcerpt ? `Original manuscript excerpt (for reference — rewrite/improve as needed):\n${sourceExcerpt}\n` : ''}
 Now write the next scene in Chapter ${currentChapter.chapter_number}: ${currentChapter.title}
 Scene brief: ${scene.brief}
 Target length: approximately ${targetWords} words.

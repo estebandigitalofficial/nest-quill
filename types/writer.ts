@@ -13,6 +13,8 @@ export interface WriterBook {
   target_words_per_chapter: number
   status: WriterBookStatus
   owner_id: string | null
+  source_text: string | null
+  source_pdf_name: string | null
   created_at: string
   updated_at: string
 }

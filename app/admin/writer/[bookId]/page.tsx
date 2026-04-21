@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { WriterBookWithChapters } from '@/types/writer'
 import BookOutlineEditor from '@/components/admin/writer/BookOutlineEditor'
+import BookSourcePanel from '@/components/admin/writer/BookSourcePanel'
 
 export default async function BookPage({
   params,
@@ -47,6 +48,11 @@ export default async function BookPage({
   const doneScenes = allScenes.filter(s => s.content).length
   const totalWords = allScenes.reduce((sum, s) => sum + (s.word_count ?? 0), 0)
 
+  // Source manuscript word count (approximate)
+  const sourceWordCount = book.source_text
+    ? (book.source_text as string).split(/\s+/).length
+    : null
+
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <header className="border-b border-gray-800 px-6 h-14 flex items-center justify-between">
@@ -84,6 +90,13 @@ export default async function BookPage({
             <span><span className="text-white font-semibold">{totalWords.toLocaleString()}</span> words so far</span>
           </div>
         </div>
+
+        {/* Source manuscript */}
+        <BookSourcePanel
+          bookId={bookId}
+          initialFileName={book.source_pdf_name ?? null}
+          initialWordCount={sourceWordCount}
+        />
 
         {/* Outline editor */}
         <BookOutlineEditor book={bookData} />
