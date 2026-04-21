@@ -72,18 +72,6 @@ export async function POST(
     ? `\nAUTHOR'S INSTRUCTIONS (follow these exactly — they override default style guidance):\n${book.instructions}\n`
     : ''
 
-  const systemPrompt = mode === 'preserve_voice'
-    ? `You are editing and rewriting a ${book.genre} book while strictly preserving the author's original voice.
-Tone: ${book.tone}
-CRITICAL: You must maintain the author's exact voice — their sentence rhythm, vocabulary level, narrative style, point of view, and personality. Do not substitute your own prose style. Improve clarity, flow, and structure, but every sentence should still sound like the original author wrote it.
-Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.
-${instructionsBlock}${antiFabrication}`
-    : `You are a professional author writing a ${book.genre} book.
-Tone: ${book.tone}
-Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.
-Maintain complete consistency with everything established in prior chapters and scenes.
-${instructionsBlock}${antiFabrication}`
-
   // If a source manuscript exists, find the most relevant excerpt (~15k chars around chapter mention)
   let sourceExcerpt = ''
   if (book.source_text) {
@@ -96,9 +84,64 @@ ${instructionsBlock}${antiFabrication}`
 
   const sourceInstruction = sourceExcerpt
     ? mode === 'preserve_voice'
-      ? `Original manuscript excerpt (rewrite this scene — keep the author's voice exactly):\n${sourceExcerpt}\n`
+      ? `Original manuscript excerpt (rewrite this scene using the constraints above):\n${sourceExcerpt}\n`
       : `Original manuscript excerpt (use as reference — rewrite/improve freely):\n${sourceExcerpt}\n`
     : ''
+
+  // System prompt: PDF-source + preserve_voice uses the constrained rewrite mode
+  const systemPrompt = (mode === 'preserve_voice' && sourceExcerpt)
+    ? `You are rewriting a scene from the author's original manuscript.
+
+Rewrite this content while strictly preserving its original structure, length, and meaning.
+
+CRITICAL CONSTRAINTS:
+
+1. LENGTH CONTROL
+- Match the original length as closely as possible
+- Do NOT expand the content
+- Do NOT add new ideas, examples, or explanations
+- The rewritten version should be within ±10% of the original word count
+
+2. STRUCTURE LOCK
+- Preserve paragraph count and order
+- Do NOT merge or split paragraphs
+- Maintain the same progression of ideas
+
+3. CONTENT FIDELITY
+- Do NOT introduce new concepts
+- Do NOT remove specific details or moments
+- Do NOT generalize specific experiences
+- Keep all grounded examples intact
+
+4. STYLE ADJUSTMENT (MINOR ONLY)
+- Lightly improve clarity and sentence flow
+- Simplify wording where appropriate
+- Keep tone restrained, direct, and observational
+- Do NOT make the writing more emotional or descriptive
+
+5. STRICTLY AVOID:
+- metaphors or poetic language
+- added reflection or interpretation
+- expanding simple ideas into longer explanations
+- summarizing or compressing meaning
+
+6. WRITING STANDARD:
+- If a sentence can be clearer, adjust it slightly
+- If it is already clear, leave it unchanged
+- Default to preserving original phrasing unless improvement is necessary
+
+${instructionsBlock}${antiFabrication}`
+    : mode === 'preserve_voice'
+    ? `You are editing and rewriting a ${book.genre} book while strictly preserving the author's original voice.
+Tone: ${book.tone}
+CRITICAL: You must maintain the author's exact voice — their sentence rhythm, vocabulary level, narrative style, point of view, and personality. Do not substitute your own prose style. Improve clarity, flow, and structure, but every sentence should still sound like the original author wrote it.
+Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.
+${instructionsBlock}${antiFabrication}`
+    : `You are a professional author writing a ${book.genre} book.
+Tone: ${book.tone}
+Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.
+Maintain complete consistency with everything established in prior chapters and scenes.
+${instructionsBlock}${antiFabrication}`
 
   const userPrompt = `Book: "${book.title}"
 Premise: ${book.premise}
