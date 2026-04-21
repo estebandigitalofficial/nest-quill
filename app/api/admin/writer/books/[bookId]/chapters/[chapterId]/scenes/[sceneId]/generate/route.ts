@@ -79,7 +79,8 @@ export async function POST(
     const chapterMarker = `chapter ${currentChapter.chapter_number}`
     const idx = src.toLowerCase().indexOf(chapterMarker)
     const start = idx > -1 ? Math.max(0, idx - 200) : 0
-    sourceExcerpt = src.slice(start, start + 15000).trim()
+    const excerptSize = (mode === 'preserve_voice') ? 6000 : 15000
+    sourceExcerpt = src.slice(start, start + excerptSize).trim()
   }
 
   const sourceInstruction = sourceExcerpt
@@ -212,12 +213,13 @@ Respond ONLY with valid JSON: {"safe": true} if everything is grounded, or {"saf
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        // PDF constrained rewrite is a proofreading task — gpt-4o-mini is sufficient and ~16x cheaper
+        model: (mode === 'preserve_voice' && sourceExcerpt) ? 'gpt-4o-mini' : 'gpt-4o',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        temperature: 0.7,
+        temperature: 0.3,
         max_tokens: 4096,
       }),
     })
@@ -255,7 +257,7 @@ Respond ONLY with valid JSON: {"safe": true} if everything is grounded, or {"saf
         content,
         word_count: wordCount,
         status: 'draft',
-        model_used: 'gpt-4o',
+        model_used: (mode === 'preserve_voice' && sourceExcerpt) ? 'gpt-4o-mini' : 'gpt-4o',
         generation_time_ms: generationTimeMs,
         updated_at: new Date().toISOString(),
       })
