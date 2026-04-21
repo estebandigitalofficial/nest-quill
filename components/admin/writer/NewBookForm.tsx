@@ -64,6 +64,17 @@ export default function NewBookForm({
       setPdfFileName(json.fileName)
       setPdfWordCount(json.wordCount)
       setSourceText(json.text)
+      // Auto-populate form fields from inferred metadata
+      if (json.metadata) {
+        setForm(f => ({
+          ...f,
+          title: json.metadata.title || f.title,
+          subtitle: json.metadata.subtitle || f.subtitle,
+          genre: json.metadata.genre || f.genre,
+          tone: json.metadata.tone || f.tone,
+          premise: json.metadata.premise || f.premise,
+        }))
+      }
     }
     setPdfExtracting(false)
   }
@@ -138,7 +149,7 @@ export default function NewBookForm({
               </div>
               {!pdfFileName && (
                 <label className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${pdfExtracting ? 'opacity-50 pointer-events-none bg-gray-800 text-gray-400' : 'bg-brand-500 hover:bg-brand-600 text-white'}`}>
-                  {pdfExtracting ? 'Extracting…' : 'Upload PDF'}
+                  {pdfExtracting ? 'Reading…' : 'Upload PDF'}
                   <input
                     ref={fileRef}
                     type="file"
