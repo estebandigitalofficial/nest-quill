@@ -96,6 +96,7 @@ export default async function BookPage({
           bookId={bookId}
           initialFileName={book.source_pdf_name ?? null}
           initialWordCount={sourceWordCount}
+          needsMetadata={!!book.source_text && !book.premise}
         />
 
         {/* Outline editor */}
