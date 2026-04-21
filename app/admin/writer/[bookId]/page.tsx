@@ -5,8 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { WriterBookWithChapters } from '@/types/writer'
 import BookOutlineEditor from '@/components/admin/writer/BookOutlineEditor'
 import BookSourcePanel from '@/components/admin/writer/BookSourcePanel'
-import BookSettingsPanel from '@/components/admin/writer/BookSettingsPanel'
 import GenerateAllButton from '@/components/admin/writer/GenerateAllButton'
+import BookStudioTabs from '@/components/admin/writer/studio/BookStudioTabs'
 
 export default async function BookPage({
   params,
@@ -50,10 +50,24 @@ export default async function BookPage({
   const doneScenes = allScenes.filter(s => s.content).length
   const totalWords = allScenes.reduce((sum, s) => sum + (s.word_count ?? 0), 0)
 
-  // Source manuscript word count (approximate)
   const sourceWordCount = book.source_text
     ? (book.source_text as string).split(/\s+/).length
     : null
+
+  const writeContent = (
+    <div className="space-y-6">
+      <BookSourcePanel
+        bookId={bookId}
+        initialFileName={book.source_pdf_name ?? null}
+        initialWordCount={sourceWordCount}
+        needsMetadata={!!book.source_text && !book.premise}
+      />
+      {chaptersWithScenes.length > 0 && (
+        <GenerateAllButton bookId={bookId} savedInstructions={book.instructions} />
+      )}
+      <BookOutlineEditor book={bookData} />
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -79,7 +93,7 @@ export default async function BookPage({
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
         {/* Book header */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl px-6 py-5 space-y-2">
           <div className="flex items-start justify-between gap-4">
@@ -87,13 +101,9 @@ export default async function BookPage({
               <h1 className="font-serif text-2xl text-white">{book.title}</h1>
               {book.subtitle && <p className="text-gray-400 italic text-sm mt-0.5">{book.subtitle}</p>}
             </div>
-            <div className="text-right shrink-0 space-y-0.5">
-              <p className="text-xs text-gray-500">{book.genre} · {book.tone}</p>
-            </div>
+            <p className="text-xs text-gray-500 shrink-0">{book.genre} · {book.tone}</p>
           </div>
           <p className="text-sm text-gray-400">{book.premise}</p>
-
-          {/* Progress */}
           <div className="flex gap-6 pt-2 text-xs text-gray-500">
             <span><span className="text-white font-semibold">{book.target_chapters}</span> chapters planned</span>
             <span><span className="text-white font-semibold">{doneScenes}/{totalScenes}</span> scenes written</span>
@@ -101,24 +111,8 @@ export default async function BookPage({
           </div>
         </div>
 
-        {/* Book settings */}
-        <BookSettingsPanel book={book} />
-
-        {/* Source manuscript */}
-        <BookSourcePanel
-          bookId={bookId}
-          initialFileName={book.source_pdf_name ?? null}
-          initialWordCount={sourceWordCount}
-          needsMetadata={!!book.source_text && !book.premise}
-        />
-
-        {/* Generate all — shown when chapters exist */}
-        {chaptersWithScenes.length > 0 && (
-          <GenerateAllButton bookId={bookId} savedInstructions={book.instructions} />
-        )}
-
-        {/* Outline editor */}
-        <BookOutlineEditor book={bookData} />
+        {/* Tab bar: Write / Studio / Export */}
+        <BookStudioTabs book={book} writeContent={writeContent} />
       </div>
     </div>
   )

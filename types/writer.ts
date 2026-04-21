@@ -16,6 +16,18 @@ export interface WriterBook {
   source_text: string | null
   source_pdf_name: string | null
   instructions: string | null
+  author_name: string | null
+  pen_name: string | null
+  publisher_name: string | null
+  edition: string | null
+  year_published: string | null
+  author_bio: string | null
+  also_by: string | null
+  isbn_epub: string | null
+  isbn_kindle: string | null
+  isbn_paperback: string | null
+  isbn_hardcover: string | null
+  isbn_pdf: string | null
   created_at: string
   updated_at: string
 }
@@ -42,8 +54,47 @@ export interface WriterScene {
   content: string | null
   word_count: number | null
   status: WriterSceneStatus
+  locked: boolean
   model_used: string | null
   generation_time_ms: number | null
+  created_at: string
+  updated_at: string
+}
+
+export type BookSectionType =
+  | 'dedication'
+  | 'epigraph'
+  | 'foreword'
+  | 'preface'
+  | 'acknowledgments'
+  | 'conclusion'
+  | 'notes'
+  | 'about_author'
+  | 'also_by'
+
+export interface WriterBookSection {
+  id: string
+  book_id: string
+  type: BookSectionType
+  zone: 'front' | 'back'
+  enabled: boolean
+  position: number
+  content: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface WriterCopyright {
+  id: string
+  book_id: string
+  author_name: string | null
+  pen_name: string | null
+  edition: string | null
+  year: string | null
+  publisher_name: string | null
+  clauses: { key: string; label: string; enabled: boolean }[]
+  collaborators: { name: string; role: string }[]
+  custom_text: string | null
   created_at: string
   updated_at: string
 }

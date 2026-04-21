@@ -43,6 +43,7 @@ export async function POST(
     .single()
 
   if (!scene) return NextResponse.json({ error: 'Scene not found' }, { status: 404 })
+  if (scene.locked) return NextResponse.json({ error: 'Scene is locked' }, { status: 403 })
 
   const currentChapter = chapters?.find(c => c.id === chapterId)
   if (!currentChapter) return NextResponse.json({ error: 'Chapter not found' }, { status: 404 })

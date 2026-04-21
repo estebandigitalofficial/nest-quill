@@ -128,6 +128,19 @@ export default function ChapterEditor({
     setSavingNotes(false)
   }
 
+  async function toggleLock(scene: WriterScene) {
+    const locked = !scene.locked
+    setScenes(prev => prev.map(s => s.id === scene.id ? { ...s, locked } : s))
+    await fetch(
+      `/api/admin/writer/books/${book.id}/chapters/${chapter.id}/scenes`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: scene.id, locked }),
+      }
+    )
+  }
+
   async function deleteScene(sceneId: string) {
     if (!confirm('Delete this scene?')) return
     setScenes(prev => prev.filter(s => s.id !== sceneId))
@@ -241,6 +254,15 @@ export default function ChapterEditor({
                   <>
                     {scene.content && (
                       <button
+                        onClick={() => toggleLock(scene)}
+                        title={scene.locked ? 'Unlock scene' : 'Lock scene (prevent regeneration)'}
+                        className={`text-xs px-2 py-1 rounded transition-colors ${scene.locked ? 'text-yellow-500 hover:text-yellow-400' : 'text-gray-700 hover:text-gray-400'}`}
+                      >
+                        {scene.locked ? '🔒' : '🔓'}
+                      </button>
+                    )}
+                    {scene.content && !scene.locked && (
+                      <button
                         onClick={() => startEdit(scene)}
                         className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded transition-colors"
                       >
@@ -249,7 +271,7 @@ export default function ChapterEditor({
                     )}
                     <button
                       onClick={() => generateScene(scene)}
-                      disabled={generatingId === scene.id}
+                      disabled={generatingId === scene.id || scene.locked}
                       className={cn(
                         'text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors',
                         scene.content
