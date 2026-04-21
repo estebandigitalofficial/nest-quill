@@ -102,7 +102,7 @@ export default async function BookPage({
 
         {/* Generate all — shown when chapters exist */}
         {chaptersWithScenes.length > 0 && (
-          <GenerateAllButton bookId={bookId} />
+          <GenerateAllButton bookId={bookId} savedInstructions={book.instructions} />
         )}
 
         {/* Outline editor */}

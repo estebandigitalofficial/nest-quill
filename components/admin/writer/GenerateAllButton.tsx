@@ -5,15 +5,45 @@ import { useRouter } from 'next/navigation'
 
 type Mode = 'preserve_voice' | 'rewrite_free'
 
-export default function GenerateAllButton({ bookId }: { bookId: string }) {
+export default function GenerateAllButton({
+  bookId,
+  savedInstructions,
+}: {
+  bookId: string
+  savedInstructions?: string | null
+}) {
   const router = useRouter()
   const [mode, setMode] = useState<Mode>('preserve_voice')
+  const [instructions, setInstructions] = useState(savedInstructions ?? '')
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [savingInstructions, setSavingInstructions] = useState(false)
+  const [instructionsSaved, setInstructionsSaved] = useState(false)
+
+  async function saveInstructions() {
+    setSavingInstructions(true)
+    await fetch(`/api/admin/writer/books/${bookId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ instructions }),
+    })
+    setSavingInstructions(false)
+    setInstructionsSaved(true)
+    setTimeout(() => setInstructionsSaved(false), 2000)
+  }
 
   async function handleGenerateAll() {
     if (!confirm('This will generate all scenes. Existing scene content will be overwritten. Continue?')) return
+
+    // Save instructions to book first so they persist and are available to generate route
+    if (instructions.trim()) {
+      await fetch(`/api/admin/writer/books/${bookId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instructions }),
+      })
+    }
 
     setRunning(true)
     setError(null)
@@ -21,12 +51,12 @@ export default function GenerateAllButton({ bookId }: { bookId: string }) {
     const bookRes = await fetch(`/api/admin/writer/books/${bookId}`)
     const book = await bookRes.json()
 
-    type SceneJob = { chapterId: string; sceneId: string }
+    type SceneJob = { chapterId: string; sceneId: string; chapterNotes?: string }
     const jobs: SceneJob[] = []
 
     for (const chapter of (book.chapters ?? [])) {
       for (const scene of (chapter.scenes ?? [])) {
-        jobs.push({ chapterId: chapter.id, sceneId: scene.id })
+        jobs.push({ chapterId: chapter.id, sceneId: scene.id, chapterNotes: chapter.notes ?? '' })
       }
     }
 
@@ -39,14 +69,14 @@ export default function GenerateAllButton({ bookId }: { bookId: string }) {
     setProgress({ done: 0, total: jobs.length })
 
     for (let i = 0; i < jobs.length; i++) {
-      const { chapterId, sceneId } = jobs[i]
+      const { chapterId, sceneId, chapterNotes } = jobs[i]
       try {
         await fetch(
           `/api/admin/writer/books/${bookId}/chapters/${chapterId}/scenes/${sceneId}/generate`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mode }),
+            body: JSON.stringify({ mode, chapterNotes }),
           }
         )
       } catch { /* continue on individual failure */ }
@@ -79,6 +109,28 @@ export default function GenerateAllButton({ bookId }: { bookId: string }) {
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 space-y-4">
       <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Generate All Scenes</p>
+
+      {/* Writing instructions */}
+      <div className="space-y-2">
+        <label className="text-xs text-gray-400 font-medium">Writing instructions</label>
+        <textarea
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
+          rows={3}
+          placeholder="e.g. Write in first person, casual and conversational — like I'm telling this story to a close friend. Keep my natural voice. Don't make it sound like a published novel."
+          value={instructions}
+          onChange={e => { setInstructions(e.target.value); setInstructionsSaved(false) }}
+        />
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-gray-600">These instructions are sent to every scene generation for this book.</p>
+          <button
+            onClick={saveInstructions}
+            disabled={savingInstructions || !instructions.trim()}
+            className="text-xs bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-gray-200 font-semibold px-3 py-1.5 rounded-lg transition-colors"
+          >
+            {savingInstructions ? 'Saving…' : instructionsSaved ? 'Saved ✓' : 'Save'}
+          </button>
+        </div>
+      </div>
 
       {/* Mode selector */}
       <div className="grid grid-cols-2 gap-2">

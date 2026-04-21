@@ -68,17 +68,21 @@ export async function POST(
 
   const antiFabrication = `STRICT RULE: Only include people, places, events, and details that are present in the source manuscript. Do not invent characters, add people who were not there, fabricate conversations, or create dramatic details that did not happen. If the source does not mention it, do not add it.`
 
+  const instructionsBlock = book.instructions
+    ? `\nAUTHOR'S INSTRUCTIONS (follow these exactly — they override default style guidance):\n${book.instructions}\n`
+    : ''
+
   const systemPrompt = mode === 'preserve_voice'
     ? `You are editing and rewriting a ${book.genre} book while strictly preserving the author's original voice.
 Tone: ${book.tone}
 CRITICAL: You must maintain the author's exact voice — their sentence rhythm, vocabulary level, narrative style, point of view, and personality. Do not substitute your own prose style. Improve clarity, flow, and structure, but every sentence should still sound like the original author wrote it.
 Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.
-${antiFabrication}`
+${instructionsBlock}${antiFabrication}`
     : `You are a professional author writing a ${book.genre} book.
 Tone: ${book.tone}
 Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.
 Maintain complete consistency with everything established in prior chapters and scenes.
-${antiFabrication}`
+${instructionsBlock}${antiFabrication}`
 
   // If a source manuscript exists, find the most relevant excerpt (~15k chars around chapter mention)
   let sourceExcerpt = ''

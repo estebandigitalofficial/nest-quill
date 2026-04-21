@@ -15,6 +15,7 @@ export interface WriterBook {
   owner_id: string | null
   source_text: string | null
   source_pdf_name: string | null
+  instructions: string | null
   created_at: string
   updated_at: string
 }
