@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { WriterBookWithChapters } from '@/types/writer'
 import BookOutlineEditor from '@/components/admin/writer/BookOutlineEditor'
 import BookSourcePanel from '@/components/admin/writer/BookSourcePanel'
+import BookSettingsPanel from '@/components/admin/writer/BookSettingsPanel'
 import GenerateAllButton from '@/components/admin/writer/GenerateAllButton'
 
 export default async function BookPage({
@@ -91,6 +92,9 @@ export default async function BookPage({
             <span><span className="text-white font-semibold">{totalWords.toLocaleString()}</span> words so far</span>
           </div>
         </div>
+
+        {/* Book settings */}
+        <BookSettingsPanel book={book} />
 
         {/* Source manuscript */}
         <BookSourcePanel
