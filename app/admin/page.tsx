@@ -47,9 +47,14 @@ export default async function AdminPage() {
             Admin
           </span>
         </div>
-        <Link href="/" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
-          ← Back to site
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/admin/writer" className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors">
+            Writer →
+          </Link>
+          <Link href="/" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+            ← Back to site
+          </Link>
+        </div>
       </header>
 
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
