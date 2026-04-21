@@ -21,6 +21,9 @@ export default function BookSourcePanel({
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [analyzeStatus, setAnalyzeStatus] = useState<'idle' | 'done' | 'error'>(needsMetadata ? 'idle' : 'done')
+  const [outlining, setOutlining] = useState(false)
+  const [outlineStatus, setOutlineStatus] = useState<'idle' | 'done' | 'error'>('idle')
+  const [outlineResult, setOutlineResult] = useState<{ chapterCount: number; sceneCount: number } | null>(null)
   const [reviewing, setReviewing] = useState(false)
   const [review, setReview] = useState<string | null>(null)
   const [reviewOpen, setReviewOpen] = useState(false)
@@ -91,6 +94,24 @@ export default function BookSourcePanel({
     setAnalyzing(false)
   }
 
+  async function handleAutoOutline() {
+    if (!confirm('This will replace any existing chapters and scenes with an AI-generated outline from your manuscript. Continue?')) return
+    setOutlining(true)
+    setOutlineStatus('idle')
+
+    const res = await fetch(`/api/admin/writer/books/${bookId}/auto-outline`, { method: 'POST' })
+    const json = await res.json()
+
+    if (!res.ok) {
+      setOutlineStatus('error')
+    } else {
+      setOutlineStatus('done')
+      setOutlineResult({ chapterCount: json.chapterCount, sceneCount: json.sceneCount })
+      router.refresh()
+    }
+    setOutlining(false)
+  }
+
   async function handleReview() {
     setReviewing(true)
     setReview(null)
@@ -149,8 +170,32 @@ export default function BookSourcePanel({
 
       {/* Analyze prompt banner */}
       {fileName && analyzeStatus === 'idle' && !analyzing && (
-        <div className="border-t border-gray-800 px-5 py-3 flex items-center justify-between gap-4">
+        <div className="border-t border-gray-800 px-5 py-3">
           <p className="text-xs text-gray-500">Click <span className="text-brand-400 font-semibold">Analyze →</span> to fill in title, genre, tone, and premise from the manuscript.</p>
+        </div>
+      )}
+
+      {/* Auto-outline */}
+      {fileName && (
+        <div className="border-t border-gray-800 px-5 py-4 space-y-2">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Auto-outline</p>
+              <p className="text-xs text-gray-600 mt-0.5">
+                {outlineStatus === 'done' && outlineResult
+                  ? `${outlineResult.chapterCount} chapters · ${outlineResult.sceneCount} scenes created`
+                  : 'AI reads your manuscript and creates an improved chapter/scene structure'}
+              </p>
+            </div>
+            <button
+              onClick={handleAutoOutline}
+              disabled={outlining}
+              className="text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+            >
+              {outlining ? 'Outlining…' : outlineStatus === 'done' ? 'Re-outline' : 'Auto-outline →'}
+            </button>
+          </div>
+          {outlineStatus === 'error' && <p className="text-xs text-red-400">Outline failed — try again</p>}
         </div>
       )}
 

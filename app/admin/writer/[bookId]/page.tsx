@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { WriterBookWithChapters } from '@/types/writer'
 import BookOutlineEditor from '@/components/admin/writer/BookOutlineEditor'
 import BookSourcePanel from '@/components/admin/writer/BookSourcePanel'
+import GenerateAllButton from '@/components/admin/writer/GenerateAllButton'
 
 export default async function BookPage({
   params,
@@ -98,6 +99,11 @@ export default async function BookPage({
           initialWordCount={sourceWordCount}
           needsMetadata={!!book.source_text && !book.premise}
         />
+
+        {/* Generate all — shown when chapters exist */}
+        {chaptersWithScenes.length > 0 && (
+          <GenerateAllButton bookId={bookId} />
+        )}
 
         {/* Outline editor */}
         <BookOutlineEditor book={bookData} />
