@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { PLAN_CONFIG } from '@/lib/plans/config'
-import { getAdminContext } from '@/lib/admin/guard'
 import type { StoryRequest, PlanTier } from '@/types/database'
 import LogoutButton from '@/components/auth/LogoutButton'
 
@@ -12,8 +11,6 @@ export default async function AccountPage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
-
-  const adminCtx = await getAdminContext()
 
   const adminSupabase = createAdminClient()
   const { data: stories } = await adminSupabase
@@ -35,11 +32,6 @@ export default async function AccountPage() {
             Nest &amp; Quill
           </Link>
           <div className="flex items-center gap-4">
-            {adminCtx && (
-              <Link href="/admin" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
-                Admin
-              </Link>
-            )}
             <Link href="/create" className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors">
               Create a story →
             </Link>
