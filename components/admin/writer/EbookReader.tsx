@@ -24,17 +24,10 @@ type Page =
   | { kind: 'back'; section: WriterBookSection; index: number }
 
 const SECTION_LABELS: Record<string, string> = {
-  dedication: 'Dedication',
-  epigraph: 'Epigraph',
-  foreword: 'Foreword',
-  preface: 'Preface',
-  acknowledgments: 'Acknowledgments',
-  prologue: 'Prologue',
-  introduction: 'Introduction',
-  conclusion: 'Conclusion',
-  notes: 'Notes',
-  about_author: 'About the Author',
-  also_by: 'Also By',
+  dedication: 'Dedication', epigraph: 'Epigraph', foreword: 'Foreword',
+  preface: 'Preface', acknowledgments: 'Acknowledgments', prologue: 'Prologue',
+  introduction: 'Introduction', conclusion: 'Conclusion',
+  notes: 'Notes', about_author: 'About the Author', also_by: 'Also By',
 }
 
 const PAGE_BG = '#f8f5f0'
@@ -82,29 +75,24 @@ export default function EbookReader({
   const [current, setCurrent] = useState(0)
   const [animating, setAnimating] = useState(false)
   const [slideDir, setSlideDir] = useState<'left' | 'right' | null>(null)
-  const [dragOffset, setDragOffset] = useState(0)
   const [uiVisible, setUiVisible] = useState(true)
   const [tocOpen, setTocOpen] = useState(false)
 
-  const isDragging = useRef(false)
-  const touchStartX = useRef<number | null>(null)
-  const touchStartY = useRef<number | null>(null)
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const initialized = useRef(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  // Stable ref so touch handlers always call the current go()
+  const navRef = useRef<{ next: () => void; prev: () => void }>({ next: () => {}, prev: () => {} })
 
-  // Restore position after hydration
+  // Restore saved position once
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
     const saved = parseInt(localStorage.getItem(storageKey) ?? '0', 10)
-    if (!isNaN(saved) && saved > 0 && saved < pages.length) {
-      setCurrent(saved)
-    }
+    if (!isNaN(saved) && saved > 0 && saved < pages.length) setCurrent(saved)
   }, [])
 
-  // Persist position
   useEffect(() => {
-    if (!initialized.current) return
     localStorage.setItem(storageKey, String(current))
   }, [current])
 
@@ -136,53 +124,67 @@ export default function EbookReader({
   const next = useCallback(() => go(current + 1), [current, animating])
   const prev = useCallback(() => go(current - 1), [current, animating])
 
+  // Keep navRef in sync so touch handler always uses current version
+  useEffect(() => { navRef.current = { next, prev } }, [next, prev])
+
+  // Keyboard navigation
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (tocOpen) return
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next()
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev()
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navRef.current.next()
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navRef.current.prev()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [next, prev, tocOpen])
+  }, [tocOpen])
 
-  function onTouchStart(e: React.TouchEvent) {
-    if (tocOpen) return
-    touchStartX.current = e.touches[0].clientX
-    touchStartY.current = e.touches[0].clientY
-    isDragging.current = false
-    bumpUi()
-  }
+  // Native non-passive touch listeners — required so preventDefault works
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    let startX: number | null = null
+    let startY: number | null = null
+    let dragging = false
 
-  function onTouchMove(e: React.TouchEvent) {
-    if (tocOpen || touchStartX.current === null || touchStartY.current === null) return
-    const dx = e.touches[0].clientX - touchStartX.current
-    const dy = e.touches[0].clientY - touchStartY.current
-    if (!isDragging.current) {
-      if (Math.abs(dy) > Math.abs(dx) + 5) { touchStartX.current = null; return }
-      if (Math.abs(dx) > 8) isDragging.current = true
+    function onStart(e: TouchEvent) {
+      startX = e.touches[0].clientX
+      startY = e.touches[0].clientY
+      dragging = false
+      bumpUi()
     }
-    if (isDragging.current) setDragOffset(dx)
-  }
 
-  function onTouchEnd(e: React.TouchEvent) {
-    if (touchStartX.current === null) return
-    const dx = e.changedTouches[0].clientX - touchStartX.current
-    setDragOffset(0)
-    isDragging.current = false
-    if (Math.abs(dx) > 48) dx < 0 ? next() : prev()
-    touchStartX.current = null
-    touchStartY.current = null
-  }
+    function onMove(e: TouchEvent) {
+      if (startX === null || startY === null) return
+      const dx = e.touches[0].clientX - startX
+      const dy = e.touches[0].clientY - startY
+      if (!dragging) {
+        // Diagonal or vertical — let native scroll handle it
+        if (Math.abs(dy) > Math.abs(dx) + 5) { startX = null; return }
+        if (Math.abs(dx) > 8) dragging = true
+      }
+      // Suppress scroll when we've confirmed a horizontal drag
+      if (dragging) e.preventDefault()
+    }
+
+    function onEnd(e: TouchEvent) {
+      if (startX === null) return
+      const dx = e.changedTouches[0].clientX - startX
+      if (Math.abs(dx) > 48) dx < 0 ? navRef.current.next() : navRef.current.prev()
+      startX = null; startY = null; dragging = false
+    }
+
+    el.addEventListener('touchstart', onStart, { passive: true })
+    el.addEventListener('touchmove', onMove, { passive: false })
+    el.addEventListener('touchend', onEnd, { passive: true })
+    return () => {
+      el.removeEventListener('touchstart', onStart)
+      el.removeEventListener('touchmove', onMove)
+      el.removeEventListener('touchend', onEnd)
+    }
+  }, []) // only register once — navRef stays current
 
   const page = pages[current]
   const progress = pages.length > 1 ? current / (pages.length - 1) : 0
-
-  // translate for transition + live drag
-  let tx = dragOffset
-  if (animating && !isDragging.current) {
-    tx = slideDir === 'left' ? -80 : 80
-  }
 
   function renderPage() {
     if (!page) return null
@@ -197,7 +199,8 @@ export default function EbookReader({
             {book.title}
           </h1>
           {book.subtitle && (
-            <p className="font-serif italic text-gray-500 max-w-sm"
+            <p
+              className="font-serif italic text-gray-500 max-w-sm"
               style={{ fontSize: 'clamp(1rem, 2.5vw, 1.25rem)' }}
             >
               {book.subtitle}
@@ -245,11 +248,7 @@ export default function EbookReader({
               <p
                 key={i}
                 className="font-serif text-gray-700"
-                style={{
-                  fontSize: 'clamp(1rem, 2.2vw, 1.1rem)',
-                  lineHeight: 1.9,
-                  margin: 0,
-                }}
+                style={{ fontSize: 'clamp(1rem, 2.2vw, 1.1rem)', lineHeight: 1.9, margin: 0 }}
               >
                 {para.trim()}
               </p>
@@ -267,7 +266,6 @@ export default function EbookReader({
 
       return (
         <div>
-          {/* Chapter header */}
           <div className="mb-10 text-center">
             <p className="text-[11px] text-gray-400 uppercase tracking-[0.2em] mb-3">
               Chapter {chapter.chapter_number}
@@ -281,7 +279,6 @@ export default function EbookReader({
             <div className="mt-6 mx-auto w-8 h-px bg-gray-300" />
           </div>
 
-          {/* Scenes */}
           {scenes.map((scene, idx) => (
             <div key={scene.id}>
               {idx > 0 && (
@@ -323,30 +320,25 @@ export default function EbookReader({
 
   return (
     <div
+      ref={containerRef}
       className="fixed inset-0 flex flex-col overflow-hidden"
       style={{ background: PAGE_BG }}
       onMouseMove={bumpUi}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
+      onClick={bumpUi}
     >
-      {/* Thin progress line — always visible */}
+      {/* Progress line */}
       <div className="absolute top-0 left-0 right-0 h-[2px] z-30" style={{ background: '#e8e2d8' }}>
         <div
           className="h-full"
-          style={{
-            width: `${progress * 100}%`,
-            background: '#a09070',
-            transition: 'width 0.4s ease',
-          }}
+          style={{ width: `${progress * 100}%`, background: '#a09070', transition: 'width 0.4s ease' }}
         />
       </div>
 
-      {/* Header — auto-hides */}
+      {/* Header */}
       <div
         className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-5 h-14 transition-all duration-500"
         style={{
-          background: `linear-gradient(to bottom, ${PAGE_BG}ee, ${PAGE_BG}00)`,
+          background: `linear-gradient(to bottom, ${PAGE_BG}f0, ${PAGE_BG}00)`,
           paddingTop: 4,
           opacity: uiVisible ? 1 : 0,
           pointerEvents: uiVisible ? 'auto' : 'none',
@@ -368,7 +360,7 @@ export default function EbookReader({
         </p>
 
         <button
-          onClick={() => { setTocOpen(o => !o); bumpUi() }}
+          onClick={() => setTocOpen(o => !o)}
           className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-700 transition-colors py-2 pl-3"
           aria-label="Table of contents"
         >
@@ -392,11 +384,11 @@ export default function EbookReader({
             paddingBottom: 'clamp(5rem, 10vh, 7rem)',
             overflowY: 'auto',
             height: '100%',
-            transform: `translateX(${tx}px)`,
-            opacity: animating && !isDragging.current ? 0 : 1,
-            transition: isDragging.current
-              ? 'none'
-              : `transform ${TRANSITION_MS}ms cubic-bezier(0.4,0,0.2,1), opacity ${TRANSITION_MS}ms ease`,
+            opacity: animating ? 0 : 1,
+            transform: animating
+              ? `translateX(${slideDir === 'left' ? -60 : 60}px)`
+              : 'translateX(0)',
+            transition: `opacity ${TRANSITION_MS}ms ease, transform ${TRANSITION_MS}ms cubic-bezier(0.4,0,0.2,1)`,
             willChange: 'transform, opacity',
           }}
         >
@@ -404,7 +396,7 @@ export default function EbookReader({
         </div>
       </div>
 
-      {/* Bottom nav — auto-hides */}
+      {/* Bottom nav */}
       <div
         className="absolute bottom-0 left-0 right-0 z-20 transition-all duration-500"
         style={{
@@ -413,32 +405,19 @@ export default function EbookReader({
           transform: uiVisible ? 'translateY(0)' : 'translateY(6px)',
         }}
       >
-        <div
-          className="h-10"
-          style={{ background: `linear-gradient(to top, ${PAGE_BG}, transparent)` }}
-        />
-        <div
-          className="flex items-center justify-between px-5 pb-6 pt-1"
-          style={{ background: PAGE_BG }}
-        >
+        <div className="h-10" style={{ background: `linear-gradient(to top, ${PAGE_BG}, transparent)` }} />
+        <div className="flex items-center justify-between px-5 pb-6 pt-1" style={{ background: PAGE_BG }}>
           <button
             onClick={prev}
             disabled={current === 0 || animating}
             className="text-[11px] font-medium px-4 py-2 rounded-lg border transition-all"
-            style={{
-              borderColor: '#d8d0c4',
-              color: current === 0 ? '#ccc' : '#78716c',
-              cursor: current === 0 ? 'default' : 'pointer',
-            }}
+            style={{ borderColor: '#d8d0c4', color: current === 0 ? '#ccc' : '#78716c' }}
           >
             ← Prev
           </button>
 
           <div className="flex flex-col items-center gap-1.5">
-            <div
-              className="flex gap-1 flex-wrap justify-center"
-              style={{ maxWidth: 180 }}
-            >
+            <div className="flex gap-1 flex-wrap justify-center" style={{ maxWidth: 180 }}>
               {pages.length <= 18
                 ? pages.map((_, i) => (
                     <button
@@ -459,13 +438,7 @@ export default function EbookReader({
                   ))
                 : (
                   <div style={{ width: 120, height: 4, background: '#e8e2d8', borderRadius: 999, overflow: 'hidden' }}>
-                    <div style={{
-                      height: '100%',
-                      width: `${progress * 100}%`,
-                      background: '#a09070',
-                      borderRadius: 999,
-                      transition: 'width 0.3s ease',
-                    }} />
+                    <div style={{ height: '100%', width: `${progress * 100}%`, background: '#a09070', borderRadius: 999, transition: 'width 0.3s ease' }} />
                   </div>
                 )
               }
@@ -479,11 +452,7 @@ export default function EbookReader({
             onClick={next}
             disabled={current === pages.length - 1 || animating}
             className="text-[11px] font-medium px-4 py-2 rounded-lg border transition-all"
-            style={{
-              borderColor: '#d8d0c4',
-              color: current === pages.length - 1 ? '#ccc' : '#78716c',
-              cursor: current === pages.length - 1 ? 'default' : 'pointer',
-            }}
+            style={{ borderColor: '#d8d0c4', color: current === pages.length - 1 ? '#ccc' : '#78716c' }}
           >
             Next →
           </button>
@@ -515,16 +484,11 @@ export default function EbookReader({
           </button>
         </div>
         <div className="flex-1 overflow-y-auto py-3">
-          {/* Title page entry */}
           <button
             onClick={() => { go(0); setTocOpen(false) }}
             className="w-full text-left px-5 py-2.5 transition-colors hover:bg-stone-100"
-            style={{ opacity: current === 0 ? 1 : 0.7 }}
           >
-            <span
-              className="font-serif text-gray-700 text-sm leading-snug block"
-              style={{ fontWeight: current === 0 ? 600 : 400 }}
-            >
+            <span className="font-serif text-gray-700 text-sm leading-snug block" style={{ fontWeight: current === 0 ? 600 : 400 }}>
               {book.title}
             </span>
             <span className="text-[10px] text-gray-400 uppercase tracking-wider">Title page</span>
@@ -534,7 +498,6 @@ export default function EbookReader({
               key={entry.pageIndex}
               onClick={() => { go(entry.pageIndex); setTocOpen(false) }}
               className="w-full text-left px-5 py-2.5 transition-colors hover:bg-stone-100"
-              style={{ opacity: current === entry.pageIndex ? 1 : 0.65 }}
             >
               <span
                 className="font-serif text-gray-700 text-sm leading-snug"
@@ -545,12 +508,8 @@ export default function EbookReader({
             </button>
           ))}
         </div>
-        {/* Edit link at bottom of TOC */}
         <div className="px-5 py-4 border-t" style={{ borderColor: '#e8e2d8' }}>
-          <Link
-            href={`/admin/writer/${book.id}`}
-            className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
-          >
+          <Link href={`/admin/writer/${book.id}`} className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors">
             ✎ Edit this book
           </Link>
         </div>
