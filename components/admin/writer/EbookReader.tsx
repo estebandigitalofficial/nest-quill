@@ -149,27 +149,21 @@ export default function EbookReader({
     function onStart(e: TouchEvent) {
       startX = e.touches[0].clientX
       startY = e.touches[0].clientY
-      dragging = false
       bumpUi()
     }
 
     function onMove(e: TouchEvent) {
-      if (startX === null || startY === null) return
-      const dx = e.touches[0].clientX - startX
-      const dy = e.touches[0].clientY - startY
-      if (Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) > 3) {
-        dragging = true
-        e.preventDefault()
-      } else if (Math.abs(dy) > Math.abs(dx) + 8) {
-        startX = null
-      }
+      e.preventDefault()
     }
 
     function onEnd(e: TouchEvent) {
       if (startX === null) return
       const dx = e.changedTouches[0].clientX - startX
-      if (Math.abs(dx) > 48) dx < 0 ? navRef.current.next() : navRef.current.prev()
-      startX = null; startY = null; dragging = false
+      const dy = e.changedTouches[0].clientY - (startY ?? 0)
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+        dx < 0 ? navRef.current.next() : navRef.current.prev()
+      }
+      startX = null; startY = null
     }
 
     el.addEventListener('touchstart', onStart, { passive: true })
@@ -321,7 +315,7 @@ export default function EbookReader({
     <div
       ref={containerRef}
       className="fixed inset-0 flex flex-col overflow-hidden"
-      style={{ background: PAGE_BG }}
+      style={{ background: PAGE_BG, touchAction: 'none' }}
       onMouseMove={bumpUi}
       onClick={bumpUi}
     >

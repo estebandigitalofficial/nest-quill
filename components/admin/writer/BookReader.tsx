@@ -141,31 +141,22 @@ export default function BookReader({
     function onStart(e: TouchEvent) {
       startX = e.touches[0].clientX
       startY = e.touches[0].clientY
-      dragging = false
     }
     function onMove(e: TouchEvent) {
-      if (startX === null || startY === null) return
-      const dx = e.touches[0].clientX - startX
-      const dy = e.touches[0].clientY - startY
-      // Claim horizontal gesture immediately — before browser commits to scroll
-      if (Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) > 3) {
-        dragging = true
-        e.preventDefault()
-      } else if (Math.abs(dy) > Math.abs(dx) + 8) {
-        // Clearly vertical — abandon
-        startX = null
-      }
+      // Always block scroll — this is a paged reader, not a scrollable document
+      e.preventDefault()
     }
     function onEnd(e: TouchEvent) {
       if (startX === null) return
       const dx = e.changedTouches[0].clientX - startX
-      if (Math.abs(dx) > 48) {
+      const dy = e.changedTouches[0].clientY - (startY ?? 0)
+      // Only navigate on predominantly horizontal swipes
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
         dx < 0 ? navRef.current.next() : navRef.current.prev()
-      } else if (Math.abs(dx) < 8) {
-        // Treat as tap — bump UI visibility
+      } else if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
         bumpUi()
       }
-      startX = null; startY = null; dragging = false
+      startX = null; startY = null
     }
 
     el.addEventListener('touchstart', onStart, { passive: true })
@@ -316,7 +307,7 @@ export default function BookReader({
     <div
       ref={containerRef}
       className="fixed left-0 right-0 bottom-0 flex flex-col overflow-hidden"
-      style={{ background: PAGE_BG, top: 52 }}
+      style={{ background: PAGE_BG, top: 52, touchAction: 'none' }}
       onClick={bumpUi}
     >
       {/* Progress line */}
