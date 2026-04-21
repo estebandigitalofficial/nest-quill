@@ -77,7 +77,6 @@ p.centered { text-align: center; text-indent: 0; }
 .toc ol { list-style: none; padding: 0; }
 .toc li { margin-bottom: 0.5em; }
 .toc a { text-decoration: none; color: inherit; }
-.scene-break { text-align: center; margin: 1.5em 0; color: #999; letter-spacing: 0.3em; }
 .epigraph { text-align: center; font-style: italic; margin: 4em 2em; color: #555; }
 `)
 
@@ -104,9 +103,10 @@ p.centered { text-align: center; text-indent: 0; }
 
   // 2. Copyright
   if (book.copyrightText) {
+    const copyrightLines = book.copyrightText.split('\n').filter(l => l.trim())
     addPage('copyright', 'copyright.xhtml', 'Copyright',
-      `<div class="copyright">\n${book.copyrightText.split('\n').map(l =>
-        `  <p class="no-indent">${esc(l) || '&nbsp;'}</p>`
+      `<div class="copyright">\n${copyrightLines.map(l =>
+        `  <p class="no-indent">${esc(l)}</p>`
       ).join('\n')}\n</div>`)
   }
 
@@ -138,15 +138,12 @@ p.centered { text-align: center; text-indent: 0; }
     const id = `ch${String(ch.number).padStart(2, '0')}`
     const href = `${id}.xhtml`
     const label = `Chapter ${ch.number}: ${ch.title}`
-    const scenes = ch.content.split(/\n\n(?=\S)/)
-    const sceneHtml = scenes.map((scene, i) =>
-      (i > 0 ? `  <p class="scene-break">✦ ✦ ✦</p>\n` : '') +
-      scene.split(/\n\n+/).filter(p => p.trim()).map((p, pi) =>
-        `  <p${pi === 0 && i === 0 ? ' class="no-indent"' : ''}>${esc(p.trim())}</p>`
-      ).join('\n')
+    const paragraphs = ch.content.split(/\n\n+/).filter(p => p.trim())
+    const chapterHtml = paragraphs.map((p, pi) =>
+      `  <p${pi === 0 ? ' class="no-indent"' : ''}>${esc(p.trim())}</p>`
     ).join('\n')
     addPage(id, href, ch.title,
-      `<h1 class="chapter-title">Chapter ${ch.number}<br/>${esc(ch.title)}</h1>\n${sceneHtml}`,
+      `<h1 class="chapter-title">Chapter ${ch.number}<br/>${esc(ch.title)}</h1>\n${chapterHtml}`,
       true, label)
   }
 
