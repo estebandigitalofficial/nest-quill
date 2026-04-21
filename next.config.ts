@@ -2,8 +2,12 @@ import type { NextConfig } from 'next'
 import path from 'path'
 
 const nextConfig: NextConfig = {
-  // Silence the "multiple lockfiles" warning — the pnpm-lock.yaml is correct
   outputFileTracingRoot: path.join(__dirname),
+  webpack: (config) => {
+    // pdfjs-dist requires this alias to build in Next.js
+    config.resolve.alias.canvas = false
+    return config
+  },
   images: {
     remotePatterns: [
       {
