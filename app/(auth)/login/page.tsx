@@ -27,7 +27,8 @@ export default function LoginPage() {
     }
 
     const isAdmin = data.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
-    router.push(isAdmin ? '/admin' : '/account')
+    const adminRedirect = process.env.NEXT_PUBLIC_ADMIN_REDIRECT ?? '/admin'
+    router.push(isAdmin ? adminRedirect : '/account')
     router.refresh()
   }
 
