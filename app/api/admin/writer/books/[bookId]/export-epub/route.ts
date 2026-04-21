@@ -182,7 +182,7 @@ ${navItems}
   </spine>
 </package>`)
 
-  const buffer = await zip.generateAsync({ type: 'nodebuffer' })
+  const buffer = await zip.generateAsync({ type: 'uint8array' })
 
   return new NextResponse(buffer, {
     headers: {
