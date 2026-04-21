@@ -149,7 +149,7 @@ export async function GET(
   const pdfBytes = await pdfDoc.save()
   const slug = book.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()
 
-  return new NextResponse(pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength), {
+  return new NextResponse(pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength) as ArrayBuffer, {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${slug}.pdf"`,
