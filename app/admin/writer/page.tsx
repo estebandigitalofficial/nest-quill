@@ -9,7 +9,7 @@ export default async function WriterPage() {
   if (!ctx) redirect('/')
 
   const adminSupabase = createAdminClient()
-  let query = adminSupabase.from('writer_books').select('*, owner:owner_id(email)').order('updated_at', { ascending: false })
+  let query = adminSupabase.from('writer_books').select('*').order('updated_at', { ascending: false })
 
   if (!ctx.isSuperAdmin) {
     query = query.eq('owner_id', ctx.userId)
@@ -47,7 +47,7 @@ export default async function WriterPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {(books as (WriterBook & { owner?: { email: string } | null })[]).map((book) => {
+            {(books as WriterBook[]).map((book) => {
               const isComplete = book.status === 'complete'
               const primaryHref = isComplete
                 ? `/admin/writer/${book.id}/read`
@@ -71,12 +71,6 @@ export default async function WriterPage() {
                       <span>{book.target_chapters} ch.</span>
                       <span>·</span>
                       <span>~{(book.target_chapters * book.target_words_per_chapter).toLocaleString()} wds</span>
-                      {ctx.isSuperAdmin && book.owner?.email && (
-                        <>
-                          <span>·</span>
-                          <span className="text-gray-700">{book.owner.email.split('@')[0]}</span>
-                        </>
-                      )}
                     </div>
                     {/* Action links — sit above the invisible full-card link */}
                     <div className="flex gap-1.5 relative z-10">

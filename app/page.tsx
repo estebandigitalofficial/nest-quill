@@ -3,13 +3,16 @@ import { createClient } from '@/lib/supabase/server'
 import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
 import { cn } from '@/lib/utils/cn'
 
+import { getAdminContext } from '@/lib/admin/guard'
+
 export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const adminCtx = user ? await getAdminContext() : null
 
   return (
     <div className="min-h-screen bg-white font-sans">
-      <Nav user={user} />
+      <Nav user={user} isAdmin={!!adminCtx} />
       <Hero />
       <HowItWorks />
       <SamplePreview />
@@ -23,7 +26,7 @@ export default async function HomePage() {
 
 // ── Nav ───────────────────────────────────────────────────────────────────────
 
-function Nav({ user }: { user: { email?: string } | null }) {
+function Nav({ user, isAdmin }: { user: { email?: string } | null; isAdmin: boolean }) {
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
       <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -37,6 +40,14 @@ function Nav({ user }: { user: { email?: string } | null }) {
           >
             Pricing
           </Link>
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="text-sm text-gray-500 hover:text-gray-700 transition-colors hidden md:block"
+            >
+              Admin
+            </Link>
+          )}
           {user ? (
             <Link
               href="/account"
