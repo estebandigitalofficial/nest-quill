@@ -30,7 +30,7 @@ export default function NewBookForm({
   })
 
   // PDF source state
-  const [pdfExtracting, setPdfExtracting] = useState(false)
+  const [pdfStatus, setPdfStatus] = useState<'idle' | 'extracting' | 'inferring' | 'done' | 'error'>('idle')
   const [pdfError, setPdfError] = useState<string | null>(null)
   const [pdfFileName, setPdfFileName] = useState<string | null>(null)
   const [pdfWordCount, setPdfWordCount] = useState<number | null>(null)
@@ -45,38 +45,52 @@ export default function NewBookForm({
     const file = e.target.files?.[0]
     if (!file) return
 
-    setPdfExtracting(true)
+    setPdfStatus('extracting')
     setPdfError(null)
 
+    // Step 1 — extract text (fast, no AI)
     const formData = new FormData()
     formData.append('pdf', file)
 
-    const res = await fetch('/api/admin/writer/extract-pdf', {
+    const extractRes = await fetch('/api/admin/writer/extract-pdf', {
       method: 'POST',
       body: formData,
     })
-    const json = await res.json()
+    const extractJson = await extractRes.json()
 
-    if (!res.ok) {
-      setPdfError(json.error ?? 'Failed to extract PDF')
+    if (!extractRes.ok) {
+      setPdfError(extractJson.error ?? 'Failed to extract PDF')
+      setPdfStatus('error')
       if (fileRef.current) fileRef.current.value = ''
-    } else {
-      setPdfFileName(json.fileName)
-      setPdfWordCount(json.wordCount)
-      setSourceText(json.text)
-      // Auto-populate form fields from inferred metadata
-      if (json.metadata) {
-        setForm(f => ({
-          ...f,
-          title: json.metadata.title || f.title,
-          subtitle: json.metadata.subtitle || f.subtitle,
-          genre: json.metadata.genre || f.genre,
-          tone: json.metadata.tone || f.tone,
-          premise: json.metadata.premise || f.premise,
-        }))
-      }
+      return
     }
-    setPdfExtracting(false)
+
+    // PDF is ready — unlock the form immediately
+    setPdfFileName(extractJson.fileName)
+    setPdfWordCount(extractJson.wordCount)
+    setSourceText(extractJson.text)
+    setPdfStatus('inferring')
+
+    // Step 2 — infer metadata (separate call, non-blocking feel)
+    const inferRes = await fetch('/api/admin/writer/infer-metadata', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: extractJson.text }),
+    })
+    const inferJson = await inferRes.json()
+
+    if (inferRes.ok && inferJson.metadata) {
+      setForm(f => ({
+        ...f,
+        title: inferJson.metadata.title || f.title,
+        subtitle: inferJson.metadata.subtitle || f.subtitle,
+        genre: inferJson.metadata.genre || f.genre,
+        tone: inferJson.metadata.tone || f.tone,
+        premise: inferJson.metadata.premise || f.premise,
+      }))
+    }
+
+    setPdfStatus('done')
   }
 
   function removePdf() {
@@ -84,6 +98,7 @@ export default function NewBookForm({
     setPdfWordCount(null)
     setSourceText(null)
     setPdfError(null)
+    setPdfStatus('idle')
     if (fileRef.current) fileRef.current.value = ''
   }
 
@@ -148,8 +163,8 @@ export default function NewBookForm({
                 <p className="text-xs text-gray-600 mt-0.5">Upload a Reedsy PDF export to use as reference for AI generation and review</p>
               </div>
               {!pdfFileName && (
-                <label className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${pdfExtracting ? 'opacity-50 pointer-events-none bg-gray-800 text-gray-400' : 'bg-brand-500 hover:bg-brand-600 text-white'}`}>
-                  {pdfExtracting ? 'Reading…' : 'Upload PDF'}
+                <label className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${pdfStatus === 'extracting' ? 'opacity-50 pointer-events-none bg-gray-800 text-gray-400' : 'bg-brand-500 hover:bg-brand-600 text-white'}`}>
+                  {pdfStatus === 'extracting' ? 'Extracting…' : 'Upload PDF'}
                   <input
                     ref={fileRef}
                     type="file"
@@ -165,7 +180,11 @@ export default function NewBookForm({
               <div className="flex items-center justify-between bg-gray-800 rounded-lg px-3 py-2">
                 <div>
                   <p className="text-sm text-gray-200">{pdfFileName}</p>
-                  {pdfWordCount && <p className="text-xs text-gray-500">{pdfWordCount.toLocaleString()} words extracted</p>}
+                  <p className="text-xs text-gray-500">
+                    {pdfWordCount?.toLocaleString()} words extracted
+                    {pdfStatus === 'inferring' && <span className="text-brand-400 ml-2">· Filling form…</span>}
+                    {pdfStatus === 'done' && <span className="text-green-500 ml-2">· Form filled</span>}
+                  </p>
                 </div>
                 <button type="button" onClick={removePdf} className="text-xs text-gray-600 hover:text-red-400 transition-colors px-2">Remove</button>
               </div>
@@ -241,7 +260,7 @@ export default function NewBookForm({
             </Link>
             <button
               type="submit"
-              disabled={saving || pdfExtracting}
+              disabled={saving || pdfStatus === 'extracting'}
               className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-800 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
             >
               {saving ? 'Creating…' : 'Create book →'}
