@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin, adminGuardResponse } from '@/lib/admin/guard'
 
+export const maxDuration = 60
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse') as (buffer: Buffer) => Promise<{ text: string }>
 
@@ -30,16 +32,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No readable text found in this PDF.' }, { status: 422 })
   }
 
-  // Use the first ~4000 words to infer book metadata
-  const sample = text.split(/\s+/).slice(0, 4000).join(' ')
+  // Use the first ~2000 words to infer book metadata (keep prompt small and fast)
+  const sample = text.split(/\s+/).slice(0, 2000).join(' ')
 
   let metadata: { title: string; subtitle: string; genre: string; tone: string; premise: string } = {
     title: '', subtitle: '', genre: '', tone: '', premise: '',
   }
 
   try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 15000)
+
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -71,6 +77,8 @@ ${sample}`,
       }),
     })
 
+    clearTimeout(timeout)
+
     if (res.ok) {
       const json = await res.json()
       const raw = json.choices[0].message.content.trim()
@@ -78,7 +86,7 @@ ${sample}`,
       metadata = { ...metadata, ...parsed }
     }
   } catch {
-    // If AI inference fails, return text-only — form stays editable
+    // If AI inference fails or times out, return text-only — form stays editable
   }
 
   return NextResponse.json({
