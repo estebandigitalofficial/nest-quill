@@ -67,6 +67,8 @@ export type BookSectionType =
   | 'foreword'
   | 'preface'
   | 'acknowledgments'
+  | 'prologue'
+  | 'introduction'
   | 'conclusion'
   | 'notes'
   | 'about_author'

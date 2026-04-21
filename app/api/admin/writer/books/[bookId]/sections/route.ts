@@ -9,6 +9,8 @@ const DEFAULT_FRONT: { type: BookSectionType; position: number }[] = [
   { type: 'foreword', position: 2 },
   { type: 'preface', position: 3 },
   { type: 'acknowledgments', position: 4 },
+  { type: 'prologue', position: 5 },
+  { type: 'introduction', position: 6 },
 ]
 
 const DEFAULT_BACK: { type: BookSectionType; position: number }[] = [
