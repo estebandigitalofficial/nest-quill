@@ -6,6 +6,7 @@ import BookMetadataPanel from './BookMetadataPanel'
 import FrontMatterPanel from './FrontMatterPanel'
 import BackMatterPanel from './BackMatterPanel'
 import CopyrightBuilder from './CopyrightBuilder'
+import ExportBuilder from './ExportBuilder'
 
 type Tab = 'write' | 'studio' | 'export'
 
@@ -49,9 +50,9 @@ export default function BookStudioTabs({
       )}
 
       {tab === 'export' && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl px-6 py-8 text-center space-y-2">
-          <p className="text-sm font-semibold text-white">Export Builder</p>
-          <p className="text-xs text-gray-500">Coming in Phase 5 — finish your front/back matter first.</p>
+        <div className="bg-gray-900 border border-gray-800 rounded-xl px-6 py-6">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-5">Export Builder</p>
+          <ExportBuilder bookId={book.id} />
         </div>
       )}
     </div>
