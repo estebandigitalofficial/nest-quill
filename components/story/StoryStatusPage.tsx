@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import type { StoryStatusResponse, StoryContentResponse } from '@/types/story'
+import type { StoryStatusResponse, StoryContentResponse, StoryContentPage } from '@/types/story'
 
 const TERMINAL_STATUSES = ['complete', 'failed']
 const POLL_INTERVAL_MS = 3000
+const TRANSITION_MS = 280
 
 export default function StoryStatusPage({ requestId }: { requestId: string }) {
   const [status, setStatus] = useState<StoryStatusResponse | null>(null)
@@ -17,7 +18,7 @@ export default function StoryStatusPage({ requestId }: { requestId: string }) {
       const res = await fetch(`/api/story/status?requestId=${requestId}`)
       if (res.status === 404) {
         setError('Story not found. This link may be invalid or has expired.')
-        return true // stop polling
+        return true
       }
       if (!res.ok) {
         const json = await res.json().catch(() => ({}))
@@ -42,26 +43,20 @@ export default function StoryStatusPage({ requestId }: { requestId: string }) {
 
   useEffect(() => {
     let stopped = false
-
     async function poll() {
       const done = await fetchStatus()
       if (done || stopped) return
       setTimeout(poll, POLL_INTERVAL_MS)
     }
-
     poll()
     return () => { stopped = true }
   }, [fetchStatus])
 
-  // Fetch story content once complete
   useEffect(() => {
-    if (status?.status === 'complete') {
-      fetchStory()
-    }
+    if (status?.status === 'complete') fetchStory()
   }, [status?.status, fetchStory])
 
   if (error) return <ErrorView message={error} />
-
   if (!status) return <LoadingShell />
 
   if (status.status === 'failed') {
@@ -73,10 +68,7 @@ export default function StoryStatusPage({ requestId }: { requestId: string }) {
           <p className="text-sm text-gray-500 max-w-sm mx-auto">
             We ran into a problem generating this story. Please try again.
           </p>
-          <Link
-            href="/create"
-            className="inline-block mt-2 bg-brand-500 text-white text-sm font-semibold px-6 py-3 rounded-xl hover:bg-brand-600 transition-colors"
-          >
+          <Link href="/create" className="inline-block mt-2 bg-brand-500 text-white text-sm font-semibold px-6 py-3 rounded-xl hover:bg-brand-600 transition-colors">
             Try again →
           </Link>
         </div>
@@ -92,14 +84,10 @@ export default function StoryStatusPage({ requestId }: { requestId: string }) {
     )
   }
 
-  return (
-    <PageShell>
-      <StoryReader story={story} />
-    </PageShell>
-  )
+  return <StoryEbookReader story={story} requestId={requestId} />
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Non-reader shells ─────────────────────────────────────────────────────────
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
@@ -134,10 +122,7 @@ function ErrorView({ message }: { message: string }) {
         <div className="text-4xl">🔍</div>
         <h2 className="text-lg font-serif text-gray-900">Oops</h2>
         <p className="text-sm text-gray-500">{message}</p>
-        <Link
-          href="/create"
-          className="inline-block text-sm font-semibold text-brand-600 hover:text-brand-700 underline underline-offset-2"
-        >
+        <Link href="/create" className="inline-block text-sm font-semibold text-brand-600 hover:text-brand-700 underline underline-offset-2">
           Start a new story
         </Link>
       </div>
@@ -147,89 +132,290 @@ function ErrorView({ message }: { message: string }) {
 
 function ProcessingView({ status }: { status: StoryStatusResponse }) {
   const pct = Math.max(5, status.progressPct ?? 0)
-
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 text-center space-y-6">
       <div className="text-5xl animate-pulse">📖</div>
-
       <div>
         <h2 className="text-2xl font-serif text-gray-900 mb-1">
           {status.childName ? `Creating ${status.childName}'s story…` : 'Creating your story…'}
         </h2>
         <p className="text-sm text-gray-400">This usually takes about a minute.</p>
       </div>
-
       <div className="space-y-2">
         <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-          <div
-            className="bg-brand-500 h-2.5 rounded-full transition-all duration-700"
-            style={{ width: `${pct}%` }}
-          />
+          <div className="bg-brand-500 h-2.5 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
         </div>
         <p className="text-xs text-gray-400">{status.statusMessage}</p>
       </div>
-
-      <p className="text-xs text-gray-300">
-        This page will update automatically — no need to refresh.
-      </p>
+      <p className="text-xs text-gray-300">This page will update automatically — no need to refresh.</p>
     </div>
   )
 }
 
-function StoryReader({ story }: { story: StoryContentResponse }) {
+// ── Ebook reader ──────────────────────────────────────────────────────────────
+
+type ReaderPage =
+  | { kind: 'cover' }
+  | { kind: 'story'; page: StoryContentPage }
+  | { kind: 'end' }
+
+function StoryEbookReader({ story, requestId }: { story: StoryContentResponse; requestId: string }) {
+  const readerPages: ReaderPage[] = [
+    { kind: 'cover' },
+    ...story.pages.map(p => ({ kind: 'story' as const, page: p })),
+    { kind: 'end' },
+  ]
+
+  const storageKey = `story-pos-${requestId}`
+  const navRef = useRef({ next: () => {}, prev: () => {} })
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const initialized = useRef(false)
+
+  const [current, setCurrent] = useState(0)
+  const [animating, setAnimating] = useState(false)
+  const [slideDir, setSlideDir] = useState<'left' | 'right' | null>(null)
+  const [uiVisible, setUiVisible] = useState(true)
+
+  // Restore position
+  useEffect(() => {
+    if (initialized.current) return
+    initialized.current = true
+    const saved = parseInt(localStorage.getItem(storageKey) ?? '0', 10)
+    if (!isNaN(saved) && saved > 0 && saved < readerPages.length) setCurrent(saved)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    localStorage.setItem(storageKey, String(current))
+  }, [current, storageKey])
+
+  function bumpUi() {
+    setUiVisible(true)
+    if (idleTimer.current) clearTimeout(idleTimer.current)
+    idleTimer.current = setTimeout(() => setUiVisible(false), 3500)
+  }
+
+  useEffect(() => {
+    bumpUi()
+    return () => { if (idleTimer.current) clearTimeout(idleTimer.current) }
+  }, [])
+
+  // Lock body scroll
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
+
+  function go(to: number) {
+    if (to < 0 || to >= readerPages.length || animating) return
+    setSlideDir(to > current ? 'left' : 'right')
+    setAnimating(true)
+    setTimeout(() => {
+      setCurrent(to)
+      setSlideDir(null)
+      setAnimating(false)
+    }, TRANSITION_MS)
+    bumpUi()
+  }
+
+  useEffect(() => {
+    navRef.current = {
+      next: () => go(current + 1),
+      prev: () => go(current - 1),
+    }
+  })
+
+  // Window-level swipe
+  useEffect(() => {
+    let startX = 0, startY = 0
+    function onStart(e: TouchEvent) { startX = e.touches[0].clientX; startY = e.touches[0].clientY; bumpUi() }
+    function onEnd(e: TouchEvent) {
+      const dx = e.changedTouches[0].clientX - startX
+      const dy = e.changedTouches[0].clientY - startY
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+        dx < 0 ? navRef.current.next() : navRef.current.prev()
+      }
+    }
+    window.addEventListener('touchstart', onStart, { passive: true })
+    window.addEventListener('touchend', onEnd, { passive: true })
+    return () => {
+      window.removeEventListener('touchstart', onStart)
+      window.removeEventListener('touchend', onEnd)
+    }
+  }, [])
+
+  // Keyboard
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navRef.current.next()
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navRef.current.prev()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  const page = readerPages[current]
+  const progress = readerPages.length > 1 ? current / (readerPages.length - 1) : 0
+
   return (
-    <div className="space-y-6">
-      {/* Cover */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 text-center space-y-3">
-        <p className="text-xs font-semibold tracking-widest text-brand-400 uppercase">
-          {story.authorLine}
-        </p>
-        <h1 className="text-3xl font-serif text-gray-900 leading-snug">{story.title}</h1>
-        {story.subtitle && (
-          <p className="text-base text-gray-500 italic">{story.subtitle}</p>
-        )}
-        {story.dedication && (
-          <p className="text-sm text-gray-400 italic border-t border-gray-100 pt-4 mt-4">
-            {story.dedication}
-          </p>
-        )}
+    <div
+      style={{ position: 'fixed', inset: 0, background: '#faf8f5', overflow: 'hidden' }}
+      onClick={bumpUi}
+    >
+      {/* Progress bar */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: '#ede8e1', zIndex: 10 }}>
+        <div style={{ height: '100%', background: '#dc8a28', width: `${progress * 100}%`, transition: 'width 0.4s' }} />
       </div>
 
-      {/* Pages */}
-      {story.pages.map((page) => (
-        <div
-          key={page.pageNumber}
-          className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-6 space-y-3"
-        >
-          <p className="text-xs font-semibold text-brand-400 uppercase tracking-widest">
-            Page {page.pageNumber}
-          </p>
-          <p className="text-base text-gray-800 leading-relaxed">{page.text}</p>
-          {page.imageStatus === 'pending' && (
-            <div className="w-full h-40 bg-brand-50 rounded-xl flex items-center justify-center border border-brand-100">
-              <p className="text-xs text-brand-300">Illustration coming soon</p>
-            </div>
-          )}
-        </div>
-      ))}
+      {/* Tap zones */}
+      <button
+        aria-hidden tabIndex={-1}
+        onClick={e => { e.stopPropagation(); go(current - 1) }}
+        disabled={current === 0 || animating}
+        style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: '38%', zIndex: 10, background: 'transparent', border: 'none', cursor: current === 0 ? 'default' : 'w-resize' }}
+      />
+      <button
+        aria-hidden tabIndex={-1}
+        onClick={e => { e.stopPropagation(); go(current + 1) }}
+        disabled={current === readerPages.length - 1 || animating}
+        style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: '38%', zIndex: 10, background: 'transparent', border: 'none', cursor: current === readerPages.length - 1 ? 'default' : 'e-resize' }}
+      />
 
-      {/* Footer */}
-      <div className="text-center py-4 space-y-3">
-        <p className="text-sm text-gray-400 font-serif italic">✦ The End ✦</p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link
-            href="/account"
-            className="inline-block text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 px-5 py-2.5 rounded-xl transition-colors"
-          >
-            View in my account →
-          </Link>
-          <Link
-            href="/create"
-            className="inline-block text-sm font-semibold text-brand-600 hover:text-brand-700 underline underline-offset-2 py-2.5"
-          >
-            Create another story
-          </Link>
+      {/* Arrows */}
+      <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', zIndex: 20, pointerEvents: 'none', opacity: uiVisible && current > 0 ? 0.35 : 0, transition: 'opacity 0.3s' }}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </div>
+      <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', zIndex: 20, pointerEvents: 'none', opacity: uiVisible && current < readerPages.length - 1 ? 0.35 : 0, transition: 'opacity 0.3s' }}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a8a29e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </div>
+
+      {/* Page content */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        paddingBottom: 72,
+        opacity: animating ? 0 : 1,
+        transform: animating ? `translateX(${slideDir === 'left' ? -24 : 24}px)` : 'translateX(0)',
+        transition: `opacity ${TRANSITION_MS}ms ease, transform ${TRANSITION_MS}ms cubic-bezier(0.4,0,0.2,1)`,
+      }}>
+        <div style={{ width: '100%', maxWidth: 480, padding: '0 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+          {page.kind === 'cover' && <CoverPage story={story} hasMore={readerPages.length > 1} />}
+          {page.kind === 'story' && <StoryPageContent page={page.page} storyIndex={current} total={story.pages.length} />}
+          {page.kind === 'end' && <EndPage />}
         </div>
+      </div>
+
+      {/* Nav bar */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20,
+        opacity: uiVisible ? 1 : 0,
+        transform: uiVisible ? 'translateY(0)' : 'translateY(8px)',
+        pointerEvents: uiVisible ? 'auto' : 'none',
+        transition: 'opacity 0.4s, transform 0.4s',
+      }}>
+        <div style={{ height: 20, background: 'linear-gradient(to top, #faf8f5, transparent)' }} />
+        <div style={{ background: '#faf8f5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 20px', gap: 12 }}>
+          <button
+            onClick={() => go(current - 1)} disabled={current === 0 || animating}
+            style={{ fontSize: 11, fontWeight: 500, padding: '8px 16px', borderRadius: 8, border: '1px solid #e7e5e4', color: current === 0 ? '#d6d3d1' : '#78716c', background: 'transparent', cursor: current === 0 ? 'default' : 'pointer', transition: 'color 0.2s' }}
+          >
+            ← Prev
+          </button>
+          <span style={{ fontSize: 10, color: '#a8a29e', letterSpacing: '0.05em' }}>
+            {current + 1} / {readerPages.length}
+          </span>
+          <button
+            onClick={() => go(current + 1)} disabled={current === readerPages.length - 1 || animating}
+            style={{ fontSize: 11, fontWeight: 500, padding: '8px 16px', borderRadius: 8, border: '1px solid #e7e5e4', color: current === readerPages.length - 1 ? '#d6d3d1' : '#78716c', background: 'transparent', cursor: current === readerPages.length - 1 ? 'default' : 'pointer', transition: 'color 0.2s' }}
+          >
+            Next →
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CoverPage({ story, hasMore }: { story: StoryContentResponse; hasMore: boolean }) {
+  return (
+    <div style={{ textAlign: 'center', width: '100%' }}>
+      <p style={{ fontSize: 10, color: '#a8a29e', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 16 }}>
+        {story.authorLine}
+      </p>
+      <h1 style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: 'clamp(1.8rem,6vw,2.6rem)', color: '#1c1917', lineHeight: 1.2, marginBottom: 12 }}>
+        {story.title}
+      </h1>
+      {story.subtitle && (
+        <p style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontStyle: 'italic', color: '#78716c', fontSize: '1rem', marginBottom: 16 }}>
+          {story.subtitle}
+        </p>
+      )}
+      {story.dedication && (
+        <p style={{ fontSize: '0.8rem', color: '#a8a29e', fontStyle: 'italic', borderTop: '1px solid #e7e5e4', paddingTop: 16, marginTop: 16 }}>
+          {story.dedication}
+        </p>
+      )}
+      {hasMore && (
+        <p style={{ fontSize: 11, color: '#c4b5a0', marginTop: 40 }}>Tap or swipe to begin →</p>
+      )}
+    </div>
+  )
+}
+
+function StoryPageContent({ page, storyIndex, total }: { page: StoryContentPage; storyIndex: number; total: number }) {
+  return (
+    <>
+      <p style={{ fontSize: 10, color: '#c4b5a0', letterSpacing: '0.1em', alignSelf: 'center' }}>
+        {storyIndex} / {total}
+      </p>
+
+      {page.imageUrl ? (
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={page.imageUrl}
+            alt={`Illustration for page ${page.pageNumber}`}
+            style={{ maxHeight: '42vh', maxWidth: '100%', objectFit: 'contain', borderRadius: 14, display: 'block' }}
+          />
+        </div>
+      ) : (
+        <div style={{ width: '100%', height: '36vh', background: '#f0ece6', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <p style={{ fontSize: 11, color: '#c4b5a0' }}>
+            {page.imageStatus === 'pending' ? 'Illustration coming soon' : ''}
+          </p>
+        </div>
+      )}
+
+      <p style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: 'clamp(1rem,3.5vw,1.125rem)', lineHeight: 1.85, color: '#1c1917', textAlign: 'center', width: '100%' }}>
+        {page.text}
+      </p>
+    </>
+  )
+}
+
+function EndPage() {
+  return (
+    <div style={{ textAlign: 'center', width: '100%' }}>
+      <p style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: '1.6rem', color: '#a8a29e', marginBottom: 36 }}>
+        ✦ The End ✦
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+        <Link
+          href="/account"
+          style={{ fontSize: 13, fontWeight: 600, color: 'white', background: '#dc8a28', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-block' }}
+        >
+          View in my account →
+        </Link>
+        <Link
+          href="/create"
+          style={{ fontSize: 13, color: '#78716c', textDecoration: 'underline', textUnderlineOffset: 3 }}
+        >
+          Create another story
+        </Link>
       </div>
     </div>
   )

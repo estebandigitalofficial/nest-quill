@@ -96,6 +96,7 @@ export interface StoryContentPage {
   imagePrompt: string
   imageStatus: string
   storagePath: string | null
+  imageUrl: string | null
 }
 
 export interface StoryContentResponse {

@@ -55,6 +55,21 @@ export async function GET(
 
     if (scenesError) throw new NotFoundError('Story scenes')
 
+    // Batch sign image URLs for all completed pages
+    const imagePaths = (scenes ?? [])
+      .filter(s => s.image_status === 'complete' && s.storage_path)
+      .map(s => s.storage_path as string)
+
+    const imageUrlMap: Record<string, string> = {}
+    if (imagePaths.length > 0) {
+      const { data: signed } = await adminSupabase.storage
+        .from('story-images')
+        .createSignedUrls(imagePaths, 60 * 60 * 24 * 7)
+      signed?.forEach(item => {
+        if (item.signedUrl) imageUrlMap[item.path] = item.signedUrl
+      })
+    }
+
     return NextResponse.json<StoryContentResponse>({
       requestId,
       title: story.title,
@@ -68,6 +83,7 @@ export async function GET(
         imagePrompt: s.image_prompt as string,
         imageStatus: s.image_status as string,
         storagePath: (s.storage_path as string | null) ?? null,
+        imageUrl: imageUrlMap[(s.storage_path as string) ?? ''] ?? null,
       })),
     })
   } catch (err) {
