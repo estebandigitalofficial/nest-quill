@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect, useCallback } from 'react'
 import type { WriterBook, WriterBookSection } from '@/types/writer'
 
 interface ReaderScene {
@@ -15,6 +16,18 @@ interface ReaderChapter {
   title: string
   brief: string
   scenes: ReaderScene[]
+}
+
+type Page =
+  | { kind: 'title' }
+  | { kind: 'front'; section: WriterBookSection }
+  | { kind: 'chapter'; chapter: ReaderChapter }
+  | { kind: 'back'; section: WriterBookSection }
+
+const SECTION_LABELS: Record<string, string> = {
+  dedication: 'Dedication', epigraph: 'Epigraph', foreword: 'Foreword',
+  preface: 'Preface', acknowledgments: 'Acknowledgments', conclusion: 'Conclusion',
+  notes: 'Notes', about_author: 'About the Author', also_by: 'Also By',
 }
 
 export default function BookReader({
@@ -38,122 +51,195 @@ export default function BookReader({
     .filter(s => s.zone === 'back' && s.enabled && s.content)
     .sort((a, b) => a.position - b.position)
 
-  const SECTION_LABELS: Record<string, string> = {
-    dedication: 'Dedication', epigraph: 'Epigraph', foreword: 'Foreword',
-    preface: 'Preface', acknowledgments: 'Acknowledgments', conclusion: 'Conclusion',
-    notes: 'Notes', about_author: 'About the Author', also_by: 'Also By',
+  const writtenChapters = chapters.filter(ch =>
+    ch.scenes.some(s => s.content)
+  )
+
+  // Build page list
+  const pages: Page[] = [
+    { kind: 'title' },
+    ...frontMatter.map(s => ({ kind: 'front' as const, section: s })),
+    ...writtenChapters.map(ch => ({ kind: 'chapter' as const, chapter: ch })),
+    ...backMatter.map(s => ({ kind: 'back' as const, section: s })),
+  ]
+
+  const [current, setCurrent] = useState(0)
+  const [dir, setDir] = useState<'next' | 'prev' | null>(null)
+  const [animating, setAnimating] = useState(false)
+
+  function go(to: number) {
+    if (to < 0 || to >= pages.length || animating) return
+    setDir(to > current ? 'next' : 'prev')
+    setAnimating(true)
+    setTimeout(() => {
+      setCurrent(to)
+      setAnimating(false)
+      setDir(null)
+      window.scrollTo(0, 0)
+    }, 200)
   }
 
-  function EditHint({ onClick }: { onClick: () => void }) {
+  const next = useCallback(() => go(current + 1), [current, animating])
+  const prev = useCallback(() => go(current - 1), [current, animating])
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next()
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [next, prev])
+
+  const page = pages[current]
+
+  function renderContent() {
+    if (page.kind === 'title') {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
+          <h1 className="font-serif text-5xl text-white leading-tight">{book.title}</h1>
+          {book.subtitle && <p className="font-serif text-xl text-gray-400 italic">{book.subtitle}</p>}
+          {(book.author_name || book.pen_name) && (
+            <p className="text-gray-500 text-sm tracking-widest uppercase mt-4">
+              {book.pen_name || book.author_name}
+            </p>
+          )}
+          {pages.length > 1 && (
+            <p className="text-xs text-gray-700 mt-8">Press → to begin reading</p>
+          )}
+        </div>
+      )
+    }
+
+    if (page.kind === 'front' || page.kind === 'back') {
+      const { section } = page
+      const isEpigraph = section.type === 'epigraph'
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between border-b border-gray-800 pb-4">
+            {!isEpigraph && (
+              <h2 className="font-serif text-2xl text-white">
+                {SECTION_LABELS[section.type] ?? section.type}
+              </h2>
+            )}
+            <button
+              onClick={() => page.kind === 'front' ? onEditSection('front') : onEditSection('back')}
+              className="ml-auto text-xs text-gray-600 hover:text-brand-400 transition-colors"
+            >
+              Edit ✎
+            </button>
+          </div>
+          <div className={isEpigraph ? 'text-center italic text-gray-400 py-8' : ''}>
+            {(section.content ?? '').split(/\n\n+/).filter(p => p.trim()).map((para, i) => (
+              <p key={i} className="font-serif text-gray-300 text-base leading-relaxed mb-5">
+                {para.trim()}
+              </p>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    if (page.kind === 'chapter') {
+      const { chapter } = page
+      const scenes = chapter.scenes
+        .filter(s => s.content)
+        .sort((a, b) => a.scene_number - b.scene_number)
+
+      return (
+        <div className="space-y-6">
+          <div className="flex items-start justify-between border-b border-gray-800 pb-4 gap-4">
+            <div>
+              <p className="text-xs text-gray-600 uppercase tracking-widest mb-1">
+                Chapter {chapter.chapter_number}
+              </p>
+              <h2 className="font-serif text-2xl text-white">{chapter.title}</h2>
+            </div>
+            <button
+              onClick={() => onEditChapter(chapter.id)}
+              className="text-xs text-gray-600 hover:text-brand-400 transition-colors shrink-0 mt-1"
+            >
+              Edit ✎
+            </button>
+          </div>
+          <div>
+            {scenes.map((scene, idx) => (
+              <div key={scene.id}>
+                {idx > 0 && (
+                  <div className="text-center text-gray-700 text-sm my-8 tracking-widest">✦ ✦ ✦</div>
+                )}
+                {(scene.content ?? '').split(/\n\n+/).filter(p => p.trim()).map((para, i) => (
+                  <p
+                    key={i}
+                    className="font-serif text-gray-300 text-base leading-relaxed mb-5"
+                    style={{ textIndent: i === 0 ? '0' : '1.5em' }}
+                  >
+                    {para.trim()}
+                  </p>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+  }
+
+  if (pages.length === 0) {
     return (
-      <button
-        onClick={onClick}
-        className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-0 right-0 text-xs text-gray-500 hover:text-brand-400 px-2 py-1 rounded"
-      >
-        Edit ✎
-      </button>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-gray-600 italic text-sm">No content yet. Switch to Edit mode to get started.</p>
+      </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <div className="max-w-2xl mx-auto px-8 py-16">
+    <div className="min-h-screen bg-gray-950 flex flex-col">
+      {/* Page content */}
+      <div
+        className="flex-1 max-w-2xl mx-auto w-full px-8 py-16 transition-opacity duration-200"
+        style={{ opacity: animating ? 0 : 1 }}
+      >
+        {renderContent()}
+      </div>
 
-        {/* Title page */}
-        <div className="text-center mb-24">
-          <h1 className="font-serif text-4xl text-white mb-3">{book.title}</h1>
-          {book.subtitle && <p className="font-serif text-xl text-gray-400 italic mb-6">{book.subtitle}</p>}
-          {(book.author_name || book.pen_name) && (
-            <p className="text-gray-500 text-sm tracking-widest uppercase">{book.pen_name || book.author_name}</p>
-          )}
+      {/* Navigation bar */}
+      <div className="sticky bottom-0 bg-gray-950 border-t border-gray-800 px-6 py-3 flex items-center justify-between">
+        <button
+          onClick={prev}
+          disabled={current === 0}
+          className="text-xs font-semibold px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          ← Previous
+        </button>
+
+        {/* Page indicator */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-600">
+            {current + 1} / {pages.length}
+          </span>
+          <div className="flex gap-1">
+            {pages.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => go(i)}
+                className={`rounded-full transition-colors ${
+                  i === current
+                    ? 'bg-brand-500 w-4 h-1.5'
+                    : 'bg-gray-700 hover:bg-gray-500 w-1.5 h-1.5'
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* Front matter */}
-        {frontMatter.length > 0 && (
-          <div className="mb-16">
-            {frontMatter.map(section => (
-              <div key={section.id} className="relative group mb-16">
-                <EditHint onClick={() => onEditSection('front')} />
-                {section.type !== 'epigraph' && (
-                  <h2 className="font-serif text-xl text-gray-300 mb-6 pb-3 border-b border-gray-800">
-                    {SECTION_LABELS[section.type] ?? section.type}
-                  </h2>
-                )}
-                <div className={`prose-reader ${section.type === 'epigraph' ? 'italic text-center text-gray-400' : ''}`}>
-                  {(section.content ?? '').split(/\n\n+/).filter(p => p.trim()).map((para, i) => (
-                    <p key={i} className="text-gray-300 leading-relaxed mb-4 font-serif text-base">
-                      {para.trim()}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            ))}
-            <hr className="border-gray-800 mb-16" />
-          </div>
-        )}
-
-        {/* Chapters */}
-        {chapters.map(chapter => {
-          const scenes = chapter.scenes
-            .filter(s => s.content)
-            .sort((a, b) => a.scene_number - b.scene_number)
-
-          if (scenes.length === 0) return null
-
-          return (
-            <div key={chapter.id} className="relative group mb-20">
-              <EditHint onClick={() => onEditChapter(chapter.id)} />
-              <div className="mb-8">
-                <p className="text-xs text-gray-600 uppercase tracking-widest mb-1">Chapter {chapter.chapter_number}</p>
-                <h2 className="font-serif text-2xl text-white">{chapter.title}</h2>
-              </div>
-              <div className="space-y-6">
-                {scenes.map((scene, idx) => (
-                  <div key={scene.id}>
-                    {idx > 0 && (
-                      <div className="text-center text-gray-700 text-sm my-6">✦ ✦ ✦</div>
-                    )}
-                    {(scene.content ?? '').split(/\n\n+/).filter(p => p.trim()).map((para, i) => (
-                      <p
-                        key={i}
-                        className="text-gray-300 leading-relaxed font-serif text-base mb-4"
-                        style={{ textIndent: i === 0 ? '0' : '1.5em' }}
-                      >
-                        {para.trim()}
-                      </p>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        })}
-
-        {/* Back matter */}
-        {backMatter.length > 0 && (
-          <div className="mt-8">
-            <hr className="border-gray-800 mb-16" />
-            {backMatter.map(section => (
-              <div key={section.id} className="relative group mb-16">
-                <EditHint onClick={() => onEditSection('back')} />
-                <h2 className="font-serif text-xl text-gray-300 mb-6 pb-3 border-b border-gray-800">
-                  {SECTION_LABELS[section.type] ?? section.type}
-                </h2>
-                <div>
-                  {(section.content ?? '').split(/\n\n+/).filter(p => p.trim()).map((para, i) => (
-                    <p key={i} className="text-gray-300 leading-relaxed mb-4 font-serif text-base">
-                      {para.trim()}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {chapters.every(ch => ch.scenes.every(s => !s.content)) && frontMatter.length === 0 && (
-          <p className="text-gray-600 text-center py-12 italic">No content written yet. Switch to Edit mode to get started.</p>
-        )}
+        <button
+          onClick={next}
+          disabled={current === pages.length - 1}
+          className="text-xs font-semibold px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          Next →
+        </button>
       </div>
     </div>
   )
