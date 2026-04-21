@@ -6,7 +6,15 @@ import Link from 'next/link'
 import type { WriterBookWithChapters } from '@/types/writer'
 import { cn } from '@/lib/utils/cn'
 
-export default function BookOutlineEditor({ book }: { book: WriterBookWithChapters }) {
+export default function BookOutlineEditor({
+  book,
+  focusChapterId,
+  chapterRefs,
+}: {
+  book: WriterBookWithChapters
+  focusChapterId?: string | null
+  chapterRefs?: React.MutableRefObject<Record<string, HTMLDivElement | null>>
+}) {
   const router = useRouter()
   const [adding, setAdding] = useState(false)
   const [newChapter, setNewChapter] = useState({ title: '', brief: '' })
@@ -74,7 +82,8 @@ export default function BookOutlineEditor({ book }: { book: WriterBookWithChapte
           return (
             <div
               key={chapter.id}
-              className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden"
+              ref={el => { if (chapterRefs) chapterRefs.current[chapter.id] = el }}
+              className={`bg-gray-900 border rounded-xl overflow-hidden transition-colors ${focusChapterId === chapter.id ? 'border-brand-500' : 'border-gray-800'}`}
             >
               <div className="px-5 py-4 flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
