@@ -300,6 +300,42 @@ export default function EbookReader({
           style={{ width: `${progress * 100}%`, background: '#a09070' }} />
       </div>
 
+      {/* Invisible tap zones — left = prev, right = next */}
+      <button
+        aria-hidden
+        tabIndex={-1}
+        onClick={e => { e.stopPropagation(); go(current - 1) }}
+        disabled={current === 0 || animating}
+        className="absolute top-0 bottom-0 left-0 z-10 disabled:pointer-events-none"
+        style={{ width: '38%', cursor: current === 0 ? 'default' : 'w-resize', background: 'transparent' }}
+      />
+      <button
+        aria-hidden
+        tabIndex={-1}
+        onClick={e => { e.stopPropagation(); go(current + 1) }}
+        disabled={current === pages.length - 1 || animating}
+        className="absolute top-0 bottom-0 right-0 z-10 disabled:pointer-events-none"
+        style={{ width: '38%', cursor: current === pages.length - 1 ? 'default' : 'e-resize', background: 'transparent' }}
+      />
+
+      {/* Subtle side arrows */}
+      <div
+        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none transition-all duration-300"
+        style={{ opacity: uiVisible && current > 0 ? 0.3 : 0 }}
+      >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </div>
+      <div
+        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none transition-all duration-300"
+        style={{ opacity: uiVisible && current < pages.length - 1 ? 0.3 : 0 }}
+      >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </div>
+
       {/* Header */}
       <div
         className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-5 h-14 transition-all duration-500"
