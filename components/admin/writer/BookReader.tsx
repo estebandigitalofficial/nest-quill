@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { WriterBook, WriterBookSection } from '@/types/writer'
 
 interface ReaderScene {
@@ -66,6 +66,7 @@ export default function BookReader({
   const [current, setCurrent] = useState(0)
   const [dir, setDir] = useState<'next' | 'prev' | null>(null)
   const [animating, setAnimating] = useState(false)
+  const touchStartX = useRef<number | null>(null)
 
   function go(to: number) {
     if (to < 0 || to >= pages.length || animating) return
@@ -194,7 +195,16 @@ export default function BookReader({
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
+    <div
+      className="min-h-screen bg-gray-950 flex flex-col"
+      onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
+      onTouchEnd={e => {
+        if (touchStartX.current === null) return
+        const diff = touchStartX.current - e.changedTouches[0].clientX
+        if (Math.abs(diff) > 50) diff > 0 ? next() : prev()
+        touchStartX.current = null
+      }}
+    >
       {/* Page content */}
       <div
         className="flex-1 max-w-2xl mx-auto w-full px-8 py-16 transition-opacity duration-200"
