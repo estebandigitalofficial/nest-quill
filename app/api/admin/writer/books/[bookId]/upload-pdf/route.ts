@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin, checkBookOwner, adminGuardResponse } from '@/lib/admin/guard'
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require('pdf-parse') as (buffer: Buffer) => Promise<{ text: string }>
 
 export async function POST(
   request: NextRequest,
@@ -25,8 +23,9 @@ export async function POST(
 
   let text: string
   try {
-    const result = await pdfParse(buffer)
-    text = result.text.trim()
+    const { extractText } = await import('unpdf')
+    const { text: extracted } = await extractText(new Uint8Array(buffer), { mergePages: true })
+    text = extracted.trim()
   } catch {
     return NextResponse.json({ error: 'Could not extract text from this PDF. Make sure it is a text-based PDF, not a scanned image.' }, { status: 422 })
   }

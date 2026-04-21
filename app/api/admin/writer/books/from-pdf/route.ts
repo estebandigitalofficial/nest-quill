@@ -19,14 +19,11 @@ export async function POST(request: NextRequest) {
   const buffer = Buffer.from(await file.arrayBuffer())
   const baseName = file.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ')
 
-  // Extract text using pdf-parse internal module to avoid serverless init issues
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const pdfParse = require('pdf-parse/lib/pdf-parse.js') as (buf: Buffer) => Promise<{ text: string }>
-
   let text = ''
   try {
-    const result = await pdfParse(buffer)
-    text = result.text.trim()
+    const { extractText } = await import('unpdf')
+    const { text: extracted } = await extractText(new Uint8Array(buffer), { mergePages: true })
+    text = extracted.trim()
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: `PDF extraction failed: ${msg}` }, { status: 422 })

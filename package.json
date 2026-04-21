@@ -14,17 +14,16 @@
     "@react-pdf/renderer": "^4.3.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
-    "@types/pdf-parse": "^1.1.5",
     "clsx": "^2.1.1",
     "next": "^15.3.0",
     "openai": "^4.97.0",
-    "pdf-parse": "^2.4.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.1",
     "resend": "^4.5.1",
     "stripe": "^17.7.0",
     "tailwind-merge": "^2.6.0",
+    "unpdf": "^1.6.0",
     "zod": "^3.24.3"
   },
   "devDependencies": {
