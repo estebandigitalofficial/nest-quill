@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   try { ctx = await requireAdmin() } catch { return adminGuardResponse() }
 
   const body = await request.json()
-  const { title, subtitle, genre, tone, premise, target_chapters, target_words_per_chapter, owner_id } = body
+  const { title, subtitle, genre, tone, premise, target_chapters, target_words_per_chapter, owner_id, source_text, source_pdf_name } = body
 
   if (!title || !genre || !tone || !premise) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -45,6 +45,8 @@ export async function POST(request: NextRequest) {
       target_chapters: target_chapters ?? 10,
       target_words_per_chapter: target_words_per_chapter ?? 2000,
       owner_id: resolvedOwnerId,
+      source_text: source_text || null,
+      source_pdf_name: source_pdf_name || null,
     })
     .select()
     .single()

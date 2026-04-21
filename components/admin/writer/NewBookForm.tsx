@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -29,8 +29,51 @@ export default function NewBookForm({
     owner_id: currentUserId,
   })
 
+  // PDF source state
+  const [pdfExtracting, setPdfExtracting] = useState(false)
+  const [pdfError, setPdfError] = useState<string | null>(null)
+  const [pdfFileName, setPdfFileName] = useState<string | null>(null)
+  const [pdfWordCount, setPdfWordCount] = useState<number | null>(null)
+  const [sourceText, setSourceText] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
   function set(field: string, value: string | number) {
     setForm(f => ({ ...f, [field]: value }))
+  }
+
+  async function handlePdfChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setPdfExtracting(true)
+    setPdfError(null)
+
+    const formData = new FormData()
+    formData.append('pdf', file)
+
+    const res = await fetch('/api/admin/writer/extract-pdf', {
+      method: 'POST',
+      body: formData,
+    })
+    const json = await res.json()
+
+    if (!res.ok) {
+      setPdfError(json.error ?? 'Failed to extract PDF')
+      if (fileRef.current) fileRef.current.value = ''
+    } else {
+      setPdfFileName(json.fileName)
+      setPdfWordCount(json.wordCount)
+      setSourceText(json.text)
+    }
+    setPdfExtracting(false)
+  }
+
+  function removePdf() {
+    setPdfFileName(null)
+    setPdfWordCount(null)
+    setSourceText(null)
+    setPdfError(null)
+    if (fileRef.current) fileRef.current.value = ''
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -41,7 +84,11 @@ export default function NewBookForm({
     const res = await fetch('/api/admin/writer/books', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        source_text: sourceText ?? null,
+        source_pdf_name: pdfFileName ?? null,
+      }),
     })
 
     if (!res.ok) {
@@ -81,6 +128,40 @@ export default function NewBookForm({
               </select>
             </Field>
           )}
+
+          {/* PDF upload */}
+          <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-300">Source Manuscript <span className="text-gray-600 font-normal">(optional)</span></p>
+                <p className="text-xs text-gray-600 mt-0.5">Upload a Reedsy PDF export to use as reference for AI generation and review</p>
+              </div>
+              {!pdfFileName && (
+                <label className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${pdfExtracting ? 'opacity-50 pointer-events-none bg-gray-800 text-gray-400' : 'bg-brand-500 hover:bg-brand-600 text-white'}`}>
+                  {pdfExtracting ? 'Extracting…' : 'Upload PDF'}
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="application/pdf"
+                    className="hidden"
+                    onChange={handlePdfChange}
+                  />
+                </label>
+              )}
+            </div>
+
+            {pdfFileName && (
+              <div className="flex items-center justify-between bg-gray-800 rounded-lg px-3 py-2">
+                <div>
+                  <p className="text-sm text-gray-200">{pdfFileName}</p>
+                  {pdfWordCount && <p className="text-xs text-gray-500">{pdfWordCount.toLocaleString()} words extracted</p>}
+                </div>
+                <button type="button" onClick={removePdf} className="text-xs text-gray-600 hover:text-red-400 transition-colors px-2">Remove</button>
+              </div>
+            )}
+
+            {pdfError && <p className="text-xs text-red-400">{pdfError}</p>}
+          </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Title" required>
@@ -149,7 +230,7 @@ export default function NewBookForm({
             </Link>
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || pdfExtracting}
               className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-800 text-white font-semibold py-3 rounded-xl text-sm transition-colors"
             >
               {saving ? 'Creating…' : 'Create book →'}
