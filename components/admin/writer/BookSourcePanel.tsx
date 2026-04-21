@@ -33,12 +33,30 @@ export default function BookSourcePanel({
     setUploading(true)
     setUploadError(null)
 
-    const form = new FormData()
-    form.append('pdf', file)
+    // Extract text in browser
+    let text = ''
+    try {
+      const pdfjsLib = await import('pdfjs-dist')
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+      const arrayBuffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i)
+        const content = await page.getTextContent()
+        text += content.items.map((item: unknown) => ('str' in (item as object) ? (item as { str: string }).str : '')).join(' ') + '\n'
+      }
+      text = text.trim()
+    } catch (err) {
+      setUploadError(`Could not read PDF: ${err instanceof Error ? err.message : String(err)}`)
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+      return
+    }
 
     const res = await fetch(`/api/admin/writer/books/${bookId}/upload-pdf`, {
       method: 'POST',
-      body: form,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, fileName: file.name }),
     })
 
     const json = await res.json()

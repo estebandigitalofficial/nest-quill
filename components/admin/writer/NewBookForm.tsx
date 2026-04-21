@@ -48,18 +48,48 @@ export default function NewBookForm({
     setPdfStatus('uploading')
     setPdfError(null)
 
-    const formData = new FormData()
-    formData.append('pdf', file)
-    formData.append('owner_id', ownerId)
+    // Extract text in the browser using PDF.js — avoids serverless parsing issues
+    let text = ''
+    try {
+      const pdfjsLib = await import('pdfjs-dist')
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+
+      const arrayBuffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i)
+        const content = await page.getTextContent()
+        const pageText = content.items
+          .map((item: unknown) => ('str' in (item as object) ? (item as { str: string }).str : ''))
+          .join(' ')
+        text += pageText + '\n'
+      }
+      text = text.trim()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setPdfError(`Could not read PDF: ${msg}`)
+      setPdfStatus('error')
+      if (fileRef.current) fileRef.current.value = ''
+      return
+    }
+
+    if (!text || text.length < 50) {
+      setPdfError('No readable text found. Make sure this is a text-based PDF.')
+      setPdfStatus('error')
+      if (fileRef.current) fileRef.current.value = ''
+      return
+    }
 
     const res = await fetch('/api/admin/writer/books/from-pdf', {
       method: 'POST',
-      body: formData,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, fileName: file.name, owner_id: ownerId }),
     })
     const json = await res.json()
 
     if (!res.ok) {
-      setPdfError(json.error ?? 'Failed to process PDF')
+      setPdfError(json.error ?? 'Failed to create book')
       setPdfStatus('error')
       if (fileRef.current) fileRef.current.value = ''
     } else {
