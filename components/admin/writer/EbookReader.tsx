@@ -157,13 +157,12 @@ export default function EbookReader({
       if (startX === null || startY === null) return
       const dx = e.touches[0].clientX - startX
       const dy = e.touches[0].clientY - startY
-      if (!dragging) {
-        // Diagonal or vertical — let native scroll handle it
-        if (Math.abs(dy) > Math.abs(dx) + 5) { startX = null; return }
-        if (Math.abs(dx) > 8) dragging = true
+      if (Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) > 3) {
+        dragging = true
+        e.preventDefault()
+      } else if (Math.abs(dy) > Math.abs(dx) + 8) {
+        startX = null
       }
-      // Suppress scroll when we've confirmed a horizontal drag
-      if (dragging) e.preventDefault()
     }
 
     function onEnd(e: TouchEvent) {

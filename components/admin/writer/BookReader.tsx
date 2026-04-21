@@ -147,11 +147,14 @@ export default function BookReader({
       if (startX === null || startY === null) return
       const dx = e.touches[0].clientX - startX
       const dy = e.touches[0].clientY - startY
-      if (!dragging) {
-        if (Math.abs(dy) > Math.abs(dx) + 5) { startX = null; return }
-        if (Math.abs(dx) > 8) dragging = true
+      // Claim horizontal gesture immediately — before browser commits to scroll
+      if (Math.abs(dx) >= Math.abs(dy) && Math.abs(dx) > 3) {
+        dragging = true
+        e.preventDefault()
+      } else if (Math.abs(dy) > Math.abs(dx) + 8) {
+        // Clearly vertical — abandon
+        startX = null
       }
-      if (dragging) e.preventDefault()
     }
     function onEnd(e: TouchEvent) {
       if (startX === null) return
@@ -312,8 +315,8 @@ export default function BookReader({
   return (
     <div
       ref={containerRef}
-      className="min-h-screen flex flex-col"
-      style={{ background: PAGE_BG }}
+      className="fixed left-0 right-0 bottom-0 flex flex-col overflow-hidden"
+      style={{ background: PAGE_BG, top: 52 }}
       onClick={bumpUi}
     >
       {/* Progress line */}
