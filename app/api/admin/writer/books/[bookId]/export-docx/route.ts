@@ -128,10 +128,12 @@ export async function GET(
     }],
   })
 
-  const buffer = await Packer.toBuffer(doc)
+  const buffer = await Packer.toBase64String(doc)
+  const binaryBuffer = Buffer.from(buffer, 'base64')
+  const arrayBuffer = binaryBuffer.buffer.slice(binaryBuffer.byteOffset, binaryBuffer.byteOffset + binaryBuffer.byteLength)
   const slug = book.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()
 
-  return new NextResponse(buffer, {
+  return new NextResponse(arrayBuffer, {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'Content-Disposition': `attachment; filename="${slug}.docx"`,
