@@ -47,33 +47,56 @@ export default async function WriterPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {(books as (WriterBook & { owner?: { email: string } | null })[]).map((book) => (
-              <Link
-                key={book.id}
-                href={`/admin/writer/${book.id}`}
-                className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-5 hover:border-gray-600 transition-colors space-y-2"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <h2 className="font-serif text-lg text-white leading-snug">{book.title}</h2>
-                  <StatusPill status={book.status} />
-                </div>
-                {book.subtitle && <p className="text-sm text-gray-400 italic">{book.subtitle}</p>}
-                <p className="text-xs text-gray-500 line-clamp-2">{book.premise}</p>
-                <div className="flex gap-3 pt-1 text-xs text-gray-600">
-                  <span>{book.genre}</span>
-                  <span>·</span>
-                  <span>{book.target_chapters} chapters</span>
-                  <span>·</span>
-                  <span>~{(book.target_chapters * book.target_words_per_chapter).toLocaleString()} words</span>
-                  {ctx.isSuperAdmin && book.owner?.email && (
-                    <>
+            {(books as (WriterBook & { owner?: { email: string } | null })[]).map((book) => {
+              const isComplete = book.status === 'complete'
+              const primaryHref = isComplete
+                ? `/admin/writer/${book.id}/read`
+                : `/admin/writer/${book.id}`
+              return (
+                <div
+                  key={book.id}
+                  className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-5 hover:border-gray-600 transition-colors space-y-2 group relative"
+                >
+                  <Link href={primaryHref} className="absolute inset-0 rounded-xl" aria-hidden />
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="font-serif text-lg text-white leading-snug">{book.title}</h2>
+                    <StatusPill status={book.status} />
+                  </div>
+                  {book.subtitle && <p className="text-sm text-gray-400 italic">{book.subtitle}</p>}
+                  <p className="text-xs text-gray-500 line-clamp-2">{book.premise}</p>
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex gap-3 text-xs text-gray-600">
+                      <span>{book.genre}</span>
                       <span>·</span>
-                      <span className="text-gray-700">{book.owner.email.split('@')[0]}</span>
-                    </>
-                  )}
+                      <span>{book.target_chapters} ch.</span>
+                      <span>·</span>
+                      <span>~{(book.target_chapters * book.target_words_per_chapter).toLocaleString()} wds</span>
+                      {ctx.isSuperAdmin && book.owner?.email && (
+                        <>
+                          <span>·</span>
+                          <span className="text-gray-700">{book.owner.email.split('@')[0]}</span>
+                        </>
+                      )}
+                    </div>
+                    {/* Action links — sit above the invisible full-card link */}
+                    <div className="flex gap-1.5 relative z-10">
+                      <Link
+                        href={`/admin/writer/${book.id}/read`}
+                        className="text-[11px] px-2.5 py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+                      >
+                        Read
+                      </Link>
+                      <Link
+                        href={`/admin/writer/${book.id}`}
+                        className="text-[11px] px-2.5 py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+                      >
+                        Edit
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-              </Link>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
