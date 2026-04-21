@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin, checkBookOwner, adminGuardResponse } from '@/lib/admin/guard'
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ bookId: string; chapterId: string; sceneId: string }> }
 ) {
   let ctx
@@ -11,6 +11,12 @@ export async function POST(
 
   const { bookId, chapterId, sceneId } = await params
   if (!await checkBookOwner(bookId, ctx)) return adminGuardResponse()
+
+  let mode: 'preserve_voice' | 'rewrite_free' = 'rewrite_free'
+  try {
+    const body = await req.json()
+    if (body?.mode === 'preserve_voice') mode = 'preserve_voice'
+  } catch { /* no body — use default */ }
 
   const supabase = createAdminClient()
 
@@ -58,12 +64,17 @@ export async function POST(
     ((currentChapter.writer_scenes as unknown[]) ?? []).length || 1
   ))
 
-  const systemPrompt = `You are a professional author writing a ${book.genre} book.
+  const systemPrompt = mode === 'preserve_voice'
+    ? `You are editing and rewriting a ${book.genre} book while strictly preserving the author's original voice.
+Tone: ${book.tone}
+CRITICAL: You must maintain the author's exact voice — their sentence rhythm, vocabulary level, narrative style, point of view, and personality. Do not substitute your own prose style. Improve clarity, flow, and structure, but every sentence should still sound like the original author wrote it.
+Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.`
+    : `You are a professional author writing a ${book.genre} book.
 Tone: ${book.tone}
 Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.
 Maintain complete consistency with everything established in prior chapters and scenes.`
 
-  // If a source manuscript exists, find the most relevant excerpt (~3000 words around chapter mention)
+  // If a source manuscript exists, find the most relevant excerpt (~15k chars around chapter mention)
   let sourceExcerpt = ''
   if (book.source_text) {
     const src = book.source_text as string
@@ -73,6 +84,12 @@ Maintain complete consistency with everything established in prior chapters and 
     sourceExcerpt = src.slice(start, start + 15000).trim()
   }
 
+  const sourceInstruction = sourceExcerpt
+    ? mode === 'preserve_voice'
+      ? `Original manuscript excerpt (rewrite this scene — keep the author's voice exactly):\n${sourceExcerpt}\n`
+      : `Original manuscript excerpt (use as reference — rewrite/improve freely):\n${sourceExcerpt}\n`
+    : ''
+
   const userPrompt = `Book: "${book.title}"
 Premise: ${book.premise}
 
@@ -81,7 +98,7 @@ ${outline}
 
 ${previousSummaries ? `Previous chapters (summaries):\n${previousSummaries}\n` : ''}
 ${previousScenes ? `Earlier in Chapter ${currentChapter.chapter_number} (${currentChapter.title}):\n${previousScenes}\n` : ''}
-${sourceExcerpt ? `Original manuscript excerpt (for reference — rewrite/improve as needed):\n${sourceExcerpt}\n` : ''}
+${sourceInstruction}
 Now write the next scene in Chapter ${currentChapter.chapter_number}: ${currentChapter.title}
 Scene brief: ${scene.brief}
 Target length: approximately ${targetWords} words.

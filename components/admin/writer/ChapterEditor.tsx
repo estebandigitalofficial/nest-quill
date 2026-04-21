@@ -20,6 +20,7 @@ export default function ChapterEditor({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
   const [savingEdit, setSavingEdit] = useState(false)
+  const [mode, setMode] = useState<'preserve_voice' | 'rewrite_free'>('preserve_voice')
 
   const totalWords = scenes.reduce((sum, s) => sum + (s.word_count ?? 0), 0)
 
@@ -49,7 +50,11 @@ export default function ChapterEditor({
 
     const res = await fetch(
       `/api/admin/writer/books/${book.id}/chapters/${chapter.id}/scenes/${scene.id}/generate`,
-      { method: 'POST' }
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+      }
     )
 
     if (res.ok) {
@@ -110,6 +115,21 @@ export default function ChapterEditor({
         <p className="text-xs text-gray-600 pt-1">
           {scenes.length} scenes · {totalWords.toLocaleString()} words written
         </p>
+        {/* Mode toggle */}
+        <div className="flex items-center gap-1 pt-2">
+          <button
+            onClick={() => setMode('preserve_voice')}
+            className={`text-xs px-3 py-1 rounded-full border transition-colors ${mode === 'preserve_voice' ? 'border-brand-500 text-brand-400 bg-brand-500/10' : 'border-gray-700 text-gray-600 hover:border-gray-500'}`}
+          >
+            Preserve voice
+          </button>
+          <button
+            onClick={() => setMode('rewrite_free')}
+            className={`text-xs px-3 py-1 rounded-full border transition-colors ${mode === 'rewrite_free' ? 'border-brand-500 text-brand-400 bg-brand-500/10' : 'border-gray-700 text-gray-600 hover:border-gray-500'}`}
+          >
+            Rewrite freely
+          </button>
+        </div>
       </div>
 
       {/* Scenes */}
