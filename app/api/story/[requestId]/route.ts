@@ -66,7 +66,7 @@ export async function GET(
         .from('story-images')
         .createSignedUrls(imagePaths, 60 * 60 * 24 * 7)
       signed?.forEach(item => {
-        if (item.signedUrl) imageUrlMap[item.path] = item.signedUrl
+        if (item.signedUrl && item.path) imageUrlMap[item.path] = item.signedUrl
       })
     }
 
