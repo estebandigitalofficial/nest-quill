@@ -73,8 +73,8 @@ export default function BookReader({
   // Whether the edit chip is showing for the current page
   const [editChipVisible, setEditChipVisible] = useState(false)
 
-  const containerRef = useRef<HTMLDivElement>(null)
-  const navRef = useRef<{ next: () => void; prev: () => void }>({ next: () => {}, prev: () => {} })
+  const touchStartX = useRef<number | null>(null)
+  const touchStartY = useRef<number | null>(null)
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const initialized = useRef(false)
 
@@ -118,56 +118,32 @@ export default function BookReader({
 
   const next = useCallback(() => go(current + 1), [current, animating])
   const prev = useCallback(() => go(current - 1), [current, animating])
-  useEffect(() => { navRef.current = { next, prev } }, [next, prev])
 
-  // Keyboard
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navRef.current.next()
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navRef.current.prev()
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next()
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [next, prev])
 
-  // Native non-passive touch — required so horizontal swipe can preventDefault
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    let startX: number | null = null
-    let startY: number | null = null
-    let dragging = false
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+    bumpUi()
+  }
 
-    function onStart(e: TouchEvent) {
-      startX = e.touches[0].clientX
-      startY = e.touches[0].clientY
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - (touchStartY.current ?? 0)
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      dx < 0 ? next() : prev()
     }
-    function onMove(e: TouchEvent) {
-      // Always block scroll — this is a paged reader, not a scrollable document
-      e.preventDefault()
-    }
-    function onEnd(e: TouchEvent) {
-      if (startX === null) return
-      const dx = e.changedTouches[0].clientX - startX
-      const dy = e.changedTouches[0].clientY - (startY ?? 0)
-      // Only navigate on predominantly horizontal swipes
-      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-        dx < 0 ? navRef.current.next() : navRef.current.prev()
-      } else if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-        bumpUi()
-      }
-      startX = null; startY = null
-    }
-
-    el.addEventListener('touchstart', onStart, { passive: true })
-    el.addEventListener('touchmove', onMove, { passive: false })
-    el.addEventListener('touchend', onEnd, { passive: true })
-    return () => {
-      el.removeEventListener('touchstart', onStart)
-      el.removeEventListener('touchmove', onMove)
-      el.removeEventListener('touchend', onEnd)
-    }
-  }, [])
+    touchStartX.current = null
+    touchStartY.current = null
+  }
 
   const page = pages[current]
   const progress = pages.length > 1 ? current / (pages.length - 1) : 0
@@ -305,10 +281,11 @@ export default function BookReader({
 
   return (
     <div
-      ref={containerRef}
       className="fixed left-0 right-0 bottom-0 flex flex-col overflow-hidden"
       style={{ background: PAGE_BG, top: 52, touchAction: 'none' }}
       onClick={bumpUi}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
     >
       {/* Progress line */}
       <div className="fixed top-0 left-0 right-0 h-[2px] z-30 bg-gray-900">

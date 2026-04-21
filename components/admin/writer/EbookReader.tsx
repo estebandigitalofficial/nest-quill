@@ -78,11 +78,10 @@ export default function EbookReader({
   const [uiVisible, setUiVisible] = useState(true)
   const [tocOpen, setTocOpen] = useState(false)
 
+  const touchStartX = useRef<number | null>(null)
+  const touchStartY = useRef<number | null>(null)
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const initialized = useRef(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-  // Stable ref so touch handlers always call the current go()
-  const navRef = useRef<{ next: () => void; prev: () => void }>({ next: () => {}, prev: () => {} })
 
   // Restore saved position once
   useEffect(() => {
@@ -124,57 +123,32 @@ export default function EbookReader({
   const next = useCallback(() => go(current + 1), [current, animating])
   const prev = useCallback(() => go(current - 1), [current, animating])
 
-  // Keep navRef in sync so touch handler always uses current version
-  useEffect(() => { navRef.current = { next, prev } }, [next, prev])
-
-  // Keyboard navigation
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (tocOpen) return
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navRef.current.next()
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') navRef.current.prev()
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next()
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [tocOpen])
+  }, [next, prev, tocOpen])
 
-  // Native non-passive touch listeners — required so preventDefault works
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    let startX: number | null = null
-    let startY: number | null = null
-    let dragging = false
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+    bumpUi()
+  }
 
-    function onStart(e: TouchEvent) {
-      startX = e.touches[0].clientX
-      startY = e.touches[0].clientY
-      bumpUi()
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    const dy = e.changedTouches[0].clientY - (touchStartY.current ?? 0)
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      dx < 0 ? next() : prev()
     }
-
-    function onMove(e: TouchEvent) {
-      e.preventDefault()
-    }
-
-    function onEnd(e: TouchEvent) {
-      if (startX === null) return
-      const dx = e.changedTouches[0].clientX - startX
-      const dy = e.changedTouches[0].clientY - (startY ?? 0)
-      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-        dx < 0 ? navRef.current.next() : navRef.current.prev()
-      }
-      startX = null; startY = null
-    }
-
-    el.addEventListener('touchstart', onStart, { passive: true })
-    el.addEventListener('touchmove', onMove, { passive: false })
-    el.addEventListener('touchend', onEnd, { passive: true })
-    return () => {
-      el.removeEventListener('touchstart', onStart)
-      el.removeEventListener('touchmove', onMove)
-      el.removeEventListener('touchend', onEnd)
-    }
-  }, []) // only register once — navRef stays current
+    touchStartX.current = null
+    touchStartY.current = null
+  }
 
   const page = pages[current]
   const progress = pages.length > 1 ? current / (pages.length - 1) : 0
@@ -313,11 +287,12 @@ export default function EbookReader({
 
   return (
     <div
-      ref={containerRef}
       className="fixed inset-0 flex flex-col overflow-hidden"
       style={{ background: PAGE_BG, touchAction: 'none' }}
       onMouseMove={bumpUi}
       onClick={bumpUi}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
     >
       {/* Progress line */}
       <div className="absolute top-0 left-0 right-0 h-[2px] z-30" style={{ background: '#e8e2d8' }}>
