@@ -35,6 +35,7 @@ export default function NewBookForm({
     premise: '',
     target_chapters: 10,
     target_words_per_chapter: 2000,
+    instructions: '',
   })
 
   function setField(field: string, value: string | number) {
@@ -224,6 +225,16 @@ export default function NewBookForm({
                 <input type="number" className={input} value={form.target_words_per_chapter} onChange={e => setField('target_words_per_chapter', parseInt(e.target.value))} min={500} max={10000} step={500} />
               </Field>
             </div>
+
+            <Field label="Writing instructions" hint="Sent to the AI on every scene generation.">
+              <textarea
+                className={`${input} resize-none`}
+                rows={4}
+                value={form.instructions}
+                onChange={e => setField('instructions', e.target.value)}
+                placeholder="e.g. Write in first person, casual and conversational. Don't make it sound like a published novel."
+              />
+            </Field>
 
             {formError && <p className="text-sm text-red-400 bg-red-900/30 rounded-lg px-3 py-2">{formError}</p>}
 

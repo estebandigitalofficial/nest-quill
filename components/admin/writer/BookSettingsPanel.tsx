@@ -17,6 +17,7 @@ export default function BookSettingsPanel({ book }: { book: WriterBook }) {
   const [premise, setPremise] = useState(book.premise)
   const [targetChapters, setTargetChapters] = useState(book.target_chapters)
   const [targetWords, setTargetWords] = useState(book.target_words_per_chapter)
+  const [instructions, setInstructions] = useState(book.instructions ?? '')
 
   async function save() {
     setSaving(true)
@@ -31,6 +32,7 @@ export default function BookSettingsPanel({ book }: { book: WriterBook }) {
         premise,
         target_chapters: targetChapters,
         target_words_per_chapter: targetWords,
+        instructions: instructions || null,
       }),
     })
     setSaving(false)
@@ -115,6 +117,18 @@ export default function BookSettingsPanel({ book }: { book: WriterBook }) {
               value={premise}
               onChange={e => setPremise(e.target.value)}
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs text-gray-400 font-medium">Writing instructions</label>
+            <textarea
+              rows={4}
+              placeholder="e.g. Write in first person, casual and conversational. Don't make it sound like a published novel."
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-600 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
+              value={instructions}
+              onChange={e => setInstructions(e.target.value)}
+            />
+            <p className="text-xs text-gray-600">Sent to the AI on every scene generation for this book.</p>
           </div>
 
           <div className="flex items-center justify-between pt-1">
