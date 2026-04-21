@@ -62,11 +62,15 @@ export default function ChapterEditor({
     )
 
     if (res.ok) {
+      const json = await res.json()
       setPreflight(null)
-      router.refresh()
       setScenes(prev =>
-        prev.map(s => s.id === scene.id ? { ...s, status: 'draft' as const } : s)
+        prev.map(s => s.id === scene.id
+          ? { ...s, content: json.content, word_count: json.wordCount, status: 'draft' as const }
+          : s
+        )
       )
+      router.refresh()
     } else if (res.status === 422) {
       const json = await res.json()
       setPreflight({ sceneId: scene.id, issues: json.issues ?? [] })

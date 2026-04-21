@@ -268,7 +268,7 @@ Respond ONLY with valid JSON: {"safe": true} if everything is grounded, or {"saf
       .update({ status: 'in_progress', updated_at: new Date().toISOString() })
       .eq('id', chapterId)
 
-    return NextResponse.json({ sceneId, wordCount, generationTimeMs })
+    return NextResponse.json({ sceneId, content, wordCount, generationTimeMs })
 
   } catch (err) {
     await supabase
