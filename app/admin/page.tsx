@@ -51,9 +51,6 @@ export default async function AdminPage() {
           <Link href="/admin/writer" className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors">
             Writer →
           </Link>
-          <Link href="/" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
-            ← Back to site
-          </Link>
         </div>
       </header>
 

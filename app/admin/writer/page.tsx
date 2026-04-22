@@ -5,6 +5,23 @@ import { getAdminContext } from '@/lib/admin/guard'
 import type { WriterBook } from '@/types/writer'
 import DeleteBookButton from '@/components/admin/writer/DeleteBookButton'
 
+// Deterministically pick an accent color from owner_id
+const AUTHOR_COLORS = [
+  { border: 'border-l-brand-500',  dot: 'bg-brand-500',   text: 'text-brand-400'   }, // amber/orange
+  { border: 'border-l-blue-500',   dot: 'bg-blue-500',    text: 'text-blue-400'    }, // blue
+  { border: 'border-l-violet-500', dot: 'bg-violet-500',  text: 'text-violet-400'  }, // violet
+  { border: 'border-l-teal-500',   dot: 'bg-teal-500',    text: 'text-teal-400'    }, // teal
+  { border: 'border-l-rose-500',   dot: 'bg-rose-500',    text: 'text-rose-400'    }, // rose
+  { border: 'border-l-green-500',  dot: 'bg-green-500',   text: 'text-green-400'   }, // green
+]
+
+function authorColor(ownerId: string | null) {
+  if (!ownerId) return AUTHOR_COLORS[0]
+  let hash = 0
+  for (let i = 0; i < ownerId.length; i++) hash = (hash * 31 + ownerId.charCodeAt(i)) >>> 0
+  return AUTHOR_COLORS[hash % AUTHOR_COLORS.length]
+}
+
 export default async function WriterPage() {
   const ctx = await getAdminContext()
   if (!ctx) redirect('/')
@@ -53,10 +70,12 @@ export default async function WriterPage() {
               const primaryHref = isComplete
                 ? `/admin/writer/${book.id}/read`
                 : `/admin/writer/${book.id}`
+              const color = authorColor(book.owner_id)
+              const displayAuthor = book.pen_name ?? book.author_name
               return (
                 <div
                   key={book.id}
-                  className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-5 hover:border-gray-600 transition-colors space-y-2 group relative"
+                  className={`bg-gray-900 border border-gray-800 border-l-4 ${color.border} rounded-xl px-5 py-5 hover:border-gray-600 hover:${color.border} transition-colors space-y-2 group relative`}
                 >
                   <Link href={primaryHref} className="absolute inset-0 rounded-xl" aria-hidden />
                   <div className="flex items-start justify-between gap-2">
@@ -66,12 +85,19 @@ export default async function WriterPage() {
                   {book.subtitle && <p className="text-sm text-gray-400 italic">{book.subtitle}</p>}
                   <p className="text-xs text-gray-500 line-clamp-2">{book.premise}</p>
                   <div className="flex items-center justify-between pt-1">
-                    <div className="flex gap-3 text-xs text-gray-600">
+                    <div className="flex items-center gap-3 text-xs text-gray-600">
+                      {displayAuthor && (
+                        <>
+                          <span className="flex items-center gap-1.5">
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${color.dot}`} />
+                            <span className={`font-medium ${color.text}`}>{displayAuthor}</span>
+                          </span>
+                          <span>·</span>
+                        </>
+                      )}
                       <span>{book.genre}</span>
                       <span>·</span>
                       <span>{book.target_chapters} ch.</span>
-                      <span>·</span>
-                      <span>~{(book.target_chapters * book.target_words_per_chapter).toLocaleString()} wds</span>
                     </div>
                     {/* Action links — sit above the invisible full-card link */}
                     <div className="flex gap-1.5 relative z-10">
