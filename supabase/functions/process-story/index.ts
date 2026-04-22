@@ -11,14 +11,16 @@ const RESEND_FROM = Deno.env.get('RESEND_FROM_EMAIL') ?? 'stories@nestandquill.c
 const APP_URL = Deno.env.get('NEXT_PUBLIC_APP_URL') ?? 'https://nestandquill.com'
 const EXPECTED_TOKEN = Deno.env.get('EDGE_FUNCTION_SECRET') ?? SUPABASE_SERVICE_ROLE_KEY
 const SKIP_IMAGES = Deno.env.get('SKIP_IMAGE_GENERATION') === 'true'
+const MOCK_PIPELINE = Deno.env.get('MOCK_PIPELINE') === 'true'
 
 // PDF layout constants (8×8 inch square picture-book format)
 const PDF_SIZE = 576
 const PDF_MARGIN = 40
-const PDF_BRAND_ORANGE = rgb(0.863, 0.541, 0.157)
-const PDF_CREAM = rgb(0.98, 0.973, 0.96)
-const PDF_NEAR_BLACK = rgb(0.11, 0.098, 0.09)
-const PDF_GRAY = rgb(0.471, 0.443, 0.424)
+const PDF_BRAND_GOLD = rgb(0.788, 0.592, 0.0)    // #C99700
+const PDF_CREAM = rgb(0.973, 0.961, 0.925)        // #F8F5EC
+const PDF_OXFORD = rgb(0.047, 0.137, 0.251)       // #0C2340
+const PDF_CHARCOAL = rgb(0.18, 0.18, 0.18)        // #2E2E2E
+const PDF_GRAY = rgb(0.471, 0.443, 0.424)         // #78716c
 
 // ── Illustration style → DALL-E style hint map ────────────────────────────────
 
@@ -249,7 +251,63 @@ Deno.serve(async (req) => {
   // ── Pipeline ──────────────────────────────────────────────────────────────
 
   try {
-    await log('pipeline_start', 'Pipeline started')
+    await log('pipeline_start', MOCK_PIPELINE ? 'Pipeline started (MOCK MODE — no API calls)' : 'Pipeline started')
+
+    // ── Mock mode — skips all OpenAI calls, uses canned data ─────────────
+    if (MOCK_PIPELINE) {
+      const pageCount = Number(storyRequest.story_length) || 8
+      const mockPages = Array.from({ length: pageCount }, (_, i) => ({
+        page: i + 1,
+        text: `This is mock page ${i + 1} of ${pageCount} for ${storyRequest.child_name}'s story. No API credits were used.`,
+        image_description: `A friendly scene for page ${i + 1}.`,
+      }))
+
+      const { data: mockSaved, error: mockErr } = await supabase
+        .from('generated_stories')
+        .insert({
+          request_id: requestId,
+          title: `${storyRequest.child_name}'s Mock Story`,
+          subtitle: 'A test story',
+          author_line: 'A Nest & Quill Original',
+          dedication: storyRequest.dedication_text || null,
+          synopsis: 'A mock story generated for local testing — no OpenAI credits used.',
+          full_text_json: mockPages,
+          model_used: 'mock',
+          generation_time_ms: 0,
+        })
+        .select('id')
+        .single()
+
+      if (mockErr || !mockSaved) throw new Error(`Mock story insert failed: ${mockErr?.message}`)
+
+      const mockScenes = mockPages.map(p => ({
+        story_id: mockSaved.id,
+        request_id: requestId,
+        page_number: p.page,
+        page_text: p.text,
+        image_prompt: p.image_description,
+        image_status: 'pending',
+      }))
+
+      await supabase.from('story_scenes').insert(mockScenes)
+
+      await supabase
+        .from('story_requests')
+        .update({
+          status: 'complete',
+          status_message: 'Mock story ready!',
+          progress_pct: 100,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', requestId)
+
+      await log('pipeline_complete', 'Mock pipeline complete — no API calls made')
+
+      return new Response(
+        JSON.stringify({ requestId, status: 'complete', title: `${storyRequest.child_name}'s Mock Story`, mock: true }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
     // ── Step 1: Generate story text ───────────────────────────────────────
     await log('generate_text', 'Calling OpenAI GPT-4o for story text')
@@ -418,15 +476,15 @@ Deno.serve(async (req) => {
       // Cover page
       const cover = pdfDoc.addPage([PDF_SIZE, PDF_SIZE])
       cover.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: PDF_SIZE, color: PDF_CREAM })
-      cover.drawRectangle({ x: 0, y: PDF_SIZE - 8, width: PDF_SIZE, height: 8, color: PDF_BRAND_ORANGE })
-      cover.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: 8, color: PDF_BRAND_ORANGE })
+      cover.drawRectangle({ x: 0, y: PDF_SIZE - 8, width: PDF_SIZE, height: 8, color: PDF_BRAND_GOLD })
+      cover.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: 8, color: PDF_BRAND_GOLD })
 
       const titleSize = storyTitle.length > 24 ? 28 : 34
       const titleLines = pdfWrapText(storyTitle, fontSerifBold, titleSize, PDF_SIZE - PDF_MARGIN * 2)
       let coverY = PDF_SIZE * 0.62
       for (const line of titleLines) {
         const w = fontSerifBold.widthOfTextAtSize(line, titleSize)
-        cover.drawText(line, { x: (PDF_SIZE - w) / 2, y: coverY, size: titleSize, font: fontSerifBold, color: PDF_NEAR_BLACK })
+        cover.drawText(line, { x: (PDF_SIZE - w) / 2, y: coverY, size: titleSize, font: fontSerifBold, color: PDF_OXFORD })
         coverY -= titleSize * 1.3
       }
 
@@ -473,11 +531,11 @@ Deno.serve(async (req) => {
       // Back page
       const back = pdfDoc.addPage([PDF_SIZE, PDF_SIZE])
       back.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: PDF_SIZE, color: PDF_CREAM })
-      back.drawRectangle({ x: 0, y: PDF_SIZE - 8, width: PDF_SIZE, height: 8, color: PDF_BRAND_ORANGE })
-      back.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: 8, color: PDF_BRAND_ORANGE })
+      back.drawRectangle({ x: 0, y: PDF_SIZE - 8, width: PDF_SIZE, height: 8, color: PDF_BRAND_GOLD })
+      back.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: 8, color: PDF_BRAND_GOLD })
       const endText = 'The End'
       const endW = fontSerifItalic.widthOfTextAtSize(endText, 22)
-      back.drawText(endText, { x: (PDF_SIZE - endW) / 2, y: PDF_SIZE / 2 + 10, size: 22, font: fontSerifItalic, color: PDF_BRAND_ORANGE })
+      back.drawText(endText, { x: (PDF_SIZE - endW) / 2, y: PDF_SIZE / 2 + 10, size: 22, font: fontSerifItalic, color: PDF_BRAND_GOLD })
       const brandW = fontSerif.widthOfTextAtSize(authorLine, 11)
       back.drawText(authorLine, { x: (PDF_SIZE - brandW) / 2, y: PDF_SIZE / 2 - 24, size: 11, font: fontSerif, color: PDF_GRAY })
 
@@ -535,10 +593,10 @@ Deno.serve(async (req) => {
             to: storyRequest.user_email,
             subject: `${childName}'s story is ready! 📖`,
             html: `
-              <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#1c1917">
-                <h1 style="font-size:24px;margin-bottom:8px">${childName}'s story is ready!</h1>
+              <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#2E2E2E">
+                <h1 style="font-size:24px;margin-bottom:8px;color:#0C2340">${childName}'s story is ready!</h1>
                 <p style="color:#78716c;margin-top:0">Your personalized storybook has been created.</p>
-                <a href="${storyUrl}" style="display:inline-block;margin:24px 0;background:#dc8a28;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:600;font-size:15px">
+                <a href="${storyUrl}" style="display:inline-block;margin:24px 0;background:#C99700;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:600;font-size:15px">
                   Read the story →
                 </a>
                 <p style="font-size:12px;color:#a8a29e;margin-top:32px">Nest &amp; Quill · Personalized stories for curious kids</p>
@@ -640,7 +698,7 @@ function pdfDrawPageText(page, text, font, topY, pageNum, totalPages) {
   let y = topY
   for (const line of lines) {
     if (y < PDF_MARGIN + 20) break
-    page.drawText(line, { x: PDF_MARGIN * 1.5, y, size: textSize, font, color: PDF_NEAR_BLACK })
+    page.drawText(line, { x: PDF_MARGIN * 1.5, y, size: textSize, font, color: PDF_CHARCOAL })
     y -= textSize * 1.75
   }
   const label = `${pageNum} / ${totalPages}`

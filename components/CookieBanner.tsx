@@ -31,7 +31,7 @@ export default function CookieBanner() {
     }}>
       <p style={{ fontSize: 13, color: '#a8a29e', lineHeight: 1.5, margin: 0, maxWidth: 620 }}>
         We use cookies to keep you signed in and remember your reading position.{' '}
-        <Link href="/privacy" style={{ color: '#dc8a28', textDecoration: 'underline' }}>
+        <Link href="/privacy" style={{ color: '#C99700', textDecoration: 'underline' }}>
           Privacy Policy
         </Link>
       </p>
@@ -44,7 +44,7 @@ export default function CookieBanner() {
         </button>
         <button
           onClick={accept}
-          style={{ fontSize: 12, fontWeight: 600, padding: '7px 16px', borderRadius: 8, border: 'none', color: 'white', background: '#dc8a28', cursor: 'pointer' }}
+          style={{ fontSize: 12, fontWeight: 600, padding: '7px 16px', borderRadius: 8, border: 'none', color: 'white', background: '#C99700', cursor: 'pointer' }}
         >
           Accept
         </button>

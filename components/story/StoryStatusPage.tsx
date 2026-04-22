@@ -292,7 +292,7 @@ function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin }: { sto
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: '#faf8f5', overflow: 'hidden' }}
+      style={{ position: 'fixed', inset: 0, background: '#F8F5EC', overflow: 'hidden' }}
       onClick={bumpUi}
     >
       {/* Header — back link */}
@@ -302,7 +302,7 @@ function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin }: { sto
         pointerEvents: uiVisible ? 'auto' : 'none',
         transition: 'opacity 0.4s',
       }}>
-        <div style={{ height: 40, background: 'linear-gradient(to bottom, #faf8f5, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 16, paddingRight: 16 }}>
+        <div style={{ height: 40, background: 'linear-gradient(to bottom, #F8F5EC, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 16, paddingRight: 16 }}>
           <Link
             href={backHref}
             onClick={e => e.stopPropagation()}
@@ -318,7 +318,7 @@ function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin }: { sto
               href={pdfUrl}
               download
               onClick={e => e.stopPropagation()}
-              style={{ fontSize: 11, color: '#dc8a28', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500 }}
+              style={{ fontSize: 11, color: '#C99700', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500 }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -331,7 +331,7 @@ function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin }: { sto
 
       {/* Progress bar */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: '#ede8e1', zIndex: 10 }}>
-        <div style={{ height: '100%', background: '#dc8a28', width: `${progress * 100}%`, transition: 'width 0.4s' }} />
+        <div style={{ height: '100%', background: '#C99700', width: `${progress * 100}%`, transition: 'width 0.4s' }} />
       </div>
 
       {/* Tap zones */}
@@ -384,8 +384,8 @@ function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin }: { sto
         pointerEvents: uiVisible ? 'auto' : 'none',
         transition: 'opacity 0.4s, transform 0.4s',
       }}>
-        <div style={{ height: 20, background: 'linear-gradient(to top, #faf8f5, transparent)' }} />
-        <div style={{ background: '#faf8f5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 20px', gap: 8 }}>
+        <div style={{ height: 20, background: 'linear-gradient(to top, #F8F5EC, transparent)' }} />
+        <div style={{ background: '#F8F5EC', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 20px', gap: 8 }}>
           <div style={{ display: 'flex', gap: 6 }}>
             <button
               onClick={() => go(0)} disabled={current === 0 || animating}
@@ -421,7 +421,7 @@ function CoverPage({ story, hasMore }: { story: StoryContentResponse; hasMore: b
       <p style={{ fontSize: 10, color: '#a8a29e', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 16 }}>
         {story.authorLine}
       </p>
-      <h1 style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: 'clamp(1.8rem,6vw,2.6rem)', color: '#1c1917', lineHeight: 1.2, marginBottom: 12 }}>
+      <h1 style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: 'clamp(1.8rem,6vw,2.6rem)', color: '#0C2340', lineHeight: 1.2, marginBottom: 12 }}>
         {story.title}
       </h1>
       {story.subtitle && (
@@ -465,7 +465,7 @@ function StoryPageContent({ page, storyIndex, total }: { page: StoryContentPage;
         </div>
       )}
 
-      <p style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: 'clamp(1rem,3.5vw,1.125rem)', lineHeight: 1.85, color: '#1c1917', textAlign: 'center', width: '100%' }}>
+      <p style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: 'clamp(1rem,3.5vw,1.125rem)', lineHeight: 1.85, color: '#2E2E2E', textAlign: 'center', width: '100%' }}>
         {page.text}
       </p>
     </>
@@ -483,7 +483,7 @@ function EndPage({ pdfUrl, canDownload, backHref }: { pdfUrl?: string; canDownlo
           <a
             href={pdfUrl}
             download
-            style={{ fontSize: 13, fontWeight: 600, color: 'white', background: '#dc8a28', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+            style={{ fontSize: 13, fontWeight: 600, color: 'white', background: '#C99700', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -494,14 +494,14 @@ function EndPage({ pdfUrl, canDownload, backHref }: { pdfUrl?: string; canDownlo
         {!canDownload && (
           <Link
             href="/pricing"
-            style={{ fontSize: 13, fontWeight: 600, color: '#dc8a28', background: '#fff8f0', border: '1.5px solid #f5d9b0', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+            style={{ fontSize: 13, fontWeight: 600, color: '#C99700', background: '#fff8f0', border: '1.5px solid #f5d9b0', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
             🔒 Upgrade to download PDF
           </Link>
         )}
         <Link
           href={backHref}
-          style={{ fontSize: 13, fontWeight: 600, color: 'white', background: (pdfUrl && canDownload) ? '#78716c' : '#dc8a28', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-block' }}
+          style={{ fontSize: 13, fontWeight: 600, color: 'white', background: (pdfUrl && canDownload) ? '#78716c' : '#C99700', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-block' }}
         >
           {backHref === '/admin' ? 'Back to dashboard →' : 'View in my account →'}
         </Link>

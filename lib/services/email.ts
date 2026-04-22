@@ -28,8 +28,8 @@ export async function sendBookReadyEmail(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Your story is ready!</title>
 </head>
-<body style="margin:0;padding:0;background:#fdf8f2;font-family:Georgia,serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fdf8f2;padding:40px 16px;">
+<body style="margin:0;padding:0;background:#F8F5EC;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8F5EC;padding:40px 16px;">
     <tr>
       <td align="center">
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
@@ -63,7 +63,7 @@ export async function sendBookReadyEmail(
               <!-- CTA button -->
               <table cellpadding="0" cellspacing="0" style="margin-top:28px;">
                 <tr>
-                  <td style="background:#dc8a28;border-radius:10px;">
+                  <td style="background:#C99700;border-radius:10px;">
                     <a href="${downloadUrl}"
                        style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.1px;">
                       Read ${childName}'s story →
@@ -77,7 +77,7 @@ export async function sendBookReadyEmail(
 
               <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#aaa;line-height:1.6;">
                 If the button doesn't work, copy and paste this link into your browser:<br/>
-                <a href="${downloadUrl}" style="color:#dc8a28;word-break:break-all;">${downloadUrl}</a>
+                <a href="${downloadUrl}" style="color:#C99700;word-break:break-all;">${downloadUrl}</a>
               </p>
 
             </td>
@@ -129,8 +129,8 @@ export async function sendSubmissionConfirmationEmail(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>We're creating ${childName}'s story</title>
 </head>
-<body style="margin:0;padding:0;background:#fdf8f2;font-family:Georgia,serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fdf8f2;padding:40px 16px;">
+<body style="margin:0;padding:0;background:#F8F5EC;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8F5EC;padding:40px 16px;">
     <tr>
       <td align="center">
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
@@ -163,7 +163,7 @@ export async function sendSubmissionConfirmationEmail(
 
               <table cellpadding="0" cellspacing="0" style="margin-top:28px;">
                 <tr>
-                  <td style="background:#dc8a28;border-radius:10px;">
+                  <td style="background:#C99700;border-radius:10px;">
                     <a href="${storyUrl}"
                        style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">
                       Check progress →
@@ -175,7 +175,7 @@ export async function sendSubmissionConfirmationEmail(
               <hr style="border:none;border-top:1px solid #ede8e0;margin:32px 0;" />
 
               <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#aaa;line-height:1.6;">
-                <a href="${storyUrl}" style="color:#dc8a28;word-break:break-all;">${storyUrl}</a>
+                <a href="${storyUrl}" style="color:#C99700;word-break:break-all;">${storyUrl}</a>
               </p>
 
             </td>

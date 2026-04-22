@@ -5,7 +5,7 @@
 @layer base {
   :root {
     --font-sans: 'Nunito', system-ui, sans-serif;
-    --font-serif: 'Lora', Georgia, serif;
+    --font-serif: 'Playfair Display', Georgia, serif;
   }
 
   html {
@@ -13,11 +13,11 @@
   }
 
   body {
-    @apply bg-white text-gray-900 font-sans;
+    @apply bg-parchment text-charcoal font-sans;
   }
 
   h1, h2, h3, h4 {
-    @apply font-serif;
+    @apply font-serif text-oxford;
   }
 }
 

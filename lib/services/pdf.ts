@@ -4,9 +4,10 @@ import type { GeneratedStory, StoryScene } from '@/types/database'
 // 8 × 8 inch square — standard picture-book format
 const PAGE_SIZE = 576 // points
 const MARGIN = 40
-const BRAND_ORANGE = rgb(0.863, 0.541, 0.157) // #dc8a28
-const CREAM = rgb(0.98, 0.973, 0.96)          // #faf8f5
-const NEAR_BLACK = rgb(0.11, 0.098, 0.09)     // #1c1917
+const BRAND_GOLD = rgb(0.788, 0.592, 0.0)     // #C99700
+const CREAM = rgb(0.973, 0.961, 0.925)        // #F8F5EC
+const OXFORD = rgb(0.047, 0.137, 0.251)       // #0C2340
+const CHARCOAL = rgb(0.18, 0.18, 0.18)        // #2E2E2E
 const GRAY = rgb(0.471, 0.443, 0.424)         // #78716c
 
 export interface PDFGenerationInput {
@@ -50,14 +51,14 @@ export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGen
   cover.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: PAGE_SIZE, color: CREAM })
 
   // Decorative top bar
-  cover.drawRectangle({ x: 0, y: PAGE_SIZE - 8, width: PAGE_SIZE, height: 8, color: BRAND_ORANGE })
+  cover.drawRectangle({ x: 0, y: PAGE_SIZE - 8, width: PAGE_SIZE, height: 8, color: BRAND_GOLD })
 
   const titleSize = story.title.length > 24 ? 28 : 34
   const titleLines = wrapText(story.title, fontSerifBold, titleSize, PAGE_SIZE - MARGIN * 2)
   let coverY = PAGE_SIZE * 0.62
   for (const line of titleLines) {
     const w = fontSerifBold.widthOfTextAtSize(line, titleSize)
-    cover.drawText(line, { x: (PAGE_SIZE - w) / 2, y: coverY, size: titleSize, font: fontSerifBold, color: NEAR_BLACK })
+    cover.drawText(line, { x: (PAGE_SIZE - w) / 2, y: coverY, size: titleSize, font: fontSerifBold, color: OXFORD })
     coverY -= titleSize * 1.3
   }
 
@@ -83,7 +84,7 @@ export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGen
   })
 
   // Decorative bottom bar
-  cover.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: 8, color: BRAND_ORANGE })
+  cover.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: 8, color: BRAND_GOLD })
 
   // ── Dedication page ────────────────────────────────────────────────────────
   if (story.dedication) {
@@ -135,8 +136,8 @@ export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGen
   // ── Back page ──────────────────────────────────────────────────────────────
   const backPage = doc.addPage([PAGE_SIZE, PAGE_SIZE])
   backPage.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: PAGE_SIZE, color: CREAM })
-  backPage.drawRectangle({ x: 0, y: PAGE_SIZE - 8, width: PAGE_SIZE, height: 8, color: BRAND_ORANGE })
-  backPage.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: 8, color: BRAND_ORANGE })
+  backPage.drawRectangle({ x: 0, y: PAGE_SIZE - 8, width: PAGE_SIZE, height: 8, color: BRAND_GOLD })
+  backPage.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: 8, color: BRAND_GOLD })
 
   const endText = '✦  The End  ✦'
   const endW = fontSerifItalic.widthOfTextAtSize(endText, 20)
@@ -145,7 +146,7 @@ export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGen
     y: PAGE_SIZE / 2 + 10,
     size: 20,
     font: fontSerifItalic,
-    color: BRAND_ORANGE,
+    color: BRAND_GOLD,
   })
 
   const brandText = 'A Nest & Quill Original'
@@ -207,7 +208,7 @@ function drawPageText(
 
   for (const line of lines) {
     if (y < MARGIN + 20) break
-    page.drawText(line, { x: MARGIN * 1.5, y, size: textSize, font, color: NEAR_BLACK })
+    page.drawText(line, { x: MARGIN * 1.5, y, size: textSize, font, color: CHARCOAL })
     y -= textSize * 1.75
   }
 

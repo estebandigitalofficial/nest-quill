@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Lora, Nunito } from 'next/font/google'
+import { Playfair_Display, Nunito } from 'next/font/google'
 import './globals.css'
 import CookieBanner from '@/components/CookieBanner'
 
@@ -9,8 +9,10 @@ const nunito = Nunito({
   display: 'swap',
 })
 
-const lora = Lora({
+const playfair = Playfair_Display({
   subsets: ['latin'],
+  weight: ['400', '700'],
+  style: ['normal', 'italic'],
   variable: '--font-serif',
   display: 'swap',
 })
@@ -54,7 +56,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${nunito.variable} ${lora.variable}`}>
+    <html lang="en" className={`${nunito.variable} ${playfair.variable}`}>
       <body>
         {children}
         <CookieBanner />
