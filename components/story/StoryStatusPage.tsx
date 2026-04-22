@@ -8,7 +8,7 @@ const TERMINAL_STATUSES = ['complete', 'failed']
 const POLL_INTERVAL_MS = 3000
 const TRANSITION_MS = 280
 
-export default function StoryStatusPage({ requestId }: { requestId: string }) {
+export default function StoryStatusPage({ requestId, isAdmin }: { requestId: string; isAdmin?: boolean }) {
   const [status, setStatus] = useState<StoryStatusResponse | null>(null)
   const [story, setStory] = useState<StoryContentResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -114,7 +114,7 @@ export default function StoryStatusPage({ requestId }: { requestId: string }) {
     )
   }
 
-  return <StoryEbookReader story={story} requestId={requestId} pdfUrl={status.signedUrl} planTier={status.planTier} />
+  return <StoryEbookReader story={story} requestId={requestId} pdfUrl={status.signedUrl} planTier={status.planTier} isAdmin={isAdmin} />
 }
 
 // ── Non-reader shells ─────────────────────────────────────────────────────────
@@ -189,8 +189,10 @@ type ReaderPage =
   | { kind: 'story'; page: StoryContentPage }
   | { kind: 'end' }
 
-function StoryEbookReader({ story, requestId, pdfUrl, planTier }: { story: StoryContentResponse; requestId: string; pdfUrl?: string; planTier?: string }) {
+function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin }: { story: StoryContentResponse; requestId: string; pdfUrl?: string; planTier?: string; isAdmin?: boolean }) {
   const canDownload = planTier !== 'free'
+  const backHref = isAdmin ? '/admin' : '/account'
+  const backLabel = isAdmin ? 'Admin dashboard' : 'My stories'
   const readerPages: ReaderPage[] = [
     { kind: 'cover' },
     ...story.pages.map(p => ({ kind: 'story' as const, page: p })),
@@ -302,14 +304,14 @@ function StoryEbookReader({ story, requestId, pdfUrl, planTier }: { story: Story
       }}>
         <div style={{ height: 40, background: 'linear-gradient(to bottom, #faf8f5, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 16, paddingRight: 16 }}>
           <Link
-            href="/account"
+            href={backHref}
             onClick={e => e.stopPropagation()}
             style={{ fontSize: 11, color: '#a8a29e', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6"/>
             </svg>
-            My stories
+            {backLabel}
           </Link>
           {pdfUrl && canDownload && (
             <a
@@ -370,7 +372,7 @@ function StoryEbookReader({ story, requestId, pdfUrl, planTier }: { story: Story
         <div style={{ width: '100%', maxWidth: 480, padding: '0 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
           {page.kind === 'cover' && <CoverPage story={story} hasMore={readerPages.length > 1} />}
           {page.kind === 'story' && <StoryPageContent page={page.page} storyIndex={current} total={story.pages.length} />}
-          {page.kind === 'end' && <EndPage pdfUrl={pdfUrl} canDownload={canDownload} />}
+          {page.kind === 'end' && <EndPage pdfUrl={pdfUrl} canDownload={canDownload} backHref={backHref} />}
         </div>
       </div>
 
@@ -470,7 +472,7 @@ function StoryPageContent({ page, storyIndex, total }: { page: StoryContentPage;
   )
 }
 
-function EndPage({ pdfUrl, canDownload }: { pdfUrl?: string; canDownload: boolean }) {
+function EndPage({ pdfUrl, canDownload, backHref }: { pdfUrl?: string; canDownload: boolean; backHref: string }) {
   return (
     <div style={{ textAlign: 'center', width: '100%' }}>
       <p style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: '1.6rem', color: '#a8a29e', marginBottom: 36 }}>
@@ -498,10 +500,10 @@ function EndPage({ pdfUrl, canDownload }: { pdfUrl?: string; canDownload: boolea
           </Link>
         )}
         <Link
-          href="/account"
+          href={backHref}
           style={{ fontSize: 13, fontWeight: 600, color: 'white', background: (pdfUrl && canDownload) ? '#78716c' : '#dc8a28', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-block' }}
         >
-          View in my account →
+          {backHref === '/admin' ? 'Back to dashboard →' : 'View in my account →'}
         </Link>
         <Link
           href="/create"

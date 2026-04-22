@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getAdminContext } from '@/lib/admin/guard'
 import { PLAN_CONFIG } from '@/lib/plans/config'
 import type { StoryRequest, PlanTier } from '@/types/database'
 import LogoutButton from '@/components/auth/LogoutButton'
@@ -27,6 +28,9 @@ export default async function AccountPage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
+
+  const adminCtx = await getAdminContext()
+  if (adminCtx) redirect('/admin')
 
   const adminSupabase = createAdminClient()
 
