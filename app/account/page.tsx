@@ -6,6 +6,22 @@ import { PLAN_CONFIG } from '@/lib/plans/config'
 import type { StoryRequest, PlanTier } from '@/types/database'
 import LogoutButton from '@/components/auth/LogoutButton'
 
+// Consistent pastel color per story, hashed from id
+const COVER_COLORS = [
+  'bg-brand-100',
+  'bg-blue-100',
+  'bg-violet-100',
+  'bg-teal-100',
+  'bg-rose-100',
+  'bg-green-100',
+  'bg-amber-100',
+]
+function coverColor(id: string) {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
+  return COVER_COLORS[hash % COVER_COLORS.length]
+}
+
 export default async function AccountPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -13,12 +29,46 @@ export default async function AccountPage() {
   if (!user) redirect('/login')
 
   const adminSupabase = createAdminClient()
+
   const { data: stories } = await adminSupabase
     .from('story_requests')
     .select('id, child_name, story_theme, status, progress_pct, plan_tier, created_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(20)
+
+  const rows = (stories ?? []) as unknown as StoryRequest[]
+
+  // Fetch first-page images for complete stories
+  const completeIds = rows.filter(s => s.status === 'complete').map(s => s.id)
+  const thumbMap: Record<string, string> = {}
+
+  if (completeIds.length > 0) {
+    const { data: scenes } = await adminSupabase
+      .from('story_scenes')
+      .select('request_id, storage_path')
+      .in('request_id', completeIds)
+      .eq('page_number', 1)
+      .eq('image_status', 'complete')
+
+    const paths = (scenes ?? []).filter(s => s.storage_path).map(s => s.storage_path as string)
+    if (paths.length > 0) {
+      const { data: signed } = await adminSupabase.storage
+        .from('story-images')
+        .createSignedUrls(paths, 60 * 60 * 24 * 7)
+
+      const pathToUrl: Record<string, string> = {}
+      signed?.forEach(item => {
+        if (item.signedUrl && item.path) pathToUrl[item.path] = item.signedUrl
+      })
+
+      scenes?.forEach(scene => {
+        if (scene.storage_path && pathToUrl[scene.storage_path]) {
+          thumbMap[scene.request_id] = pathToUrl[scene.storage_path]
+        }
+      })
+    }
+  }
 
   const planTier = (user.user_metadata?.plan_tier as PlanTier) ?? 'free'
   const plan = PLAN_CONFIG[planTier]
@@ -64,7 +114,7 @@ export default async function AccountPage() {
             </Link>
           </div>
 
-          {!stories || stories.length === 0 ? (
+          {rows.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-12 text-center space-y-3">
               <p className="text-3xl">📖</p>
               <p className="font-serif text-lg text-gray-900">No stories yet</p>
@@ -78,25 +128,42 @@ export default async function AccountPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {(stories as unknown as StoryRequest[]).map((story) => (
+              {rows.map((story) => (
                 <Link
                   key={story.id}
                   href={`/story/${story.id}`}
-                  className="block bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 hover:border-brand-200 transition-colors"
+                  className="flex items-center gap-4 bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-4 hover:border-brand-200 transition-colors"
                 >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-900 truncate">
-                        {story.child_name}&apos;s story
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5 truncate">{story.story_theme}</p>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <StatusBadge status={story.status} />
-                      <span className="text-xs text-gray-400">
-                        {new Date(story.created_at).toLocaleDateString()}
+                  {/* Thumbnail */}
+                  <div className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center ${thumbMap[story.id] ? '' : coverColor(story.id)}`}>
+                    {thumbMap[story.id] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={thumbMap[story.id]}
+                        alt={`Cover for ${story.child_name}'s story`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="font-serif text-2xl font-bold text-gray-400 select-none">
+                        {story.child_name.charAt(0).toUpperCase()}
                       </span>
-                    </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 truncate">
+                      {story.child_name}&apos;s story
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5 truncate">{story.story_theme}</p>
+                  </div>
+
+                  {/* Meta */}
+                  <div className="flex items-center gap-3 shrink-0">
+                    <StatusBadge status={story.status} />
+                    <span className="text-xs text-gray-400 hidden sm:block">
+                      {new Date(story.created_at).toLocaleDateString()}
+                    </span>
                   </div>
                 </Link>
               ))}
