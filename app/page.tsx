@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
 import { cn } from '@/lib/utils/cn'
+import LogoutButton from '@/components/auth/LogoutButton'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -38,12 +39,15 @@ function Nav({ user }: { user: { email?: string } | null }) {
             Pricing
           </Link>
           {user ? (
-            <Link
-              href="/account"
-              className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
-            >
-              My stories
-            </Link>
+            <>
+              <Link
+                href="/account"
+                className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
+              >
+                My stories
+              </Link>
+              <LogoutButton />
+            </>
           ) : (
             <Link
               href="/login"
