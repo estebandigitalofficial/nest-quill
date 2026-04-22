@@ -1,7 +1,7 @@
 import { after } from 'next/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getAdminContext } from '@/lib/admin/guard'
 import { NotFoundError, toApiError } from '@/lib/utils/errors'
 import type { StoryRequest } from '@/types/database'
 
@@ -14,8 +14,7 @@ export async function POST(
   try {
     const { requestId } = await params
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const adminCtx = await getAdminContext()
     const guestToken = request.cookies.get('guest_token')?.value
 
     const adminSupabase = createAdminClient()
@@ -29,10 +28,18 @@ export async function POST(
 
     const storyRequest = data as unknown as StoryRequest
 
-    const isAdmin = user?.email === process.env.ADMIN_EMAIL
+    // Import createClient lazily only when needed for non-admin ownership check
+    let userId: string | null = null
+    if (!adminCtx) {
+      const { createClient } = await import('@/lib/supabase/server')
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      userId = user?.id ?? null
+    }
+
     const isOwner =
-      isAdmin ||
-      (user && storyRequest.user_id === user.id) ||
+      !!adminCtx ||
+      (userId && storyRequest.user_id === userId) ||
       (guestToken && storyRequest.guest_token === guestToken)
 
     if (!isOwner) throw new NotFoundError('Story request')
@@ -41,7 +48,7 @@ export async function POST(
       return NextResponse.json({ message: 'Story is not in a failed state' }, { status: 400 })
     }
 
-    if (storyRequest.retry_count >= MAX_RETRIES) {
+    if (!adminCtx && storyRequest.retry_count >= MAX_RETRIES) {
       return NextResponse.json(
         { message: 'Maximum retry attempts reached. Please start a new story.' },
         { status: 400 }

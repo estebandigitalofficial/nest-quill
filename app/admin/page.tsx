@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
+import AdminRetryButton from '@/components/admin/AdminRetryButton'
 import type { StoryRequest } from '@/types/database'
 
 export default async function AdminPage() {
@@ -103,12 +104,17 @@ export default async function AdminPage() {
                         {new Date(story.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </td>
                       <td className="px-4 py-3">
-                        <Link
-                          href={`/story/${story.id}`}
-                          className="text-xs text-brand-400 hover:text-brand-300 font-medium"
-                        >
-                          View →
-                        </Link>
+                        <div className="flex items-center gap-3">
+                          <Link
+                            href={`/story/${story.id}`}
+                            className="text-xs text-brand-400 hover:text-brand-300 font-medium"
+                          >
+                            View →
+                          </Link>
+                          {story.status === 'failed' && (
+                            <AdminRetryButton requestId={story.id} />
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
