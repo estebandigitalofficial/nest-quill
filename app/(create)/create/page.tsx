@@ -3,6 +3,11 @@ import StoryWizard from '@/components/story/wizard/StoryWizard'
 
 export const metadata: Metadata = {
   title: 'Create Your Story',
+  description: 'Personalize a storybook for your child in minutes — choose a theme, add their name, and we\'ll write and illustrate it with AI.',
+  openGraph: {
+    title: 'Create a Personalized Storybook — Nest & Quill',
+    description: 'Personalize a storybook for your child in minutes — choose a theme, add their name, and we\'ll write and illustrate it with AI.',
+  },
 }
 
 export default function CreatePage() {

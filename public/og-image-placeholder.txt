@@ -1,0 +1,2 @@
+Place your OG image here as og-image.png (1200x630px recommended).
+This is the image shown when links are shared on iMessage, Twitter, Facebook, etc.
