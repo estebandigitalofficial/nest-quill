@@ -491,7 +491,7 @@ function EndPage({ pdfUrl, canDownload }: { pdfUrl?: string; canDownload: boolea
         )}
         {!canDownload && (
           <Link
-            href="/create"
+            href="/pricing"
             style={{ fontSize: 13, fontWeight: 600, color: '#dc8a28', background: '#fff8f0', border: '1.5px solid #f5d9b0', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
             🔒 Upgrade to download PDF
