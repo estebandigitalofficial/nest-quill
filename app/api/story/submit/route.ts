@@ -6,6 +6,7 @@ import { validateStoryForm } from '@/lib/validators/story-form'
 import { getPlanLimits, resolvePageCount } from '@/lib/plans/config'
 import { canCreateBook } from '@/lib/plans/limits'
 import { PlanLimitError, toApiError } from '@/lib/utils/errors'
+import { sendSubmissionConfirmationEmail } from '@/lib/services/email'
 import type { SubmitStoryResponse } from '@/types/story'
 
 export async function POST(request: NextRequest) {
@@ -95,14 +96,20 @@ export async function POST(request: NextRequest) {
 
     const requestId = storyRequest.id
 
-    // ── 6. Trigger the background processing pipeline ────────────────────────
-    // We fire this fetch and do NOT await it.
-    // The route handler returns immediately — the pipeline runs in the background.
+    // ── 6. Trigger the background processing pipeline + confirmation email ────
     after(async () => {
       try {
         await triggerProcessingPipeline(requestId)
       } catch (err) {
         console.error('Failed to trigger pipeline for request', requestId, err)
+      }
+    })
+
+    after(async () => {
+      try {
+        await sendSubmissionConfirmationEmail(formData.userEmail, formData.childName, requestId)
+      } catch (err) {
+        console.error('Failed to send submission confirmation email', requestId, err)
       }
     })
 

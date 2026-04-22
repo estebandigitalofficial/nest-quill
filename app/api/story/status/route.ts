@@ -1,7 +1,9 @@
+import { after } from 'next/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NotFoundError, toApiError } from '@/lib/utils/errors'
+import { sendBookReadyEmail } from '@/lib/services/email'
 import type { StoryRequest } from '@/types/database'
 import type { StoryStatusResponse } from '@/types/story'
 
@@ -65,6 +67,59 @@ export async function GET(request: NextRequest) {
           .createSignedUrl(exportRow.storage_path, 60 * 60 * 24 * 7) // 7 days
 
         signedUrl = urlData?.signedUrl
+      }
+
+      // Send completion email once — check delivery_logs to prevent duplicates
+      if (storyRequest.user_email) {
+        const { count } = await adminSupabase
+          .from('delivery_logs')
+          .select('id', { count: 'exact', head: true })
+          .eq('request_id', requestId)
+          .eq('channel', 'email')
+          .in('status', ['sent', 'delivered'])
+
+        if (count === 0) {
+          // Fetch story title for the email
+          const { data: storyData } = await adminSupabase
+            .from('generated_stories')
+            .select('title')
+            .eq('request_id', requestId)
+            .single()
+
+          const storyTitle = (storyData as unknown as { title: string } | null)?.title ?? `${storyRequest.child_name}'s Story`
+          const storyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/story/${requestId}`
+
+          after(async () => {
+            try {
+              const { messageId } = await sendBookReadyEmail({
+                toEmail: storyRequest.user_email,
+                childName: storyRequest.child_name,
+                storyTitle,
+                downloadUrl: storyUrl,
+                requestId,
+              })
+
+              await createAdminClient()
+                .from('delivery_logs')
+                .insert({
+                  request_id: requestId,
+                  channel: 'email',
+                  status: 'sent',
+                  recipient_email: storyRequest.user_email,
+                  resend_message_id: messageId,
+                })
+            } catch {
+              await createAdminClient()
+                .from('delivery_logs')
+                .insert({
+                  request_id: requestId,
+                  channel: 'email',
+                  status: 'failed',
+                  recipient_email: storyRequest.user_email,
+                })
+            }
+          })
+        }
       }
     }
 

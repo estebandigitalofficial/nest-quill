@@ -84,7 +84,7 @@ export default function StoryStatusPage({ requestId }: { requestId: string }) {
     )
   }
 
-  return <StoryEbookReader story={story} requestId={requestId} />
+  return <StoryEbookReader story={story} requestId={requestId} pdfUrl={status.signedUrl} />
 }
 
 // ── Non-reader shells ─────────────────────────────────────────────────────────
@@ -159,7 +159,7 @@ type ReaderPage =
   | { kind: 'story'; page: StoryContentPage }
   | { kind: 'end' }
 
-function StoryEbookReader({ story, requestId }: { story: StoryContentResponse; requestId: string }) {
+function StoryEbookReader({ story, requestId, pdfUrl }: { story: StoryContentResponse; requestId: string; pdfUrl?: string }) {
   const readerPages: ReaderPage[] = [
     { kind: 'cover' },
     ...story.pages.map(p => ({ kind: 'story' as const, page: p })),
@@ -269,7 +269,7 @@ function StoryEbookReader({ story, requestId }: { story: StoryContentResponse; r
         pointerEvents: uiVisible ? 'auto' : 'none',
         transition: 'opacity 0.4s',
       }}>
-        <div style={{ height: 40, background: 'linear-gradient(to bottom, #faf8f5, transparent)', display: 'flex', alignItems: 'center', paddingLeft: 16 }}>
+        <div style={{ height: 40, background: 'linear-gradient(to bottom, #faf8f5, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 16, paddingRight: 16 }}>
           <Link
             href="/account"
             onClick={e => e.stopPropagation()}
@@ -280,6 +280,19 @@ function StoryEbookReader({ story, requestId }: { story: StoryContentResponse; r
             </svg>
             My stories
           </Link>
+          {pdfUrl && (
+            <a
+              href={pdfUrl}
+              download
+              onClick={e => e.stopPropagation()}
+              style={{ fontSize: 11, color: '#dc8a28', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500 }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Download PDF
+            </a>
+          )}
         </div>
       </div>
 
@@ -326,7 +339,7 @@ function StoryEbookReader({ story, requestId }: { story: StoryContentResponse; r
         <div style={{ width: '100%', maxWidth: 480, padding: '0 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
           {page.kind === 'cover' && <CoverPage story={story} hasMore={readerPages.length > 1} />}
           {page.kind === 'story' && <StoryPageContent page={page.page} storyIndex={current} total={story.pages.length} />}
-          {page.kind === 'end' && <EndPage />}
+          {page.kind === 'end' && <EndPage pdfUrl={pdfUrl} />}
         </div>
       </div>
 
@@ -418,22 +431,34 @@ function StoryPageContent({ page, storyIndex, total }: { page: StoryContentPage;
   )
 }
 
-function EndPage() {
+function EndPage({ pdfUrl }: { pdfUrl?: string }) {
   return (
     <div style={{ textAlign: 'center', width: '100%' }}>
       <p style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: '1.6rem', color: '#a8a29e', marginBottom: 36 }}>
         ✦ The End ✦
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+        {pdfUrl && (
+          <a
+            href={pdfUrl}
+            download
+            style={{ fontSize: 13, fontWeight: 600, color: 'white', background: '#dc8a28', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download PDF
+          </a>
+        )}
         <Link
           href="/account"
-          style={{ fontSize: 13, fontWeight: 600, color: 'white', background: '#dc8a28', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-block' }}
+          style={{ fontSize: 13, fontWeight: 600, color: 'white', background: pdfUrl ? '#78716c' : '#dc8a28', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-block' }}
         >
           View in my account →
         </Link>
         <Link
           href="/create"
-          style={{ fontSize: 13, color: '#78716c', textDecoration: 'underline', textUnderlineOffset: 3 }}
+          style={{ fontSize: 13, color: '#a8a29e', textDecoration: 'underline', textUnderlineOffset: 3 }}
         >
           Create another story
         </Link>
