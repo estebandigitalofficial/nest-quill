@@ -1,0 +1,29 @@
+import Link from 'next/link'
+
+export const metadata = { title: 'Page not found — Nest & Quill' }
+
+export default function NotFound() {
+  return (
+    <div className="min-h-screen bg-brand-50 flex flex-col items-center justify-center px-6 text-center">
+      <p className="text-6xl mb-6">📖</p>
+      <h1 className="font-serif text-4xl text-gray-900 mb-3">Page not found</h1>
+      <p className="text-gray-500 text-sm max-w-xs leading-relaxed mb-8">
+        Looks like this page got lost between chapters. Let&apos;s get you back to the story.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Link
+          href="/"
+          className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors"
+        >
+          Go home
+        </Link>
+        <Link
+          href="/create"
+          className="bg-white border border-gray-200 hover:border-gray-300 text-gray-700 text-sm font-semibold px-6 py-3 rounded-xl transition-colors"
+        >
+          Create a story
+        </Link>
+      </div>
+    </div>
+  )
+}
