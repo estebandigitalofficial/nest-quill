@@ -381,7 +381,6 @@ function Footer() {
         <p>© {new Date().getFullYear()} Nest &amp; Quill. All rights reserved.</p>
         <div className="flex gap-5">
           <Link href="/create" className="hover:text-gray-300 transition-colors">Create</Link>
-          <Link href="#pricing" className="hover:text-gray-300 transition-colors">Pricing</Link>
           <Link href="/pricing" className="hover:text-gray-300 transition-colors">Pricing</Link>
           <Link href="/contact" className="hover:text-gray-300 transition-colors">Contact</Link>
           <Link href="/privacy" className="hover:text-gray-300 transition-colors">Privacy</Link>
