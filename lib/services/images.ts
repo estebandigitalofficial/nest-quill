@@ -51,12 +51,13 @@ async function generateWithOpenAI(prompt: string, options: ImageOptions): Promis
     response_format: 'url',
   })
 
-  const url = response.data[0].url
+  const image = response.data?.[0]
+  const url = image?.url
   if (!url) throw new Error('DALL-E returned no image URL')
 
   return {
     url,
-    revisedPrompt: response.data[0].revised_prompt ?? undefined,
+    revisedPrompt: image?.revised_prompt ?? undefined,
     model: 'dall-e-3',
   }
 }
