@@ -1,13 +1,4 @@
-/**
- * IMAGE GENERATION SERVICE
- *
- * Abstraction layer over image generation providers.
- * Phase 1 implementation: OpenAI DALL-E 3.
- * Swap providers by changing IMAGE_PROVIDER env var — nothing else changes.
- *
- * STATUS: STUB — logic filled in during Phase 4
- */
-
+import OpenAI from 'openai'
 import type { IllustrationStyle } from '@/types/story'
 
 export interface ImageOptions {
@@ -22,12 +13,22 @@ export interface ImageResult {
   model: string
 }
 
-export async function generateImage(
-  prompt: string,
-  options: ImageOptions
-): Promise<ImageResult> {
-  const provider = process.env.IMAGE_PROVIDER ?? 'openai'
+const STYLE_HINTS: Record<IllustrationStyle, string> = {
+  watercolor: "soft watercolor illustration, gentle washes of color, children's picture book style",
+  cartoon: "bright cartoon illustration, bold outlines, vibrant colors, fun and playful children's book style",
+  storybook: "classic storybook illustration, warm and detailed, fairy-tale aesthetic, painted children's book style",
+  pencil_sketch: "detailed pencil sketch illustration, hand-drawn, soft shading, charming children's book style",
+  digital_art: "clean digital illustration, polished artwork, colorful, modern children's book style",
+}
 
+let _openai: OpenAI | null = null
+function getOpenAI(): OpenAI {
+  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  return _openai
+}
+
+export async function generateImage(prompt: string, options: ImageOptions): Promise<ImageResult> {
+  const provider = process.env.IMAGE_PROVIDER ?? 'openai'
   switch (provider) {
     case 'openai':
       return generateWithOpenAI(prompt, options)
@@ -36,18 +37,26 @@ export async function generateImage(
   }
 }
 
-// ─── OpenAI DALL-E 3 ─────────────────────────────────────────────────────────
+async function generateWithOpenAI(prompt: string, options: ImageOptions): Promise<ImageResult> {
+  const openai = getOpenAI()
+  const styleHint = STYLE_HINTS[options.style] ?? STYLE_HINTS.storybook
+  const fullPrompt = `${styleHint}. ${prompt}. Child-safe, no text, no words in image.`
 
-async function generateWithOpenAI(
-  prompt: string,
-  options: ImageOptions
-): Promise<ImageResult> {
-  // STUB — Phase 4 implementation goes here
-  // Will:
-  // 1. Import OpenAI and call images.generate with the prompt
-  // 2. Download the image buffer from the temporary CDN URL
-  //    (OpenAI image URLs expire in 1 hour — must download immediately)
-  // 3. Return { url, revisedPrompt, model }
+  const response = await openai.images.generate({
+    model: 'dall-e-3',
+    prompt: fullPrompt,
+    n: 1,
+    size: options.size ?? '1024x1024',
+    quality: options.quality ?? 'standard',
+    response_format: 'url',
+  })
 
-  throw new Error('generateWithOpenAI: not yet implemented — Phase 4')
+  const url = response.data[0].url
+  if (!url) throw new Error('DALL-E returned no image URL')
+
+  return {
+    url,
+    revisedPrompt: response.data[0].revised_prompt ?? undefined,
+    model: 'dall-e-3',
+  }
 }

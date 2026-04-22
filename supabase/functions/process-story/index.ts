@@ -1,21 +1,24 @@
 // @ts-nocheck — this file runs in Deno (Supabase Edge Function), not Node. TS server does not know Deno globals.
-/**
- * PROCESS STORY — Supabase Edge Function
- *
- * Triggered by the Next.js submit route (fire-and-forget POST).
- * Owns the full pipeline state machine for a single story_request.
- *
- * Phase 4b (current): DALL-E 3 image generation per story page.
- * PDF and email delivery are still stubbed — added in later phases.
- */
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { PDFDocument, StandardFonts, rgb } from 'npm:pdf-lib@1.17.1'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
+const RESEND_FROM = Deno.env.get('RESEND_FROM_EMAIL') ?? 'stories@nestandquill.com'
+const APP_URL = Deno.env.get('NEXT_PUBLIC_APP_URL') ?? 'https://nestandquill.com'
 const EXPECTED_TOKEN = Deno.env.get('EDGE_FUNCTION_SECRET') ?? SUPABASE_SERVICE_ROLE_KEY
 const SKIP_IMAGES = Deno.env.get('SKIP_IMAGE_GENERATION') === 'true'
+
+// PDF layout constants (8×8 inch square picture-book format)
+const PDF_SIZE = 576
+const PDF_MARGIN = 40
+const PDF_BRAND_ORANGE = rgb(0.863, 0.541, 0.157)
+const PDF_CREAM = rgb(0.98, 0.973, 0.96)
+const PDF_NEAR_BLACK = rgb(0.11, 0.098, 0.09)
+const PDF_GRAY = rgb(0.471, 0.443, 0.424)
 
 // ── Illustration style → DALL-E style hint map ────────────────────────────────
 
@@ -316,10 +319,12 @@ Deno.serve(async (req) => {
     let imagesGenerated = 0
     let imagesFailed = 0
 
+    // imageData keeps bytes in memory so PDF generation doesn't need to re-download
+    const imageData = new Map() // page_number → Uint8Array
+
     if (SKIP_IMAGES) {
       await log('generate_images', 'Image generation skipped (SKIP_IMAGE_GENERATION=true)')
     } else {
-      // Fetch scenes from DB so we have their UUIDs for updating
       const { data: scenes, error: sceneFetchError } = await supabase
         .from('story_scenes')
         .select('id, page_number, image_prompt')
@@ -332,18 +337,12 @@ Deno.serve(async (req) => {
 
       for (const scene of scenes) {
         try {
-          const imageBytes = await generateImage(
-            scene.image_prompt,
-            storyRequest.illustration_style
-          )
+          const imageBytes = await generateImage(scene.image_prompt, storyRequest.illustration_style)
 
           const storagePath = `${requestId}/${scene.page_number}.png`
           const { error: uploadError } = await supabase.storage
             .from('story-images')
-            .upload(storagePath, imageBytes, {
-              contentType: 'image/png',
-              upsert: true,
-            })
+            .upload(storagePath, imageBytes, { contentType: 'image/png', upsert: true })
 
           if (uploadError) {
             throw new Error(`Storage upload failed for page ${scene.page_number}: ${uploadError.message}`)
@@ -354,10 +353,10 @@ Deno.serve(async (req) => {
             .update({ storage_path: storagePath, image_status: 'complete' })
             .eq('id', scene.id)
 
+          imageData.set(scene.page_number, imageBytes)
           imagesGenerated++
 
-          // Progress: 45 → 80 spread across pages
-          const progress = Math.round(45 + (imagesGenerated / scenes.length) * 35)
+          const progress = Math.round(45 + (imagesGenerated / scenes.length) * 30)
           await setStatus('generating_images', `Illustrating page ${scene.page_number} of ${scenes.length}…`, progress)
 
           await log('generate_images', `Page ${scene.page_number} illustrated`, 'info', {
@@ -368,12 +367,7 @@ Deno.serve(async (req) => {
           imagesFailed++
           const imgMsg = imgErr instanceof Error ? imgErr.message : String(imgErr)
           console.error(`[process-story] Image failed page ${scene.page_number}:`, imgMsg)
-
-          await supabase
-            .from('story_scenes')
-            .update({ image_status: 'failed' })
-            .eq('id', scene.id)
-
+          await supabase.from('story_scenes').update({ image_status: 'failed' }).eq('id', scene.id)
           await log('generate_images', `Page ${scene.page_number} image failed: ${imgMsg}`, 'warning', {
             page_number: scene.page_number,
           })
@@ -386,12 +380,198 @@ Deno.serve(async (req) => {
       })
     }
 
-    // ── Step 3: Assemble PDF (stub — Phase 4c) ────────────────────────────
-    await setStatus('assembling_pdf', 'PDF assembly coming soon…', 80)
-    await log('assemble_pdf', 'PDF assembly skipped (stub — Phase 4c)')
+    // ── Step 3: Assemble PDF ──────────────────────────────────────────────
+    await setStatus('assembling_pdf', 'Assembling your book…', 80)
 
-    // ── Step 4: Deliver (stub — Phase 4d) ────────────────────────────────
-    await log('deliver', 'Email delivery skipped (stub — Phase 4d)')
+    let pdfStoragePath: string | null = null
+    try {
+      const { data: allScenes } = await supabase
+        .from('story_scenes')
+        .select('page_number, page_text')
+        .eq('request_id', requestId)
+        .order('page_number', { ascending: true })
+
+      const { data: savedStoryForPdf } = await supabase
+        .from('generated_stories')
+        .select('title, subtitle, author_line, dedication')
+        .eq('request_id', requestId)
+        .single()
+
+      const pdfDoc = await PDFDocument.create()
+      const fontSerif = await pdfDoc.embedFont(StandardFonts.TimesRoman)
+      const fontSerifItalic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic)
+      const fontSerifBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold)
+
+      // Embed images from in-memory map
+      const embeddedImages = new Map()
+      for (const [pageNum, bytes] of imageData) {
+        try {
+          const img = await pdfDoc.embedPng(bytes)
+          embeddedImages.set(pageNum, img)
+        } catch { /* skip corrupted images */ }
+      }
+
+      const storyTitle = savedStoryForPdf?.title ?? story.title
+      const authorLine = savedStoryForPdf?.author_line ?? 'A Nest & Quill Original'
+      const dedication = savedStoryForPdf?.dedication ?? story.dedication
+
+      // Cover page
+      const cover = pdfDoc.addPage([PDF_SIZE, PDF_SIZE])
+      cover.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: PDF_SIZE, color: PDF_CREAM })
+      cover.drawRectangle({ x: 0, y: PDF_SIZE - 8, width: PDF_SIZE, height: 8, color: PDF_BRAND_ORANGE })
+      cover.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: 8, color: PDF_BRAND_ORANGE })
+
+      const titleSize = storyTitle.length > 24 ? 28 : 34
+      const titleLines = pdfWrapText(storyTitle, fontSerifBold, titleSize, PDF_SIZE - PDF_MARGIN * 2)
+      let coverY = PDF_SIZE * 0.62
+      for (const line of titleLines) {
+        const w = fontSerifBold.widthOfTextAtSize(line, titleSize)
+        cover.drawText(line, { x: (PDF_SIZE - w) / 2, y: coverY, size: titleSize, font: fontSerifBold, color: PDF_NEAR_BLACK })
+        coverY -= titleSize * 1.3
+      }
+
+      const authorW = fontSerif.widthOfTextAtSize(authorLine, 11)
+      cover.drawText(authorLine, { x: (PDF_SIZE - authorW) / 2, y: PDF_MARGIN + 10, size: 11, font: fontSerif, color: PDF_GRAY })
+
+      // Dedication page
+      if (dedication) {
+        const dedPage = pdfDoc.addPage([PDF_SIZE, PDF_SIZE])
+        dedPage.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: PDF_SIZE, color: PDF_CREAM })
+        const dedLines = pdfWrapText(dedication, fontSerifItalic, 14, PDF_SIZE - PDF_MARGIN * 4)
+        const dedBlockH = dedLines.length * 14 * 1.6
+        let dedY = PDF_SIZE / 2 + dedBlockH / 2
+        for (const line of dedLines) {
+          const w = fontSerifItalic.widthOfTextAtSize(line, 14)
+          dedPage.drawText(line, { x: (PDF_SIZE - w) / 2, y: dedY, size: 14, font: fontSerifItalic, color: PDF_GRAY })
+          dedY -= 14 * 1.6
+        }
+      }
+
+      // Story pages
+      const pageScenes = allScenes ?? []
+      for (const scene of pageScenes) {
+        const pg = pdfDoc.addPage([PDF_SIZE, PDF_SIZE])
+        pg.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: PDF_SIZE, color: PDF_CREAM })
+
+        const img = embeddedImages.get(scene.page_number)
+        if (img) {
+          const imgH = Math.round(PDF_SIZE * 0.58)
+          const imgY = PDF_SIZE - imgH
+          const dims = img.scaleToFit(PDF_SIZE - PDF_MARGIN * 2, imgH - PDF_MARGIN / 2)
+          pg.drawImage(img, {
+            x: (PDF_SIZE - dims.width) / 2,
+            y: imgY + (imgH - dims.height) / 2,
+            width: dims.width,
+            height: dims.height,
+          })
+          pdfDrawPageText(pg, scene.page_text, fontSerif, imgY - 10, scene.page_number, pageScenes.length)
+        } else {
+          pdfDrawPageText(pg, scene.page_text, fontSerif, Math.round(PDF_SIZE * 0.72), scene.page_number, pageScenes.length)
+        }
+      }
+
+      // Back page
+      const back = pdfDoc.addPage([PDF_SIZE, PDF_SIZE])
+      back.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: PDF_SIZE, color: PDF_CREAM })
+      back.drawRectangle({ x: 0, y: PDF_SIZE - 8, width: PDF_SIZE, height: 8, color: PDF_BRAND_ORANGE })
+      back.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: 8, color: PDF_BRAND_ORANGE })
+      const endText = 'The End'
+      const endW = fontSerifItalic.widthOfTextAtSize(endText, 22)
+      back.drawText(endText, { x: (PDF_SIZE - endW) / 2, y: PDF_SIZE / 2 + 10, size: 22, font: fontSerifItalic, color: PDF_BRAND_ORANGE })
+      const brandW = fontSerif.widthOfTextAtSize(authorLine, 11)
+      back.drawText(authorLine, { x: (PDF_SIZE - brandW) / 2, y: PDF_SIZE / 2 - 24, size: 11, font: fontSerif, color: PDF_GRAY })
+
+      const pdfBytes = await pdfDoc.save()
+      pdfStoragePath = `${requestId}/storybook.pdf`
+
+      const { error: pdfUploadError } = await supabase.storage
+        .from('book-exports')
+        .upload(pdfStoragePath, pdfBytes, { contentType: 'application/pdf', upsert: true })
+
+      if (pdfUploadError) throw new Error(`PDF upload failed: ${pdfUploadError.message}`)
+
+      const { error: exportInsertError } = await supabase
+        .from('book_exports')
+        .insert({
+          request_id: requestId,
+          format: 'pdf',
+          storage_path: pdfStoragePath,
+          storage_bucket: 'book-exports',
+          file_size_bytes: pdfBytes.length,
+          page_count: pdfDoc.getPageCount(),
+          is_latest: true,
+        })
+
+      if (exportInsertError) {
+        await log('assemble_pdf', `book_exports insert warning: ${exportInsertError.message}`, 'warning')
+      }
+
+      await log('assemble_pdf', `PDF assembled and uploaded (${pdfBytes.length} bytes, ${pdfDoc.getPageCount()} pages)`, 'info', {
+        storage_path: pdfStoragePath,
+        file_size_bytes: pdfBytes.length,
+        page_count: pdfDoc.getPageCount(),
+      })
+    } catch (pdfErr) {
+      const pdfMsg = pdfErr instanceof Error ? pdfErr.message : String(pdfErr)
+      await log('assemble_pdf', `PDF assembly failed: ${pdfMsg}`, 'error')
+      // Non-fatal — story is still readable in the ebook reader
+    }
+
+    // ── Step 4: Send delivery email ───────────────────────────────────────
+    await setStatus('assembling_pdf', 'Almost done…', 95)
+    try {
+      if (storyRequest.user_email) {
+        const storyUrl = `${APP_URL}/story/${requestId}`
+        const childName = storyRequest.child_name
+
+        const emailRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: RESEND_FROM,
+            to: storyRequest.user_email,
+            subject: `${childName}'s story is ready! 📖`,
+            html: `
+              <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#1c1917">
+                <h1 style="font-size:24px;margin-bottom:8px">${childName}'s story is ready!</h1>
+                <p style="color:#78716c;margin-top:0">Your personalized storybook has been created.</p>
+                <a href="${storyUrl}" style="display:inline-block;margin:24px 0;background:#dc8a28;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:600;font-size:15px">
+                  Read the story →
+                </a>
+                <p style="font-size:12px;color:#a8a29e;margin-top:32px">Nest &amp; Quill · Personalized stories for curious kids</p>
+              </div>`,
+          }),
+        })
+
+        if (emailRes.ok) {
+          const emailJson = await emailRes.json()
+          await supabase.from('delivery_logs').insert({
+            request_id: requestId,
+            channel: 'email',
+            status: 'sent',
+            recipient_email: storyRequest.user_email,
+            resend_message_id: emailJson.id ?? null,
+          })
+          await log('deliver', `Delivery email sent to ${storyRequest.user_email}`)
+        } else {
+          throw new Error(`Resend error ${emailRes.status}`)
+        }
+      }
+    } catch (emailErr) {
+      const emailMsg = emailErr instanceof Error ? emailErr.message : String(emailErr)
+      await log('deliver', `Email delivery failed: ${emailMsg}`, 'warning')
+      await supabase.from('delivery_logs').insert({
+        request_id: requestId,
+        channel: 'email',
+        status: 'failed',
+        recipient_email: storyRequest.user_email,
+        failure_reason: emailMsg,
+      })
+      // Non-fatal — story is still accessible
+    }
 
     // ── Complete ──────────────────────────────────────────────────────────
     await supabase
@@ -404,7 +584,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', requestId)
 
-    await log('pipeline_complete', `Pipeline finished — story + ${imagesGenerated} illustrations saved`)
+    await log('pipeline_complete', `Pipeline finished — story + ${imagesGenerated} illustrations + PDF + email`)
 
     return new Response(
       JSON.stringify({ requestId, status: 'complete', title: story.title }),
@@ -412,6 +592,7 @@ Deno.serve(async (req) => {
     )
 
   } catch (err) {
+
     const message = err instanceof Error ? err.message : String(err)
     console.error(`[process-story] requestId=${requestId} error:`, message)
 
@@ -432,3 +613,43 @@ Deno.serve(async (req) => {
     )
   }
 })
+
+// ── PDF helpers (inline — edge functions can't import from lib/) ──────────────
+
+function pdfWrapText(text, font, size, maxWidth) {
+  const words = text.replace(/\s+/g, ' ').trim().split(' ')
+  const lines = []
+  let line = ''
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word
+    if (font.widthOfTextAtSize(test, size) <= maxWidth) {
+      line = test
+    } else {
+      if (line) lines.push(line)
+      line = word
+    }
+  }
+  if (line) lines.push(line)
+  return lines.length ? lines : ['']
+}
+
+function pdfDrawPageText(page, text, font, topY, pageNum, totalPages) {
+  const textSize = 13
+  const maxW = PDF_SIZE - PDF_MARGIN * 3
+  const lines = pdfWrapText(text, font, textSize, maxW)
+  let y = topY
+  for (const line of lines) {
+    if (y < PDF_MARGIN + 20) break
+    page.drawText(line, { x: PDF_MARGIN * 1.5, y, size: textSize, font, color: PDF_NEAR_BLACK })
+    y -= textSize * 1.75
+  }
+  const label = `${pageNum} / ${totalPages}`
+  const labelW = font.widthOfTextAtSize(label, 9)
+  page.drawText(label, {
+    x: (PDF_SIZE - labelW) / 2,
+    y: PDF_MARGIN / 2,
+    size: 9,
+    font,
+    color: rgb(0.7, 0.68, 0.66),
+  })
+}
