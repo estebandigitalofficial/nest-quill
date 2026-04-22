@@ -38,7 +38,7 @@ export default async function AdminPage() {
       {/* Nav */}
       <header className="border-b border-gray-800 px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/" className="font-serif text-lg font-semibold text-white">
+          <Link href="/admin" className="font-serif text-lg font-semibold text-white">
             Nest &amp; Quill
           </Link>
           <span className="text-xs font-semibold bg-brand-500 text-white px-2 py-0.5 rounded-full">
