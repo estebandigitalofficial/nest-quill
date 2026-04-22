@@ -114,7 +114,7 @@ export default function StoryStatusPage({ requestId }: { requestId: string }) {
     )
   }
 
-  return <StoryEbookReader story={story} requestId={requestId} pdfUrl={status.signedUrl} />
+  return <StoryEbookReader story={story} requestId={requestId} pdfUrl={status.signedUrl} planTier={status.planTier} />
 }
 
 // ── Non-reader shells ─────────────────────────────────────────────────────────
@@ -189,7 +189,8 @@ type ReaderPage =
   | { kind: 'story'; page: StoryContentPage }
   | { kind: 'end' }
 
-function StoryEbookReader({ story, requestId, pdfUrl }: { story: StoryContentResponse; requestId: string; pdfUrl?: string }) {
+function StoryEbookReader({ story, requestId, pdfUrl, planTier }: { story: StoryContentResponse; requestId: string; pdfUrl?: string; planTier?: string }) {
+  const canDownload = planTier !== 'free'
   const readerPages: ReaderPage[] = [
     { kind: 'cover' },
     ...story.pages.map(p => ({ kind: 'story' as const, page: p })),
@@ -310,7 +311,7 @@ function StoryEbookReader({ story, requestId, pdfUrl }: { story: StoryContentRes
             </svg>
             My stories
           </Link>
-          {pdfUrl && (
+          {pdfUrl && canDownload && (
             <a
               href={pdfUrl}
               download
@@ -369,7 +370,7 @@ function StoryEbookReader({ story, requestId, pdfUrl }: { story: StoryContentRes
         <div style={{ width: '100%', maxWidth: 480, padding: '0 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
           {page.kind === 'cover' && <CoverPage story={story} hasMore={readerPages.length > 1} />}
           {page.kind === 'story' && <StoryPageContent page={page.page} storyIndex={current} total={story.pages.length} />}
-          {page.kind === 'end' && <EndPage pdfUrl={pdfUrl} />}
+          {page.kind === 'end' && <EndPage pdfUrl={pdfUrl} canDownload={canDownload} />}
         </div>
       </div>
 
@@ -461,14 +462,14 @@ function StoryPageContent({ page, storyIndex, total }: { page: StoryContentPage;
   )
 }
 
-function EndPage({ pdfUrl }: { pdfUrl?: string }) {
+function EndPage({ pdfUrl, canDownload }: { pdfUrl?: string; canDownload: boolean }) {
   return (
     <div style={{ textAlign: 'center', width: '100%' }}>
       <p style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: '1.6rem', color: '#a8a29e', marginBottom: 36 }}>
         ✦ The End ✦
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-        {pdfUrl && (
+        {pdfUrl && canDownload && (
           <a
             href={pdfUrl}
             download
@@ -480,9 +481,17 @@ function EndPage({ pdfUrl }: { pdfUrl?: string }) {
             Download PDF
           </a>
         )}
+        {!canDownload && (
+          <Link
+            href="/create"
+            style={{ fontSize: 13, fontWeight: 600, color: '#dc8a28', background: '#fff8f0', border: '1.5px solid #f5d9b0', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+          >
+            🔒 Upgrade to download PDF
+          </Link>
+        )}
         <Link
           href="/account"
-          style={{ fontSize: 13, fontWeight: 600, color: 'white', background: pdfUrl ? '#78716c' : '#dc8a28', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-block' }}
+          style={{ fontSize: 13, fontWeight: 600, color: 'white', background: (pdfUrl && canDownload) ? '#78716c' : '#dc8a28', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-block' }}
         >
           View in my account →
         </Link>

@@ -86,6 +86,7 @@ export interface StoryStatusResponse {
   progressPct: number
   statusMessage: string
   childName: string
+  planTier: string
   signedUrl?: string
   completedAt?: string
 }
