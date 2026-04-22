@@ -26,8 +26,11 @@ export default function LoginPage() {
       return
     }
 
-    const res = await fetch('/api/auth/is-admin')
-    const { isAdmin } = await res.json()
+    const [adminRes] = await Promise.all([
+      fetch('/api/auth/is-admin'),
+      fetch('/api/story/claim', { method: 'POST' }),
+    ])
+    const { isAdmin } = await adminRes.json()
     router.push(isAdmin ? '/admin' : '/account')
     router.refresh()
   }
