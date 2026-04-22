@@ -84,7 +84,7 @@ export default function PrivacyPage() {
             <li>Request deletion of your account and data.</li>
             <li>Opt out of non-transactional emails at any time.</li>
           </ul>
-          <p>To exercise any of these rights, contact us at <a href="mailto:hello@nestandquill.com">hello@nestandquill.com</a>.</p>
+          <p>To exercise any of these rights, contact us at <a href="mailto:contact@nestandquill.com">contact@nestandquill.com</a>.</p>
         </Section>
 
         <Section title="Changes to this policy">
@@ -97,8 +97,8 @@ export default function PrivacyPage() {
         <Section title="Contact">
           <p>
             Questions about this policy? Email us at{' '}
-            <a href="mailto:hello@nestandquill.com" className="text-brand-600 hover:text-brand-700">
-              hello@nestandquill.com
+            <a href="mailto:contact@nestandquill.com" className="text-brand-600 hover:text-brand-700">
+              contact@nestandquill.com
             </a>.
           </p>
         </Section>
