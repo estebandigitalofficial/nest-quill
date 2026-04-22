@@ -262,6 +262,27 @@ function StoryEbookReader({ story, requestId }: { story: StoryContentResponse; r
       style={{ position: 'fixed', inset: 0, background: '#faf8f5', overflow: 'hidden' }}
       onClick={bumpUi}
     >
+      {/* Header — back link */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20,
+        opacity: uiVisible ? 1 : 0,
+        pointerEvents: uiVisible ? 'auto' : 'none',
+        transition: 'opacity 0.4s',
+      }}>
+        <div style={{ height: 40, background: 'linear-gradient(to bottom, #faf8f5, transparent)', display: 'flex', alignItems: 'center', paddingLeft: 16 }}>
+          <Link
+            href="/account"
+            onClick={e => e.stopPropagation()}
+            style={{ fontSize: 11, color: '#a8a29e', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            My stories
+          </Link>
+        </div>
+      </div>
+
       {/* Progress bar */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: '#ede8e1', zIndex: 10 }}>
         <div style={{ height: '100%', background: '#dc8a28', width: `${progress * 100}%`, transition: 'width 0.4s' }} />
