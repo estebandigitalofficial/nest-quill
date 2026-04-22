@@ -12,6 +12,9 @@ export default function StoryStatusPage({ requestId }: { requestId: string }) {
   const [status, setStatus] = useState<StoryStatusResponse | null>(null)
   const [story, setStory] = useState<StoryContentResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [pollKey, setPollKey] = useState(0)
+  const [retrying, setRetrying] = useState(false)
+  const [retryError, setRetryError] = useState<string | null>(null)
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -50,11 +53,26 @@ export default function StoryStatusPage({ requestId }: { requestId: string }) {
     }
     poll()
     return () => { stopped = true }
-  }, [fetchStatus])
+  }, [fetchStatus, pollKey])
 
   useEffect(() => {
     if (status?.status === 'complete') fetchStory()
   }, [status?.status, fetchStory])
+
+  async function handleRetry() {
+    setRetrying(true)
+    setRetryError(null)
+    const res = await fetch(`/api/story/${requestId}/retry`, { method: 'POST' })
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      setRetryError(json.message ?? 'Could not retry. Please try again.')
+      setRetrying(false)
+      return
+    }
+    setStatus(null)
+    setPollKey(k => k + 1)
+    setRetrying(false)
+  }
 
   if (error) return <ErrorView message={error} />
   if (!status) return <LoadingShell />
@@ -66,11 +84,23 @@ export default function StoryStatusPage({ requestId }: { requestId: string }) {
           <div className="text-4xl">⚠️</div>
           <h2 className="text-xl font-serif text-gray-900">Something went wrong</h2>
           <p className="text-sm text-gray-500 max-w-sm mx-auto">
-            We ran into a problem generating this story. Please try again.
+            We ran into a problem generating this story.
           </p>
-          <Link href="/create" className="inline-block mt-2 bg-brand-500 text-white text-sm font-semibold px-6 py-3 rounded-xl hover:bg-brand-600 transition-colors">
-            Try again →
-          </Link>
+          {retryError && (
+            <p className="text-sm text-red-500 bg-red-50 rounded-lg px-4 py-2 max-w-sm mx-auto">{retryError}</p>
+          )}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <button
+              onClick={handleRetry}
+              disabled={retrying}
+              className="bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors"
+            >
+              {retrying ? 'Retrying…' : 'Retry this story'}
+            </button>
+            <Link href="/create" className="bg-white border border-gray-200 text-gray-700 hover:border-gray-300 text-sm font-semibold px-6 py-3 rounded-xl transition-colors">
+              Start a new story
+            </Link>
+          </div>
         </div>
       </PageShell>
     )
