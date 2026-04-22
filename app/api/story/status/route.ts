@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
     const storyRequest = data as unknown as StoryRequest
 
     // ── Ownership check ──────────────────────────────────────────────────────
-    const isAdmin = user?.email === process.env.ADMIN_EMAIL
+    const adminEmails = (process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? '').split(',').map(e => e.trim()).filter(Boolean)
+    const isAdmin = !!user?.email && adminEmails.includes(user.email)
     const isOwner =
       isAdmin ||
       (user && storyRequest.user_id === user.id) ||
