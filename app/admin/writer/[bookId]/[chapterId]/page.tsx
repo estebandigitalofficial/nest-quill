@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getAdminContext } from '@/lib/admin/guard'
 import ChapterEditor from '@/components/admin/writer/ChapterEditor'
 import type { WriterBook, WriterChapterWithScenes } from '@/types/writer'
 
@@ -10,9 +10,8 @@ export default async function ChapterPage({
 }: {
   params: Promise<{ bookId: string; chapterId: string }>
 }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.email !== process.env.ADMIN_EMAIL) redirect('/')
+  const adminCtx = await getAdminContext()
+  if (!adminCtx) redirect('/')
 
   const { bookId, chapterId } = await params
   const adminSupabase = createAdminClient()

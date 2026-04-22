@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getAdminContext } from '@/lib/admin/guard'
 import type { WriterBookWithChapters } from '@/types/writer'
 import BookPageClient from '@/components/admin/writer/BookPageClient'
 
@@ -9,9 +9,8 @@ export default async function BookPage({
 }: {
   params: Promise<{ bookId: string }>
 }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.email !== process.env.ADMIN_EMAIL) redirect('/')
+  const adminCtx = await getAdminContext()
+  if (!adminCtx) redirect('/')
 
   const { bookId } = await params
   const adminSupabase = createAdminClient()
