@@ -8,36 +8,24 @@ export type AdminContext = {
   displayName: string
 }
 
+// Reads ADMIN_EMAILS (comma-separated) with ADMIN_EMAIL as fallback
+function getAdminEmails(): string[] {
+  const list = process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? ''
+  return list.split(',').map(e => e.trim()).filter(Boolean)
+}
+
 export async function getAdminContext(): Promise<AdminContext | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+  if (!user || !user.email) return null
 
-  // Super admin via env var bootstrap
-  if (user.email === process.env.ADMIN_EMAIL) {
-    return {
-      userId: user.id,
-      isSuperAdmin: true,
-      isAdmin: true,
-      displayName: user.email ?? user.id,
-    }
-  }
-
-  // Check admin_users table for additional admins
-  const adminSupabase = createAdminClient()
-  const { data } = await adminSupabase
-    .from('admin_users')
-    .select('role, display_name')
-    .eq('user_id', user.id)
-    .single()
-
-  if (!data) return null
+  if (!getAdminEmails().includes(user.email)) return null
 
   return {
     userId: user.id,
-    isSuperAdmin: data.role === 'super_admin',
+    isSuperAdmin: true,
     isAdmin: true,
-    displayName: data.display_name,
+    displayName: user.email,
   }
 }
 
