@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Playfair_Display, Nunito } from 'next/font/google'
 import './globals.css'
 import CookieBanner from '@/components/CookieBanner'
+import ChatWidget from '@/components/ChatWidget'
 
 const nunito = Nunito({
   subsets: ['latin'],
@@ -60,6 +61,7 @@ export default function RootLayout({
       <body>
         {children}
         <CookieBanner />
+        <ChatWidget />
       </body>
     </html>
   )
