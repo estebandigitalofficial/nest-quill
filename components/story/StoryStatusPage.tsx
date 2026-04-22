@@ -383,13 +383,21 @@ function StoryEbookReader({ story, requestId, pdfUrl, planTier }: { story: Story
         transition: 'opacity 0.4s, transform 0.4s',
       }}>
         <div style={{ height: 20, background: 'linear-gradient(to top, #faf8f5, transparent)' }} />
-        <div style={{ background: '#faf8f5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 20px', gap: 12 }}>
-          <button
-            onClick={() => go(current - 1)} disabled={current === 0 || animating}
-            style={{ fontSize: 11, fontWeight: 500, padding: '8px 16px', borderRadius: 8, border: '1px solid #e7e5e4', color: current === 0 ? '#d6d3d1' : '#78716c', background: 'transparent', cursor: current === 0 ? 'default' : 'pointer', transition: 'color 0.2s' }}
-          >
-            ← Prev
-          </button>
+        <div style={{ background: '#faf8f5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 20px', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              onClick={() => go(0)} disabled={current === 0 || animating}
+              style={{ fontSize: 11, fontWeight: 500, padding: '8px 12px', borderRadius: 8, border: '1px solid #e7e5e4', color: current === 0 ? '#d6d3d1' : '#78716c', background: 'transparent', cursor: current === 0 ? 'default' : 'pointer', transition: 'color 0.2s' }}
+            >
+              ↩ Start
+            </button>
+            <button
+              onClick={() => go(current - 1)} disabled={current === 0 || animating}
+              style={{ fontSize: 11, fontWeight: 500, padding: '8px 12px', borderRadius: 8, border: '1px solid #e7e5e4', color: current === 0 ? '#d6d3d1' : '#78716c', background: 'transparent', cursor: current === 0 ? 'default' : 'pointer', transition: 'color 0.2s' }}
+            >
+              ← Prev
+            </button>
+          </div>
           <span style={{ fontSize: 10, color: '#a8a29e', letterSpacing: '0.05em' }}>
             {current + 1} / {readerPages.length}
           </span>

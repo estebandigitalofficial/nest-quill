@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Lora, Nunito } from 'next/font/google'
 import './globals.css'
+import CookieBanner from '@/components/CookieBanner'
 
 const nunito = Nunito({
   subsets: ['latin'],
@@ -31,7 +32,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${nunito.variable} ${lora.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <CookieBanner />
+      </body>
     </html>
   )
 }
