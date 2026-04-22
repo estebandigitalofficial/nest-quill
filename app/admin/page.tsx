@@ -1,16 +1,13 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getAdminContext } from '@/lib/admin/guard'
 import type { StoryRequest } from '@/types/database'
 
 export default async function AdminPage() {
   // ── Auth gate ──────────────────────────────────────────────────────────────
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const adminEmail = process.env.ADMIN_EMAIL
-  if (!user || user.email !== adminEmail) redirect('/')
+  const ctx = await getAdminContext()
+  if (!ctx) redirect('/')
 
   // ── Data ───────────────────────────────────────────────────────────────────
   const adminSupabase = createAdminClient()

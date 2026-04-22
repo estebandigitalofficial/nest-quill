@@ -26,9 +26,9 @@ export default function LoginPage() {
       return
     }
 
-    const isAdmin = data.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
-    const adminRedirect = process.env.NEXT_PUBLIC_ADMIN_REDIRECT ?? '/admin'
-    router.push(isAdmin ? adminRedirect : '/account')
+    const res = await fetch('/api/auth/is-admin')
+    const { isAdmin } = await res.json()
+    router.push(isAdmin ? '/admin' : '/account')
     router.refresh()
   }
 

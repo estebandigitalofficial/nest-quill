@@ -5,8 +5,9 @@ import { getAdminContext } from '@/lib/admin/guard'
 import type { WriterBook } from '@/types/writer'
 import DeleteBookButton from '@/components/admin/writer/DeleteBookButton'
 
-// Deterministically pick an accent color from owner_id
-const AUTHOR_COLORS = [
+type AuthorColorScheme = { border: string; dot: string; text: string }
+
+const AUTHOR_COLORS: AuthorColorScheme[] = [
   { border: 'border-l-brand-500',  dot: 'bg-brand-500',   text: 'text-brand-400'   }, // amber/orange
   { border: 'border-l-blue-500',   dot: 'bg-blue-500',    text: 'text-blue-400'    }, // blue
   { border: 'border-l-violet-500', dot: 'bg-violet-500',  text: 'text-violet-400'  }, // violet
@@ -15,8 +16,15 @@ const AUTHOR_COLORS = [
   { border: 'border-l-green-500',  dot: 'bg-green-500',   text: 'text-green-400'   }, // green
 ]
 
-function authorColor(ownerId: string | null) {
+// Pinned colors — change only by explicit request
+const PINNED_COLORS: Record<string, AuthorColorScheme> = {
+  'fe53384e-5f3c-4eea-8a5b-5839763fad1d': AUTHOR_COLORS[1], // Esteban — blue
+  '965ed669-8a1e-46e9-8646-d6bbb3ff7937': AUTHOR_COLORS[0], // Andrew — amber
+}
+
+function authorColor(ownerId: string | null): AuthorColorScheme {
   if (!ownerId) return AUTHOR_COLORS[0]
+  if (PINNED_COLORS[ownerId]) return PINNED_COLORS[ownerId]
   let hash = 0
   for (let i = 0; i < ownerId.length; i++) hash = (hash * 31 + ownerId.charCodeAt(i)) >>> 0
   return AUTHOR_COLORS[hash % AUTHOR_COLORS.length]
