@@ -11,11 +11,13 @@ import WizardProgress from './WizardProgress'
 import PlanStep from './steps/PlanStep'
 import ChildStep from './steps/ChildStep'
 import StoryStep from './steps/StoryStep'
+import LearningStep from './steps/LearningStep'
 import StyleStep from './steps/StyleStep'
 import ReviewStep from './steps/ReviewStep'
 
-// Fields validated when clicking "Next" on each step index
-const STEP_FIELDS: (keyof StoryFormValues)[][] = [
+// Standard story steps + validation fields
+const STANDARD_STEPS = [PlanStep, ChildStep, StoryStep, StyleStep, ReviewStep]
+const STANDARD_FIELDS: (keyof StoryFormValues)[][] = [
   ['planTier'],
   ['childName', 'childAge'],
   ['storyTheme', 'storyTone'],
@@ -23,11 +25,21 @@ const STEP_FIELDS: (keyof StoryFormValues)[][] = [
   ['userEmail'],
 ]
 
-const STEPS = [PlanStep, ChildStep, StoryStep, StyleStep, ReviewStep]
+// Learning story steps (insert LearningStep before StyleStep)
+const LEARNING_STEPS = [PlanStep, ChildStep, StoryStep, LearningStep, StyleStep, ReviewStep]
+const LEARNING_FIELDS: (keyof StoryFormValues)[][] = [
+  ['planTier'],
+  ['childName', 'childAge'],
+  ['storyTheme', 'storyTone'],
+  ['learningSubject', 'learningGrade', 'learningTopic'],
+  ['illustrationStyle', 'storyLength'],
+  ['userEmail'],
+]
 
 export default function StoryWizard() {
   const router = useRouter()
   const [step, setStep] = useState(0)
+  const [learningMode, setLearningMode] = useState(false)
 
   const methods = useForm<StoryFormValues>({
     resolver: zodResolver(storyFormSchema),
@@ -36,14 +48,23 @@ export default function StoryWizard() {
       storyLength: 8,
       illustrationStyle: 'watercolor',
       storyTone: [],
+      learningMode: false,
     },
     mode: 'onTouched',
   })
 
-  const { handleSubmit, trigger, setError, formState: { isSubmitting, errors } } = methods
+  const { handleSubmit, trigger, setError, setValue, formState: { isSubmitting, errors } } = methods
 
+  const STEPS = learningMode ? LEARNING_STEPS : STANDARD_STEPS
+  const STEP_FIELDS = learningMode ? LEARNING_FIELDS : STANDARD_FIELDS
   const isLastStep = step === STEPS.length - 1
   const StepComponent = STEPS[step]
+
+  function toggleLearningMode(on: boolean) {
+    setLearningMode(on)
+    setValue('learningMode', on)
+    setStep(0)
+  }
 
   async function handleNext() {
     const fields = STEP_FIELDS[step]
@@ -83,7 +104,37 @@ export default function StoryWizard() {
 
   return (
     <FormProvider {...methods}>
-      <WizardProgress currentStep={step} />
+      {/* Mode toggle — shown only on step 0 */}
+      {step === 0 && (
+        <div className="flex items-center bg-gray-100 rounded-2xl p-1 mb-2">
+          <button
+            type="button"
+            onClick={() => toggleLearningMode(false)}
+            className={cn(
+              'flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all',
+              !learningMode
+                ? 'bg-white text-oxford shadow-sm'
+                : 'text-gray-400 hover:text-gray-600'
+            )}
+          >
+            📖 Story
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleLearningMode(true)}
+            className={cn(
+              'flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all',
+              learningMode
+                ? 'bg-white text-oxford shadow-sm'
+                : 'text-gray-400 hover:text-gray-600'
+            )}
+          >
+            🎓 Learning Story
+          </button>
+        </div>
+      )}
+
+      <WizardProgress currentStep={step} totalSteps={STEPS.length} />
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6">
@@ -131,7 +182,7 @@ export default function StoryWizard() {
                   : 'bg-brand-500 hover:bg-brand-600 active:scale-[0.99]'
               )}
             >
-              {isSubmitting ? 'Creating your story…' : 'Create My Story →'}
+              {isSubmitting ? 'Creating your story…' : learningMode ? 'Create Learning Story →' : 'Create My Story →'}
             </button>
           ) : (
             <button
@@ -153,4 +204,3 @@ export default function StoryWizard() {
     </FormProvider>
   )
 }
-

@@ -138,6 +138,7 @@ export async function GET(request: NextRequest) {
       planTier: storyRequest.plan_tier,
       signedUrl,
       completedAt: storyRequest.completed_at ?? undefined,
+      learningMode: storyRequest.learning_mode ?? false,
     })
   } catch (err) {
     const { message, code, statusCode } = toApiError(err)

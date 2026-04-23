@@ -105,6 +105,19 @@ export const storyFormSchema = z.object({
     .trim()
     .optional(),
 
+  // ── Learning mode ─────────────────────────────────────────────────────────
+  learningMode: z.boolean().optional().default(false),
+
+  learningSubject: z.string().max(60).trim().optional(),
+
+  learningGrade: z.number().int().min(1).max(8).optional(),
+
+  learningTopic: z
+    .string()
+    .max(200, 'Topic must be 200 characters or less')
+    .trim()
+    .optional(),
+
   // ── Delivery ──────────────────────────────────────────────────────────────
   userEmail: z
     .string()

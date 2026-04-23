@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import type { StoryStatusResponse, StoryContentResponse, StoryContentPage } from '@/types/story'
+import type { StoryStatusResponse, StoryContentResponse, StoryContentPage, StoryQuizResponse } from '@/types/story'
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 
@@ -13,6 +13,7 @@ const TRANSITION_MS = 280
 export default function StoryStatusPage({ requestId, isAdmin }: { requestId: string; isAdmin?: boolean }) {
   const [status, setStatus] = useState<StoryStatusResponse | null>(null)
   const [story, setStory] = useState<StoryContentResponse | null>(null)
+  const [quiz, setQuiz] = useState<StoryQuizResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pollKey, setPollKey] = useState(0)
   const [retrying, setRetrying] = useState(false)
@@ -46,6 +47,13 @@ export default function StoryStatusPage({ requestId, isAdmin }: { requestId: str
     setStory(data)
   }, [requestId])
 
+  const fetchQuiz = useCallback(async () => {
+    const res = await fetch(`/api/story/${requestId}/quiz`)
+    if (!res.ok) return
+    const data: StoryQuizResponse = await res.json()
+    setQuiz(data)
+  }, [requestId])
+
   useEffect(() => {
     let stopped = false
     async function poll() {
@@ -58,8 +66,11 @@ export default function StoryStatusPage({ requestId, isAdmin }: { requestId: str
   }, [fetchStatus, pollKey])
 
   useEffect(() => {
-    if (status?.status === 'complete') fetchStory()
-  }, [status?.status, fetchStory])
+    if (status?.status === 'complete') {
+      fetchStory()
+      if (status.learningMode) fetchQuiz()
+    }
+  }, [status?.status, status?.learningMode, fetchStory, fetchQuiz])
 
   async function handleRetry() {
     setRetrying(true)
@@ -116,7 +127,7 @@ export default function StoryStatusPage({ requestId, isAdmin }: { requestId: str
     )
   }
 
-  return <StoryEbookReader story={story} requestId={requestId} pdfUrl={status.signedUrl} planTier={status.planTier} isAdmin={isAdmin} />
+  return <StoryEbookReader story={story} requestId={requestId} pdfUrl={status.signedUrl} planTier={status.planTier} isAdmin={isAdmin} quiz={quiz} />
 }
 
 // ── Non-reader shells ─────────────────────────────────────────────────────────
@@ -193,8 +204,9 @@ type ReaderPage =
   | { kind: 'cover' }
   | { kind: 'story'; page: StoryContentPage }
   | { kind: 'end' }
+  | { kind: 'quiz' }
 
-function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin }: { story: StoryContentResponse; requestId: string; pdfUrl?: string; planTier?: string; isAdmin?: boolean }) {
+function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin, quiz }: { story: StoryContentResponse; requestId: string; pdfUrl?: string; planTier?: string; isAdmin?: boolean; quiz?: StoryQuizResponse | null }) {
   const canDownload = planTier !== 'free'
   const backHref = isAdmin ? '/admin' : '/account'
   const backLabel = isAdmin ? 'Admin dashboard' : 'My stories'
@@ -202,6 +214,7 @@ function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin }: { sto
     { kind: 'cover' },
     ...story.pages.map(p => ({ kind: 'story' as const, page: p })),
     { kind: 'end' },
+    ...(quiz ? [{ kind: 'quiz' as const }] : []),
   ]
 
   const storageKey = `story-pos-${requestId}`
@@ -377,7 +390,8 @@ function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin }: { sto
         <div style={{ width: '100%', maxWidth: 480, padding: '0 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
           {page.kind === 'cover' && <CoverPage story={story} hasMore={readerPages.length > 1} />}
           {page.kind === 'story' && <StoryPageContent page={page.page} storyIndex={current} total={story.pages.length} />}
-          {page.kind === 'end' && <EndPage pdfUrl={pdfUrl} canDownload={canDownload} backHref={backHref} />}
+          {page.kind === 'end' && <EndPage pdfUrl={pdfUrl} canDownload={canDownload} backHref={backHref} hasQuiz={!!quiz} onTakeQuiz={() => go(readerPages.length - 1)} />}
+          {page.kind === 'quiz' && quiz && <QuizPage quiz={quiz} requestId={requestId} />}
         </div>
       </div>
 
@@ -477,13 +491,21 @@ function StoryPageContent({ page, storyIndex, total }: { page: StoryContentPage;
   )
 }
 
-function EndPage({ pdfUrl, canDownload, backHref }: { pdfUrl?: string; canDownload: boolean; backHref: string }) {
+function EndPage({ pdfUrl, canDownload, backHref, hasQuiz, onTakeQuiz }: { pdfUrl?: string; canDownload: boolean; backHref: string; hasQuiz?: boolean; onTakeQuiz?: () => void }) {
   return (
     <div style={{ textAlign: 'center', width: '100%' }}>
       <p style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: '1.6rem', color: '#a8a29e', marginBottom: 36 }}>
         ✦ The End ✦
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+        {hasQuiz && (
+          <button
+            onClick={onTakeQuiz}
+            style={{ fontSize: 13, fontWeight: 600, color: 'white', background: '#4f46e5', padding: '10px 24px', borderRadius: 12, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+          >
+            🎓 Take the quiz →
+          </button>
+        )}
         {pdfUrl && canDownload && (
           <a
             href={pdfUrl}
@@ -506,7 +528,7 @@ function EndPage({ pdfUrl, canDownload, backHref }: { pdfUrl?: string; canDownlo
         )}
         <Link
           href={backHref}
-          style={{ fontSize: 13, fontWeight: 600, color: 'white', background: (pdfUrl && canDownload) ? '#78716c' : '#C99700', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-block' }}
+          style={{ fontSize: 13, fontWeight: 600, color: 'white', background: (pdfUrl && canDownload) ? '#78716c' : hasQuiz ? '#78716c' : '#C99700', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-block' }}
         >
           {backHref === '/admin' ? 'Back to dashboard →' : 'View in my account →'}
         </Link>
@@ -516,6 +538,155 @@ function EndPage({ pdfUrl, canDownload, backHref }: { pdfUrl?: string; canDownlo
         >
           Create another story
         </Link>
+      </div>
+    </div>
+  )
+}
+
+function QuizPage({ quiz, requestId }: { quiz: StoryQuizResponse; requestId: string }) {
+  const [currentQ, setCurrentQ] = useState(0)
+  const [selected, setSelected] = useState<(number | null)[]>(Array(quiz.questions.length).fill(null))
+  const [submitted, setSubmitted] = useState(false)
+  const [feedback, setFeedback] = useState<{ correct_index: number; explanation: string }[] | null>(null)
+  const [score, setScore] = useState<number | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  const q = quiz.questions[currentQ]
+  const totalQ = quiz.questions.length
+  const allAnswered = selected.every(s => s !== null)
+
+  async function handleSubmit() {
+    setSubmitting(true)
+    const answers = selected.map((s, i) => ({ question_index: i, selected_index: s ?? 0 }))
+    const res = await fetch(`/api/story/${requestId}/quiz`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quizId: quiz.quizId, answers }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setScore(data.score)
+      setFeedback(data.feedback)
+    }
+    setSubmitted(true)
+    setSubmitting(false)
+    setCurrentQ(0)
+  }
+
+  if (submitted && feedback !== null && score !== null) {
+    return (
+      <div style={{ width: '100%', maxHeight: '70vh', overflowY: 'auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <p style={{ fontSize: '2.2rem', marginBottom: 8 }}>
+            {score === totalQ ? '🏆' : score >= totalQ * 0.6 ? '⭐' : '📚'}
+          </p>
+          <p style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: '1.3rem', color: '#0C2340', fontWeight: 700 }}>
+            {score} / {totalQ} correct
+          </p>
+          <p style={{ fontSize: 13, color: '#78716c', marginTop: 4 }}>
+            {score === totalQ ? 'Perfect score! Amazing work!' : score >= totalQ * 0.8 ? 'Great job!' : score >= totalQ * 0.6 ? 'Nice effort!' : 'Keep reading and try again!'}
+          </p>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {quiz.questions.map((q, i) => {
+            const isCorrect = selected[i] === feedback[i].correct_index
+            return (
+              <div key={i} style={{ background: isCorrect ? '#f0fdf4' : '#fff7f7', border: `1.5px solid ${isCorrect ? '#86efac' : '#fca5a5'}`, borderRadius: 10, padding: '10px 14px' }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>{i + 1}. {q.question}</p>
+                <p style={{ fontSize: 11, color: isCorrect ? '#16a34a' : '#dc2626', marginBottom: 4 }}>
+                  {isCorrect ? '✓ Correct' : `✗ You chose: ${q.options[selected[i] ?? 0]}`}
+                </p>
+                {!isCorrect && (
+                  <p style={{ fontSize: 11, color: '#16a34a' }}>Correct: {q.options[feedback[i].correct_index]}</p>
+                )}
+                <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4, fontStyle: 'italic' }}>{feedback[i].explanation}</p>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ width: '100%' }}>
+      <div style={{ marginBottom: 16, textAlign: 'center' }}>
+        <p style={{ fontSize: 10, color: '#a8a29e', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
+          Quiz · {quiz.topic}
+        </p>
+        <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+          {quiz.questions.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentQ(i)}
+              style={{
+                width: 8, height: 8, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                background: i === currentQ ? '#4f46e5' : selected[i] !== null ? '#a5b4fc' : '#e5e7eb',
+                transition: 'background 0.2s',
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #e5e7eb', padding: '16px 18px', marginBottom: 14 }}>
+        <p style={{ fontSize: 11, color: '#6b7280', marginBottom: 8 }}>Question {currentQ + 1} of {totalQ}</p>
+        <p style={{ fontSize: 14, fontWeight: 600, color: '#1f2937', lineHeight: 1.5 }}>{q.question}</p>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+        {q.options.map((opt, i) => {
+          const isSelected = selected[currentQ] === i
+          return (
+            <button
+              key={i}
+              onClick={() => {
+                const next = [...selected]
+                next[currentQ] = i
+                setSelected(next)
+              }}
+              style={{
+                textAlign: 'left', padding: '10px 14px', borderRadius: 10, fontSize: 13,
+                border: `1.5px solid ${isSelected ? '#4f46e5' : '#e5e7eb'}`,
+                background: isSelected ? '#eef2ff' : '#fff',
+                color: isSelected ? '#3730a3' : '#374151',
+                cursor: 'pointer', fontWeight: isSelected ? 600 : 400,
+                transition: 'all 0.15s',
+              }}
+            >
+              <span style={{ marginRight: 8, opacity: 0.5 }}>{['A', 'B', 'C', 'D'][i]}.</span>
+              {opt}
+            </button>
+          )
+        })}
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        {currentQ > 0 && (
+          <button
+            onClick={() => setCurrentQ(q => q - 1)}
+            style={{ fontSize: 12, padding: '8px 16px', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', color: '#6b7280', cursor: 'pointer' }}
+          >
+            ← Back
+          </button>
+        )}
+        {currentQ < totalQ - 1 ? (
+          <button
+            onClick={() => setCurrentQ(q => q + 1)}
+            disabled={selected[currentQ] === null}
+            style={{ fontSize: 12, padding: '8px 16px', borderRadius: 8, border: 'none', background: selected[currentQ] !== null ? '#4f46e5' : '#e5e7eb', color: selected[currentQ] !== null ? '#fff' : '#9ca3af', cursor: selected[currentQ] !== null ? 'pointer' : 'default', fontWeight: 600 }}
+          >
+            Next →
+          </button>
+        ) : (
+          <button
+            onClick={handleSubmit}
+            disabled={!allAnswered || submitting}
+            style={{ fontSize: 12, padding: '8px 20px', borderRadius: 8, border: 'none', background: allAnswered ? '#4f46e5' : '#e5e7eb', color: allAnswered ? '#fff' : '#9ca3af', cursor: allAnswered ? 'pointer' : 'default', fontWeight: 600 }}
+          >
+            {submitting ? 'Submitting…' : 'Submit Quiz →'}
+          </button>
+        )}
       </div>
     </div>
   )

@@ -97,6 +97,38 @@ export interface StoryRequest {
   updated_at: string
   processing_started_at: string | null
   completed_at: string | null
+  learning_mode: boolean
+  learning_subject: string | null
+  learning_grade: number | null
+  learning_topic: string | null
+}
+
+export interface QuizQuestion {
+  question: string
+  options: [string, string, string, string]
+  correct_index: 0 | 1 | 2 | 3
+  explanation: string
+}
+
+export interface StoryQuiz {
+  id: string
+  request_id: string
+  subject: string | null
+  grade: number | null
+  topic: string | null
+  questions: QuizQuestion[]
+  created_at: string
+}
+
+export interface QuizResult {
+  id: string
+  request_id: string
+  user_id: string | null
+  guest_token: string | null
+  score: number
+  total: number
+  answers: { question_index: number; selected_index: number; correct: boolean }[]
+  completed_at: string
 }
 
 export interface GeneratedStory {

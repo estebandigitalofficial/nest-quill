@@ -110,12 +110,26 @@ function buildStoryPrompt(request: Record<string, unknown>): object[] {
     illustration_style,
     dedication_text,
     supporting_characters,
+    learning_mode,
+    learning_subject,
+    learning_grade,
+    learning_topic,
   } = request
 
   const toneList = Array.isArray(story_tone) ? story_tone.join(', ') : story_tone
   const pageCount = Number(story_length) || 16
+  const isLearning = learning_mode === true
 
-  const systemPrompt = `You are a professional children's book author. You write warm, age-appropriate stories for young children.
+  const learningSystemNote = isLearning ? `
+
+LEARNING MODE ACTIVE:
+This story must naturally weave in educational content about "${learning_topic}" (${learning_subject}, grade ${learning_grade}).
+- Introduce the concept early and reinforce it across multiple pages
+- Use age-appropriate vocabulary for a grade ${learning_grade} student
+- Show the character applying or discovering the concept — don't just state facts
+- The learning should feel like part of the story, not a lesson bolted on` : ''
+
+  const systemPrompt = `You are a professional children's book author. You write warm, age-appropriate stories for young children.${learningSystemNote}
 
 Your output must be valid JSON matching this exact structure:
 {
@@ -143,16 +157,20 @@ Rules:
 - Do not include page numbers or chapter headings in the text
 - End the story with a satisfying, uplifting conclusion`
 
+  const learningUserNote = isLearning
+    ? `- Learning focus: ${learning_topic} (subject: ${learning_subject}, grade ${learning_grade})\n`
+    : ''
+
   const userPrompt = `Write a children's storybook with these details:
 
 - Main character: ${child_name}, age ${child_age}
 ${child_description ? `- About ${child_name}: ${child_description}` : ''}
-${request.supporting_characters ? `- Supporting characters to include: ${request.supporting_characters}` : ''}
+${supporting_characters ? `- Supporting characters to include: ${supporting_characters}` : ''}
 - Story theme: ${story_theme}
 - Tone: ${toneList}
 ${story_moral ? `- Moral or lesson to include: ${story_moral}` : ''}
 ${dedication_text ? `- Dedication: ${dedication_text}` : ''}
-- Length: exactly ${pageCount} pages
+${learningUserNote}- Length: exactly ${pageCount} pages
 
 Write the full story now.`
 
@@ -160,6 +178,53 @@ Write the full story now.`
     { role: 'system', content: systemPrompt },
     { role: 'user', content: userPrompt },
   ]
+}
+
+// ── Quiz generator ────────────────────────────────────────────────────────────
+
+async function generateQuiz(
+  storyPages: { page: number; text: string }[],
+  subject: string,
+  grade: number,
+  topic: string,
+): Promise<object[]> {
+  const storyText = storyPages.map(p => `Page ${p.page}: ${p.text}`).join('\n')
+
+  const messages = [
+    {
+      role: 'system',
+      content: `You are an educational assessment writer. Create 5 multiple-choice quiz questions based on the story and learning topic.
+
+Your output must be valid JSON matching this exact structure:
+{
+  "questions": [
+    {
+      "question": "string — the question text",
+      "options": ["option A", "option B", "option C", "option D"],
+      "correct_index": 0,
+      "explanation": "string — brief explanation of why this answer is correct"
+    }
+  ]
+}
+
+Rules:
+- Write exactly 5 questions
+- Questions must be answerable from the story content
+- Mix comprehension questions (about story events) with concept questions (about ${topic})
+- Keep language appropriate for grade ${grade} (age ${5 + grade}–${6 + grade})
+- Each question must have exactly 4 options
+- correct_index is 0-based (0 = first option, 3 = last option)
+- Explanations should be encouraging and educational`,
+    },
+    {
+      role: 'user',
+      content: `Story content:\n${storyText}\n\nLearning topic: ${topic} (${subject}, grade ${grade})\n\nGenerate 5 quiz questions now.`,
+    },
+  ]
+
+  const raw = await callOpenAI(messages)
+  const parsed = JSON.parse(raw)
+  return parsed.questions
 }
 
 // ── Main handler ──────────────────────────────────────────────────────────────
@@ -372,6 +437,39 @@ Deno.serve(async (req) => {
     }
 
     await setStatus('generating_text', 'Story written!', 40)
+
+    // ── Step 1b: Generate quiz (learning mode only) ───────────────────────
+    if (storyRequest.learning_mode && storyRequest.learning_subject && storyRequest.learning_topic) {
+      try {
+        await log('generate_quiz', `Generating quiz for topic: ${storyRequest.learning_topic}`)
+
+        const quizQuestions = await generateQuiz(
+          story.pages,
+          storyRequest.learning_subject,
+          storyRequest.learning_grade ?? 1,
+          storyRequest.learning_topic,
+        )
+
+        const { error: quizInsertError } = await supabase
+          .from('story_quizzes')
+          .insert({
+            request_id: requestId,
+            subject: storyRequest.learning_subject,
+            grade: storyRequest.learning_grade ?? null,
+            topic: storyRequest.learning_topic,
+            questions: quizQuestions,
+          })
+
+        if (quizInsertError) {
+          await log('generate_quiz', `Quiz insert warning: ${quizInsertError.message}`, 'warning')
+        } else {
+          await log('generate_quiz', `Quiz generated: ${quizQuestions.length} questions`)
+        }
+      } catch (quizErr) {
+        const quizMsg = quizErr instanceof Error ? quizErr.message : String(quizErr)
+        await log('generate_quiz', `Quiz generation failed (non-fatal): ${quizMsg}`, 'warning')
+      }
+    }
 
     // ── Step 2: Generate illustrations via DALL-E 3 ───────────────────────
     await setStatus('generating_images', 'Creating illustrations…', 45)

@@ -89,6 +89,22 @@ export interface StoryStatusResponse {
   planTier: string
   signedUrl?: string
   completedAt?: string
+  learningMode?: boolean
+}
+
+export interface QuizQuestion {
+  question: string
+  options: [string, string, string, string]
+  correct_index: 0 | 1 | 2 | 3
+  explanation: string
+}
+
+export interface StoryQuizResponse {
+  quizId: string
+  subject: string | null
+  grade: number | null
+  topic: string | null
+  questions: QuizQuestion[]
 }
 
 export interface StoryContentPage {

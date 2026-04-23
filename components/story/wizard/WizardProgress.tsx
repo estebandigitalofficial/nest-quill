@@ -1,23 +1,28 @@
 'use client'
 
-const STEP_LABELS = ['Plan', 'Child', 'Story', 'Style', 'Review']
+const STANDARD_LABELS = ['Plan', 'Child', 'Story', 'Style', 'Review']
+const LEARNING_LABELS = ['Plan', 'Child', 'Story', 'Learning', 'Style', 'Review']
 
 export default function WizardProgress({
   currentStep,
+  totalSteps = 5,
 }: {
   currentStep: number
+  totalSteps?: number
 }) {
+  const labels = totalSteps === 6 ? LEARNING_LABELS : STANDARD_LABELS
+
   return (
     <nav aria-label="Form steps" className="mb-8">
       <ol className="flex items-center justify-between relative">
         <li className="absolute inset-x-0 top-4 h-0.5 bg-gray-200 -z-10" aria-hidden="true">
           <div
             className="h-full bg-brand-400 transition-all duration-300"
-            style={{ width: `${(currentStep / (STEP_LABELS.length - 1)) * 100}%` }}
+            style={{ width: `${(currentStep / (labels.length - 1)) * 100}%` }}
           />
         </li>
 
-        {STEP_LABELS.map((label, i) => {
+        {labels.map((label, i) => {
           const done = i < currentStep
           const active = i === currentStep
 
