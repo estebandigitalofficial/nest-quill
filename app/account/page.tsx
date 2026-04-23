@@ -80,9 +80,9 @@ export default async function AccountPage() {
   return (
     <div className="min-h-screen bg-brand-50">
       {/* Nav */}
-      <header className="bg-white border-b border-gray-100">
+      <header className="bg-parchment/95 border-b border-parchment-dark backdrop-blur">
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="font-serif text-xl font-semibold text-gray-900">
+          <Link href="/" className="font-serif text-xl font-semibold text-oxford">
             Nest &amp; Quill
           </Link>
           <div className="flex items-center gap-4">
@@ -98,8 +98,8 @@ export default async function AccountPage() {
         {/* Profile header */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6 flex items-center justify-between">
           <div>
-            <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Account</p>
-            <p className="text-gray-900 font-medium">{user.email}</p>
+            <p className="text-xs text-charcoal-light uppercase tracking-widest font-semibold mb-1">Account</p>
+            <p className="text-oxford font-medium">{user.email}</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-gray-400 mb-1">Current plan</p>
@@ -112,7 +112,7 @@ export default async function AccountPage() {
         {/* Stories */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-serif text-xl text-gray-900">Your stories</h2>
+            <h2 className="font-serif text-xl text-oxford">Your stories</h2>
             <Link href="/create" className="text-sm text-brand-600 font-medium hover:text-brand-700">
               + New story
             </Link>
@@ -121,7 +121,7 @@ export default async function AccountPage() {
           {rows.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-12 text-center space-y-3">
               <p className="text-3xl">📖</p>
-              <p className="font-serif text-lg text-gray-900">No stories yet</p>
+              <p className="font-serif text-lg text-oxford">No stories yet</p>
               <p className="text-sm text-gray-500">Create your first personalized storybook.</p>
               <Link
                 href="/create"
@@ -156,10 +156,10 @@ export default async function AccountPage() {
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">
+                    <p className="font-medium text-oxford truncate">
                       {story.child_name}&apos;s story
                     </p>
-                    <p className="text-xs text-gray-400 mt-0.5 truncate">{story.story_theme}</p>
+                    <p className="text-xs text-charcoal-light mt-0.5 truncate">{story.story_theme}</p>
                   </div>
 
                   {/* Meta */}

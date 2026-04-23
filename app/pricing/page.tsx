@@ -6,20 +6,20 @@ export const metadata = { title: 'Pricing — Nest & Quill' }
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b border-gray-100">
+    <div className="min-h-screen bg-parchment">
+      <header className="border-b border-parchment-dark bg-parchment/95 backdrop-blur">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="font-serif text-xl font-semibold text-gray-900">
+          <Link href="/" className="font-serif text-xl font-semibold text-oxford">
             Nest &amp; Quill
           </Link>
-          <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">← Back</Link>
+          <Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Back</Link>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-6 py-16 space-y-14">
         <div className="text-center space-y-3">
-          <h1 className="font-serif text-4xl sm:text-5xl text-gray-900">Simple, honest pricing</h1>
-          <p className="text-gray-500 max-w-md mx-auto">
+          <h1 className="font-serif text-4xl sm:text-5xl text-oxford">Simple, honest pricing</h1>
+          <p className="text-charcoal-light max-w-md mx-auto">
             All plans are free during beta. Payments coming soon.
           </p>
         </div>
@@ -45,18 +45,18 @@ export default function PricingPage() {
                 )}
 
                 <div className="mb-4">
-                  <p className="font-semibold text-gray-900">{plan.displayName}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                  <p className="font-semibold text-oxford">{plan.displayName}</p>
+                  <p className="text-2xl font-bold text-oxford mt-1">
                     {plan.pricingType === 'free' ? (
                       'Free'
                     ) : plan.pricingType === 'one_time' ? (
-                      <>${plan.priceMonthly}<span className="text-sm font-normal text-gray-400"> once</span></>
+                      <>${plan.priceMonthly}<span className="text-sm font-normal text-charcoal-light"> once</span></>
                     ) : (
-                      <>${plan.priceMonthly}<span className="text-sm font-normal text-gray-400">/mo</span></>
+                      <>${plan.priceMonthly}<span className="text-sm font-normal text-charcoal-light">/mo</span></>
                     )}
                   </p>
                   {plan.pricingType === 'subscription' && plan.priceYearly && (
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-charcoal-light mt-0.5">
                       or ${plan.priceYearly}/yr — save {Math.round((1 - plan.priceYearly / (plan.priceMonthly * 12)) * 100)}%
                     </p>
                   )}
@@ -64,7 +64,7 @@ export default function PricingPage() {
 
                 <ul className="space-y-2 flex-1 mb-6">
                   {plan.features.map((f) => (
-                    <li key={f} className="text-xs text-gray-600 flex gap-2 items-start">
+                    <li key={f} className="text-xs text-charcoal-light flex gap-2 items-start">
                       <span className="text-brand-400 shrink-0 mt-px">✓</span>
                       {f}
                     </li>
@@ -88,11 +88,11 @@ export default function PricingPage() {
         </div>
 
         {/* Educator callout */}
-        <div className="bg-forest-50 border border-forest-200 rounded-2xl px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="bg-oxford/5 border border-oxford/20 rounded-2xl px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div>
-            <p className="text-xs font-bold text-forest-600 uppercase tracking-widest mb-1">For Educators</p>
-            <h3 className="font-serif text-xl text-gray-900 mb-1">Bringing stories into the classroom?</h3>
-            <p className="text-sm text-gray-600 max-w-md">
+            <p className="text-xs font-bold text-oxford uppercase tracking-widest mb-1">For Educators</p>
+            <h3 className="font-serif text-xl text-oxford mb-1">Bringing stories into the classroom?</h3>
+            <p className="text-sm text-charcoal max-w-md">
               The Educator plan includes classroom management, student rosters, bulk story creation,
               and a class library. $59/month for up to 40 stories.
             </p>
@@ -100,7 +100,7 @@ export default function PricingPage() {
           <div className="shrink-0">
             <a
               href="mailto:contact@nestandquill.com?subject=Educator%20plan%20inquiry"
-              className="inline-block bg-forest-500 text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-forest-600 transition-colors"
+              className="inline-block bg-oxford text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-oxford-dark transition-colors"
             >
               Contact us
             </a>
@@ -109,12 +109,12 @@ export default function PricingPage() {
 
         {/* FAQ */}
         <div className="max-w-2xl mx-auto space-y-6">
-          <h2 className="font-serif text-2xl text-gray-900 text-center">Common questions</h2>
+          <h2 className="font-serif text-2xl text-oxford text-center">Common questions</h2>
           <div className="space-y-4">
             {FAQ.map((item) => (
-              <div key={item.q} className="border-b border-gray-100 pb-4">
-                <p className="font-medium text-gray-900 text-sm mb-1">{item.q}</p>
-                <p className="text-sm text-gray-500 leading-relaxed">{item.a}</p>
+              <div key={item.q} className="border-b border-parchment-dark pb-4">
+                <p className="font-medium text-oxford text-sm mb-1">{item.q}</p>
+                <p className="text-sm text-charcoal-light leading-relaxed">{item.a}</p>
               </div>
             ))}
           </div>

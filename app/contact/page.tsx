@@ -5,20 +5,20 @@ export const metadata = { title: 'Contact — Nest & Quill' }
 export default function ContactPage() {
   return (
     <div className="min-h-screen bg-brand-50">
-      <header className="bg-white border-b border-gray-100">
+      <header className="bg-parchment/95 border-b border-parchment-dark backdrop-blur">
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="font-serif text-xl font-semibold text-gray-900">
+          <Link href="/" className="font-serif text-xl font-semibold text-oxford">
             Nest &amp; Quill
           </Link>
-          <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">← Back</Link>
+          <Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Back</Link>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-16">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-12 space-y-8">
           <div>
-            <h1 className="font-serif text-3xl text-gray-900 mb-2">Get in touch</h1>
-            <p className="text-gray-500 text-sm leading-relaxed">
+            <h1 className="font-serif text-3xl text-oxford mb-2">Get in touch</h1>
+            <p className="text-charcoal-light text-sm leading-relaxed">
               Have a question, issue with a story, or just want to say hi? We&apos;d love to hear from you.
             </p>
           </div>
@@ -91,11 +91,11 @@ function ContactCard({
   action: React.ReactNode
 }) {
   return (
-    <div className="flex gap-4 items-start p-5 rounded-xl border border-gray-100 bg-gray-50">
+    <div className="flex gap-4 items-start p-5 rounded-xl border border-parchment-dark bg-parchment/50">
       <span className="text-2xl shrink-0">{icon}</span>
       <div className="space-y-1 flex-1">
-        <p className="font-semibold text-gray-900 text-sm">{title}</p>
-        <p className="text-xs text-gray-500 leading-relaxed">{description}</p>
+        <p className="font-semibold text-oxford text-sm">{title}</p>
+        <p className="text-xs text-charcoal-light leading-relaxed">{description}</p>
         <div className="pt-1">{action}</div>
       </div>
     </div>

@@ -9,7 +9,7 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   return (
-    <div className="min-h-screen bg-white font-sans">
+    <div className="min-h-screen bg-parchment font-sans">
       <Nav user={user} />
       <Hero />
       <HowItWorks />
@@ -26,15 +26,15 @@ export default async function HomePage() {
 
 function Nav({ user }: { user: { email?: string } | null }) {
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
+    <header className="sticky top-0 z-50 bg-parchment/95 backdrop-blur border-b border-parchment-dark">
       <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="font-serif text-xl text-gray-900 font-semibold tracking-tight">
+        <Link href="/" className="font-serif text-xl text-oxford font-semibold tracking-tight">
           Nest &amp; Quill
         </Link>
         <div className="flex items-center gap-4">
           <Link
             href="/pricing"
-            className="text-sm text-gray-500 hover:text-gray-700 transition-colors hidden md:block"
+            className="text-sm text-charcoal-light hover:text-oxford transition-colors hidden md:block"
           >
             Pricing
           </Link>
@@ -42,7 +42,7 @@ function Nav({ user }: { user: { email?: string } | null }) {
             <>
               <Link
                 href="/account"
-                className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                className="text-sm text-charcoal hover:text-oxford font-medium transition-colors"
               >
                 My stories
               </Link>
@@ -51,7 +51,7 @@ function Nav({ user }: { user: { email?: string } | null }) {
           ) : (
             <Link
               href="/login"
-              className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
+              className="text-sm text-charcoal hover:text-oxford font-medium transition-colors"
             >
               Sign in
             </Link>
@@ -78,12 +78,12 @@ function Hero() {
           Free during beta
         </div>
 
-        <h1 className="font-serif text-5xl sm:text-6xl text-gray-900 leading-tight text-balance">
+        <h1 className="font-serif text-5xl sm:text-6xl text-oxford leading-tight text-balance">
           A storybook made{' '}
           <span className="text-brand-500 italic">just for them.</span>
         </h1>
 
-        <p className="text-lg text-gray-600 max-w-xl mx-auto text-balance leading-relaxed">
+        <p className="text-lg text-charcoal max-w-xl mx-auto text-balance leading-relaxed">
           Personalized AI-illustrated storybooks starring your child. Pick a theme, tell us about them, and we&apos;ll write and illustrate a unique book in minutes.
         </p>
 
@@ -96,7 +96,7 @@ function Hero() {
           </Link>
           <Link
             href="#how-it-works"
-            className="bg-white text-gray-700 font-semibold px-7 py-3.5 rounded-full text-base border border-gray-200 hover:border-gray-300 transition-colors"
+            className="bg-white text-oxford font-semibold px-7 py-3.5 rounded-full text-base border border-parchment-dark hover:border-oxford/30 transition-colors"
           >
             See how it works
           </Link>
@@ -137,10 +137,10 @@ function HowItWorks() {
     <section id="how-it-works" className="py-24 px-6">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-14">
-          <h2 className="font-serif text-3xl sm:text-4xl text-gray-900 mb-3">
+          <h2 className="font-serif text-3xl sm:text-4xl text-oxford mb-3">
             A book in three steps
           </h2>
-          <p className="text-gray-500 max-w-md mx-auto">
+          <p className="text-charcoal-light max-w-md mx-auto">
             From blank page to personalized storybook in under two minutes.
           </p>
         </div>
@@ -154,8 +154,8 @@ function HowItWorks() {
               <div className="text-xs font-bold text-brand-400 uppercase tracking-widest">
                 Step {i + 1}
               </div>
-              <h3 className="font-serif text-lg text-gray-900">{step.title}</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">{step.description}</p>
+              <h3 className="font-serif text-lg text-oxford">{step.title}</h3>
+              <p className="text-sm text-charcoal-light leading-relaxed">{step.description}</p>
             </div>
           ))}
         </div>
@@ -189,10 +189,10 @@ function SamplePreview() {
     <section className="bg-brand-50 py-24 px-6">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="font-serif text-3xl sm:text-4xl text-gray-900 mb-3">
+          <h2 className="font-serif text-3xl sm:text-4xl text-oxford mb-3">
             What you get
           </h2>
-          <p className="text-gray-500 max-w-md mx-auto">
+          <p className="text-charcoal-light max-w-md mx-auto">
             A beautifully structured storybook, page by page.
           </p>
         </div>
@@ -205,8 +205,8 @@ function SamplePreview() {
             >
               <div className="text-2xl shrink-0 mt-0.5">{feature.emoji}</div>
               <div>
-                <h3 className="font-semibold text-gray-900 text-sm mb-1">{feature.title}</h3>
-                <p className="text-xs text-gray-500 leading-relaxed">{feature.description}</p>
+                <h3 className="font-semibold text-oxford text-sm mb-1">{feature.title}</h3>
+                <p className="text-xs text-charcoal-light leading-relaxed">{feature.description}</p>
               </div>
             </div>
           ))}
@@ -256,10 +256,10 @@ function Pricing() {
     <section id="pricing" className="py-24 px-6">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-14">
-          <h2 className="font-serif text-3xl sm:text-4xl text-gray-900 mb-3">
+          <h2 className="font-serif text-3xl sm:text-4xl text-oxford mb-3">
             Simple, honest pricing
           </h2>
-          <p className="text-gray-500 max-w-md mx-auto">
+          <p className="text-charcoal-light max-w-md mx-auto">
             All plans are free during beta. Payments coming soon.
           </p>
         </div>
@@ -284,21 +284,21 @@ function Pricing() {
                 )}
 
                 <div className="mb-4">
-                  <p className="font-semibold text-gray-900">{plan.displayName}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                  <p className="font-semibold text-oxford">{plan.displayName}</p>
+                  <p className="text-2xl font-bold text-oxford mt-1">
                     {plan.pricingType === 'free' ? (
                       'Free'
                     ) : plan.pricingType === 'one_time' ? (
-                      <>${plan.priceMonthly}<span className="text-sm font-normal text-gray-400"> once</span></>
+                      <>${plan.priceMonthly}<span className="text-sm font-normal text-charcoal-light"> once</span></>
                     ) : (
-                      <>${plan.priceMonthly}<span className="text-sm font-normal text-gray-400">/mo</span></>
+                      <>${plan.priceMonthly}<span className="text-sm font-normal text-charcoal-light">/mo</span></>
                     )}
                   </p>
                 </div>
 
                 <ul className="space-y-2 flex-1 mb-6">
                   {plan.features.map((f) => (
-                    <li key={f} className="text-xs text-gray-600 flex gap-2 items-start">
+                    <li key={f} className="text-xs text-charcoal-light flex gap-2 items-start">
                       <span className="text-brand-400 shrink-0 mt-px">✓</span>
                       {f}
                     </li>
@@ -330,16 +330,16 @@ function Pricing() {
 function EducatorBanner() {
   return (
     <section className="px-6 pb-16">
-      <div className="max-w-5xl mx-auto bg-forest-50 border border-forest-200 rounded-2xl px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div className="max-w-5xl mx-auto bg-oxford/5 border border-oxford/20 rounded-2xl px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-6">
         <div>
-          <p className="text-xs font-bold text-forest-600 uppercase tracking-widest mb-1">For Educators</p>
-          <h3 className="font-serif text-xl text-gray-900 mb-1">Bringing stories into the classroom?</h3>
-          <p className="text-sm text-gray-600 max-w-md">
+          <p className="text-xs font-bold text-oxford uppercase tracking-widest mb-1">For Educators</p>
+          <h3 className="font-serif text-xl text-oxford mb-1">Bringing stories into the classroom?</h3>
+          <p className="text-sm text-charcoal max-w-md">
             The Educator plan includes classroom management, student rosters, bulk story creation, and a class library. $59/month for up to 40 stories.
           </p>
         </div>
         <div className="shrink-0">
-          <span className="inline-block bg-forest-500 text-white text-sm font-semibold px-5 py-2.5 rounded-full opacity-60 cursor-not-allowed">
+          <span className="inline-block bg-oxford text-white text-sm font-semibold px-5 py-2.5 rounded-full opacity-60 cursor-not-allowed">
             Coming soon
           </span>
         </div>
@@ -375,16 +375,16 @@ function BottomCTA() {
 
 function Footer() {
   return (
-    <footer className="bg-gray-900 py-10 px-6">
-      <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
-        <p className="font-serif text-white font-semibold">Nest &amp; Quill</p>
+    <footer className="bg-oxford-dark py-10 px-6">
+      <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-parchment/50">
+        <p className="font-serif text-parchment font-semibold">Nest &amp; Quill</p>
         <p>© {new Date().getFullYear()} Nest &amp; Quill. All rights reserved.</p>
         <div className="flex gap-5">
-          <Link href="/create" className="hover:text-gray-300 transition-colors">Create</Link>
-          <Link href="/pricing" className="hover:text-gray-300 transition-colors">Pricing</Link>
-          <Link href="/contact" className="hover:text-gray-300 transition-colors">Contact</Link>
-          <Link href="/privacy" className="hover:text-gray-300 transition-colors">Privacy</Link>
-          <Link href="/terms" className="hover:text-gray-300 transition-colors">Terms</Link>
+          <Link href="/create" className="hover:text-parchment transition-colors">Create</Link>
+          <Link href="/pricing" className="hover:text-parchment transition-colors">Pricing</Link>
+          <Link href="/contact" className="hover:text-parchment transition-colors">Contact</Link>
+          <Link href="/privacy" className="hover:text-parchment transition-colors">Privacy</Link>
+          <Link href="/terms" className="hover:text-parchment transition-colors">Terms</Link>
         </div>
       </div>
     </footer>

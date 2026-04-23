@@ -4,7 +4,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-screen bg-brand-50 flex flex-col">
       <div className="p-6">
-        <Link href="/" className="font-serif text-xl font-semibold text-gray-900">
+        <Link href="/" className="font-serif text-xl font-semibold text-oxford">
           Nest &amp; Quill
         </Link>
       </div>
