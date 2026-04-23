@@ -6,10 +6,11 @@ export const metadata = { title: 'Contact — Nest & Quill' }
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-parchment flex flex-col">
+    <div className="h-screen bg-parchment flex flex-col">
       <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Back</Link>} />
 
-      <main className="flex-1 max-w-3xl mx-auto px-6 py-16 w-full">
+      <div className="flex-1 overflow-y-auto">
+      <main className="max-w-3xl mx-auto px-6 py-16 w-full">
         <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-12 space-y-8">
           <div>
             <h1 className="font-serif text-3xl text-oxford mb-2">Get in touch</h1>
@@ -70,6 +71,7 @@ export default function ContactPage() {
           </div>
         </div>
       </main>
+      </div>
       <SiteFooter />
     </div>
   )

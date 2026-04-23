@@ -6,10 +6,11 @@ export const metadata = { title: 'Privacy Policy — Nest & Quill' }
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-parchment flex flex-col">
+    <div className="h-screen bg-parchment flex flex-col">
       <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Back</Link>} />
 
-      <main className="flex-1 max-w-3xl mx-auto px-6 py-14 space-y-10 w-full">
+      <div className="flex-1 overflow-y-auto">
+      <main className="max-w-3xl mx-auto px-6 py-14 space-y-10 w-full">
         <div>
           <h1 className="font-serif text-4xl text-oxford mb-3">Privacy Policy</h1>
           <p className="text-sm text-charcoal-light">Last updated: April 2025</p>
@@ -98,6 +99,7 @@ export default function PrivacyPage() {
           </p>
         </Section>
       </main>
+      </div>
       <SiteFooter />
     </div>
   )

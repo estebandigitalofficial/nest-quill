@@ -10,14 +10,16 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   return (
-    <div className="min-h-screen bg-parchment font-sans">
+    <div className="h-screen bg-parchment font-sans flex flex-col">
       <Nav user={user} />
-      <Hero />
-      <HowItWorks />
-      <SamplePreview />
-      <Pricing />
-      <EducatorBanner />
-      <BottomCTA />
+      <div className="flex-1 overflow-y-auto">
+        <Hero />
+        <HowItWorks />
+        <SamplePreview />
+        <Pricing />
+        <EducatorBanner />
+        <BottomCTA />
+      </div>
       <SiteFooter />
     </div>
   )
@@ -27,7 +29,7 @@ export default async function HomePage() {
 
 function Nav({ user }: { user: { email?: string } | null }) {
   return (
-    <header className="sticky top-0 z-50 bg-parchment/95 backdrop-blur border-b border-parchment-dark">
+    <header className="bg-parchment/95 backdrop-blur border-b border-parchment-dark shrink-0">
       <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link href="/" className="font-serif text-xl text-oxford font-semibold tracking-tight">
           Nest &amp; Quill

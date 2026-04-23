@@ -79,7 +79,7 @@ export default async function AccountPage() {
   const plan = PLAN_CONFIG[planTier]
 
   return (
-    <div className="min-h-screen bg-parchment flex flex-col">
+    <div className="h-screen bg-parchment flex flex-col">
       {/* Nav */}
       <header className="bg-parchment/95 border-b border-parchment-dark backdrop-blur">
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -95,6 +95,7 @@ export default async function AccountPage() {
         </div>
       </header>
 
+      <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
         {/* Profile header */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6 flex items-center justify-between">
@@ -175,6 +176,7 @@ export default async function AccountPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
       <SiteFooter />
     </div>

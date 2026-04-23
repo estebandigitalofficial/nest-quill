@@ -6,7 +6,7 @@ export default function CreateLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-parchment flex flex-col">
       <SiteHeader />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 overflow-y-auto">{children}</main>
       <SiteFooter />
     </div>
   )

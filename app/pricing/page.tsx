@@ -8,10 +8,11 @@ export const metadata = { title: 'Pricing — Nest & Quill' }
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-parchment flex flex-col">
+    <div className="h-screen bg-parchment flex flex-col">
       <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Back</Link>} />
 
-      <main className="flex-1 max-w-5xl mx-auto px-6 py-16 space-y-14 w-full">
+      <div className="flex-1 overflow-y-auto">
+      <main className="max-w-5xl mx-auto px-6 py-16 space-y-14 w-full">
         <div className="text-center space-y-3">
           <h1 className="font-serif text-4xl sm:text-5xl text-oxford">Simple, honest pricing</h1>
           <p className="text-charcoal-light max-w-md mx-auto">
@@ -115,6 +116,7 @@ export default function PricingPage() {
           </div>
         </div>
       </main>
+      </div>
       <SiteFooter />
     </div>
   )
