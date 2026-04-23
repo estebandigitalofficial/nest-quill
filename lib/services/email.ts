@@ -475,3 +475,77 @@ export async function sendSignupDripEmail(step: number, opts: SignupDripOptions)
   const { error } = await resend.emails.send({ from: FROM, to: toEmail, subject, html })
   if (error) throw new Error(`Resend error (signup drip step ${step}): ${error.message}`)
 }
+
+// ── Welcome email ─────────────────────────────────────────────────────────────
+
+export async function sendWelcomeEmail(toEmail: string): Promise<void> {
+  const createUrl = `${APP_URL}/create`
+  const html = emailShell(`
+    <h1 style="margin:0 0 12px;font-size:26px;color:#0C2340;line-height:1.2;">
+      Welcome to Nest &amp; Quill 🪺
+    </h1>
+    <p style="margin:0 0 16px;font-size:15px;color:#2E2E2E;line-height:1.7;">
+      We're so glad you're here. Nest &amp; Quill creates personalized, illustrated
+      storybooks starring your child — written and illustrated by AI in minutes.
+    </p>
+    <p style="margin:0 0 8px;font-size:15px;color:#2E2E2E;line-height:1.7;">
+      Here's what you can do:
+    </p>
+    <ul style="margin:0 0 20px;padding-left:20px;font-size:15px;color:#2E2E2E;line-height:1.9;">
+      <li>Create a story starring your child — free, no credit card needed</li>
+      <li>Choose from 5 illustration styles (watercolor, cartoon, and more)</li>
+      <li>Add a personal dedication, supporting characters, and a closing message</li>
+      <li>Download a beautiful PDF to read, print, or share</li>
+    </ul>
+    ${ctaButton('Create your first story →', createUrl)}
+    <p style="margin:24px 0 0;font-size:13px;color:#4a4a4a;line-height:1.6;">
+      Your first story is completely free. It only takes about two minutes.
+    </p>
+  `)
+
+  const resend = getResend()
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: toEmail,
+    subject: 'Welcome to Nest & Quill 🪺',
+    html,
+  })
+  if (error) throw new Error(`Resend error (welcome): ${error.message}`)
+}
+
+// ── Story error email ─────────────────────────────────────────────────────────
+
+export async function sendStoryErrorEmail(opts: {
+  toEmail: string
+  childName: string
+  requestId: string
+}): Promise<void> {
+  const { toEmail, childName, requestId } = opts
+  const retryUrl = `${APP_URL}/story/${requestId}`
+  const html = emailShell(`
+    <h1 style="margin:0 0 12px;font-size:26px;color:#0C2340;line-height:1.2;">
+      Something went wrong with ${childName}'s story
+    </h1>
+    <p style="margin:0 0 16px;font-size:15px;color:#2E2E2E;line-height:1.7;">
+      We ran into a problem while generating ${childName}'s storybook. We're sorry
+      about the interruption — this doesn't happen often.
+    </p>
+    <p style="margin:0 0 24px;font-size:15px;color:#2E2E2E;line-height:1.7;">
+      You can try again from the story page — it only takes a moment and there's
+      no charge.
+    </p>
+    ${ctaButton('Try again →', retryUrl)}
+    <p style="margin:24px 0 0;font-size:13px;color:#4a4a4a;line-height:1.6;">
+      If the problem keeps happening, reply to this email and we'll sort it out.
+    </p>
+  `)
+
+  const resend = getResend()
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: toEmail,
+    subject: `We hit a snag with ${childName}'s story`,
+    html,
+  })
+  if (error) throw new Error(`Resend error (story error): ${error.message}`)
+}

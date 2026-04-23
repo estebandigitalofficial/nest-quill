@@ -678,6 +678,43 @@ Deno.serve(async (req) => {
 
     await log('pipeline_error', message, 'error')
 
+    // Notify the user their story failed
+    if (storyRequest?.user_email && storyRequest?.child_name) {
+      try {
+        const retryUrl = `${APP_URL}/story/${requestId}`
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_API_KEY}` },
+          body: JSON.stringify({
+            from: RESEND_FROM,
+            to: storyRequest.user_email,
+            subject: `We hit a snag with ${storyRequest.child_name}'s story`,
+            html: `
+              <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:40px 24px;background:#F8F5EC;">
+                <p style="margin:0 0 24px;font-size:20px;font-weight:700;color:#0C2340;">Nest &amp; Quill</p>
+                <div style="background:#fff;border-radius:16px;border:1px solid #ede9dc;padding:36px;">
+                  <h1 style="margin:0 0 12px;font-size:22px;color:#0C2340;">Something went wrong with ${storyRequest.child_name}'s story</h1>
+                  <p style="margin:0 0 16px;font-size:15px;color:#2E2E2E;line-height:1.7;">
+                    We ran into a problem while generating ${storyRequest.child_name}'s storybook. We're sorry about the interruption.
+                  </p>
+                  <p style="margin:0 0 24px;font-size:15px;color:#2E2E2E;line-height:1.7;">
+                    You can try again from the story page — it only takes a moment and there's no charge.
+                  </p>
+                  <a href="${retryUrl}" style="display:inline-block;background:#C99700;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:600;font-size:15px;">
+                    Try again →
+                  </a>
+                  <p style="margin:24px 0 0;font-size:13px;color:#4a4a4a;line-height:1.6;">
+                    If the problem keeps happening, reply to this email and we'll sort it out.
+                  </p>
+                </div>
+              </div>`,
+          }),
+        })
+      } catch (_emailErr) {
+        // Non-fatal — don't mask the original error
+      }
+    }
+
     return new Response(
       JSON.stringify({ requestId, status: 'failed', error: message }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
