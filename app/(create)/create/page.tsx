@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import StoryWizard from '@/components/story/wizard/StoryWizard'
 
 export const metadata: Metadata = {
@@ -22,7 +23,9 @@ export default function CreatePage() {
             A personalized illustrated storybook in minutes.
           </p>
         </div>
-        <StoryWizard />
+        <Suspense>
+          <StoryWizard />
+        </Suspense>
       </div>
     </div>
   )
