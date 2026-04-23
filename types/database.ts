@@ -78,6 +78,9 @@ export interface StoryRequest {
   illustration_style: string
   dedication_text: string | null
   custom_notes: string | null
+  supporting_characters: string | null
+  author_name: string | null
+  closing_message: string | null
   locale: string
   user_email: string
   status: StoryStatus

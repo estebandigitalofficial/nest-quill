@@ -59,6 +59,15 @@ export default function ReviewStep() {
         {values.dedicationText && (
           <Row label="Dedication" value={truncate(values.dedicationText, 60)} />
         )}
+        {values.supportingCharacters && (
+          <Row label="Characters" value={truncate(values.supportingCharacters, 60)} />
+        )}
+        {values.authorName && (
+          <Row label="Author" value={values.authorName} />
+        )}
+        {values.closingMessage && (
+          <Row label="Closing" value={truncate(values.closingMessage, 60)} />
+        )}
       </div>
 
       {/* Email */}

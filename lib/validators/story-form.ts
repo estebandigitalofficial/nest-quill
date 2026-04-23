@@ -81,6 +81,24 @@ export const storyFormSchema = z.object({
     .trim()
     .optional(),
 
+  supportingCharacters: z
+    .string()
+    .max(300, 'Must be 300 characters or less')
+    .trim()
+    .optional(),
+
+  authorName: z
+    .string()
+    .max(80, 'Must be 80 characters or less')
+    .trim()
+    .optional(),
+
+  closingMessage: z
+    .string()
+    .max(200, 'Must be 200 characters or less')
+    .trim()
+    .optional(),
+
   customNotes: z
     .string()
     .max(500, 'Notes must be 500 characters or less')

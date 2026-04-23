@@ -15,6 +15,7 @@ export interface PDFGenerationInput {
   scenes: StoryScene[]
   // Caller fetches signed URLs from Supabase; pass null for pages without images
   signedImageUrls: Map<number, string>
+  closingMessage?: string
 }
 
 export interface PDFGenerationResult {
@@ -25,7 +26,7 @@ export interface PDFGenerationResult {
 
 export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGenerationResult> {
   const t0 = Date.now()
-  const { story, scenes, signedImageUrls } = input
+  const { story, scenes, signedImageUrls, closingMessage } = input
 
   const doc = await PDFDocument.create()
   const fontSerif = await doc.embedFont(StandardFonts.TimesRoman)
@@ -141,19 +142,30 @@ export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGen
 
   const endText = '✦  The End  ✦'
   const endW = fontSerifItalic.widthOfTextAtSize(endText, 20)
+  const endY = closingMessage ? PAGE_SIZE * 0.65 : PAGE_SIZE / 2 + 10
   backPage.drawText(endText, {
     x: (PAGE_SIZE - endW) / 2,
-    y: PAGE_SIZE / 2 + 10,
+    y: endY,
     size: 20,
     font: fontSerifItalic,
     color: BRAND_GOLD,
   })
 
-  const brandText = 'A Nest & Quill Original'
+  if (closingMessage) {
+    const msgLines = wrapText(closingMessage, fontSerifItalic, 13, PAGE_SIZE - MARGIN * 4)
+    let msgY = endY - 32
+    for (const line of msgLines) {
+      const w = fontSerifItalic.widthOfTextAtSize(line, 13)
+      backPage.drawText(line, { x: (PAGE_SIZE - w) / 2, y: msgY, size: 13, font: fontSerifItalic, color: GRAY })
+      msgY -= 13 * 1.6
+    }
+  }
+
+  const brandText = story.author_line ?? 'A Nest & Quill Original'
   const brandW = fontSerif.widthOfTextAtSize(brandText, 11)
   backPage.drawText(brandText, {
     x: (PAGE_SIZE - brandW) / 2,
-    y: PAGE_SIZE / 2 - 24,
+    y: MARGIN + 10,
     size: 11,
     font: fontSerif,
     color: GRAY,

@@ -109,6 +109,7 @@ function buildStoryPrompt(request: Record<string, unknown>): object[] {
     story_length,
     illustration_style,
     dedication_text,
+    supporting_characters,
   } = request
 
   const toneList = Array.isArray(story_tone) ? story_tone.join(', ') : story_tone
@@ -146,6 +147,7 @@ Rules:
 
 - Main character: ${child_name}, age ${child_age}
 ${child_description ? `- About ${child_name}: ${child_description}` : ''}
+${request.supporting_characters ? `- Supporting characters to include: ${request.supporting_characters}` : ''}
 - Story theme: ${story_theme}
 - Tone: ${toneList}
 ${story_moral ? `- Moral or lesson to include: ${story_moral}` : ''}
@@ -337,7 +339,7 @@ Deno.serve(async (req) => {
         request_id: requestId,
         title: story.title,
         subtitle: story.subtitle || null,
-        author_line: story.author_line || 'A Nest & Quill Original',
+        author_line: storyRequest.author_name || story.author_line || 'A Nest & Quill Original',
         dedication: story.dedication || null,
         synopsis: story.synopsis || null,
         full_text_json: story.pages,
@@ -533,11 +535,22 @@ Deno.serve(async (req) => {
       back.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: PDF_SIZE, color: PDF_CREAM })
       back.drawRectangle({ x: 0, y: PDF_SIZE - 8, width: PDF_SIZE, height: 8, color: PDF_BRAND_GOLD })
       back.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: 8, color: PDF_BRAND_GOLD })
-      const endText = 'The End'
-      const endW = fontSerifItalic.widthOfTextAtSize(endText, 22)
-      back.drawText(endText, { x: (PDF_SIZE - endW) / 2, y: PDF_SIZE / 2 + 10, size: 22, font: fontSerifItalic, color: PDF_BRAND_GOLD })
+      const endText = '✦  The End  ✦'
+      const endW = fontSerifItalic.widthOfTextAtSize(endText, 20)
+      const closingMsg = storyRequest.closing_message
+      const endY = closingMsg ? PDF_SIZE * 0.65 : PDF_SIZE / 2 + 10
+      back.drawText(endText, { x: (PDF_SIZE - endW) / 2, y: endY, size: 20, font: fontSerifItalic, color: PDF_BRAND_GOLD })
+      if (closingMsg) {
+        const msgLines = pdfWrapText(closingMsg, fontSerifItalic, 13, PDF_SIZE - PDF_MARGIN * 4)
+        let msgY = endY - 32
+        for (const line of msgLines) {
+          const w = fontSerifItalic.widthOfTextAtSize(line, 13)
+          back.drawText(line, { x: (PDF_SIZE - w) / 2, y: msgY, size: 13, font: fontSerifItalic, color: PDF_GRAY })
+          msgY -= 13 * 1.6
+        }
+      }
       const brandW = fontSerif.widthOfTextAtSize(authorLine, 11)
-      back.drawText(authorLine, { x: (PDF_SIZE - brandW) / 2, y: PDF_SIZE / 2 - 24, size: 11, font: fontSerif, color: PDF_GRAY })
+      back.drawText(authorLine, { x: (PDF_SIZE - brandW) / 2, y: PDF_MARGIN + 10, size: 11, font: fontSerif, color: PDF_GRAY })
 
       const pdfBytes = await pdfDoc.save()
       pdfStoragePath = `${requestId}/storybook.pdf`

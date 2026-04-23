@@ -20,6 +20,8 @@ export async function generateStoryText(
     | 'story_length'
     | 'illustration_style'
     | 'dedication_text'
+    | 'supporting_characters'
+    | 'author_name'
     | 'custom_notes'
   >
 ): Promise<GeneratedStoryJSON> {
@@ -61,6 +63,7 @@ Rules:
     ``,
     `- Main character: ${request.child_name}, age ${request.child_age}`,
     request.child_description ? `- About ${request.child_name}: ${request.child_description}` : null,
+    request.supporting_characters ? `- Supporting characters to include: ${request.supporting_characters}` : null,
     `- Story theme: ${request.story_theme}`,
     `- Tone: ${toneList}`,
     request.story_moral ? `- Moral or lesson to include: ${request.story_moral}` : null,

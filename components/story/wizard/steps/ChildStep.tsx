@@ -77,6 +77,19 @@ export default function ChildStep() {
           className={cn(inputClass(!!errors.childDescription), 'resize-none')}
         />
       </Field>
+
+      <Field
+        label="Supporting characters"
+        error={errors.supportingCharacters?.message}
+        hint="Siblings, friends, pets, or anyone else to weave into the story."
+      >
+        <textarea
+          rows={2}
+          placeholder="e.g. Her little brother Max, and Luna the tabby cat"
+          {...register('supportingCharacters')}
+          className={cn(inputClass(!!errors.supportingCharacters), 'resize-none')}
+        />
+      </Field>
     </div>
   )
 }

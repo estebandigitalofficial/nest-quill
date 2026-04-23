@@ -173,6 +173,42 @@ export default function StyleStep() {
         </div>
       )}
 
+      {/* Author name */}
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-gray-700">
+          Author name{' '}
+          <span className="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <input
+          type="text"
+          placeholder="e.g. Mom &amp; Dad, Grandma Joyce"
+          {...register('authorName')}
+          className={inputClass(!!errors.authorName)}
+        />
+        <p className="text-xs text-gray-400">Printed on the cover. Leave blank for "A Nest &amp; Quill Original".</p>
+        {errors.authorName && (
+          <p className="text-xs text-red-500">{errors.authorName.message}</p>
+        )}
+      </div>
+
+      {/* Closing message */}
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-gray-700">
+          Closing page message{' '}
+          <span className="text-gray-400 font-normal">(optional)</span>
+        </label>
+        <textarea
+          rows={2}
+          placeholder="e.g. You are braver than you know, and loved more than you'll ever understand."
+          {...register('closingMessage')}
+          className={cn(inputClass(!!errors.closingMessage), 'resize-none')}
+        />
+        <p className="text-xs text-gray-400">A personal note printed on the final page of the book.</p>
+        {errors.closingMessage && (
+          <p className="text-xs text-red-500">{errors.closingMessage.message}</p>
+        )}
+      </div>
+
       {/* Custom notes */}
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-gray-700">
