@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     // ── 3. Check plan limits ─────────────────────────────────────────────────
     const limits = getPlanLimits(formData.planTier)
-    const limitCheck = await canCreateBook(user?.id ?? null, formData.planTier)
+    const limitCheck = await canCreateBook(user?.id ?? null, formData.planTier, guestToken)
 
     if (!limitCheck.allowed) {
       throw new PlanLimitError(limitCheck.reason ?? 'Plan limit reached')

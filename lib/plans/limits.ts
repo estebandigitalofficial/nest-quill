@@ -6,18 +6,36 @@ import type { PlanTier } from '@/types/database'
  * Checks whether a user (or guest) is allowed to create another book.
  *
  * For authenticated users: checks profile.books_generated against plan limit.
- * For guests: always allowed in Phase 1 (no persistent tracking across sessions).
+ * For guests: counts existing story_requests by guest_token against the free limit.
  */
 export async function canCreateBook(
   userId: string | null,
-  tier: PlanTier
+  tier: PlanTier,
+  guestToken?: string | null,
 ): Promise<{ allowed: boolean; reason?: string }> {
-  // Guests are always allowed — they have no persistent account to track
+  const supabase = createAdminClient()
+  const limits = getPlanLimits(tier)
+  const limit = limits.booksPerMonth
+
   if (!userId) {
+    // Guests: count non-failed stories submitted under this browser token
+    if (!guestToken || tier !== 'free') return { allowed: true }
+
+    const { count, error } = await supabase
+      .from('story_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('guest_token', guestToken)
+      .neq('status', 'failed')
+
+    if (error) return { allowed: true } // fail open
+
+    if ((count ?? 0) >= limit) {
+      return { allowed: false, reason: 'Free plan allows 1 story. Sign up to create more.' }
+    }
+
     return { allowed: true }
   }
 
-  const supabase = createAdminClient()
   const { data: profile, error } = await supabase
     .from('profiles')
     .select('books_generated, books_limit')
@@ -25,18 +43,14 @@ export async function canCreateBook(
     .single()
 
   if (error || !profile) {
-    // If we can't read the profile, allow them through rather than blocking
     console.error('canCreateBook: failed to read profile', error)
     return { allowed: true }
   }
 
-  const limits = getPlanLimits(tier)
-  const monthlyLimit = limits.booksPerMonth
-
-  if (profile.books_generated >= monthlyLimit) {
+  if (profile.books_generated >= limit) {
     return {
       allowed: false,
-      reason: `Your ${tier} plan allows ${monthlyLimit} book${monthlyLimit === 1 ? '' : 's'} per month. You've reached your limit.`,
+      reason: `Your ${tier} plan allows ${limit} book${limit === 1 ? '' : 's'} per month. You've reached your limit.`,
     }
   }
 

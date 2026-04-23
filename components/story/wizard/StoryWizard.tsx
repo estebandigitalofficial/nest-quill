@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { storyFormSchema, type StoryFormValues } from '@/lib/validators/story-form'
@@ -39,7 +40,7 @@ export default function StoryWizard() {
     mode: 'onTouched',
   })
 
-  const { handleSubmit, trigger, setError, formState: { isSubmitting } } = methods
+  const { handleSubmit, trigger, setError, formState: { isSubmitting, errors } } = methods
 
   const isLastStep = step === STEPS.length - 1
   const StepComponent = STEPS[step]
@@ -66,6 +67,7 @@ export default function StoryWizard() {
 
       if (!res.ok) {
         setError('root', {
+          type: json.code ?? 'error',
           message: json.message ?? 'Something went wrong. Please try again.',
         })
         return
@@ -87,6 +89,25 @@ export default function StoryWizard() {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6">
           <StepComponent />
         </div>
+
+        {errors.root && (
+          errors.root.type === 'PLAN_LIMIT_EXCEEDED' ? (
+            <div className="rounded-xl border border-brand-200 bg-brand-50 px-5 py-4 text-center space-y-2">
+              <p className="text-sm font-semibold text-oxford">You&apos;ve used your free story</p>
+              <p className="text-xs text-charcoal-light">Upgrade to create more personalized storybooks.</p>
+              <Link
+                href="/pricing"
+                className="inline-block mt-1 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"
+              >
+                See pricing →
+              </Link>
+            </div>
+          ) : (
+            <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3 text-center">
+              {errors.root.message}
+            </p>
+          )
+        )}
 
         <div className="flex items-center gap-3">
           {step > 0 && (

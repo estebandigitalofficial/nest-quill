@@ -655,6 +655,11 @@ Deno.serve(async (req) => {
       })
       .eq('id', requestId)
 
+    // Increment the user's books_generated counter so plan limits are enforced
+    if (storyRequest.user_id) {
+      await supabase.rpc('increment_books_generated', { user_id_input: storyRequest.user_id })
+    }
+
     await log('pipeline_complete', `Pipeline finished — story + ${imagesGenerated} illustrations + PDF + email`)
 
     return new Response(
