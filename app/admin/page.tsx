@@ -141,7 +141,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                           <td className="px-4 py-3 text-red-400 text-xs font-mono">{stuckMin}m</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              <Link href={`/story/${story.id}`} className="text-xs text-brand-400 hover:text-brand-300 font-medium">
+                              <Link href={`/admin/stories/${story.id}`} className="text-xs text-brand-400 hover:text-brand-300 font-medium">
                                 View →
                               </Link>
                               <AdminForceRequeueButton requestId={story.id} />
@@ -207,7 +207,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <Link
-                              href={`/story/${story.id}`}
+                              href={`/admin/stories/${story.id}`}
                               className="text-xs text-brand-400 hover:text-brand-300 font-medium"
                             >
                               View →
