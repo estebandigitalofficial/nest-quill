@@ -213,9 +213,14 @@ export default function ChatWidget() {
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         ) : (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F8F5EC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="https://nestandquill.b-cdn.net/nestquill%20logo%20350x350.webp"
+            alt="Nest & Quill"
+            width={34}
+            height={34}
+            style={{ borderRadius: '50%', objectFit: 'cover' }}
+          />
         )}
       </button>
     </>
