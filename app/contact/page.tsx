@@ -136,12 +136,6 @@ export default function ContactPage() {
                 </button>
               </form>
 
-              <p className="text-xs text-charcoal-light text-center">
-                Or email us directly at{' '}
-                <a href="mailto:contact@nestandquill.com" className="text-brand-600 hover:text-brand-700 font-medium">
-                  contact@nestandquill.com
-                </a>
-              </p>
             </div>
           )}
         </main>
