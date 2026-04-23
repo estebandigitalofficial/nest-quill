@@ -79,7 +79,7 @@ export default async function AccountPage() {
   const plan = PLAN_CONFIG[planTier]
 
   return (
-    <div className="h-screen bg-parchment flex flex-col">
+    <div className="h-dvh bg-parchment flex flex-col">
       {/* Nav */}
       <header className="bg-parchment/95 border-b border-parchment-dark backdrop-blur">
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">

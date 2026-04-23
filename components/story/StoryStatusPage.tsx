@@ -123,7 +123,7 @@ export default function StoryStatusPage({ requestId, isAdmin }: { requestId: str
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-screen bg-parchment flex flex-col">
+    <div className="h-dvh bg-parchment flex flex-col">
       <SiteHeader />
       <div className="flex-1 overflow-y-auto py-10 px-4">
         <div className="max-w-2xl mx-auto">
@@ -148,7 +148,7 @@ function LoadingShell() {
 
 function ErrorView({ message }: { message: string }) {
   return (
-    <div className="h-screen bg-parchment flex flex-col">
+    <div className="h-dvh bg-parchment flex flex-col">
       <SiteHeader />
       <div className="flex-1 overflow-y-auto flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-10 text-center max-w-sm w-full space-y-4">

@@ -4,7 +4,7 @@ export const metadata = { title: 'Page not found — Nest & Quill' }
 
 export default function NotFound() {
   return (
-    <div className="h-screen bg-parchment flex flex-col items-center justify-center px-6 text-center">
+    <div className="h-dvh bg-parchment flex flex-col items-center justify-center px-6 text-center">
       <p className="text-6xl mb-6">📖</p>
       <h1 className="font-serif text-4xl text-oxford mb-3">Page not found</h1>
       <p className="text-charcoal-light text-sm max-w-xs leading-relaxed mb-8">

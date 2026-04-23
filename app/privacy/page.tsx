@@ -6,7 +6,7 @@ export const metadata = { title: 'Privacy Policy — Nest & Quill' }
 
 export default function PrivacyPage() {
   return (
-    <div className="h-screen bg-parchment flex flex-col">
+    <div className="h-dvh bg-parchment flex flex-col">
       <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Back</Link>} />
 
       <div className="flex-1 overflow-y-auto">

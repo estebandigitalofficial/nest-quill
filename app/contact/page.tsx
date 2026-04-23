@@ -46,7 +46,7 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="h-screen bg-parchment flex flex-col">
+    <div className="h-dvh bg-parchment flex flex-col">
       <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Back</Link>} />
 
       <div className="flex-1 overflow-y-auto">
@@ -75,7 +75,7 @@ export default function ContactPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="block text-sm font-medium text-charcoal">Name</label>
                     <input

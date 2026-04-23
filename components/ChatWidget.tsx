@@ -83,7 +83,7 @@ export default function ChatWidget() {
       {/* Panel */}
       {open && (
         <div style={{
-          position: 'fixed', bottom: 84, right: 20, zIndex: 40,
+          position: 'fixed', bottom: 'calc(max(20px, env(safe-area-inset-bottom, 20px)) + 64px)', right: 20, zIndex: 40,
           width: 360, maxWidth: 'calc(100vw - 32px)',
           background: '#F8F5EC',
           borderRadius: 20,
@@ -195,7 +195,7 @@ export default function ChatWidget() {
       <button
         onClick={() => setOpen(o => !o)}
         style={{
-          position: 'fixed', bottom: 20, right: 20, zIndex: 40,
+          position: 'fixed', bottom: 'max(20px, env(safe-area-inset-bottom, 20px))', right: 20, zIndex: 40,
           width: 54, height: 54, borderRadius: '50%',
           background: '#0C2340',
           border: '2px solid rgba(201,151,0,0.5)',

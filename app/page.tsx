@@ -10,7 +10,7 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   return (
-    <div className="h-screen bg-parchment font-sans flex flex-col">
+    <div className="h-dvh bg-parchment font-sans flex flex-col">
       <Nav user={user} />
       <div className="flex-1 overflow-y-auto">
         <Hero />
@@ -45,7 +45,7 @@ function Nav({ user }: { user: { email?: string } | null }) {
             <>
               <Link
                 href="/account"
-                className="text-sm text-charcoal hover:text-oxford font-medium transition-colors"
+                className="text-sm text-charcoal hover:text-oxford font-medium transition-colors hidden sm:block"
               >
                 My stories
               </Link>
@@ -111,7 +111,7 @@ function Hero() {
       </div>
 
       {/* Decorative book cards */}
-      <div className="max-w-2xl mx-auto mt-16 grid grid-cols-3 gap-4">
+      <div className="max-w-2xl mx-auto mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4">
         {SAMPLE_BOOKS.map((book) => (
           <div
             key={book.title}
