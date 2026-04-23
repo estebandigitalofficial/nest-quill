@@ -210,3 +210,268 @@ export async function sendSubmissionConfirmationEmail(
     throw new Error(`Resend error: ${error.message}`)
   }
 }
+
+// ── Shared email shell ────────────────────────────────────────────────────────
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://nestandquill.com'
+const FROM = 'Nest & Quill <stories@nestandquill.com>'
+
+function emailShell(bodyContent: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background:#F8F5EC;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8F5EC;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+        <tr>
+          <td style="padding-bottom:28px;text-align:center;">
+            <p style="margin:0;font-family:Georgia,serif;font-size:20px;font-weight:700;color:#0C2340;letter-spacing:-0.3px;">
+              Nest &amp; Quill
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#ffffff;border-radius:16px;border:1px solid #e8e0d5;padding:36px 32px;">
+            ${bodyContent}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-top:20px;text-align:center;">
+            <p style="margin:0;font-size:11px;color:#bbb;line-height:1.6;">
+              You're receiving this from Nest &amp; Quill because you created an account or story.<br/>
+              © ${new Date().getFullYear()} Nest &amp; Quill. All rights reserved.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+function ctaButton(label: string, url: string): string {
+  return `<table cellpadding="0" cellspacing="0" style="margin-top:24px;">
+    <tr>
+      <td style="background:#C99700;border-radius:10px;">
+        <a href="${url}" style="display:inline-block;padding:13px 26px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.1px;">
+          ${label}
+        </a>
+      </td>
+    </tr>
+  </table>`
+}
+
+// ── Story drip emails ─────────────────────────────────────────────────────────
+
+export interface StoryDripOptions {
+  toEmail: string
+  childName: string
+  requestId: string
+  planTier: string
+}
+
+export async function sendStoryDripEmail(step: number, opts: StoryDripOptions): Promise<void> {
+  const { toEmail, childName, requestId, planTier } = opts
+  const storyUrl = `${APP_URL}/story/${requestId}`
+  const canDownload = planTier !== 'free'
+
+  let subject: string
+  let html: string
+
+  if (step === 2) {
+    subject = `${childName}'s story — here's what you can do with it 📖`
+    html = emailShell(`
+      <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#0C2340;line-height:1.2;">
+        Your story is ready to enjoy
+      </p>
+      <p style="margin:16px 0 0;font-size:15px;color:#555;line-height:1.7;">
+        <strong style="color:#2E2E2E;">${childName}'s story</strong> is waiting for you. Here are a few ways to make the most of it:
+      </p>
+      <ul style="margin:16px 0 0;padding-left:20px;font-size:14px;color:#555;line-height:2;">
+        <li>📱 Read it on your phone or tablet — perfect for bedtime</li>
+        <li>🖨️ Print it at home for a physical copy</li>
+        ${canDownload ? '<li>⬇️ Download the full PDF — it\'s already waiting for you</li>' : '<li>⬇️ Upgrade to download a beautifully formatted PDF</li>'}
+        <li>🎁 Share the link with family and friends</li>
+      </ul>
+      ${ctaButton(`Read ${childName}'s story →`, storyUrl)}
+      <hr style="border:none;border-top:1px solid #ede8e0;margin:28px 0;" />
+      <p style="margin:0;font-size:12px;color:#aaa;line-height:1.6;">
+        Can't click the button? <a href="${storyUrl}" style="color:#C99700;">${storyUrl}</a>
+      </p>
+    `)
+  } else if (step === 4) {
+    subject = `Ideas for sharing ${childName}'s storybook`
+    html = emailShell(`
+      <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#0C2340;line-height:1.2;">
+        Make it a memory
+      </p>
+      <p style="margin:16px 0 0;font-size:15px;color:#555;line-height:1.7;">
+        ${childName}'s story is more than a one-time read. Here are some ideas:
+      </p>
+      <ul style="margin:16px 0 0;padding-left:20px;font-size:14px;color:#555;line-height:2.2;">
+        <li>🌙 Make it your official <strong>bedtime story</strong> for a week</li>
+        <li>👵 Send the link to grandparents, aunts, and uncles</li>
+        <li>🎂 Print it as a <strong>birthday gift</strong> — kids love seeing their name in a book</li>
+        <li>📚 Save it as a yearly tradition — create a new story each birthday</li>
+      </ul>
+      <p style="margin:20px 0 0;font-size:15px;color:#555;line-height:1.7;">
+        Want another story? We can make one for a sibling, a friend, or a whole new adventure for ${childName}.
+      </p>
+      ${ctaButton('Create another story →', `${APP_URL}/create`)}
+    `)
+  } else if (step === 6) {
+    subject = `How did ${childName} like their story? 💛`
+    html = emailShell(`
+      <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#0C2340;line-height:1.2;">
+        We'd love to hear from you
+      </p>
+      <p style="margin:16px 0 0;font-size:15px;color:#555;line-height:1.7;">
+        It means the world to us when families enjoy their stories. What did ${childName} think?
+      </p>
+      <p style="margin:12px 0 0;font-size:15px;color:#555;line-height:1.7;">
+        Just reply to this email with a quick note — a reaction, a quote, even a photo — and we'll send you <strong style="color:#0C2340;">15% off your next story</strong> as a thank you.
+      </p>
+      ${ctaButton(`Read ${childName}'s story again →`, storyUrl)}
+      <hr style="border:none;border-top:1px solid #ede8e0;margin:28px 0;" />
+      <p style="margin:0;font-size:13px;color:#888;line-height:1.6;">
+        Simply reply to this email to share your feedback and claim your discount.
+      </p>
+    `)
+  } else {
+    return
+  }
+
+  const resend = getResend()
+  const { error } = await resend.emails.send({ from: FROM, to: toEmail, subject, html })
+  if (error) throw new Error(`Resend error (story drip step ${step}): ${error.message}`)
+}
+
+// ── Signup drip emails ────────────────────────────────────────────────────────
+
+export interface SignupDripOptions {
+  toEmail: string
+}
+
+export async function sendSignupDripEmail(step: number, opts: SignupDripOptions): Promise<void> {
+  const { toEmail } = opts
+  const createUrl = `${APP_URL}/create`
+  const pricingUrl = `${APP_URL}/pricing`
+
+  let subject: string
+  let html: string
+
+  if (step === 1) {
+    subject = 'Your story is waiting to be written ✨'
+    html = emailShell(`
+      <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#0C2340;line-height:1.2;">
+        Still thinking about it?
+      </p>
+      <p style="margin:16px 0 0;font-size:15px;color:#555;line-height:1.7;">
+        Creating a personalized storybook takes about 5 minutes — and it's free to try. Just tell us:
+      </p>
+      <ul style="margin:16px 0 0;padding-left:20px;font-size:14px;color:#555;line-height:2;">
+        <li>The child's name and age</li>
+        <li>A story theme (we have presets to pick from)</li>
+        <li>A tone — silly, magical, adventurous, heartwarming</li>
+      </ul>
+      <p style="margin:16px 0 0;font-size:15px;color:#555;line-height:1.7;">
+        We handle the writing, the illustrations, and the delivery. All you have to do is enjoy it.
+      </p>
+      ${ctaButton('Create my story →', createUrl)}
+    `)
+  } else if (step === 3) {
+    subject = "Here's what you get when your story is done"
+    html = emailShell(`
+      <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#0C2340;line-height:1.2;">
+        A complete storybook — in minutes
+      </p>
+      <p style="margin:16px 0 0;font-size:15px;color:#555;line-height:1.7;">
+        Here's exactly what you get when your story finishes generating:
+      </p>
+      <ul style="margin:16px 0 0;padding-left:20px;font-size:14px;color:#555;line-height:2.2;">
+        <li>📖 A full illustrated storybook starring your child</li>
+        <li>🎨 AI illustrations in your chosen art style (watercolor, cartoon, and more)</li>
+        <li>✉️ Email delivery with a link to read it immediately</li>
+        <li>⬇️ PDF download on paid plans — printable and shareable</li>
+        <li>💌 An optional dedication page and custom author name</li>
+      </ul>
+      <p style="margin:16px 0 0;font-size:15px;color:#555;line-height:1.7;">
+        The free plan gives you one 8-page story to try it out — no card required.
+      </p>
+      ${ctaButton('Create my free story →', createUrl)}
+    `)
+  } else if (step === 5) {
+    subject = 'Every day, families are making memories with Nest & Quill'
+    html = emailShell(`
+      <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#0C2340;line-height:1.2;">
+        Real stories, real smiles
+      </p>
+      <p style="margin:16px 0 0;font-size:15px;color:#555;line-height:1.7;">
+        Here's how families are using their personalized stories:
+      </p>
+      <div style="margin:20px 0;padding:16px 20px;background:#F8F5EC;border-left:3px solid #C99700;border-radius:4px;">
+        <p style="margin:0;font-size:14px;color:#2E2E2E;line-height:1.7;font-style:italic;">
+          "I made a bedtime story for my daughter featuring her and our golden retriever. She asks for it every night now."
+        </p>
+        <p style="margin:8px 0 0;font-size:12px;color:#888;">— A Nest &amp; Quill parent</p>
+      </div>
+      <div style="margin:16px 0 0;padding:16px 20px;background:#F8F5EC;border-left:3px solid #C99700;border-radius:4px;">
+        <p style="margin:0;font-size:14px;color:#2E2E2E;line-height:1.7;font-style:italic;">
+          "My son cried happy tears when he saw his name on the cover. Worth every penny."
+        </p>
+        <p style="margin:8px 0 0;font-size:12px;color:#888;">— A Nest &amp; Quill parent</p>
+      </div>
+      <p style="margin:20px 0 0;font-size:15px;color:#555;line-height:1.7;">
+        Your story is just a few minutes away.
+      </p>
+      ${ctaButton('Create my story now →', createUrl)}
+    `)
+  } else if (step === 7) {
+    subject = 'Want more stories? Here are your options'
+    html = emailShell(`
+      <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#0C2340;line-height:1.2;">
+        Ready for more?
+      </p>
+      <p style="margin:16px 0 0;font-size:15px;color:#555;line-height:1.7;">
+        The free plan is a great start, but if you love your story and want more:
+      </p>
+      <table style="margin:20px 0;width:100%;border-collapse:collapse;">
+        <tr style="background:#0C2340;color:#F8F5EC;">
+          <td style="padding:10px 14px;font-size:13px;font-weight:600;border-radius:8px 0 0 0;">Plan</td>
+          <td style="padding:10px 14px;font-size:13px;font-weight:600;">Stories</td>
+          <td style="padding:10px 14px;font-size:13px;font-weight:600;border-radius:0 8px 0 0;">Price</td>
+        </tr>
+        <tr style="background:#fff;border-bottom:1px solid #ede8e0;">
+          <td style="padding:10px 14px;font-size:13px;color:#2E2E2E;">Single Story</td>
+          <td style="padding:10px 14px;font-size:13px;color:#555;">1 story, yours forever</td>
+          <td style="padding:10px 14px;font-size:13px;color:#555;">$7.99 once</td>
+        </tr>
+        <tr style="background:#fff;border-bottom:1px solid #ede8e0;">
+          <td style="padding:10px 14px;font-size:13px;color:#2E2E2E;">Story Pack</td>
+          <td style="padding:10px 14px;font-size:13px;color:#555;">3 stories/month</td>
+          <td style="padding:10px 14px;font-size:13px;color:#555;">$9.99/mo</td>
+        </tr>
+        <tr style="background:#fff;">
+          <td style="padding:10px 14px;font-size:13px;font-weight:600;color:#0C2340;">Story Pro ★</td>
+          <td style="padding:10px 14px;font-size:13px;color:#555;">10 stories/month</td>
+          <td style="padding:10px 14px;font-size:13px;color:#555;">$24.99/mo</td>
+        </tr>
+      </table>
+      <p style="margin:0;font-size:14px;color:#555;line-height:1.7;">
+        All paid plans include full PDF downloads, all illustration styles, and a dedication page.
+      </p>
+      ${ctaButton('See all plans →', pricingUrl)}
+    `)
+  } else {
+    return
+  }
+
+  const resend = getResend()
+  const { error } = await resend.emails.send({ from: FROM, to: toEmail, subject, html })
+  if (error) throw new Error(`Resend error (signup drip step ${step}): ${error.message}`)
+}
