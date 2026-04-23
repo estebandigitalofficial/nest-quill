@@ -1,23 +1,18 @@
 import Link from 'next/link'
+import SiteHeader from '@/components/layout/SiteHeader'
+import SiteFooter from '@/components/layout/SiteFooter'
 
 export const metadata = { title: 'Terms of Service — Nest & Quill' }
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-white">
-      <header className="border-b border-gray-100">
-        <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="font-serif text-xl font-semibold text-gray-900">
-            Nest &amp; Quill
-          </Link>
-          <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">← Back</Link>
-        </div>
-      </header>
+    <div className="min-h-screen bg-parchment flex flex-col">
+      <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Back</Link>} />
 
-      <main className="max-w-3xl mx-auto px-6 py-14 space-y-10">
+      <main className="flex-1 max-w-3xl mx-auto px-6 py-14 space-y-10 w-full">
         <div>
-          <h1 className="font-serif text-4xl text-gray-900 mb-3">Terms of Service</h1>
-          <p className="text-sm text-gray-400">Last updated: April 2025</p>
+          <h1 className="font-serif text-4xl text-oxford mb-3">Terms of Service</h1>
+          <p className="text-sm text-charcoal-light">Last updated: April 2025</p>
         </div>
 
         <Section title="Acceptance of terms">
@@ -123,13 +118,7 @@ export default function TermsPage() {
           </p>
         </Section>
       </main>
-
-      <footer className="border-t border-gray-100 mt-10">
-        <div className="max-w-3xl mx-auto px-6 py-6 flex gap-6 text-sm text-gray-400">
-          <Link href="/privacy" className="hover:text-gray-600">Privacy Policy</Link>
-          <Link href="/" className="hover:text-gray-600">Home</Link>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }
@@ -137,8 +126,8 @@ export default function TermsPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-3">
-      <h2 className="font-serif text-xl text-gray-900">{title}</h2>
-      <div className="text-sm text-gray-600 leading-relaxed space-y-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1.5 [&_a]:text-brand-600 [&_a]:hover:text-brand-700">
+      <h2 className="font-serif text-xl text-oxford">{title}</h2>
+      <div className="text-sm text-charcoal leading-relaxed space-y-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1.5 [&_a]:text-brand-600 [&_a]:hover:text-brand-700">
         {children}
       </div>
     </section>

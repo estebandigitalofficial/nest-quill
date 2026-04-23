@@ -1,22 +1,17 @@
 import Link from 'next/link'
 import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
 import { cn } from '@/lib/utils/cn'
+import SiteHeader from '@/components/layout/SiteHeader'
+import SiteFooter from '@/components/layout/SiteFooter'
 
 export const metadata = { title: 'Pricing — Nest & Quill' }
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-parchment">
-      <header className="border-b border-parchment-dark bg-parchment/95 backdrop-blur">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="font-serif text-xl font-semibold text-oxford">
-            Nest &amp; Quill
-          </Link>
-          <Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Back</Link>
-        </div>
-      </header>
+    <div className="min-h-screen bg-parchment flex flex-col">
+      <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Back</Link>} />
 
-      <main className="max-w-5xl mx-auto px-6 py-16 space-y-14">
+      <main className="flex-1 max-w-5xl mx-auto px-6 py-16 space-y-14 w-full">
         <div className="text-center space-y-3">
           <h1 className="font-serif text-4xl sm:text-5xl text-oxford">Simple, honest pricing</h1>
           <p className="text-charcoal-light max-w-md mx-auto">
@@ -120,20 +115,7 @@ export default function PricingPage() {
           </div>
         </div>
       </main>
-
-      <footer className="bg-oxford-dark py-10 px-6 mt-8">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-parchment/50">
-          <p className="font-serif text-parchment font-semibold">Nest &amp; Quill</p>
-          <p>© {new Date().getFullYear()} Nest &amp; Quill. All rights reserved.</p>
-          <div className="flex gap-5">
-            <Link href="/create" className="hover:text-parchment transition-colors">Create</Link>
-            <Link href="/pricing" className="hover:text-parchment transition-colors">Pricing</Link>
-            <Link href="/contact" className="hover:text-parchment transition-colors">Contact</Link>
-            <Link href="/privacy" className="hover:text-parchment transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-parchment transition-colors">Terms</Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

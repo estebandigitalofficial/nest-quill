@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import type { StoryStatusResponse, StoryContentResponse, StoryContentPage } from '@/types/story'
+import SiteHeader from '@/components/layout/SiteHeader'
+import SiteFooter from '@/components/layout/SiteFooter'
 
 const TERMINAL_STATUSES = ['complete', 'failed']
 const POLL_INTERVAL_MS = 3000
@@ -121,15 +123,14 @@ export default function StoryStatusPage({ requestId, isAdmin }: { requestId: str
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-brand-50 py-10 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <Link href="/" className="text-sm font-semibold text-brand-500 hover:text-brand-600">
-            Nest &amp; Quill
-          </Link>
+    <div className="min-h-screen bg-parchment flex flex-col">
+      <SiteHeader />
+      <div className="flex-1 py-10 px-4">
+        <div className="max-w-2xl mx-auto">
+          {children}
         </div>
-        {children}
       </div>
+      <SiteFooter />
     </div>
   )
 }
@@ -147,15 +148,19 @@ function LoadingShell() {
 
 function ErrorView({ message }: { message: string }) {
   return (
-    <div className="min-h-screen bg-brand-50 flex items-center justify-center px-4">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 text-center max-w-sm w-full space-y-4">
-        <div className="text-4xl">🔍</div>
-        <h2 className="text-lg font-serif text-gray-900">Oops</h2>
-        <p className="text-sm text-gray-500">{message}</p>
-        <Link href="/create" className="inline-block text-sm font-semibold text-brand-600 hover:text-brand-700 underline underline-offset-2">
-          Start a new story
-        </Link>
+    <div className="min-h-screen bg-parchment flex flex-col">
+      <SiteHeader />
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-10 text-center max-w-sm w-full space-y-4">
+          <div className="text-4xl">🔍</div>
+          <h2 className="text-lg font-serif text-oxford">Oops</h2>
+          <p className="text-sm text-charcoal-light">{message}</p>
+          <Link href="/create" className="inline-block text-sm font-semibold text-brand-600 hover:text-brand-700 underline underline-offset-2">
+            Start a new story
+          </Link>
+        </div>
       </div>
+      <SiteFooter />
     </div>
   )
 }
@@ -163,13 +168,13 @@ function ErrorView({ message }: { message: string }) {
 function ProcessingView({ status }: { status: StoryStatusResponse }) {
   const pct = Math.max(5, status.progressPct ?? 0)
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 text-center space-y-6">
+    <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-10 text-center space-y-6">
       <div className="text-5xl animate-pulse">📖</div>
       <div>
-        <h2 className="text-2xl font-serif text-gray-900 mb-1">
+        <h2 className="text-2xl font-serif text-oxford mb-1">
           {status.childName ? `Creating ${status.childName}'s story…` : 'Creating your story…'}
         </h2>
-        <p className="text-sm text-gray-400">This usually takes about a minute.</p>
+        <p className="text-sm text-charcoal-light">This usually takes about a minute.</p>
       </div>
       <div className="space-y-2">
         <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">

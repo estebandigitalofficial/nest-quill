@@ -15,10 +15,10 @@ export default function CreatePage() {
     <div className="py-10 px-4">
       <div className="max-w-xl mx-auto">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-serif text-gray-900 mb-2">
+          <h1 className="text-3xl font-serif text-oxford mb-2">
             Create Your Story
           </h1>
-          <p className="text-gray-500 text-sm">
+          <p className="text-charcoal-light text-sm">
             A personalized illustrated storybook in minutes.
           </p>
         </div>

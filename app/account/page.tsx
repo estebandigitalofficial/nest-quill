@@ -6,6 +6,7 @@ import { getAdminContext } from '@/lib/admin/guard'
 import { PLAN_CONFIG } from '@/lib/plans/config'
 import type { StoryRequest, PlanTier } from '@/types/database'
 import LogoutButton from '@/components/auth/LogoutButton'
+import SiteFooter from '@/components/layout/SiteFooter'
 
 // Consistent pastel color per story, hashed from id
 const COVER_COLORS = [
@@ -78,7 +79,7 @@ export default async function AccountPage() {
   const plan = PLAN_CONFIG[planTier]
 
   return (
-    <div className="min-h-screen bg-brand-50">
+    <div className="min-h-screen bg-parchment flex flex-col">
       {/* Nav */}
       <header className="bg-parchment/95 border-b border-parchment-dark backdrop-blur">
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -175,6 +176,7 @@ export default async function AccountPage() {
           )}
         </div>
       </div>
+      <SiteFooter />
     </div>
   )
 }

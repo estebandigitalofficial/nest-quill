@@ -1,17 +1,13 @@
 import type { ReactNode } from 'react'
+import SiteHeader from '@/components/layout/SiteHeader'
+import SiteFooter from '@/components/layout/SiteFooter'
 
 export default function CreateLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-brand-50">
-      <header className="px-6 py-5 border-b border-brand-100 bg-white">
-        <a
-          href="/"
-          className="font-serif text-xl text-gray-900 hover:text-brand-600 transition-colors"
-        >
-          Nest &amp; Quill
-        </a>
-      </header>
-      <main>{children}</main>
+    <div className="min-h-screen bg-parchment flex flex-col">
+      <SiteHeader />
+      <main className="flex-1">{children}</main>
+      <SiteFooter />
     </div>
   )
 }
