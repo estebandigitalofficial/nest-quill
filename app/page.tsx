@@ -14,6 +14,7 @@ export default async function HomePage() {
       <Nav user={user} />
       <div className="flex-1 overflow-y-auto">
         <Hero />
+        <LearningStoriesSection />
         <HowItWorks />
         <SamplePreview />
         <Pricing />
@@ -35,6 +36,12 @@ function Nav({ user }: { user: { email?: string } | null }) {
           Nest &amp; Quill
         </Link>
         <div className="flex items-center gap-4">
+          <Link
+            href="/create?mode=learning"
+            className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors hidden md:block"
+          >
+            🎓 Learning Stories
+          </Link>
           <Link
             href="/pricing"
             className="text-sm text-charcoal-light hover:text-oxford transition-colors hidden md:block"
@@ -132,6 +139,126 @@ const SAMPLE_BOOKS = [
   { emoji: '🌊', title: "Sofia Under the Sea", detail: 'Age 4 · Magical · Cartoon' },
   { emoji: '🚀', title: "Luca Saves the Stars", detail: 'Age 8 · Brave · Digital Art' },
 ]
+
+// ── Learning Stories section ──────────────────────────────────────────────────
+
+const LEARNING_SUBJECTS = [
+  { emoji: '➕', label: 'Math' },
+  { emoji: '🔬', label: 'Science' },
+  { emoji: '📖', label: 'Reading' },
+  { emoji: '🏛️', label: 'History' },
+  { emoji: '🌍', label: 'Social Studies' },
+  { emoji: '✏️', label: 'Spelling' },
+]
+
+function LearningStoriesSection() {
+  return (
+    <section className="bg-oxford py-24 px-6 overflow-hidden relative">
+      {/* Decorative background circles */}
+      <div className="absolute -top-24 -right-24 w-96 h-96 bg-indigo-900/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-brand-900/20 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="max-w-5xl mx-auto relative">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+
+          {/* Left — copy */}
+          <div className="space-y-6">
+            <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold px-3 py-1.5 rounded-full tracking-wide uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse inline-block" />
+              New · Learning Mode
+            </div>
+
+            <h2 className="font-serif text-4xl sm:text-5xl text-white leading-tight text-balance">
+              Stories that{' '}
+              <span className="text-indigo-300 italic">teach</span>{' '}
+              as they enchant.
+            </h2>
+
+            <p className="text-lg text-oxford-300 leading-relaxed" style={{ color: '#94a3b8' }}>
+              Pick exactly what your child is learning in school — fractions, the water cycle, sight words — and we&apos;ll weave it into a personalized adventure they&apos;ll actually want to read.
+            </p>
+
+            <div className="flex items-center gap-3 text-sm" style={{ color: '#64748b' }}>
+              <span className="text-indigo-400 text-lg">🧠</span>
+              <span>A 5-question quiz at the end reinforces what they learned — results saved to their account.</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Link
+                href="/create?mode=learning"
+                className="inline-flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-7 py-3.5 rounded-full text-base transition-all active:scale-[0.98] shadow-lg shadow-indigo-900/40"
+              >
+                Create a Learning Story →
+              </Link>
+              <Link
+                href="#how-it-works"
+                className="inline-flex items-center justify-center bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold px-7 py-3.5 rounded-full text-base transition-colors"
+              >
+                See how it works
+              </Link>
+            </div>
+
+            <p className="text-xs" style={{ color: '#475569' }}>
+              Grades 1–8 · Free during beta · No account required
+            </p>
+          </div>
+
+          {/* Right — subject grid + quiz preview card */}
+          <div className="space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#64748b' }}>
+              Subjects covered
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {LEARNING_SUBJECTS.map(s => (
+                <div
+                  key={s.label}
+                  className="bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-center hover:bg-white/10 hover:border-indigo-400/40 transition-all cursor-default"
+                >
+                  <div className="text-2xl mb-1.5">{s.emoji}</div>
+                  <p className="text-xs font-semibold text-white/80">{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Quiz preview card */}
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-indigo-400 text-lg">🎓</span>
+                <p className="text-sm font-semibold text-white">Built-in comprehension quiz</p>
+              </div>
+              <div className="space-y-2">
+                {['What did Mia use to measure the garden?', 'Which shape has 4 equal sides?'].map((q, i) => (
+                  <div key={i} className="bg-white/5 rounded-xl px-3 py-2.5">
+                    <p className="text-xs text-white/60 mb-1.5">{q}</p>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {['A', 'B', 'C', 'D'].map((opt, j) => (
+                        <span
+                          key={opt}
+                          className={cn(
+                            'text-[10px] font-semibold px-2 py-0.5 rounded-full border',
+                            i === 0 && j === 1
+                              ? 'bg-indigo-500 border-indigo-400 text-white'
+                              : i === 1 && j === 2
+                              ? 'bg-indigo-500 border-indigo-400 text-white'
+                              : 'bg-white/5 border-white/20 text-white/40'
+                          )}
+                        >
+                          {opt}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px]" style={{ color: '#475569' }}>Auto-graded · Answers explained · Score saved</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  )
+}
 
 // ── How it works ──────────────────────────────────────────────────────────────
 

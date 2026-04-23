@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -38,6 +38,7 @@ const LEARNING_FIELDS: (keyof StoryFormValues)[][] = [
 
 export default function StoryWizard() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [step, setStep] = useState(0)
   const [learningMode, setLearningMode] = useState(false)
 
@@ -54,6 +55,14 @@ export default function StoryWizard() {
   })
 
   const { handleSubmit, trigger, setError, setValue, formState: { isSubmitting, errors } } = methods
+
+  // Auto-enable learning mode when ?mode=learning is in the URL
+  useEffect(() => {
+    if (searchParams.get('mode') === 'learning') {
+      setLearningMode(true)
+      setValue('learningMode', true)
+    }
+  }, [searchParams, setValue])
 
   const STEPS = learningMode ? LEARNING_STEPS : STANDARD_STEPS
   const STEP_FIELDS = learningMode ? LEARNING_FIELDS : STANDARD_FIELDS
