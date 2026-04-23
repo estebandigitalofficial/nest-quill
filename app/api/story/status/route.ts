@@ -39,10 +39,15 @@ export async function GET(request: NextRequest) {
     const storyRequest = data as unknown as StoryRequest
 
     // ── Ownership check ──────────────────────────────────────────────────────
+    // Complete stories are accessible to anyone with the direct URL — the UUID
+    // is unguessable and acts as a capability token (same pattern as Figma share links).
+    // In-progress and failed stories still require ownership to prevent enumeration.
     const adminEmails = (process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? '').split(',').map(e => e.trim()).filter(Boolean)
     const isAdmin = !!user?.email && adminEmails.includes(user.email)
+    const isComplete = storyRequest.status === 'complete'
     const isOwner =
       isAdmin ||
+      isComplete ||
       (user && storyRequest.user_id === user.id) ||
       (guestToken && storyRequest.guest_token === guestToken)
 

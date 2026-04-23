@@ -33,6 +33,7 @@ export async function GET(
     const isAdmin = !!user?.email && adminEmails.includes(user.email)
     const isOwner =
       isAdmin ||
+      storyReq.status === 'complete' ||
       (user && storyReq.user_id === user.id) ||
       (guestToken && storyReq.guest_token === guestToken)
 
