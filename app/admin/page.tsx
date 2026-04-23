@@ -85,7 +85,13 @@ export default async function AdminPage({ searchParams }: PageProps) {
             Admin
           </span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
+          <Link href="/admin" className="text-xs font-semibold text-white">
+            Stories
+          </Link>
+          <Link href="/admin/users" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
+            Users
+          </Link>
           <Link href="/admin/writer" className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors">
             Writer →
           </Link>
