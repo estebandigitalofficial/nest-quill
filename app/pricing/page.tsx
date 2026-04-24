@@ -83,23 +83,38 @@ export default function PricingPage() {
           })}
         </div>
 
-        {/* Educator callout */}
-        <div className="bg-oxford/5 border border-oxford/20 rounded-2xl px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div>
-            <p className="text-xs font-bold text-oxford uppercase tracking-widest mb-1">For Educators</p>
-            <h3 className="font-serif text-xl text-oxford mb-1">Bringing stories into the classroom?</h3>
-            <p className="text-sm text-charcoal max-w-md">
-              The Educator plan includes classroom management, student rosters, bulk story creation,
-              and a class library. $59/month for up to 40 stories.
-            </p>
+        {/* Classroom callout */}
+        <div className="bg-oxford rounded-2xl px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-bold text-brand-300 uppercase tracking-widest mb-1">For Educators</p>
+              <h3 className="font-serif text-xl text-white mb-1">Everything lives in Classroom.</h3>
+              <p className="text-sm text-parchment/70 max-w-md">
+                One place for your class — free tools today, more coming soon.
+              </p>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-x-8 gap-y-2">
+              <div>
+                <p className="text-xs font-bold text-white uppercase tracking-widest mb-1.5">Free now</p>
+                {['Classes & join codes', 'Assign quizzes, flashcards & more', 'Track completions & scores'].map(f => (
+                  <p key={f} className="text-xs text-parchment/70 flex gap-2 mb-1"><span className="text-brand-400">✓</span>{f}</p>
+                ))}
+              </div>
+              <div>
+                <p className="text-xs font-bold text-white uppercase tracking-widest mb-1.5">Coming soon</p>
+                {['Bulk story creation for your class', 'Class story library', 'Progress reports & export'].map(f => (
+                  <p key={f} className="text-xs text-parchment/50 flex gap-2 mb-1"><span className="text-parchment/30">○</span>{f}</p>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="shrink-0">
-            <a
-              href="mailto:contact@nestandquill.com?subject=Educator%20plan%20inquiry"
-              className="inline-block bg-oxford text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-oxford-dark transition-colors"
+            <Link
+              href="/classroom"
+              className="inline-block bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-6 py-3 rounded-full transition-colors whitespace-nowrap"
             >
-              Contact us
-            </a>
+              Try Classroom free →
+            </Link>
           </div>
         </div>
 
