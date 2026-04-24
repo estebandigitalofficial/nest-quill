@@ -41,7 +41,10 @@ function SignupForm() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${
+          role === 'educator' ? '/classroom/educator' :
+          role === 'student'  ? '/classroom/student'  : '/account'
+        }`,
         data: { account_type: role },
       },
     })
