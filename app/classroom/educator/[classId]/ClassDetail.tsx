@@ -12,11 +12,28 @@ const TOOLS = [
   { value: 'spelling', label: '✏️ Spelling Practice', hasScore: false },
 ]
 
+interface StudentProfile {
+  display_name: string
+  avatar_emoji: string
+  avatar_color: string
+  xp: number
+  level: number
+  streak_days: number
+}
+
+interface StudentBadge {
+  slug: string
+  name: string
+  emoji: string
+}
+
 interface Member {
   id: string
   student_id: string
   joined_at: string
   profiles: { display_name: string | null; email: string } | null
+  student_profile: StudentProfile | null
+  student_badges: StudentBadge[]
 }
 
 interface Submission {
@@ -264,25 +281,79 @@ export default function ClassDetail({ classId }: { classId: string }) {
             </div>
           ) : (
             members.map(m => {
-              const name = m.profiles?.display_name || m.profiles?.email || 'Student'
+              const authName = m.profiles?.display_name || m.profiles?.email || 'Student'
+              const sp = m.student_profile
+              const heroName = sp?.display_name ?? authName
               const done = assignments.filter(a =>
                 a.assignment_submissions.some(s => s.student_id === m.student_id && s.status === 'complete')
               ).length
+              const quizSubs = assignments.flatMap(a =>
+                a.assignment_submissions.filter(s => s.student_id === m.student_id && s.status === 'complete' && s.score != null && s.total)
+              )
+              const avgPct = quizSubs.length
+                ? Math.round(quizSubs.reduce((acc, s) => acc + (s.score! / s.total!), 0) / quizSubs.length * 100)
+                : null
+
+              const COLOR_BG: Record<string, string> = {
+                indigo: 'bg-indigo-500', violet: 'bg-violet-500', rose: 'bg-rose-500',
+                amber: 'bg-amber-500', emerald: 'bg-emerald-500', sky: 'bg-sky-500',
+                orange: 'bg-orange-500', pink: 'bg-pink-500',
+              }
+              const avatarBg = sp ? (COLOR_BG[sp.avatar_color] ?? 'bg-indigo-500') : 'bg-gray-200'
+
               return (
-                <div key={m.id} className="bg-white rounded-2xl border border-gray-100 px-6 py-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-indigo-50 rounded-full flex items-center justify-center text-sm font-bold text-indigo-600">
-                      {name[0].toUpperCase()}
+                <div key={m.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4 space-y-3">
+                  {/* Top row: avatar + name + stats */}
+                  <div className="flex items-center gap-4">
+                    <div className={`w-11 h-11 ${avatarBg} rounded-xl flex items-center justify-center text-2xl shrink-0`}>
+                      {sp?.avatar_emoji ?? '🎒'}
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-oxford">{name}</p>
-                      <p className="text-xs text-charcoal-light">Joined {new Date(m.joined_at).toLocaleDateString()}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-oxford">{heroName}</p>
+                        {sp && sp.streak_days >= 3 && <span className="text-xs">🔥</span>}
+                      </div>
+                      <p className="text-xs text-charcoal-light">
+                        {sp ? `Level ${sp.level} · ${sp.xp} XP` : 'No avatar set yet'}
+                        {m.profiles?.email && sp ? ` · ${m.profiles.email}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0 text-right">
+                      <div>
+                        <p className="text-sm font-bold text-oxford">{done}/{assignments.length}</p>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Done</p>
+                      </div>
+                      {avgPct !== null && (
+                        <div>
+                          <p className="text-sm font-bold text-oxford">{avgPct}%</p>
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wide">Avg</p>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-oxford">{done}/{assignments.length}</p>
-                    <p className="text-[10px] text-gray-400 uppercase tracking-wide">Complete</p>
-                  </div>
+
+                  {/* XP bar */}
+                  {sp && (
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-400 to-violet-400 rounded-full"
+                        style={{ width: `${Math.min(100, (sp.xp % 500) / 5)}%` }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Badges */}
+                  {m.student_badges.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {m.student_badges.map(b => (
+                        <span key={b.slug} title={b.name}
+                          className="text-sm bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5 flex items-center gap-1">
+                          {b.emoji}
+                          <span className="text-[10px] text-gray-500 font-medium">{b.name}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )
             })

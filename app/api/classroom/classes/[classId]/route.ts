@@ -42,9 +42,42 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
         .order('created_at', { ascending: false }),
     ])
 
+    const members = membersRes.data ?? []
+
+    // Fetch student profiles + badge counts for all members
+    const studentIds = members.map((m: { student_id: string }) => m.student_id)
+    const [profilesRes, badgesRes] = studentIds.length > 0
+      ? await Promise.all([
+          admin.from('student_profiles')
+            .select('student_id, display_name, avatar_emoji, avatar_color, xp, level, streak_days')
+            .in('student_id', studentIds),
+          admin.from('student_badges')
+            .select('student_id, badges(slug, name, emoji)')
+            .in('student_id', studentIds),
+        ])
+      : [{ data: [] }, { data: [] }]
+
+    // Index by student_id for easy lookup
+    const profileMap = Object.fromEntries(
+      (profilesRes.data ?? []).map((p: { student_id: string }) => [p.student_id, p])
+    )
+    const badgeMap: Record<string, { slug: string; name: string; emoji: string }[]> = {}
+    for (const row of (badgesRes.data ?? [])) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const r = row as any
+      if (!badgeMap[r.student_id]) badgeMap[r.student_id] = []
+      if (r.badges) badgeMap[r.student_id].push(r.badges)
+    }
+
+    const enrichedMembers = members.map((m: { student_id: string }) => ({
+      ...m,
+      student_profile: profileMap[m.student_id] ?? null,
+      student_badges: badgeMap[m.student_id] ?? [],
+    }))
+
     return NextResponse.json({
       classroom,
-      members: membersRes.data ?? [],
+      members: enrichedMembers,
       assignments: assignmentsRes.data ?? [],
     })
   } catch (err) {
