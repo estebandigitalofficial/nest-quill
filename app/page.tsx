@@ -395,9 +395,9 @@ function EducatorBanner() {
           </p>
         </div>
         <div className="shrink-0">
-          <span className="inline-block bg-oxford text-white text-sm font-semibold px-5 py-2.5 rounded-full opacity-60 cursor-not-allowed">
-            Coming soon
-          </span>
+          <Link href="/classroom" className="inline-block bg-oxford hover:bg-oxford/90 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors">
+            Explore Classroom →
+          </Link>
         </div>
       </div>
     </section>

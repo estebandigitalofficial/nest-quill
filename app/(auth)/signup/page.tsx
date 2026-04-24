@@ -2,11 +2,25 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { Suspense } from 'react'
 
-export default function SignupPage() {
+type Role = 'parent' | 'educator' | 'student'
+
+const ROLES: { value: Role; label: string; emoji: string; desc: string }[] = [
+  { value: 'parent', label: 'Parent / Family', emoji: '👨‍👩‍👧', desc: 'Create stories for my child' },
+  { value: 'educator', label: 'Educator', emoji: '🏫', desc: 'Assign learning tools to my class' },
+  { value: 'student', label: 'Student', emoji: '🎒', desc: 'Complete assignments from my teacher' },
+]
+
+function SignupForm() {
+  const searchParams = useSearchParams()
+  const initialRole = (searchParams.get('role') as Role) ?? 'parent'
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [role, setRole] = useState<Role>(initialRole)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
@@ -28,6 +42,7 @@ export default function SignupPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: { account_type: role },
       },
     })
 
@@ -53,9 +68,7 @@ export default function SignupPage() {
           </p>
           <p className="text-xs text-gray-400">
             Already confirmed?{' '}
-            <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700">
-              Sign in
-            </Link>
+            <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700">Sign in</Link>
           </p>
         </div>
       </div>
@@ -70,54 +83,56 @@ export default function SignupPage() {
           <p className="text-sm text-charcoal-light mt-1">Free to join. No credit card required.</p>
         </div>
 
+        {/* Role selector */}
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-charcoal">I am a…</p>
+          <div className="grid grid-cols-3 gap-2">
+            {ROLES.map(r => (
+              <button key={r.value} type="button" onClick={() => setRole(r.value)}
+                className={`flex flex-col items-center gap-1 px-2 py-3 rounded-xl border-2 text-center transition-all ${role === r.value ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                <span className="text-xl">{r.emoji}</span>
+                <span className={`text-[11px] font-semibold leading-tight ${role === r.value ? 'text-brand-700' : 'text-gray-600'}`}>{r.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-charcoal">Email</label>
-            <input
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
+            <input type="email" required autoComplete="email" value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={inputClass}
-              placeholder="you@example.com"
-            />
+              className={inputClass} placeholder="you@example.com" />
           </div>
-
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-charcoal">Password</label>
-            <input
-              type="password"
-              required
-              autoComplete="new-password"
-              value={password}
+            <input type="password" required autoComplete="new-password" value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={inputClass}
-              placeholder="At least 8 characters"
-            />
+              className={inputClass} placeholder="At least 8 characters" />
           </div>
 
-          {error && (
-            <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-semibold py-3 rounded-xl transition-colors"
-          >
+          <button type="submit" disabled={loading}
+            className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-semibold py-3 rounded-xl transition-colors">
             {loading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
 
         <p className="text-center text-sm text-charcoal-light">
           Already have an account?{' '}
-          <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700">
-            Sign in
-          </Link>
+          <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700">Sign in</Link>
         </p>
       </div>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
   )
 }
 
