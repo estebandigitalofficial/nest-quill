@@ -46,12 +46,22 @@ interface CelebrationData {
   leveledUp: boolean; newStreak: number; newBadges: string[]
 }
 
+interface StoryReward {
+  id: string
+  milestone: number
+  awardedAt: string
+  requestId: string
+  status: string
+  title: string | null
+}
+
 export default function StudentDashboard() {
   const router = useRouter()
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [dataLoading, setDataLoading] = useState(true)
+  const [stories, setStories] = useState<StoryReward[]>([])
   const [joinCode, setJoinCode] = useState('')
   const [joining, setJoining] = useState(false)
   const [joinError, setJoinError] = useState<string | null>(null)
@@ -61,6 +71,7 @@ export default function StudentDashboard() {
   useEffect(() => {
     fetchProfile()
     fetchData()
+    fetchStories()
     // Check for pending celebration from redirect
     const raw = sessionStorage.getItem('classroom_celebration')
     if (raw) { setCelebration(JSON.parse(raw)); sessionStorage.removeItem('classroom_celebration') }
@@ -74,6 +85,14 @@ export default function StudentDashboard() {
       setProfile(data.profile ?? null)
     }
     setProfileLoading(false)
+  }
+
+  async function fetchStories() {
+    const res = await fetch('/api/classroom/student/stories')
+    if (res.ok) {
+      const data = await res.json()
+      setStories(data.stories ?? [])
+    }
   }
 
   async function fetchData() {
@@ -185,6 +204,41 @@ export default function StudentDashboard() {
       </form>
       {joinError && <p className="text-sm text-red-500 px-1">{joinError}</p>}
       {joinSuccess && <p className="text-sm text-green-600 px-1 font-medium">{joinSuccess}</p>}
+
+      {/* Story Rewards */}
+      {stories.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+            📖 Story Rewards ({stories.length})
+          </p>
+          {stories.map(s => (
+            <div key={s.id}
+              className="bg-white rounded-2xl border-2 border-amber-100 hover:border-amber-200 hover:shadow-md transition-all px-5 py-4 flex items-center gap-4">
+              <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-2xl shrink-0">
+                📖
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-oxford text-sm truncate">
+                  {s.title ?? `${profile?.display_name ?? 'Your'} Story`}
+                </p>
+                <p className="text-xs text-charcoal-light mt-0.5">
+                  Earned for completing {s.milestone} quest{s.milestone !== 1 ? 's' : ''}
+                </p>
+              </div>
+              {s.status === 'complete' ? (
+                <a href={`/story/${s.requestId}`}
+                  className="bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold px-4 py-2.5 rounded-xl whitespace-nowrap transition-colors shrink-0">
+                  Read →
+                </a>
+              ) : (
+                <span className="text-xs text-gray-400 bg-gray-50 px-3 py-2 rounded-xl shrink-0">
+                  Creating…
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Quest board — pending */}
       {dataLoading ? (

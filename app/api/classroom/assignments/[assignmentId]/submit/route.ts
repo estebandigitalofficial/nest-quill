@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calcXP, xpToLevel } from '@/lib/utils/xp'
+import { triggerStoryReward } from '@/lib/services/storyReward'
 
 type RouteContext = { params: Promise<{ assignmentId: string }> }
+
+const STORY_MILESTONES = new Set([3, 10, 25])
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
   try {
@@ -20,10 +23,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     const admin = createAdminClient()
 
-    // Get assignment for tool type
+    // Get assignment for tool type + config
     const { data: assignment } = await admin
       .from('assignments')
-      .select('id, tool, classroom_id')
+      .select('id, tool, classroom_id, config')
       .eq('id', assignmentId)
       .single()
 
@@ -50,13 +53,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     // Get or create student profile
     let { data: profile } = await admin
       .from('student_profiles')
-      .select('xp, level, coins, streak_days, last_active_at')
+      .select('display_name, xp, level, coins, streak_days, last_active_at')
       .eq('student_id', user.id)
       .single()
 
     if (!profile) {
       await admin.from('student_profiles').insert({ student_id: user.id })
-      profile = { xp: 0, level: 1, coins: 0, streak_days: 0, last_active_at: null }
+      profile = { display_name: 'Hero', xp: 0, level: 1, coins: 0, streak_days: 0, last_active_at: null }
     }
 
     // Update streak
@@ -127,6 +130,42 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
           await admin.from('student_badges').insert({ student_id: user.id, badge_id: badge.id }).then(() => {})
           newBadges.push(check.slug)
         }
+      }
+    }
+
+    // ── Completionist check ───────────────────────────────────
+    if (!earned.has('completionist')) {
+      const { data: classAsn } = await admin
+        .from('assignments')
+        .select('id')
+        .eq('classroom_id', assignment.classroom_id)
+
+      if (classAsn && classAsn.length > 0) {
+        const classAsnIds = classAsn.map((a: { id: string }) => a.id)
+        const { count: doneInClass } = await admin
+          .from('assignment_submissions')
+          .select('id', { count: 'exact', head: true })
+          .eq('student_id', user.id)
+          .eq('status', 'complete')
+          .in('assignment_id', classAsnIds)
+
+        if (doneInClass === classAsn.length) {
+          const { data: badge } = await admin.from('badges').select('id').eq('slug', 'completionist').single()
+          if (badge) {
+            await admin.from('student_badges').insert({ student_id: user.id, badge_id: badge.id }).then(() => {})
+            newBadges.push('completionist')
+          }
+        }
+      }
+    }
+
+    // ── Story reward milestones ───────────────────────────────
+    if (STORY_MILESTONES.has(totalDone ?? 0)) {
+      try {
+        const storyBadges = await triggerStoryReward(user.id, profile, assignment, totalDone!)
+        newBadges.push(...storyBadges)
+      } catch (err) {
+        console.error('[submit] Story reward failed (non-fatal)', err)
       }
     }
 
