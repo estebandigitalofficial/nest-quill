@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 
 export async function POST(request: NextRequest) {
+  const limited = await checkLearningRateLimit(request, 'flashcards')
+  if (limited) return limited
   try {
     const { topic, grade } = await request.json() as { topic: string; grade?: number }
 

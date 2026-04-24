@@ -95,8 +95,6 @@ export interface StoryStatusResponse {
 export interface QuizQuestion {
   question: string
   options: [string, string, string, string]
-  correct_index: 0 | 1 | 2 | 3
-  explanation: string
 }
 
 export interface StoryQuizResponse {

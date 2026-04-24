@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 
 const SUBJECTS = [
@@ -15,11 +15,15 @@ const SUBJECTS = [
 interface Question {
   question: string
   options: [string, string, string, string]
-  correct_index: 0 | 1 | 2 | 3
-  explanation: string
 }
 
-type Stage = 'form' | 'loading' | 'quiz' | 'results'
+interface GradeFeedback {
+  correct_index: number
+  explanation: string
+  your_answer: number
+}
+
+type Stage = 'form' | 'loading' | 'quiz' | 'grading' | 'results'
 
 export default function QuizGenerator() {
   const [topic, setTopic] = useState('')
@@ -32,10 +36,32 @@ export default function QuizGenerator() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [stage, setStage] = useState<Stage>('form')
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
   const [currentQ, setCurrentQ] = useState(0)
   const [selected, setSelected] = useState<(number | null)[]>([])
+  const [quizStartedAt, setQuizStartedAt] = useState<number | null>(null)
+
   const [score, setScore] = useState<number | null>(null)
+  const [total, setTotal] = useState<number | null>(null)
+  const [feedback, setFeedback] = useState<GradeFeedback[] | null>(null)
+  const [tabWarning, setTabWarning] = useState(false)
+  const tabViolationsRef = useRef(0)
+
+  // Detect tab switches / window blur during the quiz
+  useEffect(() => {
+    if (stage !== 'quiz') return
+    function onHide() {
+      tabViolationsRef.current += 1
+      setTabWarning(true)
+    }
+    document.addEventListener('visibilitychange', () => { if (document.hidden) onHide() })
+    window.addEventListener('blur', onHide)
+    return () => {
+      document.removeEventListener('visibilitychange', () => { if (document.hidden) onHide() })
+      window.removeEventListener('blur', onHide)
+    }
+  }, [stage])
 
   function handleImageSelect(file: File) {
     if (file.size > 5 * 1024 * 1024) { setError('Image must be under 5 MB.'); return }
@@ -74,20 +100,50 @@ export default function QuizGenerator() {
     const data = await res.json()
     if (!res.ok) { setError(data.message ?? 'Failed to generate quiz.'); setStage('form'); return }
 
+    setSessionId(data.sessionId)
     setQuestions(data.questions)
     setSelected(Array(data.questions.length).fill(null))
     setCurrentQ(0)
+    setQuizStartedAt(Date.now())
     setStage('quiz')
   }
 
-  function handleSubmit() {
-    setScore(questions.filter((q, i) => selected[i] === q.correct_index).length)
+  async function handleSubmit() {
+    setStage('grading')
+    const elapsedSeconds = quizStartedAt ? Math.floor((Date.now() - quizStartedAt) / 1000) : 0
+
+    const res = await fetch('/api/learning/quiz/grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, answers: selected, elapsedSeconds }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) {
+      setError(data.message ?? 'Failed to submit quiz.')
+      setStage('quiz')
+      return
+    }
+
+    setScore(data.score)
+    setTotal(data.total)
+    setFeedback(data.feedback)
     setStage('results')
+  }
+
+  function handleRetake() {
+    setSelected(Array(questions.length).fill(null))
+    setCurrentQ(0)
+    setQuizStartedAt(Date.now())
+    setError(null)
+    setStage('quiz')
   }
 
   function handleReset() {
     setTopic(''); setSubject(''); setGrade(null); setError(null)
-    setStage('form'); setQuestions([]); setSelected([]); setScore(null); setCurrentQ(0)
+    setStage('form'); setQuestions([]); setSelected([]); setScore(null)
+    setTotal(null); setFeedback(null); setCurrentQ(0); setSessionId(null)
+    setQuizStartedAt(null)
     clearImage()
   }
 
@@ -140,7 +196,6 @@ export default function QuizGenerator() {
           <div className="flex-1 h-px bg-gray-100" />
         </div>
 
-        {/* Topic text */}
         <div className="space-y-2">
           <textarea
             rows={2}
@@ -152,7 +207,6 @@ export default function QuizGenerator() {
           />
         </div>
 
-        {/* Subject */}
         <div className="space-y-2">
           <label className="block text-sm font-semibold text-gray-700">Subject <span className="text-gray-400 font-normal">(optional)</span></label>
           <div className="grid grid-cols-3 gap-2">
@@ -166,7 +220,6 @@ export default function QuizGenerator() {
           </div>
         </div>
 
-        {/* Grade */}
         <div className="space-y-2">
           <label className="block text-sm font-semibold text-gray-700">Grade <span className="text-gray-400 font-normal">(optional)</span></label>
           <div className="flex flex-wrap gap-2">
@@ -199,9 +252,29 @@ export default function QuizGenerator() {
     )
   }
 
+  if (stage === 'grading') {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-14 text-center space-y-4">
+        <div className="w-10 h-10 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin mx-auto" />
+        <p className="text-sm font-medium text-gray-600">Grading your quiz…</p>
+      </div>
+    )
+  }
+
   if (stage === 'quiz') {
     return (
       <div className="space-y-4">
+        {tabWarning && (
+          <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 flex items-start gap-3">
+            <span className="text-lg shrink-0">⚠️</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-800">You left the quiz!</p>
+              <p className="text-xs text-amber-700 mt-0.5">Switching tabs or windows is recorded. Stay on this page to complete your quiz.</p>
+            </div>
+            <button onClick={() => setTabWarning(false)} className="text-amber-600 hover:text-amber-800 text-lg leading-none shrink-0">×</button>
+          </div>
+        )}
+        {error && <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-3">{error}</p>}
         <div className="flex gap-2 justify-center">
           {questions.map((_, i) => (
             <button key={i} onClick={() => setCurrentQ(i)}
@@ -244,32 +317,33 @@ export default function QuizGenerator() {
     )
   }
 
-  if (stage === 'results' && score !== null) {
-    const pct = score / questions.length
+  if (stage === 'results' && score !== null && total !== null && feedback) {
+    const pct = score / total
     return (
       <div className="space-y-4">
         <div className={`rounded-2xl px-6 py-6 text-center space-y-1 ${pct === 1 ? 'bg-yellow-50 border border-yellow-200' : pct >= 0.8 ? 'bg-green-50 border border-green-200' : pct >= 0.6 ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 border border-gray-200'}`}>
           <div className="text-4xl mb-2">{pct === 1 ? '🏆' : pct >= 0.8 ? '⭐' : pct >= 0.6 ? '👏' : '📚'}</div>
-          <p className="text-2xl font-bold text-gray-900">{score} / {questions.length}</p>
+          <p className="text-2xl font-bold text-gray-900">{score} / {total}</p>
           <p className="text-sm font-medium text-gray-600">{pct === 1 ? 'Perfect score!' : pct >= 0.8 ? 'Great work!' : pct >= 0.6 ? 'Good effort!' : 'Keep studying!'}</p>
         </div>
         <div className="space-y-3">
           {questions.map((q, i) => {
-            const isCorrect = selected[i] === q.correct_index
+            const fb = feedback[i]
+            const isCorrect = fb.your_answer === fb.correct_index
             return (
               <div key={i} className={`bg-white rounded-2xl border-2 px-5 py-4 space-y-2 ${isCorrect ? 'border-green-200' : 'border-red-200'}`}>
                 <p className="text-sm font-semibold text-gray-800">{i + 1}. {q.question}</p>
                 <div className="flex gap-2 flex-wrap">
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>{isCorrect ? '✓ Correct' : `✗ You chose: ${q.options[selected[i] ?? 0]}`}</span>
-                  {!isCorrect && <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-700">✓ {q.options[q.correct_index]}</span>}
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>{isCorrect ? '✓ Correct' : `✗ You chose: ${q.options[fb.your_answer]}`}</span>
+                  {!isCorrect && <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-700">✓ {q.options[fb.correct_index]}</span>}
                 </div>
-                <p className="text-xs text-gray-500 italic">{q.explanation}</p>
+                <p className="text-xs text-gray-500 italic">{fb.explanation}</p>
               </div>
             )
           })}
         </div>
         <div className="flex flex-col gap-3 pt-2">
-          <button onClick={() => { setStage('quiz'); setSelected(Array(questions.length).fill(null)); setCurrentQ(0) }}
+          <button onClick={handleRetake}
             className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-colors">Retake Quiz</button>
           <button onClick={handleReset} className="w-full py-3.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors">Try a New Topic</button>
           <Link href="/create?mode=learning" className="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm text-center transition-colors block">Turn this into a Learning Story →</Link>

@@ -41,12 +41,15 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ message: 'No quiz for this story' }, { status: 404 })
     }
 
+    const questions = (quiz.questions as Array<{ question: string; options: string[]; correct_index: number; explanation: string }>)
+      .map(({ question, options }) => ({ question, options }))
+
     return NextResponse.json({
       quizId: quiz.id,
       subject: quiz.subject,
       grade: quiz.grade,
       topic: quiz.topic,
-      questions: quiz.questions,
+      questions,
     })
   } catch (err) {
     const { message, code, statusCode } = toApiError(err)

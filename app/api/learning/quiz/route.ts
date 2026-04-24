@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 
 const SYSTEM_PROMPT = (gradeLabel: string) => `You are an educational quiz writer. Create 5 multiple-choice questions.
 
@@ -20,6 +22,8 @@ Rules:
 - All 4 options must be plausible`
 
 export async function POST(request: NextRequest) {
+  const limited = await checkLearningRateLimit(request, 'quiz')
+  if (limited) return limited
   try {
     const body = await request.json()
     const { topic, subject, grade, imageBase64, mimeType } = body as {
@@ -33,7 +37,6 @@ export async function POST(request: NextRequest) {
     const gradeLabel = grade ? `grade ${grade}` : 'elementary school'
     const subjectLabel = subject ? `${subject} — ` : ''
 
-    // Build the user message — text or image+text
     let userContent: object | string
     if (imageBase64) {
       userContent = [
@@ -79,7 +82,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Could not generate quiz. Try a more specific topic.' }, { status: 500 })
     }
 
-    return NextResponse.json({ questions: parsed.questions })
+    // Shuffle each question's options so answer positions differ per session
+    type RawQuestion = { question: string; options: string[]; correct_index: number; explanation: string }
+    const shuffled: RawQuestion[] = parsed.questions.map((q: RawQuestion) => {
+      const indices = [0, 1, 2, 3].sort(() => Math.random() - 0.5)
+      return {
+        question: q.question,
+        options: indices.map(i => q.options[i]),
+        correct_index: indices.indexOf(q.correct_index),
+        explanation: q.explanation,
+      }
+    })
+
+    // Store full questions (with correct_index) in DB — never sent to client
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
+    const adminSupabase = createAdminClient()
+    const { data: session, error: sessionError } = await adminSupabase
+      .from('quiz_sessions')
+      .insert({
+        questions: shuffled,
+        subject: subject ?? null,
+        grade: grade ?? null,
+        topic: imageBase64 ? null : (topic?.trim() ?? null),
+        source: 'standalone',
+        ip_address: ip,
+      })
+      .select('id')
+      .single()
+
+    if (sessionError || !session) {
+      console.error('[learning/quiz] session insert error:', sessionError)
+      return NextResponse.json({ message: 'Failed to create quiz session.' }, { status: 500 })
+    }
+
+    // Strip correct_index + explanation before sending to client
+    const clientQuestions = shuffled.map(q => ({ question: q.question, options: q.options }))
+
+    return NextResponse.json({ sessionId: session.id, questions: clientQuestions })
   } catch (err) {
     console.error('[learning/quiz] error:', err)
     return NextResponse.json({ message: 'Something went wrong. Please try again.' }, { status: 500 })
