@@ -31,7 +31,7 @@ export default async function HomePage() {
 
 function Nav({ user }: { user: { email?: string } | null }) {
   return (
-    <header className="bg-parchment/95 backdrop-blur border-b border-parchment-dark shrink-0">
+    <header className="bg-parchment/95 backdrop-blur border-b border-parchment-dark shrink-0 relative z-40">
       <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
         <Link href="/" className="font-serif text-xl text-oxford font-semibold tracking-tight shrink-0">
           Nest &amp; Quill

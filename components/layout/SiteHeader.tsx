@@ -8,7 +8,7 @@ interface Props {
 
 export default function SiteHeader({ right }: Props) {
   return (
-    <header className="bg-parchment/95 backdrop-blur border-b border-parchment-dark shrink-0">
+    <header className="bg-parchment/95 backdrop-blur border-b border-parchment-dark shrink-0 relative z-40">
       <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
         <Link href="/" className="font-serif text-xl font-semibold text-oxford shrink-0">
           Nest &amp; Quill
