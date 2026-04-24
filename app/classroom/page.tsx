@@ -75,8 +75,48 @@ export default async function ClassroomPage() {
           </p>
         </section>
 
+        {/* Free vs coming soon */}
+        <section className="pb-4 px-6">
+          <div className="max-w-2xl mx-auto">
+            <div className="grid sm:grid-cols-2 gap-5">
+              <div className="bg-white rounded-2xl border border-gray-100 px-6 py-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Free now</p>
+                </div>
+                {[
+                  'Classes & student join codes',
+                  'Assign quizzes, flashcards & more',
+                  'Track completions & quiz scores',
+                  'Up to 30 students per class',
+                ].map(f => (
+                  <p key={f} className="text-sm text-charcoal flex gap-2.5 items-start">
+                    <span className="text-brand-500 font-bold shrink-0">✓</span>{f}
+                  </p>
+                ))}
+              </div>
+              <div className="bg-gray-50 rounded-2xl border border-gray-100 px-6 py-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Coming soon</p>
+                </div>
+                {[
+                  'Bulk story creation for your class',
+                  'Class story library',
+                  'Progress reports & CSV export',
+                  'School branding & custom cover',
+                ].map(f => (
+                  <p key={f} className="text-sm text-gray-400 flex gap-2.5 items-start">
+                    <span className="shrink-0">○</span>{f}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* How it works */}
-        <section className="pb-16 px-6">
+        <section className="py-10 px-6">
           <div className="max-w-2xl mx-auto">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6 text-center">How it works</p>
             <div className="grid sm:grid-cols-3 gap-5">
