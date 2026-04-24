@@ -383,9 +383,9 @@ function EducatorBanner() {
       <div className="max-w-5xl mx-auto bg-oxford/5 border border-oxford/20 rounded-2xl px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-6">
         <div>
           <p className="text-xs font-bold text-oxford uppercase tracking-widest mb-1">For Educators</p>
-          <h3 className="font-serif text-xl text-oxford mb-1">Bringing stories into the classroom?</h3>
+          <h3 className="font-serif text-xl text-oxford mb-1">Bring it all into the classroom.</h3>
           <p className="text-sm text-charcoal max-w-md">
-            The Educator plan includes classroom management, student rosters, bulk story creation, and a class library. $59/month for up to 40 stories.
+            Classroom is free — create a class, assign quizzes and learning tools, and track every student&apos;s progress. Bulk story creation and class libraries coming soon.
           </p>
         </div>
         <div className="shrink-0">
