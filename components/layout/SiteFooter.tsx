@@ -8,6 +8,8 @@ export default function SiteFooter() {
         <p>© {new Date().getFullYear()} Nest &amp; Quill. All rights reserved.</p>
         <div className="flex flex-wrap justify-center gap-5">
           <Link href="/create" className="hover:text-parchment transition-colors">Create</Link>
+          <Link href="/learning" className="hover:text-parchment transition-colors">Learning</Link>
+          <Link href="/classroom" className="hover:text-parchment transition-colors">Classroom</Link>
           <Link href="/pricing" className="hover:text-parchment transition-colors">Pricing</Link>
           <Link href="/contact" className="hover:text-parchment transition-colors">Contact</Link>
           <Link href="/privacy" className="hover:text-parchment transition-colors">Privacy</Link>
