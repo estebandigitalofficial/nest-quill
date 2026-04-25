@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
 import AdminStoryActions from '@/components/admin/AdminStoryActions'
 import type { StoryRequest, GeneratedStory, StoryScene, ProcessingLog } from '@/types/database'
+import { formatAZTime, formatAZTimeOnly } from '@/lib/utils/formatTime'
 
 interface PageProps {
   params: Promise<{ requestId: string }>
@@ -102,9 +103,13 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
             <Field label="Progress" value={`${req.progress_pct}%`} />
             <Field label="Retry count" value={String(req.retry_count)} />
             <Field label="Worker ID" value={req.worker_id ?? '—'} mono />
-            <Field label="Created" value={new Date(req.created_at).toLocaleString()} />
-            <Field label="Updated" value={new Date(req.updated_at).toLocaleString()} />
-            {req.completed_at && <Field label="Completed" value={new Date(req.completed_at).toLocaleString()} />}
+            <Field label="Created (AZ)" value={formatAZTime(req.created_at)} />
+            <Field label="Updated (AZ)" value={formatAZTime(req.updated_at)} />
+            {req.completed_at && <Field label="Completed (AZ)" value={formatAZTime(req.completed_at)} />}
+            {req.ip_address && <Field label="IP address" value={req.ip_address} mono />}
+            {(req.geo_city || req.geo_country) && (
+              <Field label="Location" value={[req.geo_city, req.geo_region, req.geo_country].filter(Boolean).join(', ')} />
+            )}
             {req.child_description && <Field label="Child description" value={req.child_description} wide />}
             {req.custom_notes && <Field label="Custom notes" value={req.custom_notes} wide />}
             {req.supporting_characters && <Field label="Supporting characters" value={req.supporting_characters} wide />}
@@ -214,7 +219,7 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
                   {log.duration_ms != null && (
                     <span className="shrink-0 text-gray-600">{log.duration_ms}ms</span>
                   )}
-                  <span className="shrink-0 text-gray-700">{new Date(log.created_at).toLocaleTimeString()}</span>
+                  <span className="shrink-0 text-gray-700">{formatAZTimeOnly(log.created_at)}</span>
                 </div>
               ))}
             </div>

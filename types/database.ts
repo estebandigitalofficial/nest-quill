@@ -101,6 +101,10 @@ export interface StoryRequest {
   learning_subject: string | null
   learning_grade: number | null
   learning_topic: string | null
+  ip_address: string | null
+  geo_city: string | null
+  geo_country: string | null
+  geo_region: string | null
 }
 
 export interface QuizQuestion {

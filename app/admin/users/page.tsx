@@ -6,6 +6,7 @@ import { getAdminContext } from '@/lib/admin/guard'
 import AdminUserControls from '@/components/admin/AdminUserControls'
 import AdminUserSearch from '@/components/admin/AdminUserSearch'
 import type { Profile, PlanTier } from '@/types/database'
+import { formatAZTimeShort } from '@/lib/utils/formatTime'
 
 interface PageProps {
   searchParams: Promise<{ q?: string }>
@@ -121,7 +122,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                           <p className="text-[10px] text-gray-600 font-mono mt-0.5">{user.id.slice(0, 8)}…</p>
                         </td>
                         <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell whitespace-nowrap">
-                          {new Date(user.created_at).toLocaleDateString()}
+                          {formatAZTimeShort(user.created_at)}
                         </td>
                         <td className="px-4 py-3">
                           <div className="space-y-2">

@@ -55,6 +55,15 @@ export async function POST(request: NextRequest) {
     // Use the admin client so we can write regardless of RLS policies
     const adminSupabase = createAdminClient()
 
+    // Read Vercel geo headers (populated automatically on Vercel deployments)
+    const ipRaw = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip')
+    const ipAddress = ipRaw?.split(',')[0]?.trim() ?? null
+    const geoCity = request.headers.get('x-vercel-ip-city')
+      ? decodeURIComponent(request.headers.get('x-vercel-ip-city')!)
+      : null
+    const geoCountry = request.headers.get('x-vercel-ip-country') ?? null
+    const geoRegion = request.headers.get('x-vercel-ip-country-region') ?? null
+
     const { data: storyRequest, error: insertError } = await adminSupabase
       .from('story_requests')
       .insert({
@@ -79,6 +88,10 @@ export async function POST(request: NextRequest) {
         learning_subject: formData.learningSubject ?? null,
         learning_grade: formData.learningGrade ?? null,
         learning_topic: formData.learningTopic ?? null,
+        ip_address: ipAddress,
+        geo_city: geoCity,
+        geo_country: geoCountry,
+        geo_region: geoRegion,
         status: 'queued',
         progress_pct: 0,
         status_message: 'Your story is in the queue...',
