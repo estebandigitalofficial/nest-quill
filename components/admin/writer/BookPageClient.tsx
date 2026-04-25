@@ -11,6 +11,13 @@ import GenerateAllButton from './GenerateAllButton'
 
 type Mode = 'read' | 'edit'
 
+const STATUS_OPTIONS: { value: WriterBook['status']; label: string; color: string }[] = [
+  { value: 'draft',       label: 'Draft',       color: 'text-gray-400' },
+  { value: 'in_progress', label: 'In Progress', color: 'text-brand-400' },
+  { value: 'complete',    label: 'Complete',    color: 'text-green-400' },
+  { value: 'archived',    label: 'Archived',    color: 'text-gray-600' },
+]
+
 export default function BookPageClient({
   book,
   bookData,
@@ -28,6 +35,7 @@ export default function BookPageClient({
 }) {
   // Default to read mode — the book opens as an ebook
   const [mode, setMode] = useState<Mode>('read')
+  const [bookStatus, setBookStatus] = useState<WriterBook['status']>(book.status)
   const [sections, setSections] = useState<WriterBookSection[]>([])
   const [focusChapterId, setFocusChapterId] = useState<string | null>(null)
   const [focusZone, setFocusZone] = useState<'front' | 'back' | null>(null)
@@ -52,6 +60,15 @@ export default function BookPageClient({
     setFocusZone(zone)
     setFocusChapterId(null)
     setMode('edit')
+  }
+
+  async function handleStatusChange(status: WriterBook['status']) {
+    setBookStatus(status)
+    await fetch(`/api/admin/writer/books/${book.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
   }
 
   // Scroll to the focused element after switching to edit
@@ -161,7 +178,18 @@ export default function BookPageClient({
                 <h1 className="font-serif text-xl sm:text-2xl text-white">{book.title}</h1>
                 {book.subtitle && <p className="text-gray-400 italic text-sm mt-0.5">{book.subtitle}</p>}
               </div>
-              <p className="text-xs text-gray-500 shrink-0">{book.genre} · {book.tone}</p>
+              <div className="flex items-center gap-3 shrink-0">
+                <p className="text-xs text-gray-500 hidden sm:block">{book.genre} · {book.tone}</p>
+                <select
+                  value={bookStatus}
+                  onChange={e => handleStatusChange(e.target.value as WriterBook['status'])}
+                  className={`text-xs font-semibold bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer transition-colors ${STATUS_OPTIONS.find(o => o.value === bookStatus)?.color ?? 'text-gray-400'}`}
+                >
+                  {STATUS_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <p className="text-sm text-gray-400">{book.premise}</p>
             <div className="flex flex-wrap gap-4 sm:gap-6 pt-2 text-xs text-gray-500">

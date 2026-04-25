@@ -130,15 +130,33 @@ export default function ChapterEditor({
 
   async function toggleLock(scene: WriterScene) {
     const locked = !scene.locked
-    setScenes(prev => prev.map(s => s.id === scene.id ? { ...s, locked } : s))
+    const newStatus: WriterScene['status'] = locked ? 'final' : 'draft'
+    const updatedScenes = scenes.map(s =>
+      s.id === scene.id ? { ...s, locked, status: newStatus } : s
+    )
+    setScenes(updatedScenes)
+
     await fetch(
       `/api/admin/writer/books/${book.id}/chapters/${chapter.id}/scenes`,
       {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: scene.id, locked }),
+        body: JSON.stringify({ id: scene.id, locked, status: newStatus }),
       }
     )
+
+    // Auto-complete chapter when every scene is final
+    if (locked && updatedScenes.every(s => s.status === 'final')) {
+      await fetch(
+        `/api/admin/writer/books/${book.id}/chapters/${chapter.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'complete' }),
+        }
+      )
+      router.refresh()
+    }
   }
 
   async function deleteScene(sceneId: string) {
@@ -231,6 +249,9 @@ export default function ChapterEditor({
                 <p className="text-xs text-gray-500 mt-0.5">{scene.brief}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                {scene.status === 'final' && (
+                  <span className="text-[10px] font-bold text-green-500 uppercase tracking-widest">Final</span>
+                )}
                 {scene.word_count && (
                   <span className="text-xs text-gray-600">{scene.word_count.toLocaleString()}w</span>
                 )}
