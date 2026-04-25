@@ -72,31 +72,25 @@ export default async function WriterPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="divide-y divide-gray-800 border border-gray-800 rounded-xl overflow-hidden">
             {(books as WriterBook[]).map((book) => {
-              const isComplete = book.status === 'complete'
-              const primaryHref = isComplete
-                ? `/admin/writer/${book.id}/read`
-                : `/admin/writer/${book.id}`
               const color = authorColor(book.owner_id)
               const displayAuthor = book.pen_name ?? book.author_name
               return (
                 <div
                   key={book.id}
-                  className={`bg-gray-900 border border-gray-800 border-l-4 ${color.border} rounded-xl px-5 py-5 hover:border-gray-600 hover:${color.border} transition-colors space-y-2 group relative`}
+                  className={`bg-gray-900 border-l-4 ${color.border} px-5 py-4 flex items-center gap-4 hover:bg-gray-850 transition-colors group relative`}
                 >
-                  <Link href={primaryHref} className="absolute inset-0 rounded-xl" aria-hidden />
-                  <div className="flex items-start justify-between gap-2">
-                    <h2 className="font-serif text-lg text-white leading-snug">{book.title}</h2>
-                    <StatusPill status={book.status} />
-                  </div>
-                  {book.subtitle && <p className="text-sm text-gray-400 italic">{book.subtitle}</p>}
-                  <p className="text-xs text-gray-500 line-clamp-2">{book.premise}</p>
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="flex items-center gap-3 text-xs text-gray-600">
+                  <Link href={`/admin/writer/${book.id}`} className="absolute inset-0" aria-hidden />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2.5">
+                      <h2 className="font-serif text-base text-white truncate">{book.title}</h2>
+                      <StatusPill status={book.status} />
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-600">
                       {displayAuthor && (
                         <>
-                          <span className="flex items-center gap-1.5">
+                          <span className="flex items-center gap-1">
                             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${color.dot}`} />
                             <span className={`font-medium ${color.text}`}>{displayAuthor}</span>
                           </span>
@@ -106,23 +100,23 @@ export default async function WriterPage() {
                       <span>{book.genre}</span>
                       <span>·</span>
                       <span>{book.target_chapters} ch.</span>
+                      {book.subtitle && <><span>·</span><span className="italic text-gray-600 truncate">{book.subtitle}</span></>}
                     </div>
-                    {/* Action links — sit above the invisible full-card link */}
-                    <div className="flex gap-1.5 relative z-10">
-                      <DeleteBookButton bookId={book.id} />
-                      <Link
-                        href={`/admin/writer/${book.id}/read`}
-                        className="text-[11px] px-2.5 py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
-                      >
-                        Read
-                      </Link>
-                      <Link
-                        href={`/admin/writer/${book.id}`}
-                        className="text-[11px] px-2.5 py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
-                      >
-                        Edit
-                      </Link>
-                    </div>
+                  </div>
+                  <div className="flex gap-1.5 relative z-10 shrink-0">
+                    <DeleteBookButton bookId={book.id} />
+                    <Link
+                      href={`/admin/writer/${book.id}/read`}
+                      className="text-[11px] px-2.5 py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+                    >
+                      Read
+                    </Link>
+                    <Link
+                      href={`/admin/writer/${book.id}`}
+                      className="text-[11px] px-2.5 py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+                    >
+                      Edit
+                    </Link>
                   </div>
                 </div>
               )
