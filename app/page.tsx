@@ -4,7 +4,7 @@ import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
 import { cn } from '@/lib/utils/cn'
 import LogoutButton from '@/components/auth/LogoutButton'
 import SiteFooter from '@/components/layout/SiteFooter'
-import LearningDropdown from '@/components/layout/LearningDropdown'
+import SiteHeader from '@/components/layout/SiteHeader'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -12,7 +12,28 @@ export default async function HomePage() {
 
   return (
     <div className="h-dvh bg-parchment font-sans flex flex-col">
-      <Nav user={user} />
+      <SiteHeader right={
+        <div className="flex items-center gap-4">
+          {user ? (
+            <>
+              <Link href="/account"
+                className="text-sm text-charcoal hover:text-oxford font-medium transition-colors hidden sm:block">
+                My stories
+              </Link>
+              <LogoutButton />
+            </>
+          ) : (
+            <Link href="/login"
+              className="text-sm text-charcoal hover:text-oxford font-medium transition-colors">
+              Sign in
+            </Link>
+          )}
+          <Link href="/create"
+            className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors">
+            Create a story →
+          </Link>
+        </div>
+      } />
       <div className="flex-1 overflow-y-auto">
         <Hero />
         <LearningStoriesSection />
@@ -24,51 +45,6 @@ export default async function HomePage() {
       </div>
       <SiteFooter />
     </div>
-  )
-}
-
-// ── Nav ───────────────────────────────────────────────────────────────────────
-
-function Nav({ user }: { user: { email?: string } | null }) {
-  return (
-    <header className="bg-parchment/95 backdrop-blur border-b border-parchment-dark shrink-0 relative z-40">
-      <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
-        <Link href="/" className="font-serif text-xl text-oxford font-semibold tracking-tight shrink-0">
-          Nest &amp; Quill
-        </Link>
-        <nav className="hidden md:flex items-center gap-5">
-          <LearningDropdown />
-          <Link href="/classroom" className="text-sm text-charcoal-light hover:text-oxford transition-colors">Classroom</Link>
-          <Link href="/pricing" className="text-sm text-charcoal-light hover:text-oxford transition-colors">Pricing</Link>
-        </nav>
-        <div className="flex items-center gap-4">
-          {user ? (
-            <>
-              <Link
-                href="/account"
-                className="text-sm text-charcoal hover:text-oxford font-medium transition-colors hidden sm:block"
-              >
-                My stories
-              </Link>
-              <LogoutButton />
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className="text-sm text-charcoal hover:text-oxford font-medium transition-colors"
-            >
-              Sign in
-            </Link>
-          )}
-          <Link
-            href="/create"
-            className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors"
-          >
-            Create a story →
-          </Link>
-        </div>
-      </div>
-    </header>
   )
 }
 
