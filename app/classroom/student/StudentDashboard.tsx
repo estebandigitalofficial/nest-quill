@@ -6,13 +6,13 @@ import CelebrationModal from './CelebrationModal'
 import { levelProgress } from '@/lib/utils/xp'
 
 const TOOL_META: Record<string, { emoji: string; label: string; path: string }> = {
-  quiz:          { emoji: '🧠', label: 'Quiz',                 path: '/learning/quiz' },
-  flashcards:    { emoji: '🃏', label: 'Flashcards',           path: '/learning/flashcards' },
-  explain:       { emoji: '💡', label: 'Concept Explainer',    path: '/learning/explain' },
-  'study-guide': { emoji: '📋', label: 'Study Guide',          path: '/learning/study-guide' },
-  math:          { emoji: '🔢', label: 'Math Practice',        path: '/learning/math' },
+  quiz:          { emoji: '🧠', label: 'Quiz',                  path: '/learning/quiz' },
+  flashcards:    { emoji: '🃏', label: 'Flashcards',            path: '/learning/flashcards' },
+  explain:       { emoji: '💡', label: 'Concept Explainer',     path: '/learning/explain' },
+  'study-guide': { emoji: '📋', label: 'Study Guide',           path: '/learning/study-guide' },
+  math:          { emoji: '🔢', label: 'Math Practice',         path: '/learning/math' },
   reading:       { emoji: '📖', label: 'Reading Comprehension', path: '/learning/reading' },
-  spelling:      { emoji: '✏️', label: 'Spelling Practice',    path: '/learning/spelling' },
+  spelling:      { emoji: '✏️', label: 'Spelling Practice',     path: '/learning/spelling' },
 }
 
 const COLOR_BG: Record<string, string> = {
@@ -54,12 +54,35 @@ interface StoryReward {
   title: string | null
 }
 
+function buildQuestHref(a: Assignment): string {
+  const tool = TOOL_META[a.tool]
+  if (!tool) return '#'
+  const params = new URLSearchParams()
+  if (a.config?.topic)   params.set('topic', a.config.topic)
+  if (a.config?.grade)   params.set('grade', String(a.config.grade))
+  if (a.config?.subject) params.set('subject', a.config.subject)
+  params.set('assignmentId', a.id)
+  return `${tool.path}?${params.toString()}`
+}
+
+function dueLabel(due_at: string | null): { text: string; overdue: boolean } | null {
+  if (!due_at) return null
+  const overdue = new Date(due_at) < new Date()
+  return {
+    text: overdue
+      ? 'Overdue'
+      : `Due ${new Date(due_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`,
+    overdue,
+  }
+}
+
 export default function StudentDashboard() {
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [dataLoading, setDataLoading] = useState(true)
   const [stories, setStories] = useState<StoryReward[]>([])
+  const [showCompleted, setShowCompleted] = useState(false)
   const [joinCode, setJoinCode] = useState('')
   const [joining, setJoining] = useState(false)
   const [joinError, setJoinError] = useState<string | null>(null)
@@ -70,7 +93,6 @@ export default function StudentDashboard() {
     fetchProfile()
     fetchData()
     fetchStories()
-    // Check for pending celebration from redirect
     const raw = sessionStorage.getItem('classroom_celebration')
     if (raw) { setCelebration(JSON.parse(raw)); sessionStorage.removeItem('classroom_celebration') }
   }, [])
@@ -122,7 +144,7 @@ export default function StudentDashboard() {
     })
     const data = await res.json()
     if (!res.ok) { setJoinError(data.message); setJoining(false); return }
-    setJoinSuccess(`Joined "${data.classroom.name}"! 🎉`)
+    setJoinSuccess(`Joined "${data.classroom.name}"!`)
     setJoinCode(''); setJoining(false); fetchData()
   }
 
@@ -138,22 +160,22 @@ export default function StudentDashboard() {
     )
   }
 
-  // First-time setup
   if (!profile) return <AvatarSetup onComplete={handleAvatarComplete} />
 
   const prog = levelProgress(profile.xp)
-  const pending = assignments.filter(a => a.assignment_submissions[0]?.status !== 'complete')
+  const pending   = assignments.filter(a => a.assignment_submissions[0]?.status !== 'complete')
   const completed = assignments.filter(a => a.assignment_submissions[0]?.status === 'complete')
-  const colorBg = COLOR_BG[profile.avatar_color] ?? 'bg-indigo-500'
+  const colorBg   = COLOR_BG[profile.avatar_color] ?? 'bg-indigo-500'
+  const [heroQuest, ...restQuests] = pending
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
 
       {celebration && (
         <CelebrationModal {...celebration} onClose={() => setCelebration(null)} />
       )}
 
-      {/* Hero card — avatar + XP */}
+      {/* ── Hero card ── */}
       <div className="bg-oxford rounded-2xl px-6 py-5 flex items-center gap-5">
         <div className={`w-16 h-16 ${colorBg} rounded-2xl flex items-center justify-center text-4xl shrink-0 shadow-lg`}>
           {profile.avatar_emoji}
@@ -183,27 +205,95 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* Join a class */}
-      <form onSubmit={handleJoin} className="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex gap-3 items-end">
-        <div className="flex-1 space-y-1">
-          <label className="text-xs font-semibold text-gray-500">Join a class</label>
-          <input
-            placeholder="Enter join code"
-            value={joinCode}
-            onChange={e => setJoinCode(e.target.value.toUpperCase())}
-            maxLength={6}
-            className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm font-mono tracking-widest text-oxford placeholder:text-gray-300 placeholder:font-sans placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-          />
+      {/* ── Quest board ── */}
+      {dataLoading ? (
+        <div className="flex justify-center py-10">
+          <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
         </div>
-        <button type="submit" disabled={joining || joinCode.length < 6}
-          className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors whitespace-nowrap">
-          {joining ? 'Joining…' : 'Join'}
-        </button>
-      </form>
-      {joinError && <p className="text-sm text-red-500 px-1">{joinError}</p>}
-      {joinSuccess && <p className="text-sm text-green-600 px-1 font-medium">{joinSuccess}</p>}
+      ) : pending.length === 0 && completed.length === 0 ? (
+        /* Empty state — no classes yet */
+        <div className="bg-white rounded-2xl border border-gray-100 px-8 py-14 text-center space-y-3">
+          <div className="text-5xl">🗺️</div>
+          <p className="font-semibold text-oxford">No quests yet</p>
+          <p className="text-sm text-charcoal-light">Enter the join code from your teacher below to get started.</p>
+        </div>
+      ) : pending.length === 0 ? (
+        /* All caught up */
+        <div className="bg-green-50 border border-green-200 rounded-2xl px-6 py-5 text-center space-y-1">
+          <p className="text-2xl">🎉</p>
+          <p className="font-semibold text-green-800">All caught up!</p>
+          <p className="text-sm text-green-600">You&apos;ve completed every quest. Check back when your teacher assigns more.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+            ⚔️ Active Quests ({pending.length})
+          </p>
 
-      {/* Story Rewards */}
+          {/* Featured next quest */}
+          {heroQuest && (() => {
+            const tool  = TOOL_META[heroQuest.tool]
+            const due   = dueLabel(heroQuest.due_at)
+            const href  = buildQuestHref(heroQuest)
+            return (
+              <a href={href}
+                className="block bg-indigo-600 hover:bg-indigo-500 rounded-2xl px-6 py-5 transition-colors group">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-white/15 rounded-xl flex items-center justify-center text-3xl shrink-0">
+                    {tool?.emoji ?? '📚'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-0.5">Up next</p>
+                    <p className="font-semibold text-white text-base truncate">{heroQuest.title}</p>
+                    <p className="text-xs text-indigo-200 mt-0.5 truncate">
+                      {heroQuest.className}{heroQuest.config?.topic ? ` · ${heroQuest.config.topic}` : ''}
+                    </p>
+                    {due && (
+                      <p className={`text-[11px] font-semibold mt-1 ${due.overdue ? 'text-red-300' : 'text-indigo-300'}`}>
+                        {due.overdue ? '⚠️ ' : ''}{due.text}
+                      </p>
+                    )}
+                  </div>
+                  <span className="bg-white text-indigo-600 text-sm font-bold px-5 py-2.5 rounded-xl whitespace-nowrap shrink-0 group-hover:bg-indigo-50 transition-colors">
+                    Start →
+                  </span>
+                </div>
+              </a>
+            )
+          })()}
+
+          {/* Remaining pending quests */}
+          {restQuests.map(a => {
+            const tool = TOOL_META[a.tool]
+            const due  = dueLabel(a.due_at)
+            const href = buildQuestHref(a)
+            return (
+              <a key={a.id} href={href}
+                className="block bg-white rounded-2xl border-2 border-gray-100 hover:border-indigo-200 hover:shadow-sm transition-all px-5 py-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center text-xl shrink-0">
+                    {tool?.emoji ?? '📚'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-oxford text-sm truncate">{a.title}</p>
+                    <p className="text-xs text-charcoal-light mt-0.5 truncate">
+                      {a.className}{a.config?.topic ? ` · ${a.config.topic}` : ''}
+                    </p>
+                    {due && (
+                      <p className={`text-[11px] font-semibold mt-0.5 ${due.overdue ? 'text-red-500' : 'text-gray-400'}`}>
+                        {due.overdue ? '⚠️ ' : ''}{due.text}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-indigo-600 text-xs font-bold shrink-0">Start →</span>
+                </div>
+              </a>
+            )
+          })}
+        </div>
+      )}
+
+      {/* ── Story Rewards ── */}
       {stories.length > 0 && (
         <div className="space-y-3">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
@@ -211,16 +301,16 @@ export default function StudentDashboard() {
           </p>
           {stories.map(s => (
             <div key={s.id}
-              className="bg-white rounded-2xl border-2 border-amber-100 hover:border-amber-200 hover:shadow-md transition-all px-5 py-4 flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-2xl shrink-0">
+              className="bg-white rounded-2xl border-2 border-amber-100 hover:border-amber-200 transition-all px-5 py-4 flex items-center gap-4">
+              <div className="w-11 h-11 bg-amber-50 rounded-xl flex items-center justify-center text-2xl shrink-0">
                 📖
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-oxford text-sm truncate">
-                  {s.title ?? `${profile?.display_name ?? 'Your'} Story`}
+                  {s.title ?? `${profile.display_name}'s Story`}
                 </p>
                 <p className="text-xs text-charcoal-light mt-0.5">
-                  Earned for completing {s.milestone} quest{s.milestone !== 1 ? 's' : ''}
+                  Milestone reward · {s.milestone} quest{s.milestone !== 1 ? 's' : ''} completed
                 </p>
               </div>
               {s.status === 'complete' ? (
@@ -229,86 +319,39 @@ export default function StudentDashboard() {
                   Read →
                 </a>
               ) : (
-                <span className="text-xs text-gray-400 bg-gray-50 px-3 py-2 rounded-xl shrink-0">
-                  Creating…
-                </span>
+                <span className="text-xs text-gray-400 bg-gray-50 px-3 py-2 rounded-xl shrink-0">Creating…</span>
               )}
             </div>
           ))}
         </div>
       )}
 
-      {/* Quest board — pending */}
-      {dataLoading ? (
-        <div className="flex justify-center py-8">
-          <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
-        </div>
-      ) : (
-        <>
-          {pending.length > 0 && (
-            <div className="space-y-3">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                ⚔️ Active Quests ({pending.length})
-              </p>
-              {pending.map(a => {
-                const tool = TOOL_META[a.tool]
-                const isOverdue = a.due_at && new Date(a.due_at) < new Date()
-                const dueLabel = a.due_at
-                  ? isOverdue
-                    ? `⚠️ Overdue`
-                    : `Due ${new Date(a.due_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`
-                  : null
-                const params = new URLSearchParams()
-                if (a.config?.topic) params.set('topic', a.config.topic)
-                if (a.config?.grade) params.set('grade', String(a.config.grade))
-                if (a.config?.subject) params.set('subject', a.config.subject)
-                params.set('assignmentId', a.id)
-                const href = tool ? `${tool.path}?${params.toString()}` : '#'
+      {/* ── Completed quests (collapsed by default) ── */}
+      {completed.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowCompleted(v => !v)}
+            className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors w-full text-left"
+          >
+            <span>✅ Completed ({completed.length})</span>
+            <span className="text-gray-300 font-normal normal-case tracking-normal">{showCompleted ? '▲ hide' : '▼ show'}</span>
+          </button>
 
-                return (
-                  <div key={a.id}
-                    className="bg-white rounded-2xl border-2 border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all px-5 py-4 flex items-center gap-4">
-                    <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-2xl shrink-0">
-                      {tool?.emoji ?? '📚'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-oxford text-sm truncate">{a.title}</p>
-                      <p className="text-xs text-charcoal-light mt-0.5 truncate">
-                        {a.className}{a.config?.topic ? ` · ${a.config.topic}` : ''}
-                      </p>
-                      {dueLabel && (
-                        <p className={`text-[11px] font-semibold mt-1 ${isOverdue ? 'text-red-500' : 'text-gray-400'}`}>{dueLabel}</p>
-                      )}
-                    </div>
-                    <a href={href}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl whitespace-nowrap transition-colors shrink-0">
-                      Start →
-                    </a>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Completed quests */}
-          {completed.length > 0 && (
-            <div className="space-y-3">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                ✅ Completed ({completed.length})
-              </p>
+          {showCompleted && (
+            <div className="mt-3 space-y-2">
               {completed.map(a => {
                 const tool = TOOL_META[a.tool]
-                const sub = a.assignment_submissions[0]
-                const pct = sub?.score != null && sub?.total ? Math.round((sub.score / sub.total) * 100) : null
+                const sub  = a.assignment_submissions[0]
+                const pct  = sub?.score != null && sub?.total ? Math.round((sub.score / sub.total) * 100) : null
                 return (
                   <div key={a.id}
-                    className="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex items-center gap-4 opacity-70">
-                    <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-2xl shrink-0">
+                    className="bg-white rounded-2xl border border-gray-100 px-5 py-3.5 flex items-center gap-4 opacity-60">
+                    <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-lg shrink-0">
                       {tool?.emoji ?? '📚'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-oxford text-sm truncate">{a.title}</p>
-                      <p className="text-xs text-charcoal-light mt-0.5 truncate">{a.className}</p>
+                      <p className="text-xs text-charcoal-light truncate">{a.className}</p>
                     </div>
                     <div className="text-right shrink-0">
                       {pct !== null ? (
@@ -325,25 +368,29 @@ export default function StudentDashboard() {
               })}
             </div>
           )}
-
-          {/* Empty state */}
-          {assignments.length === 0 && (
-            <div className="bg-white rounded-2xl border border-gray-100 px-8 py-14 text-center space-y-3">
-              <div className="text-5xl">🗺️</div>
-              <p className="font-semibold text-oxford">No quests yet</p>
-              <p className="text-sm text-charcoal-light">Ask your teacher for the 6-character join code and enter it above.</p>
-            </div>
-          )}
-
-          {pending.length === 0 && completed.length > 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-2xl px-6 py-5 text-center space-y-1">
-              <p className="text-2xl">🎉</p>
-              <p className="font-semibold text-green-800">All caught up!</p>
-              <p className="text-sm text-green-600">You&apos;ve completed every quest. Check back when your teacher assigns more.</p>
-            </div>
-          )}
-        </>
+        </div>
       )}
+
+      {/* ── Join a class (secondary action, bottom) ── */}
+      <div className="pt-2">
+        <p className="text-xs font-bold text-gray-300 uppercase tracking-widest mb-3">Join a class</p>
+        <form onSubmit={handleJoin} className="flex gap-3 items-end">
+          <input
+            placeholder="Enter join code"
+            value={joinCode}
+            onChange={e => setJoinCode(e.target.value.toUpperCase())}
+            maxLength={6}
+            className="flex-1 rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm font-mono tracking-widest text-oxford placeholder:text-gray-300 placeholder:font-sans placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+          />
+          <button type="submit" disabled={joining || joinCode.length < 6}
+            className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors whitespace-nowrap">
+            {joining ? 'Joining…' : 'Join'}
+          </button>
+        </form>
+        {joinError   && <p className="text-sm text-red-500 mt-2">{joinError}</p>}
+        {joinSuccess && <p className="text-sm text-green-600 mt-2 font-medium">{joinSuccess} 🎉</p>}
+      </div>
+
     </div>
   )
 }
