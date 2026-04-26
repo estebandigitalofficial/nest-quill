@@ -1,10 +1,15 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { submitAssignment } from '@/lib/utils/submitAssignment'
 
 type Stage = 'setup' | 'practice' | 'results'
 
-export default function SpellingPractice() {
+interface Props {
+  assignmentId?: string
+}
+
+export default function SpellingPractice({ assignmentId }: Props) {
   const [wordInput, setWordInput] = useState('')
   const [words, setWords] = useState<string[]>([])
   const [stage, setStage] = useState<Stage>('setup')
@@ -15,9 +20,23 @@ export default function SpellingPractice() {
   const [shake, setShake] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const [xpEarned, setXpEarned] = useState<number | null>(null)
+  const submittedRef = useRef(false)
+
   useEffect(() => {
     if (stage === 'practice') inputRef.current?.focus()
   }, [stage, current])
+
+  // Auto-submit when results appear
+  useEffect(() => {
+    if (stage === 'results' && assignmentId && !submittedRef.current) {
+      submittedRef.current = true
+      const correctCount = results.filter(r => r.correct).length
+      submitAssignment(assignmentId, { score: correctCount, total: words.length }).then(result => {
+        if (result) setXpEarned(result.xpEarned)
+      })
+    }
+  }, [stage, assignmentId, results, words.length])
 
   function startPractice() {
     const parsed = wordInput
@@ -30,6 +49,7 @@ export default function SpellingPractice() {
     setCurrent(0)
     setAnswer('')
     setRevealed(false)
+    submittedRef.current = false; setXpEarned(null)
     setStage('practice')
   }
 
@@ -53,7 +73,7 @@ export default function SpellingPractice() {
     }
   }
 
-  function reset() { setStage('setup'); setWordInput(''); setWords([]); setResults([]); setAnswer(''); setRevealed(false) }
+  function reset() { setStage('setup'); setWordInput(''); setWords([]); setResults([]); setAnswer(''); setRevealed(false); submittedRef.current = false; setXpEarned(null) }
   function retry() { setCurrent(0); setAnswer(''); setRevealed(false); setResults([]); setStage('practice') }
 
   const word = words[current]
@@ -144,6 +164,18 @@ export default function SpellingPractice() {
     const pct = score / words.length
     return (
       <div className="space-y-4">
+        {assignmentId && (
+          <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-white font-semibold text-sm">Quest Complete! ✨</p>
+              <p className="text-indigo-200 text-xs">{xpEarned != null ? `+${xpEarned} XP earned` : 'Submitting…'}</p>
+            </div>
+            <button onClick={() => { window.location.href = '/classroom/student' }}
+              className="bg-white text-indigo-600 text-xs font-bold px-4 py-2 rounded-xl whitespace-nowrap hover:bg-indigo-50 transition-colors shrink-0">
+              Back to Dashboard →
+            </button>
+          </div>
+        )}
         <div className={`rounded-2xl px-6 py-6 text-center space-y-1 ${pct === 1 ? 'bg-yellow-50 border border-yellow-200' : pct >= 0.8 ? 'bg-green-50 border border-green-200' : 'bg-indigo-50 border border-indigo-200'}`}>
           <div className="text-4xl mb-2">{pct === 1 ? '🏆' : pct >= 0.8 ? '⭐' : '📚'}</div>
           <p className="text-2xl font-bold text-gray-900">{score} / {words.length}</p>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { submitAssignment } from '@/lib/utils/submitAssignment'
 
 const TOPICS = [
   { value: 'addition', label: '➕ Addition' },
@@ -16,9 +17,15 @@ const TOPICS = [
 interface Problem { problem: string; answer: string; steps: string[] }
 type Stage = 'form' | 'loading' | 'practice' | 'results'
 
-export default function MathPractice() {
-  const [topic, setTopic] = useState('')
-  const [grade, setGrade] = useState<number | null>(null)
+interface Props {
+  assignmentId?: string
+  initialTopic?: string
+  initialGrade?: number
+}
+
+export default function MathPractice({ assignmentId, initialTopic, initialGrade }: Props) {
+  const [topic, setTopic] = useState(initialTopic ?? '')
+  const [grade, setGrade] = useState<number | null>(initialGrade ?? null)
   const [error, setError] = useState<string | null>(null)
   const [stage, setStage] = useState<Stage>('form')
   const [problems, setProblems] = useState<Problem[]>([])
@@ -28,7 +35,29 @@ export default function MathPractice() {
   const [results, setResults] = useState<{ correct: boolean; userAnswer: string }[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const [xpEarned, setXpEarned] = useState<number | null>(null)
+  const submittedRef = useRef(false)
+
   useEffect(() => { if (stage === 'practice' && !revealed) inputRef.current?.focus() }, [stage, current, revealed])
+
+  // Auto-generate if coming from an assignment with a pre-filled topic
+  useEffect(() => {
+    if (assignmentId && initialTopic && stage === 'form') {
+      handleGenerate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Auto-submit when results appear
+  useEffect(() => {
+    if (stage === 'results' && assignmentId && !submittedRef.current) {
+      submittedRef.current = true
+      const correctCount = results.filter(r => r.correct).length
+      submitAssignment(assignmentId, { score: correctCount, total: problems.length }).then(result => {
+        if (result) setXpEarned(result.xpEarned)
+      })
+    }
+  }, [stage, assignmentId, results, problems.length])
 
   async function handleGenerate() {
     if (!topic) { setError('Select a topic first.'); return }
@@ -45,6 +74,7 @@ export default function MathPractice() {
     setProblems(data.problems)
     setResults([])
     setCurrent(0); setAnswer(''); setRevealed(false)
+    submittedRef.current = false; setXpEarned(null)
     setStage('practice')
   }
 
@@ -60,7 +90,7 @@ export default function MathPractice() {
     else setStage('results')
   }
 
-  function reset() { setStage('form'); setTopic(''); setGrade(null); setError(null); setProblems([]); setResults([]) }
+  function reset() { setStage('form'); setTopic(initialTopic ?? ''); setGrade(initialGrade ?? null); setError(null); setProblems([]); setResults([]); submittedRef.current = false; setXpEarned(null) }
   function retry() { setCurrent(0); setAnswer(''); setRevealed(false); setResults([]); setStage('practice') }
 
   const p = problems[current]
@@ -170,6 +200,18 @@ export default function MathPractice() {
     const pct = score / problems.length
     return (
       <div className="space-y-4">
+        {assignmentId && (
+          <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-white font-semibold text-sm">Quest Complete! ✨</p>
+              <p className="text-indigo-200 text-xs">{xpEarned != null ? `+${xpEarned} XP earned` : 'Submitting…'}</p>
+            </div>
+            <button onClick={() => { window.location.href = '/classroom/student' }}
+              className="bg-white text-indigo-600 text-xs font-bold px-4 py-2 rounded-xl whitespace-nowrap hover:bg-indigo-50 transition-colors shrink-0">
+              Back to Dashboard →
+            </button>
+          </div>
+        )}
         <div className={`rounded-2xl px-6 py-6 text-center space-y-1 ${pct === 1 ? 'bg-yellow-50 border border-yellow-200' : pct >= 0.75 ? 'bg-green-50 border border-green-200' : 'bg-indigo-50 border border-indigo-200'}`}>
           <div className="text-4xl mb-2">{pct === 1 ? '🏆' : pct >= 0.75 ? '⭐' : '📚'}</div>
           <p className="text-2xl font-bold text-gray-900">{score} / {problems.length}</p>

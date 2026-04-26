@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { submitAssignment } from '@/lib/utils/submitAssignment'
 
 const SUBJECTS = ['Math','Science','Reading','History','Social Studies','Spelling','English','Art']
 
@@ -13,14 +14,42 @@ interface StudyGuide {
   practice_questions: { question: string; answer: string }[]
 }
 
-export default function StudyGuideGenerator() {
-  const [topic, setTopic] = useState('')
-  const [subject, setSubject] = useState('')
-  const [grade, setGrade] = useState<number | null>(null)
+interface Props {
+  assignmentId?: string
+  initialTopic?: string
+  initialGrade?: number
+  initialSubject?: string
+}
+
+export default function StudyGuideGenerator({ assignmentId, initialTopic, initialGrade, initialSubject }: Props) {
+  const [topic, setTopic] = useState(initialTopic ?? '')
+  const [subject, setSubject] = useState(initialSubject ?? '')
+  const [grade, setGrade] = useState<number | null>(initialGrade ?? null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [guide, setGuide] = useState<StudyGuide | null>(null)
   const [openAnswers, setOpenAnswers] = useState<Set<number>>(new Set())
+
+  const [xpEarned, setXpEarned] = useState<number | null>(null)
+  const submittedRef = useRef(false)
+
+  // Auto-submit when guide is shown
+  useEffect(() => {
+    if (guide && assignmentId && !submittedRef.current) {
+      submittedRef.current = true
+      submitAssignment(assignmentId).then(res => {
+        if (res) setXpEarned(res.xpEarned)
+      })
+    }
+  }, [guide, assignmentId])
+
+  // Auto-generate if coming from an assignment with a pre-filled topic
+  useEffect(() => {
+    if (assignmentId && initialTopic && !guide && !loading) {
+      handleGenerate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleGenerate() {
     if (!topic.trim()) { setError('Enter a topic first.'); return }
@@ -54,6 +83,19 @@ export default function StudyGuideGenerator() {
   if (guide) {
     return (
       <div className="space-y-4">
+        {assignmentId && (
+          <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-white font-semibold text-sm">Quest Complete! ✨</p>
+              <p className="text-indigo-200 text-xs">{xpEarned != null ? `+${xpEarned} XP earned` : 'Submitting…'}</p>
+            </div>
+            <button onClick={() => { window.location.href = '/classroom/student' }}
+              className="bg-white text-indigo-600 text-xs font-bold px-4 py-2 rounded-xl whitespace-nowrap hover:bg-indigo-50 transition-colors shrink-0">
+              Back to Dashboard →
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="bg-oxford rounded-2xl px-6 py-5 text-white">
           <p className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-1">Study Guide{grade ? ` · Grade ${grade}` : ''}</p>
@@ -116,7 +158,7 @@ export default function StudyGuideGenerator() {
           ))}
         </div>
 
-        <button onClick={() => { setGuide(null); setTopic(''); setSubject(''); setGrade(null) }}
+        <button onClick={() => { setGuide(null); setTopic(initialTopic ?? ''); setSubject(initialSubject ?? ''); setGrade(initialGrade ?? null); submittedRef.current = false; setXpEarned(null) }}
           className="w-full py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
           New Study Guide
         </button>

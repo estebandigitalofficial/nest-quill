@@ -1,19 +1,47 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { submitAssignment } from '@/lib/utils/submitAssignment'
 
 interface Card { front: string; back: string }
 type Stage = 'form' | 'loading' | 'study' | 'done'
 
-export default function FlashcardGenerator() {
-  const [topic, setTopic] = useState('')
-  const [grade, setGrade] = useState<number | null>(null)
+interface Props {
+  assignmentId?: string
+  initialTopic?: string
+  initialGrade?: number
+}
+
+export default function FlashcardGenerator({ assignmentId, initialTopic, initialGrade }: Props) {
+  const [topic, setTopic] = useState(initialTopic ?? '')
+  const [grade, setGrade] = useState<number | null>(initialGrade ?? null)
   const [error, setError] = useState<string | null>(null)
   const [stage, setStage] = useState<Stage>('form')
   const [cards, setCards] = useState<Card[]>([])
   const [current, setCurrent] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [known, setKnown] = useState<boolean[]>([])
+
+  const [xpEarned, setXpEarned] = useState<number | null>(null)
+  const submittedRef = useRef(false)
+
+  // Auto-generate if coming from an assignment with a pre-filled topic
+  useEffect(() => {
+    if (assignmentId && initialTopic && stage === 'form') {
+      handleGenerate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Auto-submit when done stage appears
+  useEffect(() => {
+    if (stage === 'done' && assignmentId && !submittedRef.current) {
+      submittedRef.current = true
+      submitAssignment(assignmentId).then(result => {
+        if (result) setXpEarned(result.xpEarned)
+      })
+    }
+  }, [stage, assignmentId])
 
   async function handleGenerate() {
     if (!topic.trim()) { setError('Enter a topic first.'); return }
@@ -43,7 +71,7 @@ export default function FlashcardGenerator() {
   }
 
   function reset() {
-    setTopic(''); setGrade(null); setStage('form'); setCards([]); setError(null)
+    setTopic(initialTopic ?? ''); setGrade(initialGrade ?? null); setStage('form'); setCards([]); setError(null); submittedRef.current = false; setXpEarned(null)
   }
 
   const card = cards[current]
@@ -146,6 +174,18 @@ export default function FlashcardGenerator() {
   if (stage === 'done') {
     return (
       <div className="space-y-4">
+        {assignmentId && (
+          <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-white font-semibold text-sm">Quest Complete! ✨</p>
+              <p className="text-indigo-200 text-xs">{xpEarned != null ? `+${xpEarned} XP earned` : 'Submitting…'}</p>
+            </div>
+            <button onClick={() => { window.location.href = '/classroom/student' }}
+              className="bg-white text-indigo-600 text-xs font-bold px-4 py-2 rounded-xl whitespace-nowrap hover:bg-indigo-50 transition-colors shrink-0">
+              Back to Dashboard →
+            </button>
+          </div>
+        )}
         <div className={`rounded-2xl px-6 py-6 text-center space-y-2 ${knownCount === cards.length ? 'bg-yellow-50 border border-yellow-200' : 'bg-indigo-50 border border-indigo-200'}`}>
           <div className="text-4xl mb-1">{knownCount === cards.length ? '🏆' : '📚'}</div>
           <p className="text-2xl font-bold text-gray-900">{knownCount} / {cards.length}</p>

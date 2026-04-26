@@ -6,10 +6,13 @@ import MathPractice from './MathPractice'
 
 export const metadata: Metadata = { title: 'Math Practice — Nest & Quill Learning Mode' }
 
-export default function MathPage() {
+type PageProps = { searchParams: Promise<{ assignmentId?: string; topic?: string; grade?: string }> }
+
+export default async function MathPage({ searchParams }: PageProps) {
+  const { assignmentId, topic, grade } = await searchParams
   return (
     <div className="h-dvh bg-parchment flex flex-col">
-      <SiteHeader right={<Link href="/learning" className="text-sm text-charcoal-light hover:text-oxford">← Learning Mode</Link>} />
+      <SiteHeader right={<Link href={assignmentId ? '/classroom/student' : '/learning'} className="text-sm text-charcoal-light hover:text-oxford">{assignmentId ? '← Dashboard' : '← Learning Mode'}</Link>} />
       <div className="flex-1 overflow-y-auto py-10 px-4">
         <div className="max-w-xl mx-auto">
           <div className="text-center mb-8 space-y-2">
@@ -17,7 +20,7 @@ export default function MathPage() {
             <h1 className="font-serif text-3xl text-oxford">Math Practice</h1>
             <p className="text-sm text-charcoal-light max-w-sm mx-auto">Pick a topic and grade, get 8 practice problems with step-by-step solutions revealed after each answer.</p>
           </div>
-          <MathPractice />
+          <MathPractice assignmentId={assignmentId} initialTopic={topic} initialGrade={grade ? parseInt(grade) : undefined} />
         </div>
       </div>
       <SiteFooter />

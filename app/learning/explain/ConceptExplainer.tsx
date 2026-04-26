@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { submitAssignment } from '@/lib/utils/submitAssignment'
 
 interface Explanation {
   summary: string
@@ -10,12 +11,39 @@ interface Explanation {
   try_this: string
 }
 
-export default function ConceptExplainer() {
-  const [topic, setTopic] = useState('')
-  const [grade, setGrade] = useState<number | null>(null)
+interface Props {
+  assignmentId?: string
+  initialTopic?: string
+  initialGrade?: number
+}
+
+export default function ConceptExplainer({ assignmentId, initialTopic, initialGrade }: Props) {
+  const [topic, setTopic] = useState(initialTopic ?? '')
+  const [grade, setGrade] = useState<number | null>(initialGrade ?? null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<Explanation | null>(null)
+
+  const [xpEarned, setXpEarned] = useState<number | null>(null)
+  const submittedRef = useRef(false)
+
+  // Auto-submit when explanation is shown
+  useEffect(() => {
+    if (result && assignmentId && !submittedRef.current) {
+      submittedRef.current = true
+      submitAssignment(assignmentId).then(res => {
+        if (res) setXpEarned(res.xpEarned)
+      })
+    }
+  }, [result, assignmentId])
+
+  // Auto-explain if coming from an assignment with a pre-filled topic
+  useEffect(() => {
+    if (assignmentId && initialTopic && !result && !loading) {
+      handleExplain()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleExplain() {
     if (!topic.trim()) { setError('Enter a topic first.'); return }
@@ -67,6 +95,19 @@ export default function ConceptExplainer() {
 
       {result && (
         <div className="space-y-3">
+          {assignmentId && (
+            <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-white font-semibold text-sm">Quest Complete! ✨</p>
+                <p className="text-indigo-200 text-xs">{xpEarned != null ? `+${xpEarned} XP earned` : 'Submitting…'}</p>
+              </div>
+              <button onClick={() => { window.location.href = '/classroom/student' }}
+                className="bg-white text-indigo-600 text-xs font-bold px-4 py-2 rounded-xl whitespace-nowrap hover:bg-indigo-50 transition-colors shrink-0">
+                Back to Dashboard →
+              </button>
+            </div>
+          )}
+
           {/* Summary */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5 space-y-2">
             <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest">The Simple Version</p>
@@ -104,7 +145,7 @@ export default function ConceptExplainer() {
             <p className="text-sm text-gray-700 leading-relaxed">{result.try_this}</p>
           </div>
 
-          <button onClick={() => { setResult(null); setTopic(''); setGrade(null) }}
+          <button onClick={() => { setResult(null); setTopic(initialTopic ?? ''); setGrade(initialGrade ?? null); submittedRef.current = false; setXpEarned(null) }}
             className="w-full py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
             Explain Something Else
           </button>

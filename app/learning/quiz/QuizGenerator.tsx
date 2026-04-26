@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { submitAssignment } from '@/lib/utils/submitAssignment'
 
 const SUBJECTS = [
   { value: 'math', label: '➕ Math' },
@@ -25,10 +26,17 @@ interface GradeFeedback {
 
 type Stage = 'form' | 'loading' | 'quiz' | 'grading' | 'results'
 
-export default function QuizGenerator() {
-  const [topic, setTopic] = useState('')
-  const [subject, setSubject] = useState('')
-  const [grade, setGrade] = useState<number | null>(null)
+interface Props {
+  assignmentId?: string
+  initialTopic?: string
+  initialGrade?: number
+  initialSubject?: string
+}
+
+export default function QuizGenerator({ assignmentId, initialTopic, initialGrade, initialSubject }: Props) {
+  const [topic, setTopic] = useState(initialTopic ?? '')
+  const [subject, setSubject] = useState(initialSubject ?? '')
+  const [grade, setGrade] = useState<number | null>(initialGrade ?? null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageBase64, setImageBase64] = useState<string | null>(null)
   const [imageMime, setImageMime] = useState('image/jpeg')
@@ -48,6 +56,9 @@ export default function QuizGenerator() {
   const [tabWarning, setTabWarning] = useState(false)
   const tabViolationsRef = useRef(0)
 
+  const [xpEarned, setXpEarned] = useState<number | null>(null)
+  const submittedRef = useRef(false)
+
   // Detect tab switches / window blur during the quiz
   useEffect(() => {
     if (stage !== 'quiz') return
@@ -62,6 +73,14 @@ export default function QuizGenerator() {
       window.removeEventListener('blur', onHide)
     }
   }, [stage])
+
+  // Auto-generate if coming from an assignment with a pre-filled topic
+  useEffect(() => {
+    if (assignmentId && initialTopic && stage === 'form') {
+      handleGenerate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function handleImageSelect(file: File) {
     if (file.size > 5 * 1024 * 1024) { setError('Image must be under 5 MB.'); return }
@@ -129,6 +148,12 @@ export default function QuizGenerator() {
     setTotal(data.total)
     setFeedback(data.feedback)
     setStage('results')
+
+    if (assignmentId && !submittedRef.current) {
+      submittedRef.current = true
+      const result = await submitAssignment(assignmentId, { score: data.score, total: data.total, quizSessionId: sessionId ?? undefined })
+      if (result) setXpEarned(result.xpEarned)
+    }
   }
 
   function handleRetake() {
@@ -140,10 +165,10 @@ export default function QuizGenerator() {
   }
 
   function handleReset() {
-    setTopic(''); setSubject(''); setGrade(null); setError(null)
+    setTopic(initialTopic ?? ''); setSubject(initialSubject ?? ''); setGrade(initialGrade ?? null); setError(null)
     setStage('form'); setQuestions([]); setSelected([]); setScore(null)
     setTotal(null); setFeedback(null); setCurrentQ(0); setSessionId(null)
-    setQuizStartedAt(null)
+    setQuizStartedAt(null); submittedRef.current = false; setXpEarned(null)
     clearImage()
   }
 
@@ -321,6 +346,18 @@ export default function QuizGenerator() {
     const pct = score / total
     return (
       <div className="space-y-4">
+        {assignmentId && (
+          <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-white font-semibold text-sm">Quest Complete! ✨</p>
+              <p className="text-indigo-200 text-xs">{xpEarned != null ? `+${xpEarned} XP earned` : 'Submitting…'}</p>
+            </div>
+            <button onClick={() => { window.location.href = '/classroom/student' }}
+              className="bg-white text-indigo-600 text-xs font-bold px-4 py-2 rounded-xl whitespace-nowrap hover:bg-indigo-50 transition-colors shrink-0">
+              Back to Dashboard →
+            </button>
+          </div>
+        )}
         <div className={`rounded-2xl px-6 py-6 text-center space-y-1 ${pct === 1 ? 'bg-yellow-50 border border-yellow-200' : pct >= 0.8 ? 'bg-green-50 border border-green-200' : pct >= 0.6 ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 border border-gray-200'}`}>
           <div className="text-4xl mb-2">{pct === 1 ? '🏆' : pct >= 0.8 ? '⭐' : pct >= 0.6 ? '👏' : '📚'}</div>
           <p className="text-2xl font-bold text-gray-900">{score} / {total}</p>
@@ -346,7 +383,9 @@ export default function QuizGenerator() {
           <button onClick={handleRetake}
             className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-colors">Retake Quiz</button>
           <button onClick={handleReset} className="w-full py-3.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors">Try a New Topic</button>
-          <Link href="/create?mode=learning" className="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm text-center transition-colors block">Turn this into a Learning Story →</Link>
+          {!assignmentId && (
+            <Link href="/create?mode=learning" className="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm text-center transition-colors block">Turn this into a Learning Story →</Link>
+          )}
         </div>
       </div>
     )

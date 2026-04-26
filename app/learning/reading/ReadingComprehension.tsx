@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { submitAssignment } from '@/lib/utils/submitAssignment'
 
 interface Question {
   question: string
@@ -11,7 +12,11 @@ interface Question {
 
 type Stage = 'form' | 'loading' | 'quiz' | 'results'
 
-export default function ReadingComprehension() {
+interface Props {
+  assignmentId?: string
+}
+
+export default function ReadingComprehension({ assignmentId }: Props) {
   const [text, setText] = useState('')
   const [grade, setGrade] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -20,6 +25,19 @@ export default function ReadingComprehension() {
   const [currentQ, setCurrentQ] = useState(0)
   const [selected, setSelected] = useState<(number | null)[]>([])
   const [score, setScore] = useState<number | null>(null)
+
+  const [xpEarned, setXpEarned] = useState<number | null>(null)
+  const submittedRef = useRef(false)
+
+  // Auto-submit when results appear
+  useEffect(() => {
+    if (stage === 'results' && score !== null && assignmentId && !submittedRef.current) {
+      submittedRef.current = true
+      submitAssignment(assignmentId, { score, total: questions.length }).then(result => {
+        if (result) setXpEarned(result.xpEarned)
+      })
+    }
+  }, [stage, score, assignmentId, questions.length])
 
   async function handleGenerate() {
     if (!text.trim() || text.trim().length < 50) { setError('Please paste at least a paragraph of text.'); return }
@@ -43,7 +61,10 @@ export default function ReadingComprehension() {
     setStage('results')
   }
 
-  function reset() { setStage('form'); setText(''); setGrade(null); setError(null); setQuestions([]); setSelected([]); setScore(null) }
+  function reset() {
+    setStage('form'); setText(''); setGrade(null); setError(null); setQuestions([]); setSelected([]); setScore(null)
+    submittedRef.current = false; setXpEarned(null)
+  }
 
   const q = questions[currentQ]
   const allAnswered = selected.every(s => s !== null)
@@ -149,6 +170,18 @@ export default function ReadingComprehension() {
     const pct = score / questions.length
     return (
       <div className="space-y-4">
+        {assignmentId && (
+          <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-white font-semibold text-sm">Quest Complete! ✨</p>
+              <p className="text-indigo-200 text-xs">{xpEarned != null ? `+${xpEarned} XP earned` : 'Submitting…'}</p>
+            </div>
+            <button onClick={() => { window.location.href = '/classroom/student' }}
+              className="bg-white text-indigo-600 text-xs font-bold px-4 py-2 rounded-xl whitespace-nowrap hover:bg-indigo-50 transition-colors shrink-0">
+              Back to Dashboard →
+            </button>
+          </div>
+        )}
         <div className={`rounded-2xl px-6 py-6 text-center space-y-1 ${pct === 1 ? 'bg-yellow-50 border border-yellow-200' : pct >= 0.8 ? 'bg-green-50 border border-green-200' : 'bg-indigo-50 border border-indigo-200'}`}>
           <div className="text-4xl mb-2">{pct === 1 ? '🏆' : pct >= 0.8 ? '⭐' : '📖'}</div>
           <p className="text-2xl font-bold text-gray-900">{score} / {questions.length}</p>

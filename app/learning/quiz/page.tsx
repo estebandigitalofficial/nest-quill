@@ -9,11 +9,16 @@ export const metadata: Metadata = {
   description: 'Enter any topic and instantly generate a 5-question quiz for grades 1–8. Auto-graded with explanations.',
 }
 
-export default function QuizPage() {
+type PageProps = { searchParams: Promise<{ assignmentId?: string; topic?: string; grade?: string; subject?: string }> }
+
+export default async function QuizPage({ searchParams }: PageProps) {
+  const { assignmentId, topic, grade, subject } = await searchParams
   return (
     <div className="h-dvh bg-parchment flex flex-col">
       <SiteHeader right={
-        <Link href="/learning" className="text-sm text-charcoal-light hover:text-oxford">← Learning Mode</Link>
+        <Link href={assignmentId ? '/classroom/student' : '/learning'} className="text-sm text-charcoal-light hover:text-oxford">
+          {assignmentId ? '← Dashboard' : '← Learning Mode'}
+        </Link>
       } />
       <div className="flex-1 overflow-y-auto py-10 px-4">
         <div className="max-w-xl mx-auto">
@@ -24,7 +29,12 @@ export default function QuizPage() {
               Enter any topic or paste homework content. We&apos;ll generate a 5-question quiz at exactly their grade level — instantly.
             </p>
           </div>
-          <QuizGenerator />
+          <QuizGenerator
+            assignmentId={assignmentId}
+            initialTopic={topic}
+            initialGrade={grade ? parseInt(grade) : undefined}
+            initialSubject={subject}
+          />
         </div>
       </div>
       <SiteFooter />

@@ -6,10 +6,13 @@ import StudyGuideGenerator from './StudyGuideGenerator'
 
 export const metadata: Metadata = { title: 'Study Guide — Nest & Quill Learning Mode' }
 
-export default function StudyGuidePage() {
+type PageProps = { searchParams: Promise<{ assignmentId?: string; topic?: string; grade?: string; subject?: string }> }
+
+export default async function StudyGuidePage({ searchParams }: PageProps) {
+  const { assignmentId, topic, grade, subject } = await searchParams
   return (
     <div className="h-dvh bg-parchment flex flex-col">
-      <SiteHeader right={<Link href="/learning" className="text-sm text-charcoal-light hover:text-oxford">← Learning Mode</Link>} />
+      <SiteHeader right={<Link href={assignmentId ? '/classroom/student' : '/learning'} className="text-sm text-charcoal-light hover:text-oxford">{assignmentId ? '← Dashboard' : '← Learning Mode'}</Link>} />
       <div className="flex-1 overflow-y-auto py-10 px-4">
         <div className="max-w-xl mx-auto">
           <div className="text-center mb-8 space-y-2">
@@ -17,7 +20,7 @@ export default function StudyGuidePage() {
             <h1 className="font-serif text-3xl text-oxford">Study Guide</h1>
             <p className="text-sm text-charcoal-light max-w-sm mx-auto">Enter a topic and get a complete study guide — key terms, main concepts, memory tips, and practice questions.</p>
           </div>
-          <StudyGuideGenerator />
+          <StudyGuideGenerator assignmentId={assignmentId} initialTopic={topic} initialGrade={grade ? parseInt(grade) : undefined} initialSubject={subject} />
         </div>
       </div>
       <SiteFooter />
