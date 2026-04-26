@@ -3,14 +3,25 @@
 import { useState, useEffect } from 'react'
 
 const TOOLS = [
-  { value: 'quiz', label: '🧠 Quiz', hasScore: true },
-  { value: 'flashcards', label: '🃏 Flashcards', hasScore: false },
-  { value: 'explain', label: '💡 Concept Explainer', hasScore: false },
-  { value: 'study-guide', label: '📋 Study Guide', hasScore: false },
-  { value: 'math', label: '🔢 Math Practice', hasScore: false },
-  { value: 'reading', label: '📖 Reading Comprehension', hasScore: false },
-  { value: 'spelling', label: '✏️ Spelling Practice', hasScore: false },
+  { value: 'quiz',         label: 'Quiz',                  emoji: '🧠', hasScore: true },
+  { value: 'flashcards',   label: 'Flashcards',            emoji: '🃏', hasScore: false },
+  { value: 'explain',      label: 'Concept Explainer',     emoji: '💡', hasScore: false },
+  { value: 'study-guide',  label: 'Study Guide',           emoji: '📋', hasScore: false },
+  { value: 'math',         label: 'Math Practice',         emoji: '🔢', hasScore: false },
+  { value: 'reading',      label: 'Reading',               emoji: '📖', hasScore: false },
+  { value: 'spelling',     label: 'Spelling',              emoji: '✏️', hasScore: false },
 ]
+
+const COLOR_BG: Record<string, string> = {
+  indigo:  'bg-indigo-500',
+  violet:  'bg-violet-500',
+  rose:    'bg-rose-500',
+  amber:   'bg-amber-500',
+  emerald: 'bg-emerald-500',
+  sky:     'bg-sky-500',
+  orange:  'bg-orange-500',
+  pink:    'bg-pink-500',
+}
 
 interface StudentProfile {
   display_name: string
@@ -78,6 +89,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
   const [aTopic, setATopic] = useState('')
   const [aGrade, setAGrade] = useState<number | ''>('')
   const [aDue, setADue] = useState('')
+  const [showMoreOpts, setShowMoreOpts] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [assignError, setAssignError] = useState<string | null>(null)
 
@@ -113,7 +125,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
     if (!res.ok) { setAssignError(data.message); setAssigning(false); return }
     setAssignments(prev => [{ ...data.assignment, assignment_submissions: [] }, ...prev])
     setATitle(''); setATool('quiz'); setATopic(''); setAGrade(''); setADue('')
-    setShowAssign(false); setAssigning(false)
+    setShowMoreOpts(false); setShowAssign(false); setAssigning(false)
   }
 
   function copyCode() {
@@ -138,7 +150,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="bg-white rounded-2xl border border-gray-100 px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-serif text-2xl text-oxford">{classroom.name}</h1>
@@ -159,7 +171,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* ── Tabs ── */}
       <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
         {(['assignments', 'students'] as const).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
@@ -169,44 +181,71 @@ export default function ClassDetail({ classId }: { classId: string }) {
         ))}
       </div>
 
-      {/* Assignments tab */}
+      {/* ── Assignments tab ── */}
       {activeTab === 'assignments' && (
         <div className="space-y-4">
-          <div className="flex justify-end">
-            <button onClick={() => setShowAssign(v => !v)}
-              className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors">
-              + New Assignment
-            </button>
-          </div>
 
-          {showAssign && (
-            <form onSubmit={handleAssign} className="bg-white rounded-2xl border-2 border-brand-200 px-6 py-6 space-y-4">
-              <p className="font-semibold text-oxford">Create assignment</p>
-              <input required placeholder="Assignment title (e.g. Fractions Quiz)" value={aTitle}
-                onChange={e => setATitle(e.target.value)} className={inputClass} />
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-gray-600">Learning Tool</label>
-                  <select value={aTool} onChange={e => setATool(e.target.value)} className={inputClass}>
-                    {TOOLS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-gray-600">Grade (optional)</label>
-                  <select value={aGrade} onChange={e => setAGrade(e.target.value ? Number(e.target.value) : '')} className={inputClass}>
-                    <option value="">Any grade</option>
-                    {[1,2,3,4,5,6,7,8].map(g => <option key={g} value={g}>Grade {g}</option>)}
-                  </select>
+          {/* New assignment form */}
+          {showAssign ? (
+            <form onSubmit={handleAssign} className="bg-white rounded-2xl border-2 border-brand-200 px-6 py-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-oxford">New assignment</p>
+                <button type="button" onClick={() => setShowAssign(false)}
+                  className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+              </div>
+
+              <input required autoFocus
+                placeholder="Assignment title — e.g. Fractions Quiz"
+                value={aTitle} onChange={e => setATitle(e.target.value)}
+                className={inputClass} />
+
+              {/* Tool picker */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-600">Learning tool</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {TOOLS.map(t => (
+                    <button key={t.value} type="button" onClick={() => setATool(t.value)}
+                      className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border text-center transition-all ${
+                        aTool === t.value
+                          ? 'border-brand-400 bg-brand-50 text-brand-700'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                      }`}>
+                      <span className="text-xl">{t.emoji}</span>
+                      <span className="text-[10px] font-semibold leading-tight">{t.label}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
-              <input placeholder="Topic (e.g. Adding fractions with unlike denominators)" value={aTopic}
-                onChange={e => setATopic(e.target.value)} className={inputClass} />
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-gray-600">Due date (optional)</label>
-                <input type="datetime-local" value={aDue} onChange={e => setADue(e.target.value)} className={inputClass} />
-              </div>
+
+              <input placeholder="Topic (e.g. Adding fractions with unlike denominators)"
+                value={aTopic} onChange={e => setATopic(e.target.value)}
+                className={inputClass} />
+
+              {/* More options toggle */}
+              <button type="button" onClick={() => setShowMoreOpts(v => !v)}
+                className="text-xs text-gray-400 hover:text-gray-600 font-medium transition-colors">
+                {showMoreOpts ? '▲ Fewer options' : '▼ More options (grade, due date)'}
+              </button>
+
+              {showMoreOpts && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-gray-600">Grade</label>
+                    <select value={aGrade} onChange={e => setAGrade(e.target.value ? Number(e.target.value) : '')} className={inputClass}>
+                      <option value="">Any grade</option>
+                      {[1,2,3,4,5,6,7,8].map(g => <option key={g} value={g}>Grade {g}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-gray-600">Due date</label>
+                    <input type="datetime-local" value={aDue} onChange={e => setADue(e.target.value)} className={inputClass} />
+                  </div>
+                </div>
+              )}
+
               {assignError && <p className="text-sm text-red-500">{assignError}</p>}
-              <div className="flex gap-3">
+
+              <div className="flex gap-3 pt-1">
                 <button type="submit" disabled={assigning || !aTitle.trim()}
                   className="bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
                   {assigning ? 'Assigning…' : 'Assign to Class'}
@@ -217,8 +256,14 @@ export default function ClassDetail({ classId }: { classId: string }) {
                 </button>
               </div>
             </form>
+          ) : (
+            <button onClick={() => setShowAssign(true)}
+              className="w-full bg-white hover:bg-brand-50 border-2 border-dashed border-gray-200 hover:border-brand-300 text-brand-500 hover:text-brand-600 text-sm font-semibold py-3.5 rounded-2xl transition-all">
+              + New Assignment
+            </button>
           )}
 
+          {/* Assignment list */}
           {assignments.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 px-8 py-12 text-center space-y-3">
               <div className="text-4xl">📋</div>
@@ -228,40 +273,60 @@ export default function ClassDetail({ classId }: { classId: string }) {
           ) : (
             <div className="space-y-3">
               {assignments.map(a => {
-                const completed = a.assignment_submissions.filter(s => s.status === 'complete').length
+                const completedCount = a.assignment_submissions.filter(s => s.status === 'complete').length
+                const total = members.length
+                const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0
                 const tool = TOOLS.find(t => t.value === a.tool)
-                const avgScore = tool?.hasScore
+                const scoredSubs = tool?.hasScore
                   ? a.assignment_submissions.filter(s => s.score !== null && s.total)
-                    .map(s => Math.round(((s.score ?? 0) / (s.total ?? 1)) * 100))
                   : []
-                const avg = avgScore.length ? Math.round(avgScore.reduce((a, b) => a + b, 0) / avgScore.length) : null
+                const avg = scoredSubs.length
+                  ? Math.round(scoredSubs.reduce((sum, s) => sum + ((s.score ?? 0) / (s.total ?? 1)), 0) / scoredSubs.length * 100)
+                  : null
+                const allDone = total > 0 && completedCount === total
                 const isOverdue = a.due_at && new Date(a.due_at) < new Date()
 
                 return (
-                  <div key={a.id} className="bg-white rounded-2xl border border-gray-100 px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-4 min-w-0">
-                      <span className="text-2xl shrink-0">{tool?.label.split(' ')[0]}</span>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-oxford text-sm truncate">{a.title}</p>
-                        <p className="text-xs text-charcoal-light mt-0.5">
-                          {tool?.label.slice(2)} {a.config?.topic ? `· ${a.config.topic}` : ''}
-                          {a.due_at && <span className={isOverdue ? ' · text-red-500' : ''}> · Due {new Date(a.due_at).toLocaleDateString()}</span>}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 shrink-0">
-                      <div className="text-center">
-                        <p className="text-base font-bold text-oxford">{completed}/{members.length}</p>
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Done</p>
-                      </div>
-                      {avg !== null && (
-                        <div className="text-center">
-                          <p className="text-base font-bold text-oxford">{avg}%</p>
-                          <p className="text-[10px] text-gray-400 uppercase tracking-wide">Avg Score</p>
+                  <div key={a.id} className="bg-white rounded-2xl border border-gray-100 px-6 py-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="text-2xl shrink-0">{tool?.emoji ?? '📚'}</span>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-oxford text-sm truncate">{a.title}</p>
+                          <p className="text-xs text-charcoal-light mt-0.5 truncate">
+                            {tool?.label}{a.config?.topic ? ` · ${a.config.topic}` : ''}
+                            {a.due_at && (
+                              <span className={isOverdue ? ' · text-red-500 font-medium' : ' · text-gray-400'}>
+                                {' '}· Due {new Date(a.due_at).toLocaleDateString()}
+                              </span>
+                            )}
+                          </p>
                         </div>
-                      )}
-                      <div className={`w-2 h-2 rounded-full ${completed === members.length && members.length > 0 ? 'bg-green-400' : 'bg-amber-400'}`} />
+                      </div>
+                      <div className="flex items-center gap-5 shrink-0">
+                        <div className="text-center">
+                          <p className={`text-base font-bold ${allDone ? 'text-green-600' : 'text-oxford'}`}>
+                            {completedCount}/{total}
+                          </p>
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wide">Done</p>
+                        </div>
+                        {avg !== null && (
+                          <div className="text-center">
+                            <p className="text-base font-bold text-oxford">{avg}%</p>
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Avg Score</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    {/* Completion progress bar */}
+                    {total > 0 && (
+                      <div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${allDone ? 'bg-green-400' : 'bg-brand-400'}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -270,14 +335,16 @@ export default function ClassDetail({ classId }: { classId: string }) {
         </div>
       )}
 
-      {/* Students tab */}
+      {/* ── Students tab ── */}
       {activeTab === 'students' && (
         <div className="space-y-3">
           {members.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 px-8 py-12 text-center space-y-3">
               <div className="text-4xl">🎒</div>
               <p className="font-semibold text-oxford">No students yet</p>
-              <p className="text-sm text-charcoal-light">Share the join code <span className="font-mono font-bold text-oxford">{classroom.join_code}</span> with your students.</p>
+              <p className="text-sm text-charcoal-light">
+                Share the join code <span className="font-mono font-bold text-oxford">{classroom.join_code}</span> with your students.
+              </p>
             </div>
           ) : (
             members.map(m => {
@@ -293,17 +360,10 @@ export default function ClassDetail({ classId }: { classId: string }) {
               const avgPct = quizSubs.length
                 ? Math.round(quizSubs.reduce((acc, s) => acc + (s.score! / s.total!), 0) / quizSubs.length * 100)
                 : null
-
-              const COLOR_BG: Record<string, string> = {
-                indigo: 'bg-indigo-500', violet: 'bg-violet-500', rose: 'bg-rose-500',
-                amber: 'bg-amber-500', emerald: 'bg-emerald-500', sky: 'bg-sky-500',
-                orange: 'bg-orange-500', pink: 'bg-pink-500',
-              }
               const avatarBg = sp ? (COLOR_BG[sp.avatar_color] ?? 'bg-indigo-500') : 'bg-gray-200'
 
               return (
                 <div key={m.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4 space-y-3">
-                  {/* Top row: avatar + name + stats */}
                   <div className="flex items-center gap-4">
                     <div className={`w-11 h-11 ${avatarBg} rounded-xl flex items-center justify-center text-2xl shrink-0`}>
                       {sp?.avatar_emoji ?? '🎒'}
@@ -332,17 +392,13 @@ export default function ClassDetail({ classId }: { classId: string }) {
                     </div>
                   </div>
 
-                  {/* XP bar */}
                   {sp && (
                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-indigo-400 to-violet-400 rounded-full"
-                        style={{ width: `${Math.min(100, (sp.xp % 500) / 5)}%` }}
-                      />
+                      <div className="h-full bg-gradient-to-r from-indigo-400 to-violet-400 rounded-full"
+                        style={{ width: `${Math.min(100, (sp.xp % 500) / 5)}%` }} />
                     </div>
                   )}
 
-                  {/* Badges */}
                   {m.student_badges.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {m.student_badges.map(b => (
