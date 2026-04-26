@@ -203,8 +203,8 @@ const STEPS = [
   },
   {
     emoji: '📖',
-    title: 'Read & download',
-    description: 'Your finished storybook is ready to read online and download as a full PDF.',
+    title: 'Read & share',
+    description: 'Your finished storybook is ready to read online and share instantly. Download the full PDF on paid plans.',
   },
 ]
 
@@ -261,7 +261,7 @@ const PREVIEW_FEATURES = [
   {
     emoji: '📄',
     title: 'Full PDF download',
-    description: 'Download and keep your story forever. Print at home or at any print shop.',
+    description: 'Download and keep your story forever. Print at home or at any print shop. Included on all paid plans.',
   },
   {
     emoji: '🧒',
