@@ -5,12 +5,17 @@ interface ProfileData {
   level: number
 }
 
+interface AssignmentConfig {
+  topic?: string
+  grade?: number
+  subject?: string
+}
+
 interface AssignmentData {
   id: string
   tool: string
   classroom_id: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config: any
+  config: AssignmentConfig | null
 }
 
 async function triggerPipeline(requestId: string): Promise<void> {

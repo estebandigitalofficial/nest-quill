@@ -101,8 +101,11 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       .from('student_badges')
       .select('badges(slug)')
       .eq('student_id', user.id)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const earned = new Set((earnedRows ?? []).map((r: any) => r.badges?.slug as string | undefined))
+    const earned = new Set(
+      (earnedRows ?? []).flatMap((r: { badges: { slug: string }[] | { slug: string } | null }) =>
+        Array.isArray(r.badges) ? r.badges.map(b => b.slug) : r.badges ? [r.badges.slug] : []
+      )
+    )
 
     // Get total completions for this student
     const { count: totalDone } = await admin

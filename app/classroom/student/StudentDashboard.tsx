@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import AvatarSetup from './AvatarSetup'
 import CelebrationModal from './CelebrationModal'
 import { levelProgress } from '@/lib/utils/xp'
@@ -56,7 +55,6 @@ interface StoryReward {
 }
 
 export default function StudentDashboard() {
-  const router = useRouter()
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [assignments, setAssignments] = useState<Assignment[]>([])

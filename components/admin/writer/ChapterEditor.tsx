@@ -159,12 +159,6 @@ export default function ChapterEditor({
     }
   }
 
-  async function deleteScene(sceneId: string) {
-    if (!confirm('Delete this scene?')) return
-    setScenes(prev => prev.filter(s => s.id !== sceneId))
-    // TODO: add DELETE route for scenes
-  }
-
   return (
     <div className="space-y-6">
       {/* Chapter header */}
