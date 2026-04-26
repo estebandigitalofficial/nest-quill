@@ -13,7 +13,7 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
     displayName: 'Free',
     pricingType: 'free',
     priceMonthly: 0,
-    cta: 'Try for free',
+    cta: 'Get started free',
     limits: {
       booksPerMonth: 1,
       maxPagesPerBook: 8,
@@ -24,10 +24,10 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
       illustrationStyleCount: 1,
     },
     features: [
-      '1 story (one-time trial)',
+      '1 story to try — no card needed',
       'Up to 8 pages',
-      'Watercolor style only',
-      'Watermarked PDF',
+      '1 illustration style',
+      'Read & share online',
       'Email delivery',
     ],
   },
@@ -37,7 +37,7 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
     displayName: 'Single Story',
     pricingType: 'one_time',
     priceMonthly: 7.99,
-    cta: 'Buy one story',
+    cta: 'Try free during beta',
     limits: {
       booksPerMonth: 1,
       maxPagesPerBook: 24,
@@ -63,7 +63,7 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
     pricingType: 'subscription',
     priceMonthly: 9.99,
     priceYearly: 99,
-    cta: 'Start Story Pack',
+    cta: 'Try free during beta',
     limits: {
       booksPerMonth: 3,
       maxPagesPerBook: 24,
@@ -89,7 +89,7 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
     pricingType: 'subscription',
     priceMonthly: 24.99,
     priceYearly: 249,
-    cta: 'Go Pro',
+    cta: 'Try free during beta',
     isPopular: true,
     limits: {
       booksPerMonth: 10,

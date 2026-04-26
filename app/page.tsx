@@ -39,8 +39,8 @@ export default async function HomePage() {
         <LearningStoriesSection />
         <HowItWorks />
         <SamplePreview />
-        <Pricing />
         <EducatorBanner />
+        <Pricing />
         <BottomCTA />
       </div>
       <SiteFooter />
@@ -121,7 +121,7 @@ function LearningStoriesSection() {
       <div className="max-w-4xl mx-auto relative text-center space-y-6">
         <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold px-3 py-1.5 rounded-full tracking-wide uppercase">
           <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse inline-block" />
-          New · Learning Mode
+          For Kids · Grades 1–8
         </div>
 
         <h2 className="font-serif text-4xl sm:text-5xl text-white leading-tight text-balance">
@@ -130,7 +130,7 @@ function LearningStoriesSection() {
         </h2>
 
         <p className="text-lg max-w-2xl mx-auto leading-relaxed" style={{ color: '#94a3b8' }}>
-          From personalized stories that teach school subjects to on-demand quizzes from any topic — Nest &amp; Quill brings learning to life for kids in grades 1–8.
+          Quizzes, flashcards, study guides, and more — built for grades 1–8. Use them at home or assign them to a class. Everything is auto-graded and free.
         </p>
 
         <div className="flex flex-wrap justify-center gap-3 pt-2">
@@ -146,11 +146,11 @@ function LearningStoriesSection() {
             href="/learning"
             className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-8 py-3.5 rounded-full text-base transition-all active:scale-[0.98] shadow-lg shadow-indigo-900/40"
           >
-            Explore Learning Mode →
+            Explore Learning Tools →
           </Link>
         </div>
 
-        <p className="text-xs" style={{ color: '#475569' }}>Free during beta · No account required</p>
+        <p className="text-xs" style={{ color: '#475569' }}>No account required · Works on any device</p>
       </div>
     </section>
   )
@@ -359,14 +359,14 @@ function EducatorBanner() {
       <div className="max-w-5xl mx-auto bg-oxford/5 border border-oxford/20 rounded-2xl px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-6">
         <div>
           <p className="text-xs font-bold text-oxford uppercase tracking-widest mb-1">For Educators</p>
-          <h3 className="font-serif text-xl text-oxford mb-1">Bring it all into the classroom.</h3>
+          <h3 className="font-serif text-xl text-oxford mb-1">A free teacher dashboard, ready today.</h3>
           <p className="text-sm text-charcoal max-w-md">
-            Classroom is free — create a class, assign quizzes and learning tools, and track every student&apos;s progress. Bulk story creation and class libraries coming soon.
+            Create a class, share a join code, and start assigning quizzes and learning tools in minutes. Track every student&apos;s progress and scores in one place. Free for teachers, always.
           </p>
         </div>
         <div className="shrink-0">
           <Link href="/classroom" className="inline-block bg-oxford hover:bg-oxford/90 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors">
-            Explore Classroom →
+            Try Classroom free →
           </Link>
         </div>
       </div>

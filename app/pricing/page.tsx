@@ -88,9 +88,9 @@ export default function PricingPage() {
           <div className="space-y-3">
             <div>
               <p className="text-xs font-bold text-brand-300 uppercase tracking-widest mb-1">For Educators</p>
-              <h3 className="font-serif text-xl text-white mb-1">Everything lives in Classroom.</h3>
+              <h3 className="font-serif text-xl text-white mb-1">Free classroom tools for teachers.</h3>
               <p className="text-sm text-parchment/70 max-w-md">
-                One place for your class — free tools today, more coming soon.
+                Assign quizzes, flashcards, and study guides to your class. Track completions and scores in real time. No paid plan required — free for teachers, always.
               </p>
             </div>
             <div className="grid sm:grid-cols-2 gap-x-8 gap-y-2">
@@ -141,6 +141,10 @@ const FAQ = [
   {
     q: 'Can I try it before paying?',
     a: 'Yes — the Free plan lets you create one 8-page story at no cost, no credit card required.',
+  },
+  {
+    q: 'Is Classroom free for teachers?',
+    a: 'Yes — all classroom tools are free: creating a class, sharing join codes, assigning learning tools, and tracking student progress. Paid educator plans with bulk story creation are coming soon.',
   },
   {
     q: 'What\'s included in the PDF download?',
