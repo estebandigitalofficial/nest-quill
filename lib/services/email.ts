@@ -514,6 +514,11 @@ export async function sendWelcomeEmail(toEmail: string): Promise<void> {
 }
 
 // ── Story error email ─────────────────────────────────────────────────────────
+// NOTE: This function is intentionally not called from Next.js routes.
+// Story failures are handled inside supabase/functions/process-story/index.ts,
+// which is a Deno Edge Function and cannot import from lib/. The error email is
+// sent inline there. This function exists as a type-safe reference and could be
+// used if a Node.js caller ever needs to send a failure notification directly.
 
 export async function sendStoryErrorEmail(opts: {
   toEmail: string

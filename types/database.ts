@@ -192,6 +192,7 @@ export interface DeliveryLog {
   export_id: string | null
   channel: DeliveryChannel
   status: DeliveryStatus
+  email_type: string | null
   recipient_email: string | null
   resend_message_id: string | null
   opened_at: string | null

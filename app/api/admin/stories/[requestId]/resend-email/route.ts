@@ -35,6 +35,9 @@ export async function POST(
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
 
+    // Intentional admin override — bypasses delivery_logs dedup by design.
+    // The user will receive another email even if one was already delivered.
+    // Use only when a user reports they did not receive their story email.
     await sendBookReadyEmail({
       toEmail: req.user_email,
       childName: req.child_name,

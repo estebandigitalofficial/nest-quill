@@ -781,11 +781,13 @@ Deno.serve(async (req) => {
 
     await log('pipeline_error', message, 'error')
 
-    // Notify the user their story failed
-    if (storyRequest?.user_email && storyRequest?.child_name) {
+    // Notify the user their story failed — only on first failure (retry_count === 0).
+    // Retries re-increment retry_count before re-queuing, so this guard prevents
+    // sending a second error email if the user hits retry and it fails again.
+    if (storyRequest?.user_email && storyRequest?.child_name && storyRequest?.retry_count === 0) {
       try {
         const retryUrl = `${APP_URL}/story/${requestId}`
-        await fetch('https://api.resend.com/emails', {
+        const errorEmailRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_API_KEY}` },
           body: JSON.stringify({
@@ -813,6 +815,23 @@ Deno.serve(async (req) => {
               </div>`,
           }),
         })
+
+        if (errorEmailRes.ok) {
+          const errorEmailJson = await errorEmailRes.json()
+          try {
+            await supabase.from('delivery_logs').insert({
+              request_id: requestId,
+              channel: 'email',
+              status: 'sent',
+              email_type: 'story_failed',
+              recipient_email: storyRequest.user_email,
+              resend_message_id: errorEmailJson.id ?? null,
+            })
+          } catch (logErr) {
+            const logMsg = logErr instanceof Error ? logErr.message : String(logErr)
+            await log('deliver', `Failed to write delivery_log for error email: ${logMsg}`, 'warning')
+          }
+        }
       } catch (_emailErr) {
         // Non-fatal — don't mask the original error
       }

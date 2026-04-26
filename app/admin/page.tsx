@@ -57,7 +57,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
   // ── Filtered stories table ────────────────────────────────────────────────
   let query = adminSupabase
     .from('story_requests')
-    .select('id, child_name, story_theme, plan_tier, status, progress_pct, user_email, created_at, last_error')
+    .select('id, child_name, story_theme, plan_tier, status, progress_pct, user_email, created_at, last_error, geo_city, geo_region, geo_country')
     .order('created_at', { ascending: false })
     .limit(100)
 
@@ -73,6 +73,41 @@ export default async function AdminPage({ searchParams }: PageProps) {
     .select('id, request_id, level, stage, message, created_at')
     .order('created_at', { ascending: false })
     .limit(30)
+
+  // ── Analytics: 24h overview ───────────────────────────────────────────────
+  const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+  const [
+    { count: totalUsers },
+    { count: stories24h },
+    { count: activeClassroomCount },
+    { count: assignmentsDone24h },
+    { count: failedStories24h },
+    { count: emailsSent24h },
+    { data: recentFailed },
+    { count: assignmentsToday },
+    { count: submissionsToday },
+    { data: emailTypeLogs },
+    { data: activeClassList },
+  ] = await Promise.all([
+    adminSupabase.from('profiles').select('id', { count: 'exact', head: true }),
+    adminSupabase.from('story_requests').select('id', { count: 'exact', head: true }).gte('created_at', cutoff24h),
+    adminSupabase.from('classrooms').select('id', { count: 'exact', head: true }).eq('is_active', true),
+    adminSupabase.from('assignment_submissions').select('id', { count: 'exact', head: true }).eq('status', 'complete').gte('completed_at', cutoff24h),
+    adminSupabase.from('story_requests').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('updated_at', cutoff24h),
+    adminSupabase.from('delivery_logs').select('id', { count: 'exact', head: true }).eq('status', 'sent').gte('created_at', cutoff24h),
+    adminSupabase.from('story_requests').select('id, child_name, user_email, last_error, updated_at').eq('status', 'failed').order('updated_at', { ascending: false }).limit(8),
+    adminSupabase.from('assignments').select('id', { count: 'exact', head: true }).gte('created_at', cutoff24h),
+    adminSupabase.from('assignment_submissions').select('id', { count: 'exact', head: true }).gte('started_at', cutoff24h),
+    adminSupabase.from('delivery_logs').select('email_type, status').eq('status', 'sent').gte('created_at', cutoff24h).limit(200),
+    adminSupabase.from('classrooms').select('id, name, grade, updated_at').eq('is_active', true).order('updated_at', { ascending: false }).limit(5),
+  ])
+
+  const emailBreakdown: Record<string, number> = {}
+  for (const log of (emailTypeLogs ?? [])) {
+    const key = (log as { email_type: string | null }).email_type ?? 'story_ready'
+    emailBreakdown[key] = (emailBreakdown[key] ?? 0) + 1
+  }
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -101,7 +136,20 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
 
-        {/* Stats */}
+        {/* Overview */}
+        <div>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Overview</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <StatCard label="Total users" value={totalUsers ?? 0} />
+            <StatCard label="Stories (24h)" value={stories24h ?? 0} />
+            <StatCard label="Active classrooms" value={activeClassroomCount ?? 0} />
+            <StatCard label="Assignments done (24h)" value={assignmentsDone24h ?? 0} color="green" />
+            <StatCard label="Failed stories (24h)" value={failedStories24h ?? 0} color={(failedStories24h ?? 0) > 0 ? 'red' : undefined} />
+            <StatCard label="Emails sent (24h)" value={emailsSent24h ?? 0} />
+          </div>
+        </div>
+
+        {/* All-time pipeline stats */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
           <StatCard label="Total stories" value={totalCount ?? 0} />
           <StatCard label="Complete" value={completeCount ?? 0} color="green" />
@@ -157,6 +205,112 @@ export default async function AdminPage({ searchParams }: PageProps) {
             </div>
           </div>
         )}
+
+        {/* Recent failures */}
+        {(recentFailed ?? []).length > 0 && (
+          <div>
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">
+              Recent failures
+            </h2>
+            <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
+                      <th className="text-left px-4 py-3">Child</th>
+                      <th className="text-left px-4 py-3 hidden sm:table-cell">Email</th>
+                      <th className="text-left px-4 py-3">Error</th>
+                      <th className="text-left px-4 py-3 hidden sm:table-cell">When</th>
+                      <th className="px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {(recentFailed as unknown as StoryRequest[]).map((story) => (
+                      <tr key={story.id} className="hover:bg-gray-800/50 transition-colors">
+                        <td className="px-4 py-3 font-medium text-white">{story.child_name}</td>
+                        <td className="px-4 py-3 text-gray-400 text-xs hidden sm:table-cell">{story.user_email}</td>
+                        <td className="px-4 py-3">
+                          <p className="text-red-400 text-xs max-w-[280px] truncate" title={story.last_error ?? ''}>
+                            {story.last_error ?? '—'}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell whitespace-nowrap">
+                          {formatAZTimeShort(story.updated_at!)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <Link href={`/admin/stories/${story.id}`} className="text-xs text-brand-400 hover:text-brand-300 font-medium">
+                              View →
+                            </Link>
+                            <AdminRetryButton requestId={story.id} />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Classroom + email 2-col grid */}
+        <div className="grid md:grid-cols-2 gap-6">
+
+          {/* Classroom snapshot */}
+          <div>
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">
+              Classroom (24 h)
+            </h2>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <StatCard label="Assignments created" value={assignmentsToday ?? 0} />
+              <StatCard label="Submissions" value={submissionsToday ?? 0} />
+            </div>
+            <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+              {(activeClassList ?? []).length === 0 ? (
+                <p className="px-4 py-6 text-center text-gray-600 text-sm">No active classrooms.</p>
+              ) : (
+                <ul className="divide-y divide-gray-800">
+                  {(activeClassList as unknown as { id: string; name: string; grade: number | null; updated_at: string }[]).map((cls) => (
+                    <li key={cls.id} className="px-4 py-3 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-white">{cls.name}</p>
+                        {cls.grade && <p className="text-xs text-gray-500">Grade {cls.grade}</p>}
+                      </div>
+                      <span className="text-xs text-gray-600 whitespace-nowrap shrink-0">
+                        {formatAZTimeShort(cls.updated_at)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          {/* Email activity */}
+          <div>
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">
+              Email activity (24 h)
+            </h2>
+            <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+              {Object.keys(emailBreakdown).length === 0 ? (
+                <p className="px-4 py-6 text-center text-gray-600 text-sm">No emails sent in the last 24 h.</p>
+              ) : (
+                <ul className="divide-y divide-gray-800">
+                  {Object.entries(emailBreakdown)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([type, count]) => (
+                      <li key={type} className="px-4 py-3 flex items-center justify-between">
+                        <span className="text-sm font-mono text-gray-300">{type}</span>
+                        <span className="text-sm font-bold text-white tabular-nums">{count}</span>
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+        </div>
 
         {/* Search + filter */}
         <div>
