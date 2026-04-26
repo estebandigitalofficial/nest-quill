@@ -13,7 +13,7 @@ export default async function HomePage() {
   return (
     <div className="h-dvh bg-parchment font-sans flex flex-col">
       <SiteHeader right={
-        <div className="flex items-center gap-4">
+        <>
           {user ? (
             <>
               <Link href="/account"
@@ -32,7 +32,7 @@ export default async function HomePage() {
             className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors">
             Create a story →
           </Link>
-        </div>
+        </>
       } />
       <div className="flex-1 overflow-y-auto">
         <Hero />

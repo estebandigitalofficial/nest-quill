@@ -190,7 +190,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
             <form onSubmit={handleAssign} className="bg-white rounded-2xl border-2 border-brand-200 px-6 py-5 space-y-4">
               <div className="flex items-center justify-between">
                 <p className="font-semibold text-oxford">New assignment</p>
-                <button type="button" onClick={() => setShowAssign(false)}
+                <button type="button" onClick={() => { setShowAssign(false); setShowMoreOpts(false) }}
                   className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
               </div>
 
@@ -202,7 +202,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
               {/* Tool picker */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-600">Learning tool</label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {TOOLS.map(t => (
                     <button key={t.value} type="button" onClick={() => setATool(t.value)}
                       className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border text-center transition-all ${
@@ -250,7 +250,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
                   className="bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
                   {assigning ? 'Assigning…' : 'Assign to Class'}
                 </button>
-                <button type="button" onClick={() => setShowAssign(false)}
+                <button type="button" onClick={() => { setShowAssign(false); setShowMoreOpts(false) }}
                   className="text-sm font-semibold text-gray-500 hover:text-gray-700 px-4 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
                   Cancel
                 </button>
