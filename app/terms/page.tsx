@@ -14,6 +14,7 @@ export default function TermsPage() {
         <div>
           <h1 className="font-serif text-4xl text-oxford mb-3">Terms of Service</h1>
           <p className="text-sm text-charcoal-light">Last updated: April 2025</p>
+          <p className="text-sm text-charcoal-light mt-1">Nest &amp; Quill is operated by Bright Tale Books.</p>
         </div>
 
         <Section title="Acceptance of terms">

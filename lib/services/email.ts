@@ -102,7 +102,7 @@ export async function sendBookReadyEmail(
 
   const resend = getResend()
   const { data, error } = await resend.emails.send({
-    from: 'Nest & Quill <stories@nestandquill.com>',
+    from: 'Nest & Quill by Bright Tale Books <stories@nestandquill.com>',
     to: toEmail,
     subject: `${childName}'s story is ready! 📖`,
     html,
@@ -200,7 +200,7 @@ export async function sendSubmissionConfirmationEmail(
 
   const resend = getResend()
   const { error } = await resend.emails.send({
-    from: 'Nest & Quill <stories@nestandquill.com>',
+    from: 'Nest & Quill by Bright Tale Books <stories@nestandquill.com>',
     to: toEmail,
     subject: `We're creating ${childName}'s story! 🖊️`,
     html,
@@ -214,7 +214,7 @@ export async function sendSubmissionConfirmationEmail(
 // ── Shared email shell ────────────────────────────────────────────────────────
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://nestandquill.com'
-const FROM = 'Nest & Quill <stories@nestandquill.com>'
+const FROM = 'Nest & Quill by Bright Tale Books <stories@nestandquill.com>'
 
 function emailShell(bodyContent: string): string {
   return `<!DOCTYPE html>
