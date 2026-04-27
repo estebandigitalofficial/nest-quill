@@ -7,7 +7,7 @@ import { sendWelcomeEmail } from '@/lib/services/email'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/account'
+  const nextParam = searchParams.get('next')
 
   if (code) {
     const supabase = await createClient()
@@ -33,7 +33,15 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      const redirectResponse = NextResponse.redirect(new URL(next, origin))
+      let dest = nextParam
+      if (!dest) {
+        const accountType = data.user.user_metadata?.account_type ?? 'parent'
+        dest = accountType === 'educator' ? '/classroom/educator'
+             : accountType === 'student'  ? '/classroom/student'
+             : '/account'
+      }
+
+      const redirectResponse = NextResponse.redirect(new URL(dest, origin))
       if (guestToken) {
         redirectResponse.cookies.set('guest_token', '', { maxAge: 0, path: '/' })
       }
