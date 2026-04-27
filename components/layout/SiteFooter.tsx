@@ -4,8 +4,11 @@ export default function SiteFooter() {
   return (
     <footer className="bg-oxford-dark py-10 px-6">
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-parchment/50">
-        <p className="font-serif text-parchment font-semibold">Nest &amp; Quill</p>
-        <p>© {new Date().getFullYear()} Bright Tale Books. Nest &amp; Quill is a product of Bright Tale Books.</p>
+        <div className="text-center sm:text-left">
+          <p className="font-serif text-parchment font-semibold">Nest &amp; Quill</p>
+          <p className="text-xs text-parchment/40 mt-0.5">A product of Bright Tale Books</p>
+        </div>
+        <p>© {new Date().getFullYear()} Bright Tale Books</p>
         <div className="flex flex-wrap justify-center gap-5">
           <Link href="/create" className="hover:text-parchment transition-colors">Create</Link>
           <Link href="/learning" className="hover:text-parchment transition-colors">Learning</Link>
