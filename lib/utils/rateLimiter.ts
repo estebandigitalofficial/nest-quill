@@ -3,13 +3,15 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // Limits per route per IP within a sliding 1-hour window
 const LIMITS: Record<string, number> = {
-  quiz:        10,
-  flashcards:  20,
-  explain:     20,
-  'study-guide': 15,
-  math:        20,
-  reading:     20,
-  default:     20,
+  quiz:           10,
+  flashcards:     20,
+  explain:        20,
+  'study-guide':  15,
+  math:           20,
+  reading:        20,
+  'study-helper':            10,
+  'study-helper-assignment': 60,
+  default:                   20,
 }
 
 export async function checkLearningRateLimit(

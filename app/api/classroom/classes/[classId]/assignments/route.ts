@@ -32,8 +32,22 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     if (!title?.trim()) return NextResponse.json({ message: 'Title is required.' }, { status: 400 })
-    const validTools = ['quiz', 'flashcards', 'explain', 'study-guide', 'math', 'reading', 'spelling']
+    const validTools = ['quiz', 'flashcards', 'explain', 'study-guide', 'math', 'reading', 'spelling', 'study-helper']
     if (!validTools.includes(tool)) return NextResponse.json({ message: 'Invalid tool.' }, { status: 400 })
+
+    if (tool === 'study-helper') {
+      const mat = config?.material as string | undefined
+      const validModes = ['quiz', 'flashcards', 'explain', 'study-guide']
+      if (!mat || mat.trim().length < 50) {
+        return NextResponse.json({ message: 'Material must be at least 50 characters.' }, { status: 400 })
+      }
+      if (mat.length > 5000) {
+        return NextResponse.json({ message: 'Material must be 5000 characters or fewer.' }, { status: 400 })
+      }
+      if (!validModes.includes(config?.mode as string)) {
+        return NextResponse.json({ message: 'Invalid activity mode.' }, { status: 400 })
+      }
+    }
 
     const { data, error } = await admin
       .from('assignments')

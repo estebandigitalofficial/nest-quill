@@ -6,13 +6,18 @@ import CelebrationModal from './CelebrationModal'
 import { levelProgress } from '@/lib/utils/xp'
 
 const TOOL_META: Record<string, { emoji: string; label: string; path: string }> = {
-  quiz:          { emoji: '🧠', label: 'Quiz',                  path: '/learning/quiz' },
-  flashcards:    { emoji: '🃏', label: 'Flashcards',            path: '/learning/flashcards' },
-  explain:       { emoji: '💡', label: 'Concept Explainer',     path: '/learning/explain' },
-  'study-guide': { emoji: '📋', label: 'Study Guide',           path: '/learning/study-guide' },
-  math:          { emoji: '🔢', label: 'Math Practice',         path: '/learning/math' },
-  reading:       { emoji: '📖', label: 'Reading Comprehension', path: '/learning/reading' },
-  spelling:      { emoji: '✏️', label: 'Spelling Practice',     path: '/learning/spelling' },
+  quiz:            { emoji: '🧠', label: 'Quiz',                  path: '/learning/quiz' },
+  flashcards:      { emoji: '🃏', label: 'Flashcards',            path: '/learning/flashcards' },
+  explain:         { emoji: '💡', label: 'Concept Explainer',     path: '/learning/explain' },
+  'study-guide':   { emoji: '📋', label: 'Study Guide',           path: '/learning/study-guide' },
+  math:            { emoji: '🔢', label: 'Math Practice',         path: '/learning/math' },
+  reading:         { emoji: '📖', label: 'Reading Comprehension', path: '/learning/reading' },
+  spelling:        { emoji: '✏️', label: 'Spelling Practice',     path: '/learning/spelling' },
+  'study-helper':  { emoji: '🧩', label: 'Study Helper',          path: '/learning/study-helper' },
+}
+
+const MAT_MODE_LABELS: Record<string, string> = {
+  quiz: 'Quiz', flashcards: 'Flashcards', explain: 'Explain It', 'study-guide': 'Study Guide',
 }
 
 const COLOR_BG: Record<string, string> = {
@@ -34,7 +39,7 @@ interface StudentProfile {
 interface Submission { status: string; score: number | null; total: number | null; completed_at: string | null }
 interface Assignment {
   id: string; title: string; tool: string
-  config: { topic?: string; grade?: number; subject?: string }
+  config: { topic?: string; grade?: number; subject?: string; mode?: string }
   due_at: string | null; created_at: string
   assignment_submissions: Submission[]
   className: string
@@ -58,11 +63,22 @@ function buildQuestHref(a: Assignment): string {
   const tool = TOOL_META[a.tool]
   if (!tool) return '#'
   const params = new URLSearchParams()
-  if (a.config?.topic)   params.set('topic', a.config.topic)
-  if (a.config?.grade)   params.set('grade', String(a.config.grade))
-  if (a.config?.subject) params.set('subject', a.config.subject)
+  // study-helper material assignments: material/mode are fetched server-side — only pass assignmentId
+  if (a.tool !== 'study-helper') {
+    if (a.config?.topic)   params.set('topic', a.config.topic)
+    if (a.config?.grade)   params.set('grade', String(a.config.grade))
+    if (a.config?.subject) params.set('subject', a.config.subject)
+  }
   params.set('assignmentId', a.id)
   return `${tool.path}?${params.toString()}`
+}
+
+function questSubtitle(a: Assignment): string {
+  if (a.tool === 'study-helper') {
+    const modeLabel = a.config?.mode ? (MAT_MODE_LABELS[a.config.mode] ?? a.config.mode) : null
+    return modeLabel ? `${a.className} · ${modeLabel}` : a.className
+  }
+  return a.config?.topic ? `${a.className} · ${a.config.topic}` : a.className
 }
 
 function dueLabel(due_at: string | null): { text: string; overdue: boolean } | null {
@@ -246,7 +262,7 @@ export default function StudentDashboard() {
                     <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-0.5">Up next</p>
                     <p className="font-semibold text-white text-base truncate">{heroQuest.title}</p>
                     <p className="text-xs text-indigo-200 mt-0.5 truncate">
-                      {heroQuest.className}{heroQuest.config?.topic ? ` · ${heroQuest.config.topic}` : ''}
+                      {questSubtitle(heroQuest)}
                     </p>
                     {due && (
                       <p className={`text-[11px] font-semibold mt-1 ${due.overdue ? 'text-red-300' : 'text-indigo-300'}`}>
@@ -277,7 +293,7 @@ export default function StudentDashboard() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-oxford text-sm truncate">{a.title}</p>
                     <p className="text-xs text-charcoal-light mt-0.5 truncate">
-                      {a.className}{a.config?.topic ? ` · ${a.config.topic}` : ''}
+                      {questSubtitle(a)}
                     </p>
                     {due && (
                       <p className={`text-[11px] font-semibold mt-0.5 ${due.overdue ? 'text-red-500' : 'text-gray-400'}`}>
@@ -370,6 +386,21 @@ export default function StudentDashboard() {
           )}
         </div>
       )}
+
+      {/* ── Study Helper CTA ── */}
+      <div className="bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-100 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-2xl shadow-sm shrink-0">🧩</div>
+          <div>
+            <p className="font-semibold text-oxford text-sm">Study Helper</p>
+            <p className="text-xs text-charcoal-light mt-0.5">Paste notes — get quizzes, flashcards & more</p>
+          </div>
+        </div>
+        <a href="/learning/study-helper"
+          className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl whitespace-nowrap transition-colors shrink-0">
+          Try it →
+        </a>
+      </div>
 
       {/* ── Join a class (secondary action, bottom) ── */}
       <div className="pt-2">
