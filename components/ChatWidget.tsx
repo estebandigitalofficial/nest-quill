@@ -14,7 +14,7 @@ const GREETING: Message = {
 }
 
 // Bottom offset that keeps the widget above the footer on all screen sizes
-const CHAT_BOTTOM = 80 // px — matches Tailwind bottom-20
+const CHAT_BOTTOM = 128 // px — clears mobile footer (~106px) and desktop footer (~121px)
 
 export default function ChatWidget() {
   const pathname = usePathname()
