@@ -371,7 +371,7 @@ export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMateri
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-14 text-center space-y-4">
         <div className="w-10 h-10 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin mx-auto" />
         <p className="text-sm font-medium text-gray-600">Building your activity…</p>
-        <p className="text-xs text-gray-400">Based on the material you pasted</p>
+        {!isAssignment && <p className="text-xs text-gray-400">Based on the material you pasted</p>}
       </div>
     )
   }
@@ -392,7 +392,7 @@ export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMateri
     const allAnswered = selected.every(s => s !== null)
     return (
       <div className="space-y-4">
-        <p className="text-xs text-gray-400 text-center">Based on the material you pasted</p>
+        <p className="text-xs text-gray-400 text-center">{isAssignment ? 'Based on your assignment material' : 'Based on the material you pasted'}</p>
         <div className="flex gap-2 justify-center">
           {quizContent.questions.map((_, i) => (
             <button key={i} onClick={() => setCurrentQ(i)}
@@ -477,7 +477,7 @@ export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMateri
     const knownCount = known.filter(Boolean).length
     return (
       <div className="space-y-4">
-        <p className="text-xs text-gray-400 text-center">Based on the material you pasted</p>
+        <p className="text-xs text-gray-400 text-center">{isAssignment ? 'Based on your assignment material' : 'Based on the material you pasted'}</p>
         <div className="flex items-center justify-between text-xs text-gray-400">
           <span>{cardIndex + 1} of {flashcardContent.cards.length}</span>
           <span className="text-green-600 font-medium">{knownCount} known ✓</span>
@@ -566,7 +566,7 @@ export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMateri
   if (stage === 'explain' && explainContent) {
     return (
       <div className="space-y-4">
-        <p className="text-xs text-gray-400 text-center">Based on the material you pasted</p>
+        <p className="text-xs text-gray-400 text-center">{isAssignment ? 'Based on your assignment material' : 'Based on the material you pasted'}</p>
         <div className="bg-oxford rounded-2xl px-6 py-5 text-white">
           <p className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-1">Explanation</p>
           <h2 className="font-serif text-xl">{explainContent.title}</h2>
@@ -605,7 +605,7 @@ export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMateri
     const sg = studyGuideContent
     return (
       <div className="space-y-4">
-        <p className="text-xs text-gray-400 text-center">Based on the material you pasted</p>
+        <p className="text-xs text-gray-400 text-center">{isAssignment ? 'Based on your assignment material' : 'Based on the material you pasted'}</p>
         <div className="bg-oxford rounded-2xl px-6 py-5 text-white">
           <p className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-1">Study Guide</p>
           <h2 className="font-serif text-xl">{sg.title}</h2>
