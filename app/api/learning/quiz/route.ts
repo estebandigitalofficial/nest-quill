@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
+import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, NEUTRALITY_RULE } from '@/lib/utils/learningGuardrails'
 
-const SYSTEM_PROMPT = (gradeLabel: string) => `You are an educational quiz writer. Create 5 multiple-choice questions.
+const SYSTEM_PROMPT = (gradeLabel: string) => `You are an educational quiz writer for students in ${gradeLabel}. Create 5 multiple-choice questions.
 
-Your output must be valid JSON:
+Rules:
+- Exactly 5 questions, vocabulary matching ${gradeLabel} level
+- correct_index is 0-based
+- All 4 options must be plausible
+- ${NEUTRALITY_RULE}
+
+Output valid JSON:
 {
   "questions": [
     {
@@ -14,12 +21,7 @@ Your output must be valid JSON:
       "explanation": "string — brief, encouraging explanation"
     }
   ]
-}
-
-Rules:
-- Exactly 5 questions, vocabulary matching ${gradeLabel} level
-- correct_index is 0-based
-- All 4 options must be plausible`
+}`
 
 export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'quiz')
@@ -53,6 +55,16 @@ export async function POST(request: NextRequest) {
       if (!topic || topic.trim().length < 3) {
         return NextResponse.json({ message: 'Please enter a topic (at least 3 characters).' }, { status: 400 })
       }
+
+      // ── Topic classification (text path only) ─────────────────────────────
+      const classification = classifyTopic(topic.trim())
+      if (classification === 'redirect') {
+        return NextResponse.json({ message: REDIRECT_MESSAGE }, { status: 422 })
+      }
+      if (classification === 'clarify') {
+        return NextResponse.json({ message: CLARIFY_MESSAGE }, { status: 422 })
+      }
+
       userContent = `Topic: ${subjectLabel}${topic.trim()}\n\nGenerate 5 quiz questions for a ${gradeLabel} student on this topic.`
     }
 

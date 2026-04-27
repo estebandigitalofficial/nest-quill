@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
+import { NEUTRALITY_RULE } from '@/lib/utils/learningGuardrails'
 
 export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'math')
@@ -39,7 +40,8 @@ Rules:
 - Difficulty appropriate for ${gradeLabel}
 - Steps should show clear working — don't just give the answer
 - Mix difficulty slightly (start easier, end harder)
-- For word problems, use relatable real-life scenarios with kids' names`,
+- For word problems, use relatable real-life scenarios with kids' names
+- ${NEUTRALITY_RULE}`,
           },
           {
             role: 'user',

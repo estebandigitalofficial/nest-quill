@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
+import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, NEUTRALITY_RULE } from '@/lib/utils/learningGuardrails'
 
 export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'study-guide')
@@ -9,6 +10,15 @@ export async function POST(request: NextRequest) {
 
     if (!topic?.trim() || topic.trim().length < 3) {
       return NextResponse.json({ message: 'Please enter a topic.' }, { status: 400 })
+    }
+
+    // ── Topic classification ──────────────────────────────────────────────────
+    const classification = classifyTopic(topic.trim())
+    if (classification === 'redirect') {
+      return NextResponse.json({ message: REDIRECT_MESSAGE }, { status: 422 })
+    }
+    if (classification === 'clarify') {
+      return NextResponse.json({ message: CLARIFY_MESSAGE }, { status: 422 })
     }
 
     const gradeLabel = grade ? `grade ${grade}` : 'elementary school'
@@ -22,6 +32,13 @@ export async function POST(request: NextRequest) {
           {
             role: 'system',
             content: `You create study guides for ${gradeLabel} students. Be clear, organized, and age-appropriate.
+
+Rules:
+- 6-8 key terms
+- 3-4 main concepts
+- 3 remember tips (memory tricks or key takeaways)
+- 3 practice questions with answers
+- ${NEUTRALITY_RULE}
 
 Output valid JSON:
 {
@@ -37,13 +54,7 @@ Output valid JSON:
   "practice_questions": [
     { "question": "string", "answer": "string" }
   ]
-}
-
-Rules:
-- 6-8 key terms
-- 3-4 main concepts
-- 3 remember tips (like memory tricks or key takeaways)
-- 3 practice questions with answers`,
+}`,
           },
           {
             role: 'user',
@@ -56,6 +67,7 @@ Rules:
     })
 
     if (!res.ok) {
+      console.error('[learning/study-guide] OpenAI error:', await res.text())
       return NextResponse.json({ message: 'Failed to generate study guide.' }, { status: 500 })
     }
 

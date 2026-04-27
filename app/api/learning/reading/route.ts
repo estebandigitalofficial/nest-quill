@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
+import { NEUTRALITY_RULE } from '@/lib/utils/learningGuardrails'
 
 export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'reading')
@@ -39,7 +40,8 @@ Rules:
 - Exactly 5 questions
 - All answers must be found in or directly inferred from the text
 - Mix literal (directly stated) and inferential (reading between the lines) questions
-- correct_index is 0-based`,
+- correct_index is 0-based
+- ${NEUTRALITY_RULE}`,
           },
           {
             role: 'user',
