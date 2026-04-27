@@ -13,87 +13,113 @@ export default function PrivacyPage() {
       <main className="max-w-3xl mx-auto px-6 py-14 space-y-10 w-full">
         <div>
           <h1 className="font-serif text-4xl text-oxford mb-3">Privacy Policy</h1>
-          <p className="text-sm text-charcoal-light">Last updated: April 2025</p>
+          <p className="text-sm text-charcoal-light">Last updated: April 2026</p>
           <p className="text-sm text-charcoal-light mt-1">Nest &amp; Quill is operated by Bright Tale Books.</p>
         </div>
 
         <Section title="Overview">
           <p>
-            Nest &amp; Quill (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;) is committed to protecting your privacy.
-            This policy explains what information we collect when you use our website and services,
-            how we use it, and your rights regarding that information.
+            This Privacy Policy explains what information we collect, how we use it, and how we protect it.
+          </p>
+          <p>By using the Service, you agree to this policy.</p>
+        </Section>
+
+        <Section title="Information We Collect">
+          <p><strong>Account Information</strong></p>
+          <ul>
+            <li>Name</li>
+            <li>Email address</li>
+            <li>Account role (parent, student, educator)</li>
+          </ul>
+          <p><strong>User Content</strong></p>
+          <ul>
+            <li>Story inputs and preferences</li>
+            <li>Study Helper material (text you provide for learning)</li>
+            <li>Quiz answers and learning activity responses</li>
+          </ul>
+          <p><strong>Classroom Data</strong></p>
+          <ul>
+            <li>Class memberships</li>
+            <li>Assignments and submissions</li>
+            <li>Progress data (scores, XP, streaks, badges)</li>
+          </ul>
+          <p><strong>Usage Data</strong></p>
+          <ul>
+            <li>Interaction with features</li>
+            <li>Basic analytics to improve performance</li>
+          </ul>
+        </Section>
+
+        <Section title="How We Use Information">
+          <p>We use your information to:</p>
+          <ul>
+            <li>Provide and operate the Service</li>
+            <li>Generate AI content (stories, learning tools, etc.)</li>
+            <li>Track learning progress and assignment completion</li>
+            <li>Improve product functionality and user experience</li>
+            <li>Communicate important updates</li>
+          </ul>
+        </Section>
+
+        <Section title="AI Processing">
+          <p>
+            To generate content, user inputs may be sent to third-party AI providers (such as OpenAI).
+            These providers process data solely to return results to the Service.
+          </p>
+          <p>We do not use your content to train external AI models.</p>
+        </Section>
+
+        <Section title="Student and Minor Data">
+          <p>
+            Students may use Nest &amp; Quill through teacher- or parent-managed environments.
+          </p>
+          <p>
+            We do not knowingly collect personal data directly from children without supervision.
+            Educators and parents are responsible for managing student participation.
           </p>
         </Section>
 
-        <Section title="Information we collect">
+        <Section title="Data Sharing">
+          <p>We do not sell your personal information.</p>
+          <p>We may share data with:</p>
           <ul>
-            <li><strong>Account information</strong> — your email address and password when you create an account.</li>
-            <li><strong>Story information</strong> — the details you provide when creating a story: child&apos;s name, age, interests, story preferences, and any custom notes.</li>
-            <li><strong>Payment information</strong> — processed securely by Stripe. We never store your full card number.</li>
-            <li><strong>Usage data</strong> — pages visited, features used, and other standard analytics to help us improve the service.</li>
-            <li><strong>Cookies</strong> — a guest token cookie to associate stories with your browser session before you create an account, and session cookies for authentication.</li>
+            <li>Service providers (e.g., hosting, payments, email delivery)</li>
+            <li>AI providers for content generation</li>
+            <li>Legal authorities when required</li>
           </ul>
         </Section>
 
-        <Section title="How we use your information">
-          <ul>
-            <li>To generate and deliver your personalized storybooks.</li>
-            <li>To send you your completed story and transactional emails (story ready, order confirmation).</li>
-            <li>To process payments and manage your subscription.</li>
-            <li>To improve our AI models and the quality of generated stories (using anonymized data only).</li>
-            <li>To respond to support requests and communicate important service updates.</li>
-          </ul>
-        </Section>
-
-        <Section title="Third-party services">
-          <p>We share data with the following trusted third parties only as necessary to provide the service:</p>
-          <ul>
-            <li><strong>Supabase</strong> — database and authentication hosting.</li>
-            <li><strong>OpenAI</strong> — AI text and image generation. Story prompts are sent to OpenAI&apos;s API. See <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener noreferrer">OpenAI&apos;s Privacy Policy</a>.</li>
-            <li><strong>Stripe</strong> — payment processing.</li>
-            <li><strong>Resend</strong> — transactional email delivery.</li>
-          </ul>
-          <p>We do not sell your personal data to any third party.</p>
-        </Section>
-
-        <Section title="Children's privacy">
+        <Section title="Data Security">
           <p>
-            Our service creates stories featuring children&apos;s names and ages provided by parents or guardians.
-            We do not knowingly collect personal information directly from children under 13.
-            The information you provide about a child (name, age, interests) is used solely to generate their story
-            and is not shared, sold, or used for any other purpose.
+            We use reasonable safeguards to protect your data. However, no system is completely secure.
           </p>
         </Section>
 
-        <Section title="Data retention">
+        <Section title="Data Retention">
           <p>
-            We retain your account information and generated stories for as long as your account is active.
-            You may request deletion of your account and associated data at any time by contacting us.
-            Guest stories without an account are retained for 90 days.
+            We retain data as long as necessary to operate the Service and improve user experience.
           </p>
         </Section>
 
-        <Section title="Your rights">
-          <p>You have the right to:</p>
+        <Section title="Your Rights">
+          <p>You may:</p>
           <ul>
-            <li>Access the personal data we hold about you.</li>
-            <li>Request correction of inaccurate data.</li>
-            <li>Request deletion of your account and data.</li>
-            <li>Opt out of non-transactional emails at any time.</li>
+            <li>Access or update your information</li>
+            <li>Request account deletion</li>
+            <li>Contact us with privacy concerns</li>
           </ul>
-          <p>To exercise any of these rights, contact us at <a href="mailto:contact@nestandquill.com">contact@nestandquill.com</a>.</p>
         </Section>
 
-        <Section title="Changes to this policy">
+        <Section title="Changes to This Policy">
           <p>
-            We may update this policy from time to time. We&apos;ll notify you of significant changes by email
-            or by posting a notice on the site. Continued use of the service after changes constitutes acceptance.
+            We may update this policy from time to time. Continued use of the Service indicates acceptance
+            of updates.
           </p>
         </Section>
 
         <Section title="Contact">
           <p>
-            Questions about this policy? Email us at{' '}
+            For privacy-related questions, contact:{' '}
             <a href="mailto:contact@nestandquill.com" className="text-brand-600 hover:text-brand-700">
               contact@nestandquill.com
             </a>.
