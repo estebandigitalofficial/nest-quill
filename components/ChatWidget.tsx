@@ -13,6 +13,9 @@ const GREETING: Message = {
   content: "Hi! I'm the Nest & Quill assistant. I can help you brainstorm the perfect story for your child, or answer any questions about how the service works. What would you like to know?",
 }
 
+// Bottom offset that keeps the widget above the footer on all screen sizes
+const CHAT_BOTTOM = 80 // px — matches Tailwind bottom-20
+
 export default function ChatWidget() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -83,7 +86,7 @@ export default function ChatWidget() {
       {/* Panel */}
       {open && (
         <div style={{
-          position: 'fixed', bottom: 'calc(max(20px, env(safe-area-inset-bottom, 20px)) + 64px)', right: 20, zIndex: 40,
+          position: 'fixed', bottom: CHAT_BOTTOM + 64, right: 20, zIndex: 50,
           width: 360, maxWidth: 'calc(100vw - 32px)',
           background: '#F8F5EC',
           borderRadius: 20,
@@ -195,7 +198,7 @@ export default function ChatWidget() {
       <button
         onClick={() => setOpen(o => !o)}
         style={{
-          position: 'fixed', bottom: 'max(20px, env(safe-area-inset-bottom, 20px))', right: 20, zIndex: 40,
+          position: 'fixed', bottom: CHAT_BOTTOM, right: 20, zIndex: 50,
           width: 54, height: 54, borderRadius: '50%',
           background: '#0C2340',
           border: '2px solid rgba(201,151,0,0.5)',
