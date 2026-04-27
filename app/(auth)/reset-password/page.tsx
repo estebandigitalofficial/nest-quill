@@ -13,12 +13,23 @@ export default function ResetPasswordPage() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    // Supabase exchanges the token in the URL hash automatically on load.
-    // We just need to wait for the session to be established.
     const supabase = createClient()
-    supabase.auth.onAuthStateChange((event) => {
+
+    // Register listener first so we don't miss the event
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') setReady(true)
     })
+
+    // @supabase/ssr uses PKCE: the reset link arrives as ?code=... and must be
+    // exchanged explicitly — the browser client does not auto-exchange it.
+    const code = new URLSearchParams(window.location.search).get('code')
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).catch(() => {
+        setError('This reset link is invalid or has expired. Please request a new one.')
+      })
+    }
+
+    return () => subscription.unsubscribe()
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -52,7 +63,16 @@ export default function ResetPasswordPage() {
     return (
       <div className="w-full max-w-sm">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 text-center space-y-3">
-          <p className="text-sm text-gray-500">Verifying your reset link…</p>
+          {error ? (
+            <>
+              <p className="text-sm text-red-500">{error}</p>
+              <a href="/forgot-password" className="text-sm text-brand-600 font-medium hover:text-brand-700">
+                Request a new reset link
+              </a>
+            </>
+          ) : (
+            <p className="text-sm text-gray-500">Verifying your reset link…</p>
+          )}
         </div>
       </div>
     )
