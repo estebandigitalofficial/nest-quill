@@ -13,8 +13,8 @@ const GREETING: Message = {
   content: "Hi! I'm the Nest & Quill assistant. I can help you brainstorm the perfect story for your child, or answer any questions about how the service works. What would you like to know?",
 }
 
-// Bottom offset that keeps the widget above the footer on all screen sizes
-const CHAT_BOTTOM = 128 // px — clears mobile footer (~106px) and desktop footer (~121px)
+// Bottom offset — sits inside the footer area at the bottom-right corner
+const CHAT_BOTTOM = 20 // px
 
 export default function ChatWidget() {
   const pathname = usePathname()
