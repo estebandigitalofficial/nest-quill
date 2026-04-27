@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import { NextRequest } from 'next/server'
+import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, NEUTRALITY_RULE } from '@/lib/utils/learningGuardrails'
 
 const SYSTEM_PROMPT = `You are the Nest & Quill assistant — a warm, friendly helper for a personalized AI-powered children's storybook service. You help in two ways:
 
@@ -31,12 +32,24 @@ Illustration styles: Watercolor, Cartoon, Storybook (classic painted fairy-tale)
 Free plan: Watercolor only. All paid plans: all 5 styles.
 
 Keep responses warm, concise (2–4 sentences unless more detail is needed), and family-friendly.
-If someone wants to create a story now, direct them to /create.`
+If someone wants to create a story now, direct them to /create.
+
+${NEUTRALITY_RULE}`
 
 let _openai: OpenAI | null = null
 function getOpenAI() {
   if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   return _openai
+}
+
+function guardedStream(text: string): Response {
+  const readable = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(text))
+      controller.close()
+    },
+  })
+  return new Response(readable, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
 }
 
 export async function POST(req: NextRequest) {
@@ -45,7 +58,15 @@ export async function POST(req: NextRequest) {
     return new Response('Bad request', { status: 400 })
   }
 
-  const messages = body.messages.slice(-20) // cap context to last 20 turns
+  const messages = body.messages.slice(-20) // any[] — passed directly to OpenAI SDK
+
+  // Classify the latest user message and short-circuit before calling AI if needed
+  const lastUserMsg = [...messages].reverse().find((m: Record<string, unknown>) => m.role === 'user')
+  if (lastUserMsg && typeof lastUserMsg.content === 'string') {
+    const classification = classifyTopic(lastUserMsg.content)
+    if (classification === 'redirect') return guardedStream(REDIRECT_MESSAGE)
+    if (classification === 'clarify') return guardedStream(CLARIFY_MESSAGE)
+  }
 
   const stream = await getOpenAI().chat.completions.create({
     model: 'gpt-4o-mini',
