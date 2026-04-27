@@ -13,8 +13,6 @@ const GREETING: Message = {
   content: "Hi! I'm the Nest & Quill assistant. I can help you brainstorm the perfect story for your child, or answer any questions about how the service works. What would you like to know?",
 }
 
-// Bottom offset — sits inside the footer area at the bottom-right corner
-const CHAT_BOTTOM = 20 // px
 
 export default function ChatWidget() {
   const pathname = usePathname()
@@ -85,8 +83,8 @@ export default function ChatWidget() {
     <>
       {/* Panel */}
       {open && (
-        <div style={{
-          position: 'fixed', bottom: CHAT_BOTTOM + 64, right: 20, zIndex: 50,
+        <div className="bottom-44 sm:bottom-[84px]" style={{
+          position: 'fixed', right: 20, zIndex: 50,
           width: 360, maxWidth: 'calc(100vw - 32px)',
           background: '#F8F5EC',
           borderRadius: 20,
@@ -197,9 +195,9 @@ export default function ChatWidget() {
       {/* Toggle button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="md:outline md:outline-2 md:outline-white/80 md:outline-offset-2"
+        className="bottom-28 sm:bottom-5 md:outline md:outline-2 md:outline-white/80 md:outline-offset-2"
         style={{
-          position: 'fixed', bottom: CHAT_BOTTOM, right: 20, zIndex: 50,
+          position: 'fixed', right: 20, zIndex: 50,
           width: 54, height: 54, borderRadius: '50%',
           background: '#0C2340',
           border: '2px solid rgba(201,151,0,0.5)',
