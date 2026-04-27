@@ -87,14 +87,14 @@ export async function POST(request: NextRequest) {
 
     if (classification === 'redirect') {
       return NextResponse.json(
-        { message: 'I can help explain school topics like math, science, reading, or history. Try asking about something you\'re learning in class!' },
+        { message: 'I can help explain school topics like math, science, reading, or history. Try asking about something you\'re learning.' },
         { status: 422 }
       )
     }
 
     if (classification === 'clarify') {
       return NextResponse.json(
-        { message: 'I can explain how political systems and history work in a clear, educational way. Can you tell me what specific topic you\'re learning about in class? For example: "How does the U.S. government work?" or "What happened during the Civil War?"' },
+        { message: 'Are you asking about a history or civics topic you\'re learning in school? I can explain how government works in a general, educational way—can you be a bit more specific about what you\'re studying?' },
         { status: 422 }
       )
     }
@@ -119,8 +119,11 @@ Rules:
 - Focus on helping the student understand step-by-step
 - Do not provide direct answers to tests or assignments
 - Keep explanations neutral, factual, and easy to understand
-- Do not engage in political opinions, debates, or persuasion
-- Avoid current events or controversial modern topics
+- Do not engage in political opinions, debates, persuasion, or advocacy
+- Do not show political, cultural, religious, or social bias
+- Present information in a balanced, neutral way
+- Avoid framing one side, group, belief, or viewpoint as better or worse
+- Avoid current events or controversial modern topics unless clearly handled as neutral educational content
 
 Handling political topics:
 - If the topic is clearly historical or civics-related (e.g., Constitution, branches of government, past events), explain it normally in a neutral, educational way
