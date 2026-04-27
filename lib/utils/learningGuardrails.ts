@@ -8,7 +8,7 @@ export const HISTORICAL_SAFE = [
   'declaration of independence', 'branches of government',
   'checks and balances', 'three branches', 'supreme court',
   'congress', 'senate', 'house of representatives', 'electoral college',
-  'how does voting work', 'history of', 'ancient', 'roman', 'greek',
+  'voting rights', 'how does voting work', 'history of', 'ancient', 'roman', 'greek',
   'medieval', 'renaissance', 'cold war', 'slavery', 'reconstruction',
   'civil rights movement', 'suffrage', 'emancipation', 'magna carta',
   'french revolution', 'industrial revolution',
@@ -17,7 +17,7 @@ export const HISTORICAL_SAFE = [
 // Partisan or opinion-seeking keywords — ask for clarification
 export const PARTISAN_KEYWORDS = [
   'democrat', 'republican', 'democrats', 'republicans',
-  'liberal', 'conservatives', 'far left', 'far right',
+  'liberals', 'conservatives', 'far left', 'far right',
   'maga', 'antifa', 'political party', 'left wing', 'right wing',
   'left-wing', 'right-wing',
 ]
@@ -25,9 +25,9 @@ export const PARTISAN_KEYWORDS = [
 // Debate/persuasion phrases — redirect to safe use
 export const DEBATE_PHRASES = [
   'who is better', 'who is worse', 'is better than', 'should i vote',
-  'who should win', 'which is better', 'who is right', 'who is wrong',
+  'who should win', 'which is better', 'who is wrong',
   'is right or wrong', 'is good or bad', 'should i support',
-  'who do you like', 'do you agree', 'is evil', 'is bad',
+  'who do you like', 'do you agree', 'is evil',
 ]
 
 // Vague political terms that need clarification without historical context
