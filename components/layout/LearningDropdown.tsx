@@ -1,13 +1,14 @@
 import Link from 'next/link'
 
 const TOOLS = [
-  { href: '/learning/quiz',        emoji: '🧠', label: 'Quiz Generator' },
-  { href: '/learning/flashcards',  emoji: '🃏', label: 'Flashcards' },
-  { href: '/learning/explain',     emoji: '💡', label: 'Concept Explainer' },
-  { href: '/learning/study-guide', emoji: '📋', label: 'Study Guide' },
-  { href: '/learning/math',        emoji: '🔢', label: 'Math Practice' },
-  { href: '/learning/spelling',    emoji: '✏️', label: 'Spelling Practice' },
-  { href: '/learning/reading',     emoji: '📖', label: 'Reading Comprehension' },
+  { href: '/learning/scan-homework', emoji: '📸', label: 'Scan Homework' },
+  { href: '/learning/quiz',          emoji: '🧠', label: 'Quiz Generator' },
+  { href: '/learning/flashcards',    emoji: '🃏', label: 'Flashcards' },
+  { href: '/learning/explain',       emoji: '💡', label: 'Concept Explainer' },
+  { href: '/learning/study-guide',   emoji: '📋', label: 'Study Guide' },
+  { href: '/learning/math',          emoji: '🔢', label: 'Math Practice' },
+  { href: '/learning/spelling',      emoji: '✏️', label: 'Spelling Practice' },
+  { href: '/learning/reading',       emoji: '📖', label: 'Reading Comprehension' },
 ]
 
 export default function LearningDropdown() {

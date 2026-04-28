@@ -1,177 +1,121 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { submitAssignment } from '@/lib/utils/submitAssignment'
+import PhotoUpload from '@/components/learning/PhotoUpload'
 
 interface Card { front: string; back: string }
-type Stage = 'form' | 'loading' | 'study' | 'done'
+
+interface InitialImage { base64: string; mimeType: string; preview: string }
 
 interface Props {
   assignmentId?: string
   initialTopic?: string
   initialGrade?: number
+  initialImage?: InitialImage
 }
 
-export default function FlashcardGenerator({ assignmentId, initialTopic, initialGrade }: Props) {
+export default function FlashcardGenerator({ assignmentId, initialTopic, initialGrade, initialImage }: Props) {
   const [topic, setTopic] = useState(initialTopic ?? '')
   const [grade, setGrade] = useState<number | null>(initialGrade ?? null)
+  const [imageBase64, setImageBase64] = useState<string | null>(initialImage?.base64 ?? null)
+  const [imageMime, setImageMime] = useState(initialImage?.mimeType ?? 'image/jpeg')
+  const [imagePreview, setImagePreview] = useState<string | null>(initialImage?.preview ?? null)
   const [error, setError] = useState<string | null>(null)
-  const [stage, setStage] = useState<Stage>('form')
-  const [cards, setCards] = useState<Card[]>([])
-  const [current, setCurrent] = useState(0)
-  const [flipped, setFlipped] = useState(false)
-  const [known, setKnown] = useState<boolean[]>([])
+  const [loading, setLoading] = useState(false)
+  const [cards, setCards] = useState<Card[] | null>(null)
+  const [flipped, setFlipped] = useState<Set<number>>(new Set())
+  const [known, setKnown] = useState<Set<number>>(new Set())
 
   const [xpEarned, setXpEarned] = useState<number | null>(null)
   const submittedRef = useRef(false)
 
-  // Auto-generate if coming from an assignment with a pre-filled topic
+  const generateCards = useCallback(async (params: {
+    topic?: string; grade?: number; imageBase64?: string; mimeType?: string
+  }) => {
+    setError(null); setLoading(true); setCards(null)
+    try {
+      const res = await fetch('/api/learning/flashcards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      })
+      const data = await res.json()
+      setLoading(false)
+      if (!res.ok) { setError(data.message); return }
+      setCards(data.cards)
+      setFlipped(new Set())
+      setKnown(new Set())
+    } catch {
+      setLoading(false)
+      setError('Something went wrong.')
+    }
+  }, [])
+
+  // Auto-submit when cards are shown
   useEffect(() => {
-    if (assignmentId && initialTopic && stage === 'form') {
-      handleGenerate()
+    if (cards && assignmentId && !submittedRef.current) {
+      submittedRef.current = true
+      submitAssignment(assignmentId).then(res => {
+        if (res) setXpEarned(res.xpEarned)
+      })
+    }
+  }, [cards, assignmentId])
+
+  // Auto-generate from assignment or initial image
+  useEffect(() => {
+    if (assignmentId && initialTopic && !cards && !loading) {
+      generateCards({ topic: initialTopic.trim(), grade: initialGrade ?? undefined })
+    } else if (initialImage && !cards && !loading) {
+      generateCards({ imageBase64: initialImage.base64, mimeType: initialImage.mimeType, grade: initialGrade ?? undefined })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Auto-submit when done stage appears
-  useEffect(() => {
-    if (stage === 'done' && assignmentId && !submittedRef.current) {
-      submittedRef.current = true
-      submitAssignment(assignmentId).then(result => {
-        if (result) setXpEarned(result.xpEarned)
-      })
-    }
-  }, [stage, assignmentId])
-
-  async function handleGenerate() {
-    if (!topic.trim()) { setError('Enter a topic first.'); return }
-    setError(null); setStage('loading')
-
-    const res = await fetch('/api/learning/flashcards', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic: topic.trim(), grade: grade ?? undefined }),
+  function handleGenerate() {
+    if (!topic.trim() && !imageBase64) { setError('Enter a topic or upload a photo.'); return }
+    generateCards({
+      topic: imageBase64 ? undefined : topic.trim(),
+      grade: grade ?? undefined,
+      imageBase64: imageBase64 ?? undefined,
+      mimeType: imageMime,
     })
-    const data = await res.json()
-    if (!res.ok) { setError(data.message); setStage('form'); return }
-
-    setCards(data.cards)
-    setKnown(Array(data.cards.length).fill(false))
-    setCurrent(0); setFlipped(false); setStage('study')
   }
 
-  function handleKnow(didKnow: boolean) {
-    const next = [...known]; next[current] = didKnow; setKnown(next)
-    if (current < cards.length - 1) { setCurrent(c => c + 1); setFlipped(false) }
-    else setStage('done')
+  function handleImageSelect(base64: string, mimeType: string, preview: string) {
+    setImageBase64(base64); setImageMime(mimeType); setImagePreview(preview); setTopic('')
   }
 
-  function restart() {
-    setCurrent(0); setFlipped(false); setKnown(Array(cards.length).fill(false)); setStage('study')
+  function clearImage() {
+    setImageBase64(null); setImagePreview(null)
+  }
+
+  function toggle(i: number) {
+    setFlipped(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n })
+  }
+
+  function markKnown(i: number) {
+    setKnown(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n })
   }
 
   function reset() {
-    setTopic(initialTopic ?? ''); setGrade(initialGrade ?? null); setStage('form'); setCards([]); setError(null); submittedRef.current = false; setXpEarned(null)
+    setCards(null); setTopic(initialTopic ?? ''); setGrade(initialGrade ?? null)
+    clearImage(); submittedRef.current = false; setXpEarned(null)
   }
 
-  const card = cards[current]
-  const knownCount = known.filter(Boolean).length
-
-  if (stage === 'form') {
-    return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6 space-y-6">
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">Topic or subject</label>
-          <input type="text" placeholder='e.g. "The American Revolution" or "Multiplication tables"'
-            value={topic} onChange={e => setTopic(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" />
-        </div>
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">Grade <span className="text-gray-400 font-normal">(optional)</span></label>
-          <div className="flex flex-wrap gap-2">
-            {[1,2,3,4,5,6,7,8].map(g => (
-              <button key={g} type="button" onClick={() => setGrade(grade === g ? null : g)}
-                className={`w-10 h-10 rounded-xl border-2 text-sm font-semibold transition-all ${grade === g ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}>{g}</button>
-            ))}
-          </div>
-        </div>
-        {error && <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-3">{error}</p>}
-        <button onClick={handleGenerate} disabled={!topic.trim()}
-          className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold text-base transition-colors">
-          Generate Flashcards →
-        </button>
-      </div>
-    )
-  }
-
-  if (stage === 'loading') {
+  if (loading) {
     return (
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-14 text-center space-y-4">
         <div className="w-10 h-10 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin mx-auto" />
-        <p className="text-sm font-medium text-gray-600">Creating your flashcards…</p>
+        <p className="text-sm font-medium text-gray-600">
+          {imageBase64 || initialImage ? 'Reading your photo…' : 'Creating your flashcards…'}
+        </p>
       </div>
     )
   }
 
-  if (stage === 'study' && card) {
-    return (
-      <div className="space-y-4">
-        {/* Progress */}
-        <div className="flex items-center justify-between text-xs text-gray-400">
-          <span>{current + 1} of {cards.length}</span>
-          <span className="text-green-600 font-medium">{knownCount} known ✓</span>
-        </div>
-        <div className="w-full bg-gray-100 rounded-full h-1.5">
-          <div className="bg-indigo-500 h-1.5 rounded-full transition-all" style={{ width: `${((current) / cards.length) * 100}%` }} />
-        </div>
-
-        {/* Card — flip on click */}
-        <button
-          onClick={() => setFlipped(f => !f)}
-          className="w-full min-h-52 bg-white rounded-2xl border-2 border-gray-100 shadow-sm px-6 py-8 flex flex-col items-center justify-center gap-3 transition-all hover:border-indigo-200 hover:shadow-md"
-          style={{ perspective: 600 }}
-        >
-          {!flipped ? (
-            <>
-              <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Term</span>
-              <p className="text-xl font-semibold text-gray-900 text-center leading-snug">{card.front}</p>
-              <span className="text-xs text-gray-300 mt-2">Tap to reveal →</span>
-            </>
-          ) : (
-            <>
-              <span className="text-xs font-bold text-green-500 uppercase tracking-widest">Definition</span>
-              <p className="text-base text-gray-700 text-center leading-relaxed">{card.back}</p>
-            </>
-          )}
-        </button>
-
-        {/* Actions — only show after flip */}
-        {flipped ? (
-          <div className="flex gap-3">
-            <button onClick={() => handleKnow(false)}
-              className="flex-1 py-3.5 rounded-xl border-2 border-red-200 bg-red-50 text-red-600 font-semibold text-sm hover:bg-red-100 transition-colors">
-              Still learning 🔄
-            </button>
-            <button onClick={() => handleKnow(true)}
-              className="flex-1 py-3.5 rounded-xl border-2 border-green-200 bg-green-50 text-green-700 font-semibold text-sm hover:bg-green-100 transition-colors">
-              Got it ✓
-            </button>
-          </div>
-        ) : (
-          <div className="flex gap-3">
-            {current > 0 && (
-              <button onClick={() => { setCurrent(c => c - 1); setFlipped(false) }}
-                className="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">← Back</button>
-            )}
-            <button onClick={() => setFlipped(true)}
-              className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-colors">Reveal Answer</button>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  if (stage === 'done') {
+  if (cards) {
+    const knownCount = known.size
     return (
       <div className="space-y-4">
         {assignmentId && (
@@ -186,32 +130,90 @@ export default function FlashcardGenerator({ assignmentId, initialTopic, initial
             </button>
           </div>
         )}
-        <div className={`rounded-2xl px-6 py-6 text-center space-y-2 ${knownCount === cards.length ? 'bg-yellow-50 border border-yellow-200' : 'bg-indigo-50 border border-indigo-200'}`}>
-          <div className="text-4xl mb-1">{knownCount === cards.length ? '🏆' : '📚'}</div>
-          <p className="text-2xl font-bold text-gray-900">{knownCount} / {cards.length}</p>
-          <p className="text-sm text-gray-600">cards marked as known</p>
-          <p className="text-xs text-gray-400 mt-1">{topic}{grade ? ` · Grade ${grade}` : ''}</p>
+
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-gray-700">{cards.length} cards</p>
+          <p className="text-xs text-indigo-600 font-medium">{knownCount} / {cards.length} known ✓</p>
         </div>
 
-        {knownCount < cards.length && (
-          <div className="bg-white rounded-xl border border-gray-100 px-4 py-3">
-            <p className="text-sm font-medium text-gray-700 mb-2">Cards to review ({cards.length - knownCount}):</p>
-            {cards.filter((_, i) => !known[i]).map((c, i) => (
-              <div key={i} className="py-1.5 border-b border-gray-50 last:border-0">
-                <p className="text-xs font-semibold text-gray-700">{c.front}</p>
-                <p className="text-xs text-gray-400">{c.back}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="flex flex-col gap-3">
-          <button onClick={restart} className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-colors">Study Again</button>
-          <button onClick={reset} className="w-full py-3.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors">New Topic</button>
+        <div className="space-y-3">
+          {cards.map((card, i) => (
+            <div key={i} className={`rounded-2xl border-2 overflow-hidden transition-all ${known.has(i) ? 'border-green-300 opacity-60' : 'border-gray-100'}`}>
+              <button
+                onClick={() => toggle(i)}
+                className="w-full text-left px-5 py-4 bg-white hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Front</p>
+                    <p className="text-sm font-semibold text-gray-800">{card.front}</p>
+                  </div>
+                  <span className="text-gray-400 text-xs shrink-0 mt-1">{flipped.has(i) ? '▲' : '▼'}</span>
+                </div>
+              </button>
+              {flipped.has(i) && (
+                <div className="px-5 py-4 bg-indigo-50 border-t border-indigo-100">
+                  <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Back</p>
+                  <p className="text-sm text-indigo-800">{card.back}</p>
+                  <button
+                    onClick={() => markKnown(i)}
+                    className={`mt-3 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${known.has(i) ? 'bg-green-100 text-green-700' : 'bg-white text-gray-500 hover:bg-green-50 hover:text-green-600 border border-gray-200'}`}
+                  >
+                    {known.has(i) ? '✓ Known' : 'Mark as known'}
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
+
+        <button onClick={reset}
+          className="w-full py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
+          New Flashcards
+        </button>
       </div>
     )
   }
 
-  return null
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6 space-y-5">
+      <div className="space-y-3">
+        <label className="block text-sm font-semibold text-gray-700">Topic</label>
+        <input type="text" placeholder='e.g. "Solar System" or "Fractions"'
+          value={topic}
+          onChange={e => { setTopic(e.target.value); if (e.target.value) clearImage() }}
+          onKeyDown={e => e.key === 'Enter' && handleGenerate()}
+          disabled={!!imageBase64}
+          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:opacity-40" />
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-gray-100" />
+          <span className="text-xs text-gray-400">or</span>
+          <div className="flex-1 h-px bg-gray-100" />
+        </div>
+        <PhotoUpload
+          imagePreview={imagePreview}
+          onSelect={handleImageSelect}
+          onClear={clearImage}
+          label="Upload homework photo"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-sm font-semibold text-gray-700">Grade <span className="text-gray-400 font-normal">(optional)</span></label>
+        <div className="flex flex-wrap gap-2">
+          {[1,2,3,4,5,6,7,8].map(g => (
+            <button key={g} type="button" onClick={() => setGrade(grade === g ? null : g)}
+              className={`w-10 h-10 rounded-xl border-2 text-sm font-semibold transition-all ${grade === g ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}>{g}</button>
+          ))}
+        </div>
+      </div>
+
+      {error && <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-3">{error}</p>}
+
+      <button onClick={handleGenerate} disabled={!topic.trim() && !imageBase64}
+        className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold text-base transition-colors">
+        Generate Flashcards →
+      </button>
+    </div>
+  )
 }

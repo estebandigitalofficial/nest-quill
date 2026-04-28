@@ -6,22 +6,37 @@ export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'flashcards')
   if (limited) return limited
   try {
-    const { topic, grade } = await request.json() as { topic: string; grade?: number }
-
-    if (!topic?.trim() || topic.trim().length < 3) {
-      return NextResponse.json({ message: 'Please enter a topic.' }, { status: 400 })
-    }
-
-    // ── Topic classification ──────────────────────────────────────────────────
-    const classification = classifyTopic(topic.trim())
-    if (classification === 'redirect') {
-      return NextResponse.json({ message: REDIRECT_MESSAGE }, { status: 422 })
-    }
-    if (classification === 'clarify') {
-      return NextResponse.json({ message: CLARIFY_MESSAGE }, { status: 422 })
+    const { topic, grade, imageBase64, mimeType } = await request.json() as {
+      topic?: string
+      grade?: number
+      imageBase64?: string
+      mimeType?: string
     }
 
     const gradeLabel = grade ? `grade ${grade}` : 'elementary school'
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let userContent: any
+    if (imageBase64) {
+      userContent = [
+        { type: 'image_url', image_url: { url: `data:${mimeType ?? 'image/jpeg'};base64,${imageBase64}` } },
+        { type: 'text', text: `Create 10 flashcards for a ${gradeLabel} student based on the content shown in this image.` },
+      ]
+    } else {
+      if (!topic?.trim() || topic.trim().length < 3) {
+        return NextResponse.json({ message: 'Please enter a topic.' }, { status: 400 })
+      }
+
+      const classification = classifyTopic(topic.trim())
+      if (classification === 'redirect') {
+        return NextResponse.json({ message: REDIRECT_MESSAGE }, { status: 422 })
+      }
+      if (classification === 'clarify') {
+        return NextResponse.json({ message: CLARIFY_MESSAGE }, { status: 422 })
+      }
+
+      userContent = `Create 10 flashcards on: ${topic.trim()} (${gradeLabel})`
+    }
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -49,7 +64,7 @@ Output valid JSON:
           },
           {
             role: 'user',
-            content: `Create 10 flashcards on: ${topic.trim()} (${gradeLabel})`,
+            content: userContent,
           },
         ],
         response_format: { type: 'json_object' },

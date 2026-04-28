@@ -7,10 +7,11 @@ type Stage = 'setup' | 'practice' | 'results'
 
 interface Props {
   assignmentId?: string
+  initialWords?: string[]
 }
 
-export default function SpellingPractice({ assignmentId }: Props) {
-  const [wordInput, setWordInput] = useState('')
+export default function SpellingPractice({ assignmentId, initialWords }: Props) {
+  const [wordInput, setWordInput] = useState(initialWords ? initialWords.join('\n') : '')
   const [words, setWords] = useState<string[]>([])
   const [stage, setStage] = useState<Stage>('setup')
   const [current, setCurrent] = useState(0)
@@ -18,7 +19,10 @@ export default function SpellingPractice({ assignmentId }: Props) {
   const [results, setResults] = useState<{ word: string; typed: string; correct: boolean }[]>([])
   const [revealed, setRevealed] = useState(false)
   const [shake, setShake] = useState(false)
+  const [extracting, setExtracting] = useState(false)
+  const [extractError, setExtractError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const photoRef = useRef<HTMLInputElement>(null)
 
   const [xpEarned, setXpEarned] = useState<number | null>(null)
   const submittedRef = useRef(false)
@@ -53,6 +57,40 @@ export default function SpellingPractice({ assignmentId }: Props) {
     setStage('practice')
   }
 
+  async function handlePhotoImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setExtractError(null)
+    setExtracting(true)
+
+    const reader = new FileReader()
+    reader.onload = async () => {
+      const dataUrl = reader.result as string
+      const base64 = dataUrl.split(',')[1]
+      const mimeType = dataUrl.match(/:(.*?);/)?.[1] ?? 'image/jpeg'
+
+      try {
+        const res = await fetch('/api/learning/extract-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageBase64: base64, mimeType, mode: 'spelling' }),
+        })
+        const data = await res.json()
+        setExtracting(false)
+        if (!res.ok) { setExtractError(data.message ?? 'Could not extract words.'); return }
+        const extracted = data.text as string
+        const lines = extracted.split('\n').map((w: string) => w.trim().toLowerCase()).filter((w: string) => w.length > 0)
+        if (lines.length === 0) { setExtractError('No words found in this image. Try a clearer photo.'); return }
+        setWordInput(lines.join('\n'))
+      } catch {
+        setExtracting(false)
+        setExtractError('Failed to read image.')
+      }
+    }
+    reader.readAsDataURL(file)
+  }
+
   function handleCheck() {
     const word = words[current]
     const typed = answer.trim().toLowerCase()
@@ -85,12 +123,44 @@ export default function SpellingPractice({ assignmentId }: Props) {
     return (
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6 space-y-5">
         <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">Enter your spelling words</label>
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-semibold text-gray-700">Enter your spelling words</label>
+            <button
+              type="button"
+              onClick={() => photoRef.current?.click()}
+              disabled={extracting}
+              className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-500 disabled:opacity-40 transition-colors"
+            >
+              {extracting ? (
+                <>
+                  <span className="w-3.5 h-3.5 border border-indigo-300 border-t-indigo-600 rounded-full animate-spin inline-block" />
+                  Reading photo…
+                </>
+              ) : (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Import from photo
+                </>
+              )}
+            </button>
+          </div>
+          <input
+            ref={photoRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoImport}
+            className="hidden"
+          />
           <p className="text-xs text-gray-400">Separate with commas or put each word on a new line</p>
           <textarea rows={5}
             placeholder={"cat\ndog\nbird\n\nor: cat, dog, bird"}
             value={wordInput} onChange={e => setWordInput(e.target.value)}
             className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-mono text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent resize-none" />
+          {extractError && <p className="text-xs text-red-500">{extractError}</p>}
           {parsed.length > 0 && (
             <p className="text-xs text-indigo-600 font-medium">{parsed.length} word{parsed.length !== 1 ? 's' : ''} entered</p>
           )}
@@ -106,7 +176,6 @@ export default function SpellingPractice({ assignmentId }: Props) {
   if (stage === 'practice') {
     return (
       <div className="space-y-4">
-        {/* Progress */}
         <div className="flex items-center justify-between text-xs text-gray-400">
           <span>{current + 1} of {words.length}</span>
           <span className="text-green-600 font-medium">{score} correct ✓</span>
@@ -115,14 +184,12 @@ export default function SpellingPractice({ assignmentId }: Props) {
           <div className="bg-indigo-500 h-1.5 rounded-full transition-all" style={{ width: `${(current / words.length) * 100}%` }} />
         </div>
 
-        {/* Word hint */}
         <div className="bg-white rounded-2xl border-2 border-gray-100 px-6 py-8 text-center space-y-3">
           <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Spell this word</p>
           <p className="font-mono text-3xl font-bold text-gray-300 tracking-widest">{revealed ? word.toUpperCase() : maskedWord}</p>
           <p className="text-xs text-gray-300">{word.length} letters</p>
         </div>
 
-        {/* Input */}
         <div className={`transition-transform ${shake ? 'animate-bounce' : ''}`}>
           <input ref={inputRef}
             type="text" value={answer}

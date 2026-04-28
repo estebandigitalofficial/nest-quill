@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { submitAssignment } from '@/lib/utils/submitAssignment'
+import PhotoUpload from '@/components/learning/PhotoUpload'
 
 const SUBJECTS = ['Math','Science','Reading','History','Social Studies','Spelling','English','Art']
 
@@ -14,17 +15,23 @@ interface StudyGuide {
   practice_questions: { question: string; answer: string }[]
 }
 
+interface InitialImage { base64: string; mimeType: string; preview: string }
+
 interface Props {
   assignmentId?: string
   initialTopic?: string
   initialGrade?: number
   initialSubject?: string
+  initialImage?: InitialImage
 }
 
-export default function StudyGuideGenerator({ assignmentId, initialTopic, initialGrade, initialSubject }: Props) {
+export default function StudyGuideGenerator({ assignmentId, initialTopic, initialGrade, initialSubject, initialImage }: Props) {
   const [topic, setTopic] = useState(initialTopic ?? '')
   const [subject, setSubject] = useState(initialSubject ?? '')
   const [grade, setGrade] = useState<number | null>(initialGrade ?? null)
+  const [imageBase64, setImageBase64] = useState<string | null>(initialImage?.base64 ?? null)
+  const [imageMime, setImageMime] = useState(initialImage?.mimeType ?? 'image/jpeg')
+  const [imagePreview, setImagePreview] = useState<string | null>(initialImage?.preview ?? null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [guide, setGuide] = useState<StudyGuide | null>(null)
@@ -32,6 +39,27 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
 
   const [xpEarned, setXpEarned] = useState<number | null>(null)
   const submittedRef = useRef(false)
+
+  const generateGuide = useCallback(async (params: {
+    topic?: string; subject?: string; grade?: number; imageBase64?: string; mimeType?: string
+  }) => {
+    setError(null); setLoading(true); setGuide(null)
+    try {
+      const res = await fetch('/api/learning/study-guide', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      })
+      const data = await res.json()
+      setLoading(false)
+      if (!res.ok) { setError(data.message); return }
+      setGuide(data)
+      setOpenAnswers(new Set())
+    } catch {
+      setLoading(false)
+      setError('Something went wrong.')
+    }
+  }, [])
 
   // Auto-submit when guide is shown
   useEffect(() => {
@@ -43,28 +71,33 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
     }
   }, [guide, assignmentId])
 
-  // Auto-generate if coming from an assignment with a pre-filled topic
+  // Auto-generate from assignment or initial image
   useEffect(() => {
     if (assignmentId && initialTopic && !guide && !loading) {
-      handleGenerate()
+      generateGuide({ topic: initialTopic.trim(), subject: initialSubject, grade: initialGrade ?? undefined })
+    } else if (initialImage && !guide && !loading) {
+      generateGuide({ imageBase64: initialImage.base64, mimeType: initialImage.mimeType, grade: initialGrade ?? undefined })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function handleGenerate() {
-    if (!topic.trim()) { setError('Enter a topic first.'); return }
-    setError(null); setLoading(true); setGuide(null)
-
-    const res = await fetch('/api/learning/study-guide', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic: topic.trim(), subject: subject || undefined, grade: grade ?? undefined }),
+  function handleGenerate() {
+    if (!topic.trim() && !imageBase64) { setError('Enter a topic or upload a photo.'); return }
+    generateGuide({
+      topic: imageBase64 ? undefined : topic.trim(),
+      subject: subject || undefined,
+      grade: grade ?? undefined,
+      imageBase64: imageBase64 ?? undefined,
+      mimeType: imageMime,
     })
-    const data = await res.json()
-    setLoading(false)
-    if (!res.ok) { setError(data.message); return }
-    setGuide(data)
-    setOpenAnswers(new Set())
+  }
+
+  function handleImageSelect(base64: string, mimeType: string, preview: string) {
+    setImageBase64(base64); setImageMime(mimeType); setImagePreview(preview); setTopic('')
+  }
+
+  function clearImage() {
+    setImageBase64(null); setImagePreview(null)
   }
 
   function toggleAnswer(i: number) {
@@ -75,7 +108,9 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
     return (
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-14 text-center space-y-4">
         <div className="w-10 h-10 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin mx-auto" />
-        <p className="text-sm font-medium text-gray-600">Building your study guide…</p>
+        <p className="text-sm font-medium text-gray-600">
+          {imageBase64 || initialImage ? 'Reading your photo…' : 'Building your study guide…'}
+        </p>
       </div>
     )
   }
@@ -96,14 +131,12 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
           </div>
         )}
 
-        {/* Header */}
         <div className="bg-oxford rounded-2xl px-6 py-5 text-white">
           <p className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-1">Study Guide{grade ? ` · Grade ${grade}` : ''}</p>
           <h2 className="font-serif text-xl">{guide.title}</h2>
           <p className="text-sm mt-2" style={{ color: '#94a3b8' }}>{guide.overview}</p>
         </div>
 
-        {/* Key terms */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5 space-y-3">
           <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest">Key Terms</p>
           <div className="grid gap-2">
@@ -116,7 +149,6 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
           </div>
         </div>
 
-        {/* Main concepts */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5 space-y-4">
           <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest">Main Concepts</p>
           {guide.main_concepts.map((c, i) => (
@@ -127,7 +159,6 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
           ))}
         </div>
 
-        {/* Remember */}
         <div className="bg-indigo-50 border border-indigo-100 rounded-2xl px-6 py-5 space-y-3">
           <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest">Remember 🧠</p>
           <ul className="space-y-2">
@@ -139,7 +170,6 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
           </ul>
         </div>
 
-        {/* Practice questions */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5 space-y-3">
           <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest">Practice Questions</p>
           {guide.practice_questions.map((pq, i) => (
@@ -158,7 +188,7 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
           ))}
         </div>
 
-        <button onClick={() => { setGuide(null); setTopic(initialTopic ?? ''); setSubject(initialSubject ?? ''); setGrade(initialGrade ?? null); submittedRef.current = false; setXpEarned(null) }}
+        <button onClick={() => { setGuide(null); setTopic(initialTopic ?? ''); setSubject(initialSubject ?? ''); setGrade(initialGrade ?? null); clearImage(); submittedRef.current = false; setXpEarned(null) }}
           className="w-full py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
           New Study Guide
         </button>
@@ -168,11 +198,23 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6 space-y-6">
-      <div className="space-y-2">
+      <div className="space-y-3">
         <label className="block text-sm font-semibold text-gray-700">Topic</label>
         <input type="text" placeholder='e.g. "The Water Cycle" or "World War II"'
-          value={topic} onChange={e => setTopic(e.target.value)}
-          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" />
+          value={topic} onChange={e => { setTopic(e.target.value); if (e.target.value) clearImage() }}
+          disabled={!!imageBase64}
+          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:opacity-40" />
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-gray-100" />
+          <span className="text-xs text-gray-400">or</span>
+          <div className="flex-1 h-px bg-gray-100" />
+        </div>
+        <PhotoUpload
+          imagePreview={imagePreview}
+          onSelect={handleImageSelect}
+          onClear={clearImage}
+          label="Upload homework photo"
+        />
       </div>
       <div className="space-y-2">
         <label className="block text-sm font-semibold text-gray-700">Subject <span className="text-gray-400 font-normal">(optional)</span></label>
@@ -195,7 +237,7 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
         </div>
       </div>
       {error && <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-3">{error}</p>}
-      <button onClick={handleGenerate} disabled={!topic.trim()}
+      <button onClick={handleGenerate} disabled={!topic.trim() && !imageBase64}
         className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold text-base transition-colors">
         Generate Study Guide →
       </button>

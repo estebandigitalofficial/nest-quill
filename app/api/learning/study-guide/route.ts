@@ -6,22 +6,38 @@ export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'study-guide')
   if (limited) return limited
   try {
-    const { topic, subject, grade } = await request.json() as { topic: string; subject?: string; grade?: number }
-
-    if (!topic?.trim() || topic.trim().length < 3) {
-      return NextResponse.json({ message: 'Please enter a topic.' }, { status: 400 })
-    }
-
-    // ── Topic classification ──────────────────────────────────────────────────
-    const classification = classifyTopic(topic.trim())
-    if (classification === 'redirect') {
-      return NextResponse.json({ message: REDIRECT_MESSAGE }, { status: 422 })
-    }
-    if (classification === 'clarify') {
-      return NextResponse.json({ message: CLARIFY_MESSAGE }, { status: 422 })
+    const { topic, subject, grade, imageBase64, mimeType } = await request.json() as {
+      topic?: string
+      subject?: string
+      grade?: number
+      imageBase64?: string
+      mimeType?: string
     }
 
     const gradeLabel = grade ? `grade ${grade}` : 'elementary school'
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let userContent: any
+    if (imageBase64) {
+      userContent = [
+        { type: 'image_url', image_url: { url: `data:${mimeType ?? 'image/jpeg'};base64,${imageBase64}` } },
+        { type: 'text', text: `Create a study guide for a ${gradeLabel} student${subject ? ` for ${subject}` : ''} based on the content shown in this image.` },
+      ]
+    } else {
+      if (!topic?.trim() || topic.trim().length < 3) {
+        return NextResponse.json({ message: 'Please enter a topic.' }, { status: 400 })
+      }
+
+      const classification = classifyTopic(topic.trim())
+      if (classification === 'redirect') {
+        return NextResponse.json({ message: REDIRECT_MESSAGE }, { status: 422 })
+      }
+      if (classification === 'clarify') {
+        return NextResponse.json({ message: CLARIFY_MESSAGE }, { status: 422 })
+      }
+
+      userContent = `Create a study guide for: ${topic.trim()}${subject ? ` (${subject})` : ''}, ${gradeLabel}`
+    }
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -58,7 +74,7 @@ Output valid JSON:
           },
           {
             role: 'user',
-            content: `Create a study guide for: ${topic.trim()}${subject ? ` (${subject})` : ''}, ${gradeLabel}`,
+            content: userContent,
           },
         ],
         response_format: { type: 'json_object' },

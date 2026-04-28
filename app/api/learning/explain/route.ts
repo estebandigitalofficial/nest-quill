@@ -7,37 +7,49 @@ export async function POST(request: NextRequest) {
   if (limited) return limited
 
   try {
-    const { topic, grade } = await request.json() as { topic: string; grade?: number }
-
-    const topicTrimmed = topic?.trim() ?? ''
-
-    // ── Input validation ──────────────────────────────────────────────────────
-    if (topicTrimmed.length < 10) {
-      return NextResponse.json(
-        { message: 'Please enter a more specific topic (at least 10 characters) so I can explain it well.' },
-        { status: 400 }
-      )
-    }
-    if (topicTrimmed.length > 1000) {
-      return NextResponse.json(
-        { message: 'That topic is a bit long. Try shortening it to a single concept or question.' },
-        { status: 400 }
-      )
+    const { topic, grade, imageBase64, mimeType } = await request.json() as {
+      topic?: string
+      grade?: number
+      imageBase64?: string
+      mimeType?: string
     }
 
-    // ── Topic classification ──────────────────────────────────────────────────
-    const classification = classifyTopic(topicTrimmed)
-
-    if (classification === 'redirect') {
-      return NextResponse.json({ message: REDIRECT_MESSAGE }, { status: 422 })
-    }
-    if (classification === 'clarify') {
-      return NextResponse.json({ message: CLARIFY_MESSAGE }, { status: 422 })
-    }
-
-    // ── Generate explanation ──────────────────────────────────────────────────
     const gradeLabel = grade ? `grade ${grade}` : 'elementary school'
     const ageLabel   = grade ? `a ${4 + grade}-${5 + grade} year old` : 'a young student'
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let userContent: any
+    if (imageBase64) {
+      userContent = [
+        { type: 'image_url', image_url: { url: `data:${mimeType ?? 'image/jpeg'};base64,${imageBase64}` } },
+        { type: 'text', text: `Explain the main concept shown in this image to a ${gradeLabel} student.` },
+      ]
+    } else {
+      const topicTrimmed = topic?.trim() ?? ''
+
+      if (topicTrimmed.length < 10) {
+        return NextResponse.json(
+          { message: 'Please enter a more specific topic (at least 10 characters) so I can explain it well.' },
+          { status: 400 }
+        )
+      }
+      if (topicTrimmed.length > 1000) {
+        return NextResponse.json(
+          { message: 'That topic is a bit long. Try shortening it to a single concept or question.' },
+          { status: 400 }
+        )
+      }
+
+      const classification = classifyTopic(topicTrimmed)
+      if (classification === 'redirect') {
+        return NextResponse.json({ message: REDIRECT_MESSAGE }, { status: 422 })
+      }
+      if (classification === 'clarify') {
+        return NextResponse.json({ message: CLARIFY_MESSAGE }, { status: 422 })
+      }
+
+      userContent = `Explain "${topicTrimmed}" to a ${gradeLabel} student.`
+    }
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -81,7 +93,7 @@ Output valid JSON:
           },
           {
             role: 'user',
-            content: `Explain "${topicTrimmed}" to a ${gradeLabel} student.`,
+            content: userContent,
           },
         ],
         response_format: { type: 'json_object' },

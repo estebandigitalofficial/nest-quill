@@ -10,6 +10,14 @@ export const metadata: Metadata = {
 
 const TOOLS = [
   {
+    href: '/learning/scan-homework',
+    emoji: '📸',
+    title: 'Scan Homework',
+    desc: 'Snap a photo of any worksheet or textbook page — instantly get flashcards, explanations, study guides, spelling practice, or trivia.',
+    tag: 'New',
+    color: 'rose',
+  },
+  {
     href: '/learning/quiz',
     emoji: '🧠',
     title: 'Quiz Generator',
@@ -21,24 +29,24 @@ const TOOLS = [
     href: '/learning/flashcards',
     emoji: '🃏',
     title: 'Flashcards',
-    desc: 'Any topic → 10 study cards. Tap to flip. Mark what you know.',
-    tag: null,
+    desc: 'Any topic or photo → 10 study cards. Tap to flip. Mark what you know.',
+    tag: 'Photo upload',
     color: 'violet',
   },
   {
     href: '/learning/explain',
     emoji: '💡',
     title: 'Concept Explainer',
-    desc: 'Ask about anything. Get a simple explanation, a real-world analogy, and something to try at home.',
-    tag: null,
+    desc: 'Ask about anything or upload a photo. Get a simple explanation, a real-world analogy, and something to try at home.',
+    tag: 'Photo upload',
     color: 'amber',
   },
   {
     href: '/learning/study-guide',
     emoji: '📋',
     title: 'Study Guide',
-    desc: 'Key terms, main concepts, memory tips, and practice questions — all in one place.',
-    tag: null,
+    desc: 'Key terms, main concepts, memory tips, and practice questions — from any topic or photo.',
+    tag: 'Photo upload',
     color: 'emerald',
   },
   {
@@ -68,6 +76,7 @@ const TOOLS = [
 ]
 
 const COLOR_MAP: Record<string, { border: string; bg: string; tag: string }> = {
+  rose: { border: 'hover:border-rose-300', bg: 'bg-rose-50', tag: 'bg-rose-100 text-rose-700' },
   indigo: { border: 'hover:border-indigo-300', bg: 'bg-indigo-50', tag: 'bg-indigo-100 text-indigo-700' },
   violet: { border: 'hover:border-violet-300', bg: 'bg-violet-50', tag: 'bg-violet-100 text-violet-700' },
   amber: { border: 'hover:border-amber-300', bg: 'bg-amber-50', tag: 'bg-amber-100 text-amber-700' },
@@ -98,7 +107,7 @@ export default function LearningPage() {
               <span className="text-indigo-300 italic">learn better.</span>
             </h1>
             <p className="text-base max-w-lg mx-auto" style={{ color: '#94a3b8' }}>
-              7 free AI-powered tools for grades 1–8. No account required.
+              8 free AI-powered tools for grades 1–8. No account required.
             </p>
           </div>
         </section>
