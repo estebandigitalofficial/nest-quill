@@ -336,7 +336,7 @@ Deno.serve(async (req) => {
 
       const { data: mockSaved, error: mockErr } = await supabase
         .from('generated_stories')
-        .insert({
+        .upsert({
           request_id: requestId,
           title: `${storyRequest.child_name}'s Mock Story`,
           subtitle: 'A test story',
@@ -346,11 +346,13 @@ Deno.serve(async (req) => {
           full_text_json: mockPages,
           model_used: 'mock',
           generation_time_ms: 0,
-        })
+        }, { onConflict: 'request_id' })
         .select('id')
         .single()
 
       if (mockErr || !mockSaved) throw new Error(`Mock story insert failed: ${mockErr?.message}`)
+
+      await supabase.from('story_scenes').delete().eq('request_id', requestId)
 
       const mockScenes = mockPages.map(p => ({
         story_id: mockSaved.id,
@@ -402,10 +404,10 @@ Deno.serve(async (req) => {
       generation_time_ms: generationTimeMs,
     })
 
-    // Save to generated_stories table
+    // Save to generated_stories table — upsert so re-runs overwrite cleanly
     const { data: savedStory, error: storyInsertError } = await supabase
       .from('generated_stories')
-      .insert({
+      .upsert({
         request_id: requestId,
         title: story.title,
         subtitle: story.subtitle || null,
@@ -415,7 +417,7 @@ Deno.serve(async (req) => {
         full_text_json: story.pages,
         model_used: 'gpt-4o',
         generation_time_ms: generationTimeMs,
-      })
+      }, { onConflict: 'request_id' })
       .select('id')
       .single()
 
@@ -423,7 +425,9 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to save story: ${storyInsertError?.message}`)
     }
 
-    // Save each page as a story_scene row (image generation will fill in image_url later)
+    // Delete any existing scenes from a prior run, then insert fresh ones
+    await supabase.from('story_scenes').delete().eq('request_id', requestId)
+
     const sceneRows = story.pages.map((page: Record<string, unknown>) => ({
       story_id: savedStory.id,
       request_id: requestId,
@@ -544,10 +548,14 @@ Deno.serve(async (req) => {
     }
 
     // ── Step 3: Assemble PDF ──────────────────────────────────────────────
-    await setStatus('assembling_pdf', 'Assembling your book…', 80)
+    // Free plan: no PDF download allowed — skip assembly to stay within the
+    // 150s Edge Function timeout (8 DALL-E images alone take ~120s).
+    await setStatus('assembling_pdf', 'Finishing up…', 80)
 
     let pdfStoragePath: string | null = null
-    try {
+    if (storyRequest.plan_tier === 'free') {
+      await log('assemble_pdf', 'PDF assembly skipped for free plan (no download access)')
+    } else try {
       const { data: allScenes } = await supabase
         .from('story_scenes')
         .select('page_number, page_text')
