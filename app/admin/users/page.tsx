@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
 import AdminUserControls from '@/components/admin/AdminUserControls'
+import AdminUserActions from '@/components/admin/AdminUserActions'
 import AdminUserSearch from '@/components/admin/AdminUserSearch'
 import type { Profile, PlanTier } from '@/types/database'
 import { formatAZTimeShort } from '@/lib/utils/formatTime'
@@ -23,6 +24,7 @@ const PLAN_BADGE: Record<PlanTier, string> = {
 export default async function AdminUsersPage({ searchParams }: PageProps) {
   const ctx = await getAdminContext()
   if (!ctx) redirect('/')
+  const currentUserId = ctx.userId
 
   const { q } = await searchParams
   const adminSupabase = createAdminClient()
@@ -45,8 +47,8 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
   // Fetch auth.users for real created_at — profiles.created_at is unreliable
   // because rows were backfilled at a single point in time.
   const { data: authUsersData } = await adminSupabase.auth.admin.listUsers({ perPage: 1000 })
-  const authCreatedAt = new Map(
-    (authUsersData?.users ?? []).map(u => [u.id, u.created_at])
+  const authMeta = new Map(
+    (authUsersData?.users ?? []).map(u => [u.id, { created_at: u.created_at, banned_until: u.banned_until ?? null }])
   )
 
   let query = adminSupabase
@@ -57,10 +59,16 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
   if (q) query = query.ilike('email', `%${q}%`)
 
   const { data: users } = await query
-  const rows = (users ?? []).map(u => ({
-    ...(u as unknown as Profile & { is_admin: boolean }),
-    created_at: authCreatedAt.get(u.id) ?? new Date(0).toISOString(),
-  })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  const rows = (users ?? []).map(u => {
+    const meta = authMeta.get(u.id)
+    const bannedUntil = meta?.banned_until ?? null
+    const isBanned = !!bannedUntil && new Date(bannedUntil) > new Date()
+    return {
+      ...(u as unknown as Profile & { is_admin: boolean }),
+      created_at: meta?.created_at ?? new Date(0).toISOString(),
+      isBanned,
+    }
+  }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -121,10 +129,13 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                     {rows.map((user) => (
                       <tr key={user.id} className="hover:bg-gray-800/50 transition-colors">
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-white font-medium text-sm">{user.email}</span>
                             {user.is_admin && (
                               <span className="text-[10px] bg-brand-900 text-brand-400 font-semibold px-1.5 py-0.5 rounded-full">admin</span>
+                            )}
+                            {user.isBanned && (
+                              <span className="text-[10px] bg-orange-950 text-orange-400 font-semibold px-1.5 py-0.5 rounded-full">banned</span>
                             )}
                           </div>
                           <p className="text-[10px] text-gray-600 font-mono mt-0.5">{user.id.slice(0, 8)}…</p>
@@ -142,6 +153,12 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                               currentPlan={user.plan_tier}
                               booksGenerated={user.books_generated}
                               booksLimit={user.books_limit}
+                            />
+                            <AdminUserActions
+                              userId={user.id}
+                              isSelf={user.id === currentUserId}
+                              userEmail={user.email}
+                              isBanned={user.isBanned}
                             />
                           </div>
                         </td>
