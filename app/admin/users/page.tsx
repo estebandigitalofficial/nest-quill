@@ -84,7 +84,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
         <div className="grid grid-cols-3 gap-4">
           <StatCard label="Total users" value={totalUsers ?? 0} />
           <StatCard label="Paid users" value={paidUsers ?? 0} color="green" />
-          <StatCard label="Created a story" value={activeUsers ?? 0} color="amber" />
+          <StatCard label="Story submissions" value={activeUsers ?? 0} color="amber" />
         </div>
 
         {/* Search + table */}
