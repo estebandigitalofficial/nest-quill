@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
 import AdminUserSearch from '@/components/admin/AdminUserSearch'
+import AdminLogoutButton from '@/components/admin/AdminLogoutButton'
 import { formatAZTimeShort } from '@/lib/utils/formatTime'
 
 interface PageProps {
@@ -109,6 +110,7 @@ export default async function AdminGuestsPage({ searchParams }: PageProps) {
           <Link href="/admin/writer" className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors">
             Writer →
           </Link>
+          <AdminLogoutButton />
         </div>
       </header>
 

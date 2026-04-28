@@ -6,6 +6,7 @@ import { getAdminContext } from '@/lib/admin/guard'
 import AdminRetryButton from '@/components/admin/AdminRetryButton'
 import AdminForceRequeueButton from '@/components/admin/AdminForceRequeueButton'
 import AdminFilters from '@/components/admin/AdminFilters'
+import AdminLogoutButton from '@/components/admin/AdminLogoutButton'
 import type { StoryRequest } from '@/types/database'
 import { formatAZTimeShort, formatAZTimeOnly } from '@/lib/utils/formatTime'
 
@@ -166,6 +167,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
           <Link href="/admin/writer" className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors">
             Writer →
           </Link>
+          <AdminLogoutButton />
         </div>
       </header>
 
