@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import LearningDropdown from './LearningDropdown'
+import MobileMenu from './MobileMenu'
 
 interface Props {
   right?: ReactNode
@@ -13,12 +14,19 @@ export default function SiteHeader({ right }: Props) {
         <Link href="/" className="font-serif text-xl font-semibold text-oxford shrink-0">
           Nest &amp; Quill
         </Link>
+
+        {/* Desktop nav — hidden on mobile */}
         <nav className="hidden md:flex items-center gap-5">
           <LearningDropdown />
           <Link href="/classroom" className="text-sm text-charcoal-light hover:text-oxford transition-colors">Classroom</Link>
           <Link href="/pricing" className="text-sm text-charcoal-light hover:text-oxford transition-colors">Pricing</Link>
         </nav>
-        {right && <div className="flex items-center gap-4">{right}</div>}
+
+        {/* Right slot + mobile hamburger — grouped so they stay together */}
+        <div className="flex items-center gap-3">
+          {right && <div className="flex items-center gap-4">{right}</div>}
+          <MobileMenu />
+        </div>
       </div>
     </header>
   )

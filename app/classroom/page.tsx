@@ -14,13 +14,12 @@ export default async function ClassroomPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (user) {
-    const role = user.user_metadata?.account_type ?? 'parent'
-    if (role === 'educator') redirect('/classroom/educator')
-    if (role === 'student') redirect('/classroom/student')
-  }
+  const role = user?.user_metadata?.account_type ?? 'parent'
+  if (role === 'educator') redirect('/classroom/educator')
+  if (role === 'student') redirect('/classroom/student')
 
-  // Logged-out landing (or parent account)
+  // Logged-out, OR logged-in parent with no classroom role yet
+  const isLoggedIn = !!user
   return (
     <div className="h-dvh bg-parchment flex flex-col">
       <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Home</Link>} />
@@ -48,7 +47,7 @@ export default async function ClassroomPage() {
         {/* Role cards */}
         <section className="py-14 px-6">
           <div className="max-w-2xl mx-auto grid sm:grid-cols-2 gap-6">
-            <Link href="/signup?role=educator"
+            <Link href={isLoggedIn ? '/classroom/activate?role=educator' : '/signup?role=educator'}
               className="bg-white rounded-2xl border-2 border-gray-100 hover:border-brand-300 px-7 py-8 flex flex-col gap-4 transition-all hover:shadow-md group">
               <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-3xl">🏫</div>
               <div>
@@ -58,7 +57,7 @@ export default async function ClassroomPage() {
               <span className="text-sm font-semibold text-brand-600 group-hover:text-brand-700 transition-colors">Get started →</span>
             </Link>
 
-            <Link href="/signup?role=student"
+            <Link href={isLoggedIn ? '/classroom/activate?role=student' : '/signup?role=student'}
               className="bg-white rounded-2xl border-2 border-gray-100 hover:border-indigo-300 px-7 py-8 flex flex-col gap-4 transition-all hover:shadow-md group">
               <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-3xl">🎒</div>
               <div>
@@ -69,10 +68,12 @@ export default async function ClassroomPage() {
             </Link>
           </div>
 
-          <p className="text-center text-sm text-gray-400 mt-6">
-            Already have an account?{' '}
-            <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700">Sign in</Link>
-          </p>
+          {!isLoggedIn && (
+            <p className="text-center text-sm text-gray-400 mt-6">
+              Already have an account?{' '}
+              <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700">Sign in</Link>
+            </p>
+          )}
         </section>
 
         {/* Free vs coming soon */}
