@@ -638,7 +638,7 @@ Deno.serve(async (req) => {
       back.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: PDF_SIZE, color: PDF_CREAM })
       back.drawRectangle({ x: 0, y: PDF_SIZE - 8, width: PDF_SIZE, height: 8, color: PDF_BRAND_GOLD })
       back.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: 8, color: PDF_BRAND_GOLD })
-      const endText = '✦  The End  ✦'
+      const endText = '\xBB  The End  \xAB'
       const endW = fontSerifItalic.widthOfTextAtSize(endText, 20)
       const closingMsg = storyRequest.closing_message
       const endY = closingMsg ? PDF_SIZE * 0.65 : PDF_SIZE / 2 + 10
@@ -851,8 +851,21 @@ Deno.serve(async (req) => {
 
 // ── PDF helpers (inline — edge functions can't import from lib/) ──────────────
 
+// Strip characters WinAnsi (pdf-lib StandardFonts) can't encode.
+// Replaces common Unicode punctuation with ASCII equivalents first,
+// then drops anything above U+00FF.
+function sanitizePdfText(text: string): string {
+  return text
+    .replace(/[‘’]/g, "'")   // curly single quotes
+    .replace(/[“”]/g, '"')   // curly double quotes
+    .replace(/[–—]/g, '-')   // en/em dash
+    .replace(/…/g, '...')         // ellipsis
+    .replace(/[^\x00-\xFF]/g, '')      // drop everything outside Latin-1
+    .replace(/[\x81\x8D\x8F\x90\x9D]/g, '') // WinAnsi undefined bytes
+}
+
 function pdfWrapText(text, font, size, maxWidth) {
-  const words = text.replace(/\s+/g, ' ').trim().split(' ')
+  const words = sanitizePdfText(text).replace(/\s+/g, ' ').trim().split(' ')
   const lines = []
   let line = ''
   for (const word of words) {
