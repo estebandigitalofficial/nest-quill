@@ -15,13 +15,19 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const supabase = createClient()
 
-    // Register listener first so we don't miss the event
+    // When arriving via the server-side callback (token_hash flow), the recovery
+    // session is already stored in the cookie — getSession() picks it up
+    // immediately without needing a PASSWORD_RECOVERY event.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setReady(true)
+    })
+
+    // Fallback: listen for PASSWORD_RECOVERY for any client-side exchange path
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') setReady(true)
     })
 
-    // @supabase/ssr uses PKCE: the reset link arrives as ?code=... and must be
-    // exchanged explicitly — the browser client does not auto-exchange it.
+    // Handle ?code= directly in URL (PKCE direct-to-page fallback)
     const code = new URLSearchParams(window.location.search).get('code')
     if (code) {
       supabase.auth.exchangeCodeForSession(code).catch(() => {
