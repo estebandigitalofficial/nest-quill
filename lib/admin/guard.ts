@@ -19,7 +19,20 @@ export async function getAdminContext(): Promise<AdminContext | null> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || !user.email) return null
 
-  if (!getAdminEmails().includes(user.email)) return null
+  // Primary: profiles.is_admin (source of truth going forward)
+  const adminDb = createAdminClient()
+  const { data: profile } = await adminDb
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single()
+
+  const isAdminByProfile = profile?.is_admin === true
+
+  // Fallback: ADMIN_EMAILS env var (kept so we can never fully lock out)
+  const isAdminByEnv = getAdminEmails().includes(user.email)
+
+  if (!isAdminByProfile && !isAdminByEnv) return null
 
   return {
     userId: user.id,
