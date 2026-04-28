@@ -42,16 +42,25 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
     .select('id', { count: 'exact', head: true })
 
   // ── Users list ────────────────────────────────────────────────────────────
+  // Fetch auth.users for real created_at — profiles.created_at is unreliable
+  // because rows were backfilled at a single point in time.
+  const { data: authUsersData } = await adminSupabase.auth.admin.listUsers({ perPage: 1000 })
+  const authCreatedAt = new Map(
+    (authUsersData?.users ?? []).map(u => [u.id, u.created_at])
+  )
+
   let query = adminSupabase
     .from('profiles')
-    .select('id, email, plan_tier, books_generated, books_limit, created_at, is_admin')
-    .order('created_at', { ascending: false })
+    .select('id, email, plan_tier, books_generated, books_limit, is_admin')
     .limit(100)
 
   if (q) query = query.ilike('email', `%${q}%`)
 
   const { data: users } = await query
-  const rows = (users ?? []) as unknown as (Profile & { is_admin: boolean })[]
+  const rows = (users ?? []).map(u => ({
+    ...(u as unknown as Profile & { is_admin: boolean }),
+    created_at: authCreatedAt.get(u.id) ?? new Date(0).toISOString(),
+  })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
