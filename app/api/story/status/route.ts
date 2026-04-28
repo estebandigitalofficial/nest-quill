@@ -129,6 +129,39 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ── Fallback re-trigger ──────────────────────────────────────────────────
+    // If the request has been stuck in "queued" with no worker for >3 min,
+    // the original trigger (fired in after() on submit) likely failed silently.
+    // Re-fire it here — the Edge Function's idempotency check prevents double-processing.
+    if (
+      storyRequest.status === 'queued' &&
+      storyRequest.worker_id === null &&
+      Date.now() - new Date(storyRequest.created_at).getTime() > 3 * 60 * 1000
+    ) {
+      const baseUrl = process.env.EDGE_FUNCTION_BASE_URL
+      if (baseUrl) {
+        console.log('[status] re-triggering stalled queued request', requestId)
+        after(async () => {
+          try {
+            const res = await fetch(`${baseUrl}/process-story`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${process.env.EDGE_FUNCTION_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+              },
+              body: JSON.stringify({ requestId }),
+            })
+            if (!res.ok) {
+              const body = await res.text().catch(() => '')
+              console.error('[status] re-trigger failed', requestId, res.status, body)
+            }
+          } catch (err) {
+            console.error('[status] re-trigger error', requestId, err)
+          }
+        })
+      }
+    }
+
     return NextResponse.json<StoryStatusResponse>({
       requestId: storyRequest.id,
       status: storyRequest.status,

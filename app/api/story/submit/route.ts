@@ -170,6 +170,8 @@ async function triggerProcessingPipeline(requestId: string): Promise<void> {
     return
   }
 
+  console.log('[trigger] calling Edge Function for', requestId, '->', `${baseUrl}/process-story`)
+
   const response = await fetch(`${baseUrl}/process-story`, {
     method: 'POST',
     headers: {
@@ -183,6 +185,9 @@ async function triggerProcessingPipeline(requestId: string): Promise<void> {
   })
 
   if (!response.ok) {
-    throw new Error(`Edge Function responded with ${response.status}`)
+    const body = await response.text().catch(() => '')
+    throw new Error(`Edge Function responded with ${response.status}: ${body}`)
   }
+
+  console.log('[trigger] Edge Function accepted', requestId, response.status)
 }

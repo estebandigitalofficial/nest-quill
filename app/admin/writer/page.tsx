@@ -79,15 +79,15 @@ export default async function WriterPage() {
               return (
                 <div
                   key={book.id}
-                  className={`bg-gray-900 border-l-4 ${color.border} px-5 py-4 flex items-center gap-4 hover:bg-gray-850 transition-colors group relative`}
+                  className={`bg-gray-900 border-l-4 ${color.border} px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:gap-4 hover:bg-gray-850 transition-colors group relative`}
                 >
                   <Link href={`/admin/writer/${book.id}`} className="absolute inset-0" aria-hidden />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                       <h2 className="font-serif text-base text-white truncate">{book.title}</h2>
                       <StatusPill status={book.status} />
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-600">
+                    <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs text-gray-600">
                       {displayAuthor && (
                         <>
                           <span className="flex items-center gap-1">
@@ -103,17 +103,17 @@ export default async function WriterPage() {
                       {book.subtitle && <><span>·</span><span className="italic text-gray-600 truncate">{book.subtitle}</span></>}
                     </div>
                   </div>
-                  <div className="flex gap-1.5 relative z-10 shrink-0">
+                  <div className="flex gap-2 relative z-10 shrink-0 mt-3 sm:mt-0">
                     <DeleteBookButton bookId={book.id} />
                     <Link
                       href={`/admin/writer/${book.id}/read`}
-                      className="text-[11px] px-2.5 py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+                      className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
                     >
                       Read
                     </Link>
                     <Link
                       href={`/admin/writer/${book.id}`}
-                      className="text-[11px] px-2.5 py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+                      className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
                     >
                       Edit
                     </Link>

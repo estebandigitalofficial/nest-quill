@@ -230,9 +230,12 @@ Rules:
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
+  console.log('[process-story] invoked', req.method, new Date().toISOString())
+
   // ── Auth ──────────────────────────────────────────────────────────────────
   const token = req.headers.get('Authorization')?.replace('Bearer ', '')
   if (token !== EXPECTED_TOKEN) {
+    console.warn('[process-story] unauthorized — token mismatch')
     return new Response('Unauthorized', { status: 401 })
   }
 
@@ -245,6 +248,8 @@ Deno.serve(async (req) => {
   } catch {
     return new Response('Bad request', { status: 400 })
   }
+
+  console.log('[process-story] requestId=', requestId)
 
   // ── Supabase admin client ─────────────────────────────────────────────────
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
