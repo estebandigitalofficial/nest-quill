@@ -34,8 +34,9 @@ export async function GET(request: NextRequest) {
     const cookieStore = await cookies()
     const guestToken = cookieStore.get('guest_token')?.value
 
+    const adminSupabase = createAdminClient()
+
     if (guestToken) {
-      const adminSupabase = createAdminClient()
       await adminSupabase
         .from('story_requests')
         .update({ user_id: user.id })
@@ -51,10 +52,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Recovery links always land on /reset-password regardless of next param
+    // Admin check — query profile and fall back to ADMIN_EMAILS env var
+    const { data: adminProfile } = await adminSupabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
+    const adminEmails = (process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? '')
+      .split(',').map(e => e.trim()).filter(Boolean)
+    const isAdmin = adminProfile?.is_admin === true || adminEmails.includes(user.email ?? '')
+
+    // Recovery links always land on /reset-password regardless of admin or next param
     let dest: string
     if (type === 'recovery') {
       dest = '/reset-password'
+    } else if (isAdmin) {
+      dest = '/admin'
     } else {
       const accountType = user.user_metadata?.account_type ?? 'parent'
       dest = nextParam ?? (

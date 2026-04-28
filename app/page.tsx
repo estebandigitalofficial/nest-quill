@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
@@ -5,10 +6,16 @@ import { cn } from '@/lib/utils/cn'
 import LogoutButton from '@/components/auth/LogoutButton'
 import SiteFooter from '@/components/layout/SiteFooter'
 import SiteHeader from '@/components/layout/SiteHeader'
+import { getAdminContext } from '@/lib/admin/guard'
 
 export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  if (user) {
+    const adminCtx = await getAdminContext()
+    if (adminCtx) redirect('/admin')
+  }
 
   return (
     <div className="h-dvh bg-parchment font-sans flex flex-col">
