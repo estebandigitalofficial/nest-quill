@@ -70,6 +70,41 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
     }
   }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
+  // ── Guest submissions ─────────────────────────────────────────────────────
+  // story_requests where user_id IS NULL — grouped by user_email
+  let guestQuery = adminSupabase
+    .from('story_requests')
+    .select('user_email, status, created_at')
+    .is('user_id', null)
+    .not('user_email', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(2000)
+
+  if (q) guestQuery = guestQuery.ilike('user_email', `%${q}%`)
+
+  const { data: guestRows } = await guestQuery
+
+  // Aggregate client-side: group by email, count totals and completed
+  const guestMap = new Map<string, { total: number; completed: number; lastAt: string }>()
+  for (const row of guestRows ?? []) {
+    const key = row.user_email as string
+    const existing = guestMap.get(key)
+    if (existing) {
+      existing.total++
+      if (row.status === 'complete') existing.completed++
+      if (row.created_at > existing.lastAt) existing.lastAt = row.created_at
+    } else {
+      guestMap.set(key, {
+        total: 1,
+        completed: row.status === 'complete' ? 1 : 0,
+        lastAt: row.created_at as string,
+      })
+    }
+  }
+  const guests = Array.from(guestMap.entries())
+    .map(([email, stats]) => ({ email, ...stats }))
+    .sort((a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime())
+
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       {/* Nav */}
@@ -98,16 +133,17 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <StatCard label="Total users" value={totalUsers ?? 0} />
           <StatCard label="Paid users" value={paidUsers ?? 0} color="green" />
           <StatCard label="Story submissions" value={activeUsers ?? 0} color="amber" />
+          <StatCard label="Guest emails" value={guests.length} color="sky" />
         </div>
 
         {/* Search + table */}
         <div>
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">
-            Users
+            Registered users
           </h2>
           <div className="space-y-4">
             <Suspense>
@@ -191,13 +227,70 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
           </div>
         </div>
 
+        {/* Guest submissions */}
+        <div>
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">
+            Guest submissions
+          </h2>
+          <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
+                    <th className="text-left px-4 py-3">Email</th>
+                    <th className="text-left px-4 py-3 hidden sm:table-cell">Last submission</th>
+                    <th className="text-left px-4 py-3">Submissions</th>
+                    <th className="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {guests.map((g) => (
+                    <tr key={g.email} className="hover:bg-gray-800/50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-medium text-sm">{g.email}</span>
+                          <span className="text-[10px] bg-gray-800 text-gray-500 font-semibold px-1.5 py-0.5 rounded-full">guest</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell whitespace-nowrap">
+                        {formatAZTimeShort(g.lastAt)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs text-gray-300 font-mono">
+                          {g.completed}/{g.total}
+                        </span>
+                        <span className="text-[10px] text-gray-600 ml-1">completed</span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Link
+                          href={`/admin?q=${encodeURIComponent(g.email)}`}
+                          className="text-xs text-brand-400 hover:text-brand-300 font-medium whitespace-nowrap"
+                        >
+                          View stories →
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                  {guests.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-gray-600">
+                        {q ? 'No guest submissions match that search.' : 'No guest submissions yet.'}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   )
 }
 
-function StatCard({ label, value, color }: { label: string; value: number; color?: 'green' | 'amber' }) {
-  const valueColor = color === 'green' ? 'text-green-400' : color === 'amber' ? 'text-amber-400' : 'text-white'
+function StatCard({ label, value, color }: { label: string; value: number; color?: 'green' | 'amber' | 'sky' }) {
+  const valueColor = color === 'green' ? 'text-green-400' : color === 'amber' ? 'text-amber-400' : color === 'sky' ? 'text-sky-400' : 'text-white'
   return (
     <div className="bg-gray-900 rounded-2xl border border-gray-800 px-5 py-4">
       <p className="text-xs text-gray-500 mb-1">{label}</p>
