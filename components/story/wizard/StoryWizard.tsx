@@ -97,7 +97,7 @@ export default function StoryWizard() {
 
       if (!res.ok) {
         setError('root', {
-          type: json.code ?? 'error',
+          type: json.requiresSignup ? 'GUEST_LIMIT_EXCEEDED' : (json.code ?? 'error'),
           message: json.message ?? 'Something went wrong. Please try again.',
         })
         return
@@ -151,15 +151,34 @@ export default function StoryWizard() {
         </div>
 
         {errors.root && (
-          errors.root.type === 'PLAN_LIMIT_EXCEEDED' ? (
+          errors.root.type === 'GUEST_LIMIT_EXCEEDED' ? (
             <div className="rounded-xl border border-brand-200 bg-brand-50 px-5 py-4 text-center space-y-2">
               <p className="text-sm font-semibold text-oxford">You&apos;ve used your free story</p>
+              <p className="text-xs text-charcoal-light">Create a free account to get 2 stories.</p>
+              <div className="flex justify-center gap-2 mt-1">
+                <Link
+                  href="/signup"
+                  className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"
+                >
+                  Create account →
+                </Link>
+                <Link
+                  href="/login"
+                  className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-5 py-2 rounded-full transition-colors"
+                >
+                  Sign in
+                </Link>
+              </div>
+            </div>
+          ) : errors.root.type === 'PLAN_LIMIT_EXCEEDED' ? (
+            <div className="rounded-xl border border-brand-200 bg-brand-50 px-5 py-4 text-center space-y-2">
+              <p className="text-sm font-semibold text-oxford">You&apos;ve reached your free limit</p>
               <p className="text-xs text-charcoal-light">Upgrade to create more personalized storybooks.</p>
               <Link
                 href="/pricing"
                 className="inline-block mt-1 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"
               >
-                See pricing →
+                See plans →
               </Link>
             </div>
           ) : (
@@ -206,7 +225,7 @@ export default function StoryWizard() {
 
         {step === 0 && (
           <p className="text-center text-xs text-gray-400">
-            No account required · Free during beta
+            Try 1 story without an account · Free accounts get 2 stories
           </p>
         )}
       </form>

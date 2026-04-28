@@ -81,7 +81,8 @@ export default function AdminUserControls({ userId, currentPlan, booksGenerated,
 
       {/* Quota display + reset */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-500 font-mono">{booksGenerated}/{booksLimit} used</span>
+        {/* Free accounts use a 2-story limit; books_limit in profiles may still show 1 */}
+        <span className="text-xs text-gray-500 font-mono">{booksGenerated}/{currentPlan === 'free' ? 2 : booksLimit} used</span>
         {booksGenerated > 0 && (
           <button
             onClick={resetQuota}

@@ -78,6 +78,8 @@ export interface SubmitStoryResponse {
   status: StoryStatus
   requiresPayment: boolean
   checkoutUrl?: string
+  requiresSignup?: boolean
+  message?: string
 }
 
 export interface StoryStatusResponse {

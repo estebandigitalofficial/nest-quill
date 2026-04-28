@@ -21,6 +21,8 @@ export default function AdminUserActions({ userId, isSelf, userEmail, isBanned: 
   const [banState, setBanState] = useState<ActionState>('idle')
   const [mfaState, setMfaState] = useState<ActionState>('idle')
   const [deleteState, setDeleteState] = useState<ActionState>('idle')
+  const [resetUsageState, setResetUsageState] = useState<ActionState>('idle')
+  const [confirmResetUsage, setConfirmResetUsage] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   async function doAction(
@@ -132,6 +134,45 @@ export default function AdminUserActions({ userId, isSelf, userEmail, isBanned: 
           >
             {label(mfaState, 'Remove MFA', 'Removed ✓')}
           </button>
+
+          {/* Reset usage */}
+          {!confirmResetUsage && (
+            <button
+              onClick={() => setConfirmResetUsage(true)}
+              className="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
+            >
+              Reset usage
+            </button>
+          )}
+          {confirmResetUsage && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-gray-400">Reset usage for {userEmail}?</span>
+              <button
+                disabled={resetUsageState !== 'idle'}
+                onClick={() =>
+                  doAction(
+                    `/api/admin/users/${userId}/reset-usage`,
+                    'POST',
+                    undefined,
+                    setResetUsageState,
+                    () => { setConfirmResetUsage(false); setTimeout(() => router.refresh(), 1000) }
+                  )
+                }
+                className={btnClass(
+                  resetUsageState,
+                  'text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-brand-500 text-white hover:bg-brand-600'
+                )}
+              >
+                {label(resetUsageState, 'Confirm reset', 'Reset ✓')}
+              </button>
+              <button
+                onClick={() => setConfirmResetUsage(false)}
+                className="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-gray-800 text-gray-400 hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
 
           {/* Ban / Unban user */}
           {!isSelf && (

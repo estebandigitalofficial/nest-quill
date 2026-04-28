@@ -29,9 +29,25 @@ export async function POST(request: NextRequest) {
 
     // ── 3. Check plan limits ─────────────────────────────────────────────────
     const limits = getPlanLimits(formData.planTier)
-    const limitCheck = await canCreateBook(user?.id ?? null, formData.planTier, guestToken)
+    const limitCheck = await canCreateBook(
+      user?.id ?? null,
+      formData.planTier,
+      guestToken,
+      !user ? formData.userEmail : null,
+    )
 
     if (!limitCheck.allowed) {
+      if (limitCheck.requiresSignup) {
+        // Return structured response so the frontend can show a signup prompt.
+        return NextResponse.json(
+          {
+            requiresSignup: true,
+            code: 'GUEST_LIMIT_EXCEEDED',
+            message: limitCheck.reason ?? "You've used your free story. Create an account to continue.",
+          },
+          { status: 403 }
+        )
+      }
       throw new PlanLimitError(limitCheck.reason ?? 'Plan limit reached')
     }
 
