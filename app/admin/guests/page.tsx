@@ -17,8 +17,23 @@ export default async function AdminGuestsPage({ searchParams }: PageProps) {
   const { q } = await searchParams
   const adminSupabase = createAdminClient()
 
+  // ── Registered email set ──────────────────────────────────────────────────
+  // Pull from profiles (primary, trigger-synced) AND auth.users (fallback for
+  // any edge cases where a profile row might be missing).
+  const [{ data: profileRows }, { data: authUsersData }] = await Promise.all([
+    adminSupabase.from('profiles').select('email'),
+    adminSupabase.auth.admin.listUsers({ perPage: 1000 }),
+  ])
+
+  const registeredEmails = new Set<string>()
+  for (const p of profileRows ?? []) {
+    if (p.email) registeredEmails.add(p.email.toLowerCase())
+  }
+  for (const u of authUsersData?.users ?? []) {
+    if (u.email) registeredEmails.add(u.email.toLowerCase())
+  }
+
   // ── Guest submissions ─────────────────────────────────────────────────────
-  // story_requests where user_id IS NULL — grouped by user_email
   let guestQuery = adminSupabase
     .from('story_requests')
     .select('user_email, status, created_at')
@@ -31,29 +46,43 @@ export default async function AdminGuestsPage({ searchParams }: PageProps) {
 
   const { data: guestRows } = await guestQuery
 
-  // Aggregate: group by email, count totals and completed
+  // Partition: true guests vs rows whose email later registered (backfill candidates)
+  let backfillCount = 0
   const guestMap = new Map<string, { total: number; completed: number; lastAt: string }>()
+
   for (const row of guestRows ?? []) {
-    const key = row.user_email as string
-    const existing = guestMap.get(key)
+    const email = (row.user_email as string).toLowerCase()
+
+    if (registeredEmails.has(email)) {
+      backfillCount++
+      continue // exclude converted users from guest list
+    }
+
+    const existing = guestMap.get(email)
     if (existing) {
       existing.total++
       if (row.status === 'complete') existing.completed++
       if (row.created_at > existing.lastAt) existing.lastAt = row.created_at
     } else {
-      guestMap.set(key, {
+      guestMap.set(email, {
         total: 1,
         completed: row.status === 'complete' ? 1 : 0,
         lastAt: row.created_at as string,
       })
     }
   }
+
   const guests = Array.from(guestMap.entries())
     .map(([email, stats]) => ({ email, ...stats }))
     .sort((a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime())
 
-  const totalSubmissions = (guestRows ?? []).length
-  const completedSubmissions = (guestRows ?? []).filter(r => r.status === 'complete').length
+  // Stats from true-guest rows only
+  let totalSubmissions = 0
+  let completedSubmissions = 0
+  for (const g of guests) {
+    totalSubmissions += g.total
+    completedSubmissions += g.completed
+  }
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -87,10 +116,20 @@ export default async function AdminGuestsPage({ searchParams }: PageProps) {
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
-          <StatCard label="Unique emails" value={guests.length} />
+          <StatCard label="Unique guests" value={guests.length} />
           <StatCard label="Total submissions" value={totalSubmissions} color="amber" />
           <StatCard label="Completed" value={completedSubmissions} color="green" />
         </div>
+
+        {/* Backfill notice */}
+        {backfillCount > 0 && !q && (
+          <div className="bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-xs text-gray-400">
+            <span className="font-semibold text-gray-300">{backfillCount} submission{backfillCount !== 1 ? 's' : ''}</span>
+            {' '}from emails that have since registered — excluded from this list.
+            These <code className="text-gray-500">story_requests</code> rows still have{' '}
+            <code className="text-gray-500">user_id IS NULL</code> and could be backfilled to the matching profile.
+          </div>
+        )}
 
         {/* Search + table */}
         <div>
