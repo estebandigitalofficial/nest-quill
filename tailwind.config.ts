@@ -8,6 +8,12 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      screens: {
+        // Targets landscape phones (orientation:landscape + small height) only.
+        // Placed last so these utilities override sm:/md: in the CSS cascade.
+        // Desktop is always tall (>500px), so this never fires there.
+        'ls': { raw: '(orientation: landscape) and (max-height: 500px)' },
+      },
       fontFamily: {
         sans: ['Nunito', 'system-ui', 'sans-serif'],
         serif: ['"Playfair Display"', 'Georgia', 'serif'],

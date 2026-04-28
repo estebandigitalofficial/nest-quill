@@ -2,9 +2,10 @@ import Link from 'next/link'
 
 export default function SiteFooter() {
   return (
-    <footer className="bg-oxford-dark py-4 sm:py-5 md:py-10 px-6">
+    <footer className="bg-oxford-dark py-4 sm:py-5 md:py-10 ls:py-1.5 px-6">
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 md:gap-4 text-xs sm:text-sm text-parchment/50">
-        <div className="hidden sm:block text-left">
+        {/* Brand block — hidden on portrait mobile and landscape phones (adds height) */}
+        <div className="hidden sm:block ls:hidden text-left">
           <p className="font-serif text-parchment font-semibold">Nest &amp; Quill</p>
           <p className="text-xs text-parchment/40 mt-0.5">A product of Bright Tale Books</p>
         </div>
