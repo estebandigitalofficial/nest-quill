@@ -87,16 +87,16 @@ export default async function AdminGuestsPage({ searchParams }: PageProps) {
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       {/* Nav */}
-      <header className="border-b border-gray-800 px-6 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/admin" className="font-serif text-lg font-semibold text-white">
+      <header className="border-b border-gray-800 px-4 sm:px-6 h-14 flex items-center justify-between">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Link href="/admin" className="font-serif text-base sm:text-lg font-semibold text-white">
             Nest &amp; Quill
           </Link>
-          <span className="text-xs font-semibold bg-brand-500 text-white px-2 py-0.5 rounded-full">
+          <span className="hidden sm:inline-block text-xs font-semibold bg-brand-500 text-white px-2 py-0.5 rounded-full">
             Admin
           </span>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 sm:gap-6">
           <Link href="/admin" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
             Stories
           </Link>
