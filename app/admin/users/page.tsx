@@ -38,9 +38,8 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
     .neq('plan_tier', 'free')
 
   const { count: activeUsers } = await adminSupabase
-    .from('profiles')
+    .from('story_requests')
     .select('id', { count: 'exact', head: true })
-    .gt('books_generated', 0)
 
   // ── Users list ────────────────────────────────────────────────────────────
   let query = adminSupabase
