@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
 import { NotFoundError, AuthError, toApiError } from '@/lib/utils/errors'
 
-const STUCK_STATUSES = ['generating_text', 'generating_images', 'assembling_pdf', 'queued', 'failed']
+const STUCK_STATUSES = ['generating_text', 'generating_images', 'assembling_pdf', 'queued', 'failed', 'complete']
 
 export async function POST(
   _request: NextRequest,
@@ -40,6 +40,8 @@ export async function POST(
         progress_pct: 0,
         status_message: 'Re-queued by admin…',
         last_error: null,
+        completed_at: null,
+        processing_started_at: null,
       })
       .eq('id', requestId)
 

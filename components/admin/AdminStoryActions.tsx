@@ -8,7 +8,7 @@ interface Props {
   status: string
 }
 
-const REQUEUEABLE = ['generating_text', 'generating_images', 'assembling_pdf', 'queued', 'failed']
+const REQUEUEABLE = ['generating_text', 'generating_images', 'assembling_pdf', 'queued', 'failed', 'complete']
 
 export default function AdminStoryActions({ requestId, status }: Props) {
   const router = useRouter()
