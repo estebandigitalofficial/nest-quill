@@ -195,7 +195,7 @@ export default function ChatWidget() {
       {/* Toggle button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="bottom-28 sm:bottom-[-20px] ls:bottom-14"
+        className="bottom-28 sm:bottom-12 ls:bottom-14"
         style={{
           position: 'fixed', right: 20, zIndex: 50,
           width: 120, height: 120,
