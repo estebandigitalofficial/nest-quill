@@ -195,15 +195,15 @@ export default function ChatWidget() {
       {/* Toggle button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="bottom-28 sm:bottom-5 ls:bottom-14 md:outline md:outline-2 md:outline-white/80 md:outline-offset-2"
+        className="bottom-28 sm:bottom-5 ls:bottom-14"
         style={{
           position: 'fixed', right: 20, zIndex: 50,
-          width: 54, height: 54, borderRadius: '50%',
-          background: '#0C2340',
-          border: '2px solid rgba(201,151,0,0.5)',
+          width: 120, height: 120,
+          background: 'transparent',
+          border: 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 20px rgba(12,35,64,0.35)',
-          transition: 'transform 0.2s, box-shadow 0.2s',
+          filter: 'drop-shadow(0 4px 12px rgba(201,151,0,0.4))',
+          transition: 'transform 0.2s',
           lineHeight: 0,
         }}
         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.07)' }}
@@ -211,7 +211,7 @@ export default function ChatWidget() {
         aria-label={open ? 'Close chat' : 'Chat with us'}
       >
         {open ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F8F5EC" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0C2340" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         ) : (
@@ -219,8 +219,8 @@ export default function ChatWidget() {
           <img
             src="https://nestandquill.b-cdn.net/Nest%20and%20Quill%20favicon.webp"
             alt="Nest & Quill"
-            width={30}
-            height={30}
+            width={120}
+            height={120}
             style={{ objectFit: 'contain' }}
           />
         )}

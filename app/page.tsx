@@ -42,7 +42,7 @@ export default async function HomePage() {
           </Link>
         </>
       } />
-      <div className="flex-1 overflow-y-auto bg-watermark">
+      <div className="flex-1 overflow-y-auto">
         <Hero />
         <LearningStoriesSection />
         <HowItWorks />
@@ -66,13 +66,12 @@ function Hero() {
           Free during beta
         </div>
 
-        <div className="flex items-center justify-center gap-3">
-          <AnimatedQuill size={36} className="hidden sm:block" />
+        <div className="flex items-center justify-center gap-6">
           <h1 className="font-serif text-5xl sm:text-6xl text-oxford leading-tight text-balance">
             A storybook made{' '}
             <span className="text-brand-500 italic">just for them.</span>
           </h1>
-          <AnimatedQuill size={36} className="hidden sm:block" style={{ animationDelay: '2s' }} />
+          <AnimatedQuill size={400} className="hidden sm:block shrink-0" />
         </div>
 
         <p className="text-lg text-charcoal max-w-xl mx-auto text-balance leading-relaxed">

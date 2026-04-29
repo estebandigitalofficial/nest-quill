@@ -8,11 +8,11 @@ export default function SiteFooter() {
         {/* Brand block — hidden on portrait mobile and landscape phones (adds height) */}
         <div className="hidden sm:flex ls:hidden items-center gap-3 text-left">
           <Image
-            src="https://nestandquill.b-cdn.net/nestandquill%20brand%20start-04.webp"
+            src="https://nestandquill.b-cdn.net/nestandquill%20brand%20start-03.webp"
             alt="Nest & Quill"
-            width={56}
-            height={56}
-            className="rounded-lg"
+            width={140}
+            height={42}
+            className="brightness-0 invert"
           />
           <div>
             <p className="font-serif text-parchment font-semibold">Nest &amp; Quill</p>
