@@ -76,7 +76,14 @@ export async function PATCH(request: NextRequest) {
       hint: error.hint,
       notification_type: body.notification_type,
     })
-    return NextResponse.json({ message: 'Failed to save setting.' }, { status: 500 })
+    // Return DB error details in response — this is an admin-only route so exposure is safe.
+    return NextResponse.json(
+      {
+        message: 'Failed to save setting.',
+        error: { code: error.code, message: error.message, details: error.details, hint: error.hint },
+      },
+      { status: 500 }
+    )
   }
 
   return NextResponse.json({ ok: true })
