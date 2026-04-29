@@ -69,7 +69,13 @@ export async function PATCH(request: NextRequest) {
     )
 
   if (error) {
-    console.error('[admin/notification-settings PATCH]', error)
+    console.error('[admin/notification-settings PATCH]', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      notification_type: body.notification_type,
+    })
     return NextResponse.json({ message: 'Failed to save setting.' }, { status: 500 })
   }
 
