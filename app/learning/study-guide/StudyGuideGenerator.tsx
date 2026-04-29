@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { submitAssignment } from '@/lib/utils/submitAssignment'
 import PhotoUpload from '@/components/learning/PhotoUpload'
+import NudgePrompt from '@/components/learning/NudgePrompt'
 
 const SUBJECTS = ['Math','Science','Reading','History','Social Studies','Spelling','English','Art']
 
@@ -32,6 +33,8 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
   const [imageBase64, setImageBase64] = useState<string | null>(initialImage?.base64 ?? null)
   const [imageMime, setImageMime] = useState(initialImage?.mimeType ?? 'image/jpeg')
   const [imagePreview, setImagePreview] = useState<string | null>(initialImage?.preview ?? null)
+  const [thinkFirst, setThinkFirst] = useState('')
+  const [teachBack, setTeachBack] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [guide, setGuide] = useState<StudyGuide | null>(null)
@@ -188,7 +191,21 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
           ))}
         </div>
 
-        <button onClick={() => { setGuide(null); setTopic(initialTopic ?? ''); setSubject(initialSubject ?? ''); setGrade(initialGrade ?? null); clearImage(); submittedRef.current = false; setXpEarned(null) }}
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-6 py-5 space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-amber-800">Explain it back</p>
+            <p className="text-xs text-amber-700 mt-0.5">In your own words, what did you learn?</p>
+          </div>
+          <textarea
+            value={teachBack}
+            onChange={e => setTeachBack(e.target.value)}
+            placeholder="Type your explanation here…"
+            rows={3}
+            className="w-full rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
+          />
+        </div>
+
+        <button onClick={() => { setGuide(null); setTopic(initialTopic ?? ''); setSubject(initialSubject ?? ''); setGrade(initialGrade ?? null); clearImage(); setThinkFirst(''); setTeachBack(''); submittedRef.current = false; setXpEarned(null) }}
           className="w-full py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
           New Study Guide
         </button>
@@ -236,6 +253,19 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
           ))}
         </div>
       </div>
+      <div className="space-y-2 pt-1">
+        <label className="block text-sm font-semibold text-gray-700">
+          💭 Think first: What do you already know or what would you try first?
+        </label>
+        <textarea
+          value={thinkFirst}
+          onChange={e => setThinkFirst(e.target.value)}
+          placeholder="Your attempt (optional)"
+          rows={2}
+          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
+        />
+      </div>
+      <NudgePrompt />
       {error && <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-3">{error}</p>}
       <button onClick={handleGenerate} disabled={!topic.trim() && !imageBase64}
         className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold text-base transition-colors">

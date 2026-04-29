@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendAdminNotification, buildNewClassroomEmail } from '@/lib/services/adminNotifications'
 
 function generateJoinCode(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -99,6 +100,20 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) throw error
+
+    after(async () => {
+      try {
+        const { subject, html } = buildNewClassroomEmail({
+          classroomId: data.id,
+          name: data.name,
+          educatorEmail: user.email!,
+          grade: data.grade ?? null,
+          subject: data.subject ?? null,
+        })
+        await sendAdminNotification('new_classroom_created', subject, html)
+      } catch { /* non-blocking */ }
+    })
+
     return NextResponse.json({ classroom: data }, { status: 201 })
   } catch (err) {
     console.error('[classroom/classes POST]', err)

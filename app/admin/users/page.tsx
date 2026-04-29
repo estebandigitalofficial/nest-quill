@@ -87,11 +87,17 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
           <Link href="/admin" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
             Stories
           </Link>
+          <Link href="/admin/library" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
+            Library
+          </Link>
           <Link href="/admin/users" className="text-xs font-semibold text-white">
             Users
           </Link>
           <Link href="/admin/guests" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
             Guests
+          </Link>
+          <Link href="/admin/settings" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
+            Settings
           </Link>
           <Link href="/admin/writer" className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors">
             Writer →

@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import TriviaMode from './TriviaMode'
+import NudgePrompt from '@/components/learning/NudgePrompt'
 
 const FlashcardGenerator = dynamic(() => import('@/app/learning/flashcards/FlashcardGenerator'), { ssr: false })
 const ConceptExplainer = dynamic(() => import('@/app/learning/explain/ConceptExplainer'), { ssr: false })
@@ -33,6 +34,7 @@ export default function ScanHomeworkClient() {
   const [extractingSpelling, setExtractingSpelling] = useState(false)
   const [spellingError, setSpellingError] = useState<string | null>(null)
   const [fileSizeError, setFileSizeError] = useState(false)
+  const [thinkFirst, setThinkFirst] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -53,6 +55,7 @@ export default function ScanHomeworkClient() {
       setActivity(null)
       setSpellingWords(null)
       setFileSizeError(false)
+      setThinkFirst('')
     }
     reader.readAsDataURL(file)
     e.target.value = ''
@@ -90,6 +93,7 @@ export default function ScanHomeworkClient() {
     setActivity(null)
     setSpellingWords(null)
     setSpellingError(null)
+    setThinkFirst('')
   }
 
   // ── Activity view ─────────────────────────────────────────────────────────
@@ -191,6 +195,21 @@ export default function ScanHomeworkClient() {
       {image && (
         <div className="space-y-3">
           <p className="text-sm font-semibold text-gray-700">What do you want to do with this?</p>
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-semibold text-gray-700">
+              💭 Think first: What do you already know or what would you try first?
+            </label>
+            <textarea
+              value={thinkFirst}
+              onChange={e => setThinkFirst(e.target.value)}
+              placeholder="Your attempt (optional)"
+              rows={2}
+              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
+            />
+          </div>
+
+          <NudgePrompt />
           {spellingError && <p className="text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2">{spellingError}</p>}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {ACTIVITIES.map(act => (

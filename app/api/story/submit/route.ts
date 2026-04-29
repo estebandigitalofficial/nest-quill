@@ -7,6 +7,7 @@ import { getPlanLimits, resolvePageCount } from '@/lib/plans/config'
 import { canCreateBook } from '@/lib/plans/limits'
 import { PlanLimitError, toApiError } from '@/lib/utils/errors'
 import { sendSubmissionConfirmationEmail } from '@/lib/services/email'
+import { sendAdminNotification, buildGuestStoryEmail } from '@/lib/services/adminNotifications'
 import type { SubmitStoryResponse } from '@/types/story'
 
 export async function POST(request: NextRequest) {
@@ -148,6 +149,21 @@ export async function POST(request: NextRequest) {
         console.error('Failed to send submission confirmation email', requestId, err)
       }
     })
+
+    // Admin notification — guest submissions only
+    if (!user) {
+      after(async () => {
+        try {
+          const { subject, html } = buildGuestStoryEmail({
+            requestId,
+            childName: formData.childName,
+            storyTheme: formData.storyTheme ?? '',
+            userEmail: formData.userEmail ?? undefined,
+          })
+          await sendAdminNotification('new_guest_story_submitted', subject, html)
+        } catch { /* non-blocking */ }
+      })
+    }
 
     // ── 7. Build the response ────────────────────────────────────────────────
     const response = NextResponse.json<SubmitStoryResponse>({

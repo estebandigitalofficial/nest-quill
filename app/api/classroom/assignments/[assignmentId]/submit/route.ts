@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { calcXP, xpToLevel } from '@/lib/utils/xp'
 import { triggerStoryReward } from '@/lib/services/storyReward'
+import { sendAdminNotification, buildAssignmentCompletedEmail } from '@/lib/services/adminNotifications'
 
 type RouteContext = { params: Promise<{ assignmentId: string }> }
 
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     // Get assignment for tool type + config
     const { data: assignment } = await admin
       .from('assignments')
-      .select('id, tool, classroom_id, config')
+      .select('id, title, tool, classroom_id, config, classrooms(name)')
       .eq('id', assignmentId)
       .single()
 
@@ -171,6 +172,20 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         console.error('[submit] Story reward failed (non-fatal)', err)
       }
     }
+
+    after(async () => {
+      try {
+        const classroomName = (assignment.classrooms as unknown as { name: string } | null)?.name ?? 'Unknown classroom'
+        const { subject, html } = buildAssignmentCompletedEmail({
+          assignmentTitle: (assignment as unknown as { title: string }).title ?? assignmentId,
+          classroomName,
+          studentId: user.id,
+          score: score ?? null,
+          total: total ?? null,
+        })
+        await sendAdminNotification('assignment_completed', subject, html)
+      } catch { /* non-blocking */ }
+    })
 
     return NextResponse.json({
       submission,

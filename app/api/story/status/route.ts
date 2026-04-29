@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NotFoundError, toApiError } from '@/lib/utils/errors'
 import { sendBookReadyEmail } from '@/lib/services/email'
+import { sendAdminNotification, buildStoryCompletedEmail, buildStoryFailedEmail } from '@/lib/services/adminNotifications'
 import type { StoryRequest } from '@/types/database'
 import type { StoryStatusResponse } from '@/types/story'
 
@@ -75,13 +76,14 @@ export async function GET(request: NextRequest) {
         signedUrl = urlData?.signedUrl
       }
 
-      // Send completion email once — check delivery_logs to prevent duplicates
+      // Send completion email once — scope to null email_type (user emails only)
       if (storyRequest.user_email) {
         const { count } = await adminSupabase
           .from('delivery_logs')
           .select('id', { count: 'exact', head: true })
           .eq('request_id', requestId)
           .eq('channel', 'email')
+          .is('email_type', null)
           .in('status', ['sent', 'delivered'])
 
         if (count === 0) {
@@ -126,6 +128,64 @@ export async function GET(request: NextRequest) {
             }
           })
         }
+      }
+
+      // Admin story_completed notification (deduped via delivery_logs email_type)
+      const { count: adminCompletedCount } = await adminSupabase
+        .from('delivery_logs')
+        .select('id', { count: 'exact', head: true })
+        .eq('request_id', requestId)
+        .eq('channel', 'email')
+        .eq('email_type', 'admin_story_completed')
+        .in('status', ['sent', 'delivered'])
+
+      if ((adminCompletedCount ?? 0) === 0) {
+        const { data: storyMeta } = await adminSupabase
+          .from('generated_stories')
+          .select('title')
+          .eq('request_id', requestId)
+          .single()
+        const storyTitle = (storyMeta as unknown as { title: string } | null)?.title ?? `${storyRequest.child_name}'s Story`
+
+        after(async () => {
+          try {
+            const { subject, html } = buildStoryCompletedEmail({
+              requestId,
+              childName: storyRequest.child_name,
+              storyTitle,
+              planTier: storyRequest.plan_tier,
+              userEmail: storyRequest.user_email ?? undefined,
+            })
+            await sendAdminNotification('story_completed', subject, html, { requestId })
+          } catch { /* non-blocking */ }
+        })
+      }
+    }
+
+    // Admin story_failed notification
+    if (storyRequest.status === 'failed') {
+      const { count: adminFailedCount } = await adminSupabase
+        .from('delivery_logs')
+        .select('id', { count: 'exact', head: true })
+        .eq('request_id', requestId)
+        .eq('channel', 'email')
+        .eq('email_type', 'admin_story_failed')
+        .in('status', ['sent', 'delivered'])
+
+      if ((adminFailedCount ?? 0) === 0) {
+        after(async () => {
+          try {
+            const { subject, html } = buildStoryFailedEmail({
+              requestId,
+              childName: storyRequest.child_name,
+              storyTheme: storyRequest.story_theme ?? '',
+              planTier: storyRequest.plan_tier,
+              userEmail: storyRequest.user_email ?? undefined,
+              lastError: (storyRequest as unknown as { last_error?: string }).last_error ?? undefined,
+            })
+            await sendAdminNotification('story_failed', subject, html, { requestId })
+          } catch { /* non-blocking */ }
+        })
       }
     }
 

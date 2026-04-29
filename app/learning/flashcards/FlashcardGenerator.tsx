@@ -118,6 +118,14 @@ export default function FlashcardGenerator({ assignmentId, initialTopic, initial
     const knownCount = known.size
     return (
       <div className="space-y-4">
+        {/* Think First nudge */}
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+          <span className="text-lg shrink-0 mt-0.5">💭</span>
+          <p className="text-xs text-amber-800 leading-relaxed">
+            <span className="font-semibold">Think first, then flip.</span> Try to recall the answer before revealing the back of each card — it makes your memory stronger.
+          </p>
+        </div>
+
         {assignmentId && (
           <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
             <div>
@@ -148,7 +156,9 @@ export default function FlashcardGenerator({ assignmentId, initialTopic, initial
                     <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Front</p>
                     <p className="text-sm font-semibold text-gray-800">{card.front}</p>
                   </div>
-                  <span className="text-gray-400 text-xs shrink-0 mt-1">{flipped.has(i) ? '▲' : '▼'}</span>
+                  <span className="text-gray-400 text-xs shrink-0 mt-1">
+                    {flipped.has(i) ? '▲' : <span className="text-indigo-400 font-medium">reveal ▼</span>}
+                  </span>
                 </div>
               </button>
               {flipped.has(i) && (

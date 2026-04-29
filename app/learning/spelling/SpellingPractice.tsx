@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { submitAssignment } from '@/lib/utils/submitAssignment'
+import NudgePrompt from '@/components/learning/NudgePrompt'
 
 type Stage = 'setup' | 'practice' | 'results'
 
@@ -23,6 +24,9 @@ export default function SpellingPractice({ assignmentId, initialWords }: Props) 
   const [extractError, setExtractError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const photoRef = useRef<HTMLInputElement>(null)
+
+  const [sentenceMode, setSentenceMode] = useState(false)
+  const [sentence, setSentence] = useState('')
 
   const [xpEarned, setXpEarned] = useState<number | null>(null)
   const submittedRef = useRef(false)
@@ -106,13 +110,14 @@ export default function SpellingPractice({ assignmentId, initialWords }: Props) 
       setCurrent(c => c + 1)
       setAnswer('')
       setRevealed(false)
+      setSentence('')
     } else {
       setStage('results')
     }
   }
 
-  function reset() { setStage('setup'); setWordInput(''); setWords([]); setResults([]); setAnswer(''); setRevealed(false); submittedRef.current = false; setXpEarned(null) }
-  function retry() { setCurrent(0); setAnswer(''); setRevealed(false); setResults([]); setStage('practice') }
+  function reset() { setStage('setup'); setWordInput(''); setWords([]); setResults([]); setAnswer(''); setRevealed(false); setSentence(''); submittedRef.current = false; setXpEarned(null) }
+  function retry() { setCurrent(0); setAnswer(''); setRevealed(false); setResults([]); setSentence(''); setStage('practice') }
 
   const word = words[current]
   const score = results.filter(r => r.correct).length
@@ -165,6 +170,17 @@ export default function SpellingPractice({ assignmentId, initialWords }: Props) 
             <p className="text-xs text-indigo-600 font-medium">{parsed.length} word{parsed.length !== 1 ? 's' : ''} entered</p>
           )}
         </div>
+        <NudgePrompt />
+        <button
+          type="button"
+          onClick={() => setSentenceMode(m => !m)}
+          className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${sentenceMode ? 'border-amber-400 bg-amber-50 text-amber-800' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}
+        >
+          <span>Use words in a sentence</span>
+          <span className={`w-9 h-5 rounded-full transition-colors flex items-center px-0.5 ${sentenceMode ? 'bg-amber-400' : 'bg-gray-200'}`}>
+            <span className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${sentenceMode ? 'translate-x-4' : 'translate-x-0'}`} />
+          </span>
+        </button>
         <button onClick={startPractice} disabled={parsed.length < 2}
           className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold text-base transition-colors">
           Start Practice →
@@ -209,6 +225,19 @@ export default function SpellingPractice({ assignmentId, initialWords }: Props) 
         {revealed && !results[results.length - 1]?.correct && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center">
             <p className="text-sm text-red-600">The correct spelling is: <span className="font-bold">{word}</span></p>
+          </div>
+        )}
+
+        {revealed && sentenceMode && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 space-y-2">
+            <p className="text-sm font-semibold text-amber-800">Write a sentence using this word.</p>
+            <textarea
+              value={sentence}
+              onChange={e => setSentence(e.target.value)}
+              placeholder="e.g. The cat sat on the mat. (optional)"
+              rows={2}
+              className="w-full rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
+            />
           </div>
         )}
 

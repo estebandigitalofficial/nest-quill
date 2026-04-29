@@ -156,6 +156,7 @@ export default function MathPractice({ assignmentId, initialTopic, initialGrade 
 
         {!revealed ? (
           <>
+            <p className="text-center text-xs text-gray-400 font-medium">💭 Work it out, then type your answer</p>
             <input ref={inputRef} type="text" value={answer}
               onChange={e => setAnswer(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && answer.trim()) handleCheck() }}
@@ -163,8 +164,8 @@ export default function MathPractice({ assignmentId, initialTopic, initialGrade 
               className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-center text-lg font-semibold focus:outline-none focus:border-indigo-400 transition-colors" />
             <div className="flex gap-3">
               <button onClick={() => { setRevealed(true); setResults(r => [...r, { correct: false, userAnswer: '' }]) }}
-                className="flex-1 py-3 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition-colors">
-                Show Answer
+                className="flex-1 py-3 rounded-xl border border-gray-200 text-xs text-gray-400 hover:bg-gray-50 transition-colors">
+                Skip (show answer)
               </button>
               <button onClick={handleCheck} disabled={!answer.trim()}
                 className="flex-1 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold text-sm transition-colors">

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { cookies } from 'next/headers'
 import { sendWelcomeEmail } from '@/lib/services/email'
+import { sendAdminNotification, buildNewUserEmail } from '@/lib/services/adminNotifications'
 import type { EmailOtpType } from '@supabase/supabase-js'
 
 export async function GET(request: NextRequest) {
@@ -49,6 +50,10 @@ export async function GET(request: NextRequest) {
       const ageMs = Date.now() - new Date(user.created_at).getTime()
       if (ageMs < 24 * 60 * 60 * 1000) {
         sendWelcomeEmail(user.email).catch(() => {})
+
+        const accountType = (user.user_metadata?.account_type as string | undefined) ?? 'parent'
+        const { subject, html } = buildNewUserEmail({ email: user.email, accountType })
+        sendAdminNotification('new_user_signed_up', subject, html).catch(() => {})
       }
     }
 

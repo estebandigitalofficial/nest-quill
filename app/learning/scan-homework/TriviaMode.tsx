@@ -29,7 +29,7 @@ export default function TriviaMode({ grade, initialImage, onReset }: Props) {
   const [score, setScore] = useState(0)
   const [done, setDone] = useState(false)
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS)
-  const [timedOut, setTimedOut] = useState(false)
+  const [reasoning, setReasoning] = useState('')
 
   const generate = useCallback(async () => {
     setLoading(true); setError(null)
@@ -59,18 +59,15 @@ export default function TriviaMode({ grade, initialImage, onReset }: Props) {
     generate()
   }, [generate])
 
-  // Timer per question — stops automatically when revealed or done
+  // Visual-only timer — resets per question, does not auto-reveal
   useEffect(() => {
     if (!questions || revealed || done) return
     setTimeLeft(TIMER_SECONDS)
-    setTimedOut(false)
 
     const interval = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(interval)
-          setTimedOut(true)
-          setRevealed(true)
           return 0
         }
         return prev - 1
@@ -93,6 +90,7 @@ export default function TriviaMode({ grade, initialImage, onReset }: Props) {
       setCurrent(c => c + 1)
       setSelected(null)
       setRevealed(false)
+      setReasoning('')
     } else {
       setDone(true)
     }
@@ -128,7 +126,7 @@ export default function TriviaMode({ grade, initialImage, onReset }: Props) {
           <p className="text-3xl font-bold text-gray-900">{score} / {questions.length}</p>
           <p className="font-semibold text-gray-700">{pct === 1 ? 'Perfect! You know it all!' : pct >= 0.7 ? 'Great score!' : 'Good effort — keep studying!'}</p>
         </div>
-        <button onClick={() => { setCurrent(0); setSelected(null); setRevealed(false); setScore(0); setDone(false) }}
+        <button onClick={() => { setCurrent(0); setSelected(null); setRevealed(false); setScore(0); setDone(false); setReasoning('') }}
           className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-colors">
           Play Again
         </button>
@@ -151,14 +149,13 @@ export default function TriviaMode({ grade, initialImage, onReset }: Props) {
         <span className="text-xs font-bold text-indigo-600">{score} pts</span>
       </div>
 
-      {/* Timer bar */}
-      <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+      {/* Visual-only timer bar */}
+      <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
         <div
-          className={`h-2 rounded-full transition-all duration-1000 ease-linear ${timeLeft <= 5 ? 'bg-red-400' : 'bg-indigo-500'}`}
+          className="h-1.5 rounded-full bg-indigo-300 transition-all duration-1000 ease-linear"
           style={{ width: `${timerPct}%` }}
         />
       </div>
-      <p className={`text-center text-xs font-semibold ${timeLeft <= 5 ? 'text-red-500' : 'text-gray-400'}`}>{timeLeft}s</p>
 
       {/* Question */}
       <div className="bg-oxford rounded-2xl px-6 py-6 text-white">
@@ -200,9 +197,23 @@ export default function TriviaMode({ grade, initialImage, onReset }: Props) {
 
       {/* Fact reveal */}
       {revealed && (
-        <div className={`rounded-xl px-4 py-3 text-sm ${timedOut && selected === null ? 'bg-amber-50 border border-amber-200 text-amber-800' : selected === q.correct_index ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
-          {timedOut && selected === null ? '⏰ Time\'s up! ' : selected === q.correct_index ? '✓ Correct! ' : '✗ Not quite. '}
+        <div className={`rounded-xl px-4 py-3 text-sm ${selected === q.correct_index ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
+          {selected === q.correct_index ? '✓ Correct! ' : '✗ Not quite. '}
           <span className="text-gray-700">{q.fact}</span>
+        </div>
+      )}
+
+      {/* Reasoning prompt */}
+      {revealed && selected !== null && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 space-y-2">
+          <p className="text-sm font-semibold text-amber-800">Why do you think that's the answer?</p>
+          <textarea
+            value={reasoning}
+            onChange={e => setReasoning(e.target.value)}
+            placeholder="Explain your thinking… (optional)"
+            rows={2}
+            className="w-full rounded-xl border border-amber-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
+          />
         </div>
       )}
 
