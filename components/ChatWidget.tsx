@@ -217,11 +217,11 @@ export default function ChatWidget() {
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src="https://nestandquill.b-cdn.net/nestquill%20logo%20350x350.webp"
+            src="https://nestandquill.b-cdn.net/Nest%20and%20Quill%20favicon.webp"
             alt="Nest & Quill"
-            width={34}
-            height={34}
-            style={{ borderRadius: '50%', objectFit: 'cover' }}
+            width={30}
+            height={30}
+            style={{ objectFit: 'contain' }}
           />
         )}
       </button>

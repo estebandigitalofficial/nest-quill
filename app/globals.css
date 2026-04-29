@@ -26,3 +26,32 @@
     text-wrap: balance;
   }
 }
+
+/* Animated floating quill */
+@keyframes quill-float {
+  0%, 100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(2deg);
+  }
+}
+
+.animate-quill-float {
+  animation: quill-float 4s ease-in-out infinite;
+}
+
+/* Background watermark logo */
+.bg-watermark {
+  position: relative;
+}
+
+.bg-watermark::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('https://nestandquill.b-cdn.net/nestandquill%20brand%20start-04.webp') center center / 320px no-repeat;
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
+}

@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import LearningDropdown from './LearningDropdown'
@@ -11,8 +12,15 @@ export default function SiteHeader({ right }: Props) {
   return (
     <header className="bg-parchment/95 backdrop-blur border-b border-parchment-dark shrink-0 relative z-40">
       <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
-        <Link href="/" className="font-serif text-xl font-semibold text-oxford shrink-0">
-          Nest &amp; Quill
+        <Link href="/" className="shrink-0 flex items-center">
+          <Image
+            src="https://nestandquill.b-cdn.net/nestandquill%20brand%20start-03.webp"
+            alt="Nest & Quill"
+            width={160}
+            height={48}
+            className="h-10 w-auto"
+            priority
+          />
         </Link>
 
         {/* Desktop nav — hidden on mobile */}

@@ -22,6 +22,10 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
+  icons: {
+    icon: 'https://nestandquill.b-cdn.net/Nest%20and%20Quill%20favicon.webp',
+    apple: 'https://nestandquill.b-cdn.net/Nest%20and%20Quill%20favicon.webp',
+  },
   title: {
     default: 'Nest & Quill — Personalized Storybooks for Children',
     template: '%s | Nest & Quill',
