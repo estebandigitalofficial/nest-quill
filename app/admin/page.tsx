@@ -59,6 +59,11 @@ export default async function AdminPage({ searchParams }: PageProps) {
     .select('id', { count: 'exact', head: true })
     .in('status', PROCESSING_STATUSES)
 
+  const { count: queuedCount } = await adminSupabase
+    .from('story_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'queued')
+
   // ── Filtered stories table ────────────────────────────────────────────────
   let query = adminSupabase
     .from('story_requests')
@@ -81,6 +86,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
   // ── Analytics: 24h overview ───────────────────────────────────────────────
   const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const todayStart = (() => { const d = new Date(); d.setUTCHours(0, 0, 0, 0); return d.toISOString() })()
 
   const [
     { count: totalUsers },
@@ -113,6 +119,37 @@ export default async function AdminPage({ searchParams }: PageProps) {
     const key = (log as { email_type: string | null }).email_type ?? 'story_ready'
     emailBreakdown[key] = (emailBreakdown[key] ?? 0) + 1
   }
+
+  // ── Today metrics ─────────────────────────────────────────────────────────
+  const [
+    { count: storiesToday },
+    { count: completedToday },
+    { count: failedToday },
+    { count: newUsersToday },
+    { count: guestSubmissionsToday },
+  ] = await Promise.all([
+    adminSupabase.from('story_requests').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
+    adminSupabase.from('story_requests').select('id', { count: 'exact', head: true }).eq('status', 'complete').gte('updated_at', todayStart),
+    adminSupabase.from('story_requests').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('updated_at', todayStart),
+    adminSupabase.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
+    adminSupabase.from('story_requests').select('id', { count: 'exact', head: true }).is('user_id', null).gte('created_at', todayStart),
+  ])
+
+  // ── Usage & Limits ─────────────────────────────────────────────────────────
+  const [
+    { count: usersAtLimitCount },
+    { data: guestEmailRows },
+  ] = await Promise.all([
+    adminSupabase.from('profiles').select('id', { count: 'exact', head: true }).gte('books_generated', 2).eq('is_admin', false),
+    adminSupabase.from('story_requests').select('user_email, status').is('user_id', null).not('user_email', 'is', null).limit(2000),
+  ])
+
+  const totalGuestEmailCount = new Set(
+    (guestEmailRows ?? []).map(r => (r.user_email as string).toLowerCase())
+  ).size
+  const guestAtLimitCount = new Set(
+    (guestEmailRows ?? []).filter(r => r.status !== 'failed').map(r => (r.user_email as string).toLowerCase())
+  ).size
 
   // ── View-detail query — only runs when a view is active ───────────────────
   const viewQuery =
@@ -179,25 +216,77 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
 
-        {/* Overview */}
+        {/* Today's metrics */}
         <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Overview</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <StatCard label="Total users" value={totalUsers ?? 0} />
-            <StatCard label="Stories (24h)" value={stories24h ?? 0}
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Today</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <StatCard label="Stories" value={storiesToday ?? 0}
               href={view === 'recent-stories' ? clearHref : mkViewHref('recent-stories')}
               active={view === 'recent-stories'} />
-            <StatCard label="Active classrooms" value={activeClassroomCount ?? 0} />
-            <StatCard label="Assignments done (24h)" value={assignmentsDone24h ?? 0} color="green"
-              href={view === 'submissions' ? clearHref : mkViewHref('submissions')}
-              active={view === 'submissions'} />
-            <StatCard label="Failed stories (24h)" value={failedStories24h ?? 0}
-              color={(failedStories24h ?? 0) > 0 ? 'red' : undefined}
+            <StatCard label="Completed" value={completedToday ?? 0} color="green" />
+            <StatCard label="Failed" value={failedToday ?? 0}
+              color={(failedToday ?? 0) > 0 ? 'red' : undefined}
               href={view === 'failed-stories' ? clearHref : mkViewHref('failed-stories')}
               active={view === 'failed-stories'} />
-            <StatCard label="Emails sent (24h)" value={emailsSent24h ?? 0}
-              href={view === 'emails' ? clearHref : mkViewHref('emails')}
-              active={view === 'emails'} />
+            <StatCard label="New users" value={newUsersToday ?? 0} />
+            <StatCard label="Guest submissions" value={guestSubmissionsToday ?? 0} />
+          </div>
+        </div>
+
+        {/* System Health */}
+        <div>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">System Health</p>
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <StatCard label="Queued" value={queuedCount ?? 0} color={(queuedCount ?? 0) > 0 ? 'amber' : undefined} />
+            <StatCard label="Processing" value={processingCount ?? 0} color={(processingCount ?? 0) > 0 ? 'amber' : undefined} />
+            <StatCard label="Stuck" value={stuckStories.length} color={stuckStories.length > 0 ? 'red' : undefined} />
+          </div>
+          <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-800">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Recent failures</p>
+            </div>
+            {(recentFailed ?? []).length === 0 ? (
+              <p className="px-4 py-6 text-center text-gray-600 text-sm">No recent failures.</p>
+            ) : (
+              <ul className="divide-y divide-gray-800">
+                {(recentFailed as unknown as StoryRequest[]).slice(0, 5).map((story) => (
+                  <li key={story.id} className="px-4 py-3 flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-white truncate">{story.child_name}</p>
+                      <p className="text-xs text-red-400 truncate" title={story.last_error ?? ''}>{story.last_error ?? '—'}</p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-xs text-gray-600 whitespace-nowrap hidden sm:inline">{formatAZTimeShort(story.updated_at!)}</span>
+                      <Link href={`/admin/stories/${story.id}`} className="text-xs text-brand-400 hover:text-brand-300 font-medium">View →</Link>
+                      <AdminRetryButton requestId={story.id} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* Usage & Limits */}
+        <div>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Usage &amp; Limits</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <Link href="/admin/users" className="block">
+              <div className={`rounded-2xl border px-5 py-4 transition-colors ${(usersAtLimitCount ?? 0) > 0 ? 'bg-red-950/30 border-red-800 hover:border-red-600' : 'bg-gray-900 border-gray-800 hover:border-brand-600'}`}>
+                <p className="text-xs text-gray-500 mb-1">Users at free limit</p>
+                <p className={`text-3xl font-bold ${(usersAtLimitCount ?? 0) > 0 ? 'text-red-400' : 'text-white'}`}>{usersAtLimitCount ?? 0}</p>
+                <p className="text-[10px] text-gray-600 mt-1">view users →</p>
+              </div>
+            </Link>
+            <Link href="/admin/guests" className="block">
+              <div className={`rounded-2xl border px-5 py-4 transition-colors ${guestAtLimitCount > 0 ? 'bg-amber-950/30 border-amber-800 hover:border-amber-600' : 'bg-gray-900 border-gray-800 hover:border-brand-600'}`}>
+                <p className="text-xs text-gray-500 mb-1">Guests at trial limit</p>
+                <p className={`text-3xl font-bold ${guestAtLimitCount > 0 ? 'text-amber-400' : 'text-white'}`}>{guestAtLimitCount}</p>
+                <p className="text-[10px] text-gray-600 mt-1">view guests →</p>
+              </div>
+            </Link>
+            <StatCard label="Registered users" value={totalUsers ?? 0} />
+            <StatCard label="Guest emails" value={totalGuestEmailCount} />
           </div>
         </div>
 
@@ -372,109 +461,13 @@ export default async function AdminPage({ searchParams }: PageProps) {
         )}
 
         {/* All-time pipeline stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatCard label="Total stories" value={totalCount ?? 0} />
           <StatCard label="Complete" value={completeCount ?? 0} color="green" />
           <StatCard label="Failed" value={failedCount ?? 0} color="red" />
           <StatCard label="Processing" value={processingCount ?? 0} color="amber" />
-          <StatCard label="Stuck" value={stuckStories.length} color={stuckStories.length > 0 ? 'red' : undefined} />
         </div>
 
-        {/* Stuck stories alert */}
-        {stuckStories.length > 0 && (
-          <div>
-            <h2 className="text-sm font-semibold text-red-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              Stuck stories — processing for over {STUCK_THRESHOLD_MINUTES} min
-            </h2>
-            <div className="bg-red-950/40 rounded-2xl border border-red-800/60 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-red-800/40 text-xs text-red-500/70 uppercase tracking-wider">
-                      <th className="text-left px-4 py-3">Child</th>
-                      <th className="text-left px-4 py-3 hidden sm:table-cell">Email</th>
-                      <th className="text-left px-4 py-3">Status</th>
-                      <th className="text-left px-4 py-3">Stuck for</th>
-                      <th className="px-4 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-red-800/30">
-                    {stuckStories.map((story) => {
-                      const stuckMin = Math.round((Date.now() - new Date(story.updated_at!).getTime()) / 60000)
-                      return (
-                        <tr key={story.id} className="hover:bg-red-900/20 transition-colors">
-                          <td className="px-4 py-3 font-medium text-white">{story.child_name}</td>
-                          <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{story.user_email}</td>
-                          <td className="px-4 py-3">
-                            <StatusBadge status={story.status} />
-                          </td>
-                          <td className="px-4 py-3 text-red-400 text-xs font-mono">{stuckMin}m</td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              <Link href={`/admin/stories/${story.id}`} className="text-xs text-brand-400 hover:text-brand-300 font-medium">
-                                View →
-                              </Link>
-                              <AdminForceRequeueButton requestId={story.id} />
-                            </div>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Recent failures */}
-        {(recentFailed ?? []).length > 0 && (
-          <div>
-            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">
-              Recent failures
-            </h2>
-            <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
-                      <th className="text-left px-4 py-3">Child</th>
-                      <th className="text-left px-4 py-3 hidden sm:table-cell">Email</th>
-                      <th className="text-left px-4 py-3">Error</th>
-                      <th className="text-left px-4 py-3 hidden sm:table-cell">When</th>
-                      <th className="px-4 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-800">
-                    {(recentFailed as unknown as StoryRequest[]).map((story) => (
-                      <tr key={story.id} className="hover:bg-gray-800/50 transition-colors">
-                        <td className="px-4 py-3 font-medium text-white">{story.child_name}</td>
-                        <td className="px-4 py-3 text-gray-400 text-xs hidden sm:table-cell">{story.user_email}</td>
-                        <td className="px-4 py-3">
-                          <p className="text-red-400 text-xs max-w-[280px] truncate" title={story.last_error ?? ''}>
-                            {story.last_error ?? '—'}
-                          </p>
-                        </td>
-                        <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell whitespace-nowrap">
-                          {formatAZTimeShort(story.updated_at!)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <Link href={`/admin/stories/${story.id}`} className="text-xs text-brand-400 hover:text-brand-300 font-medium">
-                              View →
-                            </Link>
-                            <AdminRetryButton requestId={story.id} />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Classroom + email 2-col grid */}
         <div className="grid md:grid-cols-2 gap-6">

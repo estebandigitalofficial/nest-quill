@@ -86,11 +86,5 @@ export async function canCreateBook(
   return { allowed: true }
 }
 
-/**
- * Increments the books_generated counter on a user's profile after a book completes.
- * Called by the Edge Function at the end of the pipeline.
- */
-export async function incrementBooksGenerated(userId: string): Promise<void> {
-  const supabase = createAdminClient()
-  await supabase.rpc('increment_books_generated', { user_id_input: userId })
-}
+// Usage increment is handled in app/api/story/status/route.ts via the
+// usage_counted guard — do not add a second increment path here.
