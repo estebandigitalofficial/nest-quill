@@ -71,7 +71,7 @@ function Hero() {
             A storybook made{' '}
             <span className="text-brand-500 italic">just for them.</span>
           </h1>
-          <AnimatedQuill size={400} className="hidden sm:block shrink-0" />
+          <AnimatedQuill size={300} className="hidden sm:block shrink-0" />
         </div>
 
         <p className="text-lg text-charcoal max-w-xl mx-auto text-balance leading-relaxed">
