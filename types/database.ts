@@ -105,6 +105,7 @@ export interface StoryRequest {
   geo_city: string | null
   geo_country: string | null
   geo_region: string | null
+  usage_counted: boolean
 }
 
 export interface QuizQuestion {

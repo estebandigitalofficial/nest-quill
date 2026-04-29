@@ -60,6 +60,23 @@ export async function GET(request: NextRequest) {
     let signedUrl: string | undefined
 
     if (storyRequest.status === 'complete') {
+      // Increment books_generated exactly once per completed story for logged-in users.
+      // The UPDATE with eq('usage_counted', false) is atomic — only one concurrent
+      // caller can flip it to true, preventing double-counting on repeated polls.
+      if (storyRequest.user_id && !storyRequest.usage_counted) {
+        const { data: claimed } = await adminSupabase
+          .from('story_requests')
+          .update({ usage_counted: true })
+          .eq('id', requestId)
+          .eq('usage_counted', false)
+          .select('id')
+          .maybeSingle()
+
+        if (claimed) {
+          await adminSupabase.rpc('increment_books_generated', { user_id_input: storyRequest.user_id })
+        }
+      }
+
       const { data: exportData } = await adminSupabase
         .from('book_exports')
         .select('storage_path, storage_bucket')
