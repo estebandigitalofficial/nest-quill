@@ -18,7 +18,7 @@ export default function SiteHeader({ right }: Props) {
             alt="Nest & Quill"
             width={320}
             height={96}
-            className="h-12 md:h-[60px] w-auto"
+            className="h-20 md:h-[60px] w-auto"
             priority
           />
         </Link>
