@@ -14,7 +14,7 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
-      <header className="border-b border-gray-800 px-4 sm:px-6 h-14 flex items-center justify-between">
+      <header className="sticky top-0 z-50 border-b border-gray-800 bg-gray-950 px-4 sm:px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-4">
           <Link href="/admin" className="font-serif text-base sm:text-lg font-semibold text-white">
             Nest &amp; Quill
