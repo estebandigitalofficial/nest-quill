@@ -11,14 +11,14 @@ interface Props {
 export default function SiteHeader({ right }: Props) {
   return (
     <header className="bg-parchment/95 backdrop-blur border-b border-parchment-dark shrink-0 relative z-40">
-      <div className="max-w-5xl mx-auto px-6 h-24 md:h-[52px] flex items-center justify-between gap-4">
+      <div className="max-w-5xl mx-auto px-6 h-[58px] md:h-[52px] flex items-center justify-between gap-4">
         <Link href="/" className="shrink-0 flex items-center">
           <Image
             src="https://nestandquill.b-cdn.net/nestandquill%20brand%20start-03.webp"
             alt="Nest & Quill"
             width={320}
             height={96}
-            className="h-20 md:h-[60px] w-auto"
+            className="h-12 md:h-[60px] w-auto"
             priority
           />
         </Link>
