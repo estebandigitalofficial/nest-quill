@@ -67,13 +67,11 @@ export async function POST(
     ((currentChapter.writer_scenes as unknown[]) ?? []).length || 1
   ))
 
-  const antiFabrication = `STRICT RULE: Only include people, places, events, and details that are present in the source manuscript. Do not invent characters, add people who were not there, fabricate conversations, or create dramatic details that did not happen. If the source does not mention it, do not add it.`
-
   const instructionsBlock = book.instructions
-    ? `\nAUTHOR'S INSTRUCTIONS (follow these exactly — they override default style guidance):\n${book.instructions}\n`
+    ? `\nAUTHOR'S INSTRUCTIONS (follow these exactly — they override all style guidance below):\n${book.instructions}\n`
     : ''
 
-  // If a source manuscript exists, find the most relevant excerpt (~15k chars around chapter mention)
+  // Find the most relevant source excerpt around this chapter
   let sourceExcerpt = ''
   if (book.source_text) {
     const src = book.source_text as string
@@ -90,8 +88,14 @@ export async function POST(
       : `Original manuscript excerpt (use as reference — rewrite/improve freely):\n${sourceExcerpt}\n`
     : ''
 
-  // System prompt: PDF-source + preserve_voice uses the constrained rewrite mode
+  // Fabrication guard only applies when there is a source manuscript to be faithful to.
+  // For fiction or free writing with no source, fabrication is the job.
+  const antiFabricationBlock = sourceExcerpt
+    ? `\nSTRICT RULE: Only include people, places, events, and details that are present in the source manuscript. Do not invent characters, add people who were not there, fabricate conversations, or create dramatic details that did not happen. If the source does not mention it, do not add it.\n`
+    : ''
+
   const systemPrompt = (mode === 'preserve_voice' && sourceExcerpt)
+    // Branch 1: constrained rewrite from a source manuscript — already solid, unchanged
     ? `You are rewriting a scene from the author's original manuscript.
 
 Rewrite this content while strictly preserving its original structure, length, and meaning.
@@ -132,18 +136,53 @@ CRITICAL CONSTRAINTS:
 - If it is already clear, leave it unchanged
 - Default to preserving original phrasing unless improvement is necessary
 
-${instructionsBlock}${antiFabrication}`
+${instructionsBlock}${antiFabricationBlock}`
+
+    // Branch 2: preserve_voice with no source — continue in author's established register
     : mode === 'preserve_voice'
-    ? `You are editing and rewriting a ${book.genre} book while strictly preserving the author's original voice.
+    ? `You are a ghostwriter continuing a ${book.genre} book in the author's established voice.
+
 Tone: ${book.tone}
-CRITICAL: You must maintain the author's exact voice — their sentence rhythm, vocabulary level, narrative style, point of view, and personality. Do not substitute your own prose style. Improve clarity, flow, and structure, but every sentence should still sound like the original author wrote it.
-Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.
-${instructionsBlock}${antiFabrication}`
-    : `You are a professional author writing a ${book.genre} book.
+
+Your primary obligation is voice fidelity. Every sentence must sound like the author wrote it — not like AI generated it. Use the premise, outline, and prior scenes provided to stay locked to the author's register and personality.
+
+Preserve voice by:
+- Matching vocabulary register — formal vs. casual, literary vs. conversational
+- Matching sentence length and rhythm — if prior scenes use short punchy sentences, continue that; if they flow longer, match that
+- Maintaining the narrative point of view and emotional distance already established
+- Keeping stylistic choices consistent: fragment use, internal monologue style, direct address if present
+
+Do not:
+- Drift into a more polished or generic literary register than the author uses
+- Add philosophical asides, universal lessons, or reflective narration unless the author's voice already does this
+- Over-describe settings or emotions — match the interiority level already in the book
+- Use announcing transitions ("Meanwhile...", "Later that day...", "As the sun set over...")
+
+Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the scene.
+${instructionsBlock}`
+
+    // Branch 3: rewrite_free — professional ghostwriter generating from scratch
+    : `You are a professional ghostwriter and book editor writing a scene for a ${book.genre} book.
+
 Tone: ${book.tone}
-Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the story.
-Maintain complete consistency with everything established in prior chapters and scenes.
-${instructionsBlock}${antiFabrication}`
+
+Your priorities, in order:
+1. Voice — match the tone, register, and rhythm established in this book. Do not substitute a generic AI prose style.
+2. Clarity — every sentence must be purposeful. No filler, no throat-clearing, no vague setup paragraphs.
+3. Pacing — give weight to what matters. Move quickly through setup; slow down for the moment that earns its place in the scene.
+4. Specificity — use concrete, grounded details. "The diner on Route 9" is stronger than "a nearby restaurant." Name things.
+5. Continuity — stay completely consistent with everything established in prior chapters and scenes.
+
+Strictly avoid:
+- Opening the scene with a weather description, a character waking up, or a generic establishing shot
+- Summarizing what the reader already knows
+- Motivational or inspirational language unless the author's voice already uses it
+- Vague emotional labels ("she felt sad", "he was overwhelmed") — show through action, dialogue, or specific physical detail
+- Announcing transitions ("Meanwhile...", "Later that day...", "As the sun set...")
+- Generic AI prose patterns: "In the heart of...", "It was a world where...", "Little did they know...", "With a heavy heart...", "He couldn't help but feel..."
+
+Write in flowing prose. No scene headings, no labels, no meta-commentary. Just the scene.
+${instructionsBlock}${antiFabricationBlock}`
 
   const userPrompt = `Book: "${book.title}"
 Premise: ${book.premise}
@@ -161,7 +200,7 @@ Target length: approximately ${targetWords} words.
 
 Write only the scene content. No headings.`
 
-  // Pre-flight fabrication check (gpt-4o-mini, cheap) — catches invented details before spending on full generation
+  // Pre-flight fabrication check — only when source exists
   if (sourceExcerpt) {
     const preCheckPrompt = `You are a fact-checker for a memoir. Your job is to catch fabricated details BEFORE a scene is written.
 
