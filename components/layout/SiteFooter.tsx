@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export default function SiteFooter() {
   return (
-    <footer className="bg-oxford-dark py-4 sm:py-5 md:py-3.5 ls:py-2.5 px-6">
+    <footer className="bg-oxford-dark py-4 sm:py-5 md:py-[11px] ls:py-2.5 px-6">
       <div className="max-w-5xl mx-auto flex flex-col items-center gap-2 md:gap-1.5 text-xs sm:text-sm text-parchment/50 sm:flex-row sm:justify-between">
         {/* Brand block — hidden on portrait mobile and landscape phones */}
         <div className="hidden sm:flex ls:hidden items-center gap-2 md:gap-1.5 text-left">
@@ -12,7 +12,7 @@ export default function SiteFooter() {
             alt="Nest & Quill"
             width={140}
             height={42}
-            className="brightness-0 invert md:w-[62px]"
+            className="brightness-0 invert md:w-[87px]"
           />
           <div>
             <p className="font-serif text-parchment font-semibold md:text-xs">Nest &amp; Quill</p>
