@@ -94,7 +94,7 @@ export default function NewBookForm({
       setPdfStatus('error')
       if (fileRef.current) fileRef.current.value = ''
     } else {
-      router.push(`/admin/writer/${json.id}`)
+      router.push(`/admin/writer/${json.id}?mode=edit`)
     }
   }
 
@@ -117,7 +117,7 @@ export default function NewBookForm({
     }
 
     const book = await res.json()
-    router.push(`/admin/writer/${book.id}`)
+    router.push(`/admin/writer/${book.id}?mode=edit`)
   }
 
   return (
