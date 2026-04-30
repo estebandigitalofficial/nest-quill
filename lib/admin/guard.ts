@@ -49,7 +49,6 @@ export async function requireAdmin(): Promise<AdminContext> {
 }
 
 export async function checkBookOwner(bookId: string, ctx: AdminContext): Promise<boolean> {
-  if (ctx.isSuperAdmin) return true
   const supabase = createAdminClient()
   const { data } = await supabase
     .from('writer_books')

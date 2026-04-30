@@ -35,13 +35,10 @@ export default async function WriterPage() {
   if (!ctx) redirect('/')
 
   const adminSupabase = createAdminClient()
-  let query = adminSupabase.from('writer_books').select('*').order('updated_at', { ascending: false })
-
-  if (!ctx.isSuperAdmin) {
-    query = query.eq('owner_id', ctx.userId)
-  }
-
-  const { data: books } = await query
+  const { data: books } = await adminSupabase
+    .from('writer_books')
+    .select('*')
+    .order('updated_at', { ascending: false })
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -76,6 +73,7 @@ export default async function WriterPage() {
             {(books as WriterBook[]).map((book) => {
               const color = authorColor(book.owner_id)
               const displayAuthor = book.pen_name ?? book.author_name
+              const isOwner = book.owner_id === ctx.userId
               return (
                 <div
                   key={book.id}
@@ -104,19 +102,28 @@ export default async function WriterPage() {
                     </div>
                   </div>
                   <div className="flex gap-2 relative z-10 shrink-0 mt-3 sm:mt-0">
-                    <DeleteBookButton bookId={book.id} />
+                    <DeleteBookButton bookId={book.id} isOwner={isOwner} />
                     <Link
                       href={`/admin/writer/${book.id}/read`}
                       className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
                     >
                       Read
                     </Link>
-                    <Link
-                      href={`/admin/writer/${book.id}`}
-                      className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
-                    >
-                      Edit
-                    </Link>
+                    {isOwner ? (
+                      <Link
+                        href={`/admin/writer/${book.id}`}
+                        className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
+                      >
+                        Edit
+                      </Link>
+                    ) : (
+                      <span
+                        title="You can only edit your own books"
+                        className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-gray-800 text-gray-700 cursor-not-allowed"
+                      >
+                        Edit
+                      </span>
+                    )}
                   </div>
                 </div>
               )

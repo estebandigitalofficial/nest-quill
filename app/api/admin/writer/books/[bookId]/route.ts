@@ -19,7 +19,6 @@ export async function GET(
     .single()
 
   if (error || !book) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (!await checkBookOwner(bookId, ctx)) return adminGuardResponse()
 
   const { data: chapters } = await supabase
     .from('writer_chapters')

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function DeleteBookButton({ bookId }: { bookId: string }) {
+export default function DeleteBookButton({ bookId, isOwner }: { bookId: string; isOwner: boolean }) {
   const [confirm, setConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const router = useRouter()
@@ -12,6 +12,17 @@ export default function DeleteBookButton({ bookId }: { bookId: string }) {
     setDeleting(true)
     await fetch(`/api/admin/writer/books/${bookId}`, { method: 'DELETE' })
     router.refresh()
+  }
+
+  if (!isOwner) {
+    return (
+      <span
+        title="You can only delete your own books"
+        className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-gray-800 text-gray-700 cursor-not-allowed"
+      >
+        Delete
+      </span>
+    )
   }
 
   if (confirm) {
