@@ -16,6 +16,10 @@ export interface WriterBook {
   source_text: string | null
   source_pdf_name: string | null
   instructions: string | null
+  audience: string | null
+  purpose: string | null
+  voice_notes: string | null
+  structural_notes: string | null
   author_name: string | null
   pen_name: string | null
   publisher_name: string | null

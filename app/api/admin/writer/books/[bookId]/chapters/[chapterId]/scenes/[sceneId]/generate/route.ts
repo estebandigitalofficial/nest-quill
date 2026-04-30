@@ -71,6 +71,19 @@ export async function POST(
     ? `\nAUTHOR'S INSTRUCTIONS (follow these exactly — they override all style guidance below):\n${book.instructions}\n`
     : ''
 
+  // Analysis-derived context blocks — only included when populated
+  const voiceNotesBlock = book.voice_notes
+    ? `\nAUTHOR VOICE PROFILE (use this as your primary style reference — match this voice in every sentence):\n${book.voice_notes}\n`
+    : ''
+
+  const audienceBlock = book.audience
+    ? `Target audience: ${book.audience}\n`
+    : ''
+
+  const purposeBlock = book.purpose
+    ? `Book's purpose: ${book.purpose}\n`
+    : ''
+
   // Find the most relevant source excerpt around this chapter
   let sourceExcerpt = ''
   if (book.source_text) {
@@ -95,9 +108,9 @@ export async function POST(
     : ''
 
   const systemPrompt = (mode === 'preserve_voice' && sourceExcerpt)
-    // Branch 1: constrained rewrite from a source manuscript — already solid, unchanged
+    // Branch 1: constrained rewrite from a source manuscript
     ? `You are rewriting a scene from the author's original manuscript.
-
+${audienceBlock}${purposeBlock}
 Rewrite this content while strictly preserving its original structure, length, and meaning.
 
 CRITICAL CONSTRAINTS:
@@ -135,7 +148,7 @@ CRITICAL CONSTRAINTS:
 - If a sentence can be clearer, adjust it slightly
 - If it is already clear, leave it unchanged
 - Default to preserving original phrasing unless improvement is necessary
-
+${voiceNotesBlock}
 ${instructionsBlock}${antiFabricationBlock}`
 
     // Branch 2: preserve_voice with no source — continue in author's established register
@@ -143,7 +156,7 @@ ${instructionsBlock}${antiFabricationBlock}`
     ? `You are a ghostwriter continuing a ${book.genre} book in the author's established voice.
 
 Tone: ${book.tone}
-
+${audienceBlock}${purposeBlock}${voiceNotesBlock}
 Your primary obligation is voice fidelity. Every sentence must sound like the author wrote it — not like AI generated it. Use the premise, outline, and prior scenes provided to stay locked to the author's register and personality.
 
 Preserve voice by:
@@ -165,7 +178,7 @@ ${instructionsBlock}`
     : `You are a professional ghostwriter and book editor writing a scene for a ${book.genre} book.
 
 Tone: ${book.tone}
-
+${audienceBlock}${purposeBlock}${voiceNotesBlock}
 Your priorities, in order:
 1. Voice — match the tone, register, and rhythm established in this book. Do not substitute a generic AI prose style.
 2. Clarity — every sentence must be purposeful. No filler, no throat-clearing, no vague setup paragraphs.

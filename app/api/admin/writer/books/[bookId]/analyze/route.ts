@@ -133,9 +133,6 @@ ${sample}`
     return NextResponse.json({ error: 'Could not parse AI response' }, { status: 500 })
   }
 
-  // Save only the fields that exist in the current schema.
-  // audience, purpose, voice_notes, structural_notes are returned in the payload
-  // but not yet persisted — they will be saved once those columns are added.
   await supabase
     .from('writer_books')
     .update({
@@ -144,6 +141,10 @@ ${sample}`
       genre: metadata.genre || '',
       tone: metadata.tone || '',
       premise: metadata.premise || '',
+      audience: metadata.audience || null,
+      purpose: metadata.purpose || null,
+      voice_notes: metadata.voice_notes || null,
+      structural_notes: metadata.structural_notes || null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', bookId)
