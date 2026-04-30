@@ -5,6 +5,9 @@ import { getAdminContext } from '@/lib/admin/guard'
 import type { WriterBook } from '@/types/writer'
 import DeleteBookButton from '@/components/admin/writer/DeleteBookButton'
 
+const EXCEPTION_EDITOR_EMAIL = 'esteban.digitalofficial@gmail.com'
+const EXCEPTION_OWNER_EMAIL  = 'nestandquillbooks@gmail.com'
+
 type AuthorColorScheme = { border: string; dot: string; text: string }
 
 const AUTHOR_COLORS: AuthorColorScheme[] = [
@@ -35,10 +38,11 @@ export default async function WriterPage() {
   if (!ctx) redirect('/')
 
   const adminSupabase = createAdminClient()
-  const { data: books } = await adminSupabase
-    .from('writer_books')
-    .select('*')
-    .order('updated_at', { ascending: false })
+  const [{ data: books }, { data: nqProfile }] = await Promise.all([
+    adminSupabase.from('writer_books').select('*').order('updated_at', { ascending: false }),
+    adminSupabase.from('profiles').select('id').eq('email', EXCEPTION_OWNER_EMAIL).single(),
+  ])
+  const nqBooksUserId = nqProfile?.id ?? null
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
@@ -73,7 +77,9 @@ export default async function WriterPage() {
             {(books as WriterBook[]).map((book) => {
               const color = authorColor(book.owner_id)
               const displayAuthor = book.pen_name ?? book.author_name
-              const isOwner = book.owner_id === ctx.userId
+              const canEdit =
+                book.owner_id === ctx.userId ||
+                (ctx.displayName === EXCEPTION_EDITOR_EMAIL && book.owner_id === nqBooksUserId)
               return (
                 <div
                   key={book.id}
@@ -102,14 +108,14 @@ export default async function WriterPage() {
                     </div>
                   </div>
                   <div className="flex gap-2 relative z-10 shrink-0 mt-3 sm:mt-0">
-                    <DeleteBookButton bookId={book.id} isOwner={isOwner} />
+                    <DeleteBookButton bookId={book.id} isOwner={canEdit} />
                     <Link
                       href={`/admin/writer/${book.id}/read`}
                       className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
                     >
                       Read
                     </Link>
-                    {isOwner ? (
+                    {canEdit ? (
                       <Link
                         href={`/admin/writer/${book.id}`}
                         className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"

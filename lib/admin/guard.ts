@@ -48,14 +48,34 @@ export async function requireAdmin(): Promise<AdminContext> {
   return ctx
 }
 
+// One-off exception: this editor may also edit books owned by the account below.
+const EXCEPTION_EDITOR_EMAIL = 'esteban.digitalofficial@gmail.com'
+const EXCEPTION_OWNER_EMAIL  = 'nestandquillbooks@gmail.com'
+
 export async function checkBookOwner(bookId: string, ctx: AdminContext): Promise<boolean> {
   const supabase = createAdminClient()
-  const { data } = await supabase
+  const { data: book } = await supabase
     .from('writer_books')
     .select('owner_id')
     .eq('id', bookId)
     .single()
-  return data?.owner_id === ctx.userId
+
+  if (!book?.owner_id) return false
+
+  // Normal rule: user owns the book.
+  if (book.owner_id === ctx.userId) return true
+
+  // Exception: Esteban may edit/delete books owned by the Nest & Quill Books account.
+  if (ctx.displayName === EXCEPTION_EDITOR_EMAIL) {
+    const { data: ownerProfile } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', book.owner_id)
+      .single()
+    if (ownerProfile?.email === EXCEPTION_OWNER_EMAIL) return true
+  }
+
+  return false
 }
 
 export function adminGuardResponse() {
