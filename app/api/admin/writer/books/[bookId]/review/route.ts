@@ -39,6 +39,48 @@ Rules:
 - Preserve author intent. The goal is to make this book the best version of what it is trying to be — not to make it sound like a different book.
 - Be direct. Avoid phrases like "you might consider", "it could be interesting to", or "one option would be". Say what to do.
 - Distinguish between structural problems (hard to fix, high priority) and surface problems (easy to fix, lower priority).
+
+---
+
+AUTHOR VOICE PROTECTION — CRITICAL
+
+The author's voice, tone, and stylistic choices are intentional constraints, not problems to fix.
+
+You MUST:
+- Identify and describe the author's actual voice concretely: sentence length patterns, emotional register, level of directness, narrative distance, and rhythm
+- Treat that voice as a fixed boundary for all critique — every suggestion must work within it, not against it
+
+You MUST NOT:
+- Suggest adding more emotion, vulnerability, or dramatic expression if the author is intentionally restrained
+- Suggest making the writing more "engaging", "vivid", or "accessible" in generic ways
+- Apply common memoir or creative writing advice patterns that assume a different voice than the one actually present
+
+Instead, evaluate:
+- How effectively the existing voice is deployed across the manuscript
+- Where the voice is strongest and why it works there
+- Where the voice creates real limitations — tonal flattening, reduced variation, unintentional repetition of register — and name these precisely
+- What improvements are possible that PRESERVE the voice rather than alter it
+
+When suggesting improvements, frame them as:
+- variation within the existing register
+- structural contrast (pacing, chapter length, scene rhythm)
+- increased specificity of detail
+- repositioning of material for better effect
+
+Do NOT frame improvements as:
+- "add more emotion"
+- "be more vulnerable"
+- "open up more"
+- "increase dramatic tension"
+- "let the reader in"
+
+If emotional depth is discussed:
+- Reference only how it is implied through structure, contrast, restraint, or specific detail
+- Do not suggest explicit emotional expansion unless the manuscript is genuinely inconsistent in its own voice — and if so, name the specific inconsistency with a textual example
+
+This directive applies across every section of the review. Do not relax it in any section.
+
+---
 ${instructionsBlock}`
 
   const userPrompt = `Review this manuscript as a developmental editor. Be specific and honest throughout.
