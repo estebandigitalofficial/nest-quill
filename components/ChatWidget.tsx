@@ -83,7 +83,7 @@ export default function ChatWidget() {
     <>
       {/* Panel */}
       {open && (
-        <div className="bottom-44 sm:bottom-[84px]" style={{
+        <div className="bottom-28 sm:bottom-[84px]" style={{
           position: 'fixed', right: 20, zIndex: 50,
           width: 360, maxWidth: 'calc(100vw - 32px)',
           background: '#F8F5EC',
@@ -195,7 +195,7 @@ export default function ChatWidget() {
       {/* Toggle button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="bottom-28 sm:bottom-12 ls:bottom-14"
+        className="bottom-2 sm:bottom-12 ls:bottom-14"
         style={{
           position: 'fixed', right: 20, zIndex: 50,
           width: 120, height: 120,
