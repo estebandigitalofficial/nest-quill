@@ -9,7 +9,7 @@ export default async function ReadPage({
   params: Promise<{ bookId: string }>
 }) {
   const ctx = await getAdminContext()
-  if (!ctx) redirect('/')
+  if (!ctx) return null
 
   const { bookId } = await params
   const supabase = createAdminClient()

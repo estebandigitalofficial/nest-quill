@@ -8,6 +8,7 @@ import { canCreateBook } from '@/lib/plans/limits'
 import { PlanLimitError, toApiError } from '@/lib/utils/errors'
 import { sendSubmissionConfirmationEmail } from '@/lib/services/email'
 import { sendAdminNotification, buildGuestStoryEmail } from '@/lib/services/adminNotifications'
+import { classifyGenre } from '@/lib/services/genre'
 import type { SubmitStoryResponse } from '@/types/story'
 
 export async function POST(request: NextRequest) {
@@ -109,6 +110,7 @@ export async function POST(request: NextRequest) {
         geo_city: geoCity,
         geo_country: geoCountry,
         geo_region: geoRegion,
+        genre: classifyGenre(formData.storyTheme, formData.storyTone),
         status: 'queued',
         progress_pct: 0,
         status_message: 'Your story is in the queue...',

@@ -106,6 +106,7 @@ export interface StoryRequest {
   geo_country: string | null
   geo_region: string | null
   usage_counted: boolean
+  genre: string | null
 }
 
 export interface QuizQuestion {
@@ -221,6 +222,58 @@ export interface StoryPage {
   page: number
   text: string
   image_description: string
+}
+
+// ─── Admin feature tables ───────────────────────────────────────────────────
+
+export interface AiWriterConfig {
+  id: string
+  key: string
+  value: string
+  description: string | null
+  updated_by: string | null
+  updated_at: string
+}
+
+export interface EmailDripTemplate {
+  id: string
+  sequence: string
+  step: number
+  delay_days: number
+  subject: string
+  body_html: string
+  enabled: boolean
+  trigger_condition: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EmailDripRule {
+  id: string
+  name: string
+  trigger_type: string
+  delay_days: number
+  template_id: string | null
+  conditions: Json
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ImageLibraryItem {
+  id: string
+  scene_id: string | null
+  request_id: string | null
+  storage_path: string | null
+  storage_bucket: string
+  image_url: string | null
+  tags: string[]
+  illustration_style: string | null
+  theme: string | null
+  child_age_range: string | null
+  prompt_used: string | null
+  revised_prompt: string | null
+  created_at: string
 }
 
 // ─── Supabase Database shape (used by createClient<Database>) ───────────────

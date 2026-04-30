@@ -11,7 +11,7 @@ export default async function ChapterPage({
   params: Promise<{ bookId: string; chapterId: string }>
 }) {
   const adminCtx = await getAdminContext()
-  if (!adminCtx) redirect('/')
+  if (!adminCtx) return null
 
   const { bookId, chapterId } = await params
   const adminSupabase = createAdminClient()
@@ -40,7 +40,7 @@ export default async function ChapterPage({
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
+    <>
       <header className="border-b border-gray-800 px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <Link href={`/admin/writer/${bookId}`} className="text-xs text-gray-500 hover:text-gray-300 shrink-0">
@@ -56,6 +56,6 @@ export default async function ChapterPage({
       <div className="max-w-4xl mx-auto px-6 py-8">
         <ChapterEditor book={book as WriterBook} chapter={chapterData} />
       </div>
-    </div>
+    </>
   )
 }

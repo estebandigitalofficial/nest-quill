@@ -22,15 +22,17 @@ const PDF_OXFORD = rgb(0.047, 0.137, 0.251)       // #0C2340
 const PDF_CHARCOAL = rgb(0.18, 0.18, 0.18)        // #2E2E2E
 const PDF_GRAY = rgb(0.471, 0.443, 0.424)         // #78716c
 
-// ── Illustration style → DALL-E style hint map ────────────────────────────────
+// ── Fallback illustration style → DALL-E style hint map ─────────────────────
 
-const STYLE_HINTS: Record<string, string> = {
+const FALLBACK_STYLE_HINTS: Record<string, string> = {
   watercolor: 'soft watercolor illustration, gentle washes of color, children\'s picture book style',
   cartoon: 'bright cartoon illustration, bold outlines, vibrant colors, fun and playful children\'s book style',
   storybook: 'classic storybook illustration, warm and detailed, fairy-tale aesthetic, painted children\'s book style',
   pencil_sketch: 'detailed pencil sketch illustration, hand-drawn, soft shading, charming children\'s book style',
   digital_art: 'clean digital illustration, polished artwork, colorful, modern children\'s book style',
 }
+
+type ConfigMap = Record<string, string>
 
 // ── OpenAI helper ─────────────────────────────────────────────────────────────
 
@@ -58,9 +60,12 @@ async function callOpenAI(messages: object[], model = 'gpt-4o'): Promise<string>
   return json.choices[0].message.content
 }
 
-async function generateImage(prompt: string, illustrationStyle: string): Promise<Uint8Array> {
-  const styleHint = STYLE_HINTS[illustrationStyle] ?? STYLE_HINTS.storybook
-  const fullPrompt = `${styleHint}. ${prompt}. Child-safe, no text, no words in image.`
+async function generateImage(prompt: string, illustrationStyle: string, config: ConfigMap = {}): Promise<Uint8Array> {
+  const styleHint = config['image_style_' + illustrationStyle]
+    ?? FALLBACK_STYLE_HINTS[illustrationStyle]
+    ?? FALLBACK_STYLE_HINTS.storybook
+  const safetySuffix = config['image_safety_suffix'] ?? 'Child-safe, no text, no words in image.'
+  const fullPrompt = `${styleHint}. ${prompt}. ${safetySuffix}`
 
   const res = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
@@ -98,7 +103,7 @@ async function generateImage(prompt: string, illustrationStyle: string): Promise
 
 // ── Story prompt builder ──────────────────────────────────────────────────────
 
-function buildStoryPrompt(request: Record<string, unknown>): object[] {
+function buildStoryPrompt(request: Record<string, unknown>, config: ConfigMap = {}): object[] {
   const {
     child_name,
     child_age,
@@ -120,18 +125,27 @@ function buildStoryPrompt(request: Record<string, unknown>): object[] {
   const pageCount = Number(story_length) || 16
   const isLearning = learning_mode === true
 
-  const learningSystemNote = isLearning ? `
+  // Helper to replace placeholders in config values
+  function r(template: string): string {
+    return template
+      .replace(/\{child_age\}/g, String(child_age))
+      .replace(/\{page_count\}/g, String(pageCount))
+      .replace(/\{illustration_style\}/g, String(illustration_style))
+      .replace(/\{tone_list\}/g, String(toneList))
+      .replace(/\{learning_topic\}/g, String(learning_topic ?? ''))
+      .replace(/\{learning_subject\}/g, String(learning_subject ?? ''))
+      .replace(/\{learning_grade\}/g, String(learning_grade ?? ''))
+  }
 
-LEARNING MODE ACTIVE:
-This story must naturally weave in educational content about "${learning_topic}" (${learning_subject}, grade ${learning_grade}).
+  const learningSystemNote = isLearning ? `\n\n${r(config['learning_mode_instructions'] ?? `LEARNING MODE ACTIVE:
+This story must naturally weave in educational content about "{learning_topic}" ({learning_subject}, grade {learning_grade}).
 - Introduce the concept early and reinforce it across multiple pages
-- Use age-appropriate vocabulary for a grade ${learning_grade} student
+- Use age-appropriate vocabulary for a grade {learning_grade} student
 - Show the character applying or discovering the concept — don't just state facts
-- The learning should feel like part of the story, not a lesson bolted on` : ''
+- The learning should feel like part of the story, not a lesson bolted on`)}` : ''
 
-  const systemPrompt = `You are a professional children's book author. You write warm, age-appropriate stories for young children.${learningSystemNote}
-
-Your output must be valid JSON matching this exact structure:
+  const role = config['story_role'] ?? "You are a professional children's book author. You write warm, age-appropriate stories for young children."
+  const outputFormat = config['story_output_format'] ?? `Your output must be valid JSON matching this exact structure:
 {
   "title": "string — a short, memorable book title",
   "subtitle": "string — an optional subtitle (can be empty string)",
@@ -145,17 +159,20 @@ Your output must be valid JSON matching this exact structure:
       "image_description": "string — a detailed visual description for an illustrator (what to draw on this page)"
     }
   ]
-}
+}`
 
-Rules:
-- Write exactly ${pageCount} story pages
-- Keep language simple and age-appropriate for a ${child_age}-year-old
-- Each page should have 2-4 sentences maximum
-- Image descriptions should be vivid, specific, and describe a single scene
-- The illustration style is ${illustration_style} — reflect this in image description language
-- Tone: ${toneList}
-- Do not include page numbers or chapter headings in the text
-- End the story with a satisfying, uplifting conclusion`
+  const rules = [
+    r(config['story_page_rules'] ?? 'Write exactly {page_count} story pages'),
+    r(config['story_language_rules'] ?? 'Keep language simple and age-appropriate for a {child_age}-year-old'),
+    r(config['story_sentence_rules'] ?? 'Each page should have 2-4 sentences maximum'),
+    r(config['story_image_desc_rules'] ?? 'Image descriptions should be vivid, specific, and describe a single scene'),
+    r(config['story_illustration_style_rule'] ?? 'The illustration style is {illustration_style} — reflect this in image description language'),
+    r(config['story_tone_rule'] ?? 'Tone: {tone_list}'),
+    'Do not include page numbers or chapter headings in the text',
+    r(config['story_ending_rule'] ?? 'End the story with a satisfying, uplifting conclusion'),
+  ]
+
+  const systemPrompt = `${role}${learningSystemNote}\n\n${outputFormat}\n\nRules:\n${rules.map(r => `- ${r}`).join('\n')}`
 
   const learningUserNote = isLearning
     ? `- Learning focus: ${learning_topic} (subject: ${learning_subject}, grade ${learning_grade})\n`
@@ -187,13 +204,30 @@ async function generateQuiz(
   subject: string,
   grade: number,
   topic: string,
+  config: ConfigMap = {},
 ): Promise<object[]> {
   const storyText = storyPages.map(p => `Page ${p.page}: ${p.text}`).join('\n')
+
+  const quizSystemPrompt = config['quiz_system_prompt']
+    ?? 'You are an educational assessment writer. Create 5 multiple-choice quiz questions based on the story and learning topic.'
+
+  const quizRules = (config['quiz_rules'] ?? `Rules:
+- Write exactly 5 questions
+- Questions must be answerable from the story content
+- Mix comprehension questions (about story events) with concept questions (about {topic})
+- Keep language appropriate for grade {grade} (age {age_low}–{age_high})
+- Each question must have exactly 4 options
+- correct_index is 0-based (0 = first option, 3 = last option)
+- Explanations should be encouraging and educational`)
+    .replace(/\{topic\}/g, topic)
+    .replace(/\{grade\}/g, String(grade))
+    .replace(/\{age_low\}/g, String(5 + grade))
+    .replace(/\{age_high\}/g, String(6 + grade))
 
   const messages = [
     {
       role: 'system',
-      content: `You are an educational assessment writer. Create 5 multiple-choice quiz questions based on the story and learning topic.
+      content: `${quizSystemPrompt}
 
 Your output must be valid JSON matching this exact structure:
 {
@@ -207,14 +241,7 @@ Your output must be valid JSON matching this exact structure:
   ]
 }
 
-Rules:
-- Write exactly 5 questions
-- Questions must be answerable from the story content
-- Mix comprehension questions (about story events) with concept questions (about ${topic})
-- Keep language appropriate for grade ${grade} (age ${5 + grade}–${6 + grade})
-- Each question must have exactly 4 options
-- correct_index is 0-based (0 = first option, 3 = last option)
-- Explanations should be encouraging and educational`,
+${quizRules}`,
     },
     {
       role: 'user',
@@ -325,6 +352,20 @@ Deno.serve(async (req) => {
   try {
     await log('pipeline_start', MOCK_PIPELINE ? 'Pipeline started (MOCK MODE — no API calls)' : 'Pipeline started')
 
+    // ── Fetch AI writer config ──────────────────────────────────────────
+    const configMap: ConfigMap = {}
+    try {
+      const { data: configRows } = await supabase
+        .from('ai_writer_config')
+        .select('key, value')
+      for (const row of configRows ?? []) {
+        configMap[row.key] = row.value
+      }
+      await log('config', `Loaded ${Object.keys(configMap).length} config keys`)
+    } catch (configErr) {
+      await log('config', `Config fetch failed, using defaults: ${configErr}`, 'warning')
+    }
+
     // ── Mock mode — skips all OpenAI calls, uses canned data ─────────────
     if (MOCK_PIPELINE) {
       const pageCount = Number(storyRequest.story_length) || 8
@@ -387,7 +428,7 @@ Deno.serve(async (req) => {
     await log('generate_text', 'Calling OpenAI GPT-4o for story text')
     const t0 = Date.now()
 
-    const messages = buildStoryPrompt(storyRequest)
+    const messages = buildStoryPrompt(storyRequest, configMap)
     const rawContent = await callOpenAI(messages)
     const story = JSON.parse(rawContent)
 
@@ -457,6 +498,7 @@ Deno.serve(async (req) => {
           storyRequest.learning_subject,
           storyRequest.learning_grade ?? 1,
           storyRequest.learning_topic,
+          configMap,
         )
 
         const { error: quizInsertError } = await supabase
@@ -504,7 +546,7 @@ Deno.serve(async (req) => {
 
       for (const scene of scenes) {
         try {
-          const imageBytes = await generateImage(scene.image_prompt, storyRequest.illustration_style)
+          const imageBytes = await generateImage(scene.image_prompt, storyRequest.illustration_style, configMap)
 
           const storagePath = `${requestId}/${scene.page_number}.png`
           const { error: uploadError } = await supabase.storage

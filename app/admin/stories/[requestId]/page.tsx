@@ -1,7 +1,6 @@
-import { redirect, notFound } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getAdminContext } from '@/lib/admin/guard'
 import AdminStoryActions from '@/components/admin/AdminStoryActions'
 import type { StoryRequest, GeneratedStory, StoryScene, ProcessingLog } from '@/types/database'
 import { formatAZTime, formatAZTimeOnly } from '@/lib/utils/formatTime'
@@ -11,9 +10,6 @@ interface PageProps {
 }
 
 export default async function AdminStoryDetailPage({ params }: PageProps) {
-  const ctx = await getAdminContext()
-  if (!ctx) redirect('/')
-
   const { requestId } = await params
   const supabase = createAdminClient()
 
@@ -49,23 +45,6 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
     : null
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      {/* Nav */}
-      <header className="border-b border-gray-800 px-6 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/admin" className="font-serif text-lg font-semibold text-white">Nest &amp; Quill</Link>
-          <span className="text-xs font-semibold bg-brand-500 text-white px-2 py-0.5 rounded-full">Admin</span>
-        </div>
-        <div className="flex items-center gap-6">
-          <Link href="/admin" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">Stories</Link>
-          <Link href="/admin/library" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">Library</Link>
-          <Link href="/admin/users" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">Users</Link>
-          <Link href="/admin/guests" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">Guests</Link>
-          <Link href="/admin/settings" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">Settings</Link>
-          <Link href="/admin/writer" className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors">Writer →</Link>
-        </div>
-      </header>
-
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
 
         {/* Breadcrumb + title */}
@@ -230,7 +209,6 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
         </Section>
 
       </div>
-    </div>
   )
 }
 

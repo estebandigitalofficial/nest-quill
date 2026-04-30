@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
@@ -35,7 +34,7 @@ function authorColor(ownerId: string | null): AuthorColorScheme {
 
 export default async function WriterPage() {
   const ctx = await getAdminContext()
-  if (!ctx) redirect('/')
+  if (!ctx) return null
 
   const adminSupabase = createAdminClient()
   const [{ data: books }, { data: nqProfile }] = await Promise.all([
@@ -45,7 +44,7 @@ export default async function WriterPage() {
   const nqBooksUserId = nqProfile?.id ?? null
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
+    <>
       <header className="border-b border-gray-800 px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/admin" className="text-xs text-gray-500 hover:text-gray-300">← Admin</Link>
@@ -137,7 +136,7 @@ export default async function WriterPage() {
           </div>
         )}
       </div>
-    </div>
+    </>
   )
 }
 

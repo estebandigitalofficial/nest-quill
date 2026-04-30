@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -6,7 +5,7 @@ import { getAdminContext } from '@/lib/admin/guard'
 import AdminUserControls from '@/components/admin/AdminUserControls'
 import AdminUserActions from '@/components/admin/AdminUserActions'
 import AdminUserSearch from '@/components/admin/AdminUserSearch'
-import AdminLogoutButton from '@/components/admin/AdminLogoutButton'
+import UserDetailPanel from './UserDetailPanel'
 import type { Profile, PlanTier } from '@/types/database'
 import { formatAZTimeShort } from '@/lib/utils/formatTime'
 
@@ -24,7 +23,7 @@ const PLAN_BADGE: Record<PlanTier, string> = {
 
 export default async function AdminUsersPage({ searchParams }: PageProps) {
   const ctx = await getAdminContext()
-  if (!ctx) redirect('/')
+  if (!ctx) return null
   const currentUserId = ctx.userId
 
   const { q } = await searchParams
@@ -60,6 +59,23 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
   if (q) query = query.ilike('email', `%${q}%`)
 
   const { data: users } = await query
+
+  // Batch query story counts
+  const userIds = (users ?? []).map(u => u.id)
+  const { data: storyCounts } = await adminSupabase
+    .from('story_requests')
+    .select('user_id')
+    .in('user_id', userIds.length > 0 ? userIds : ['__none__'])
+  const storyCountMap = new Map<string, number>()
+  for (const row of storyCounts ?? []) {
+    storyCountMap.set(row.user_id, (storyCountMap.get(row.user_id) ?? 0) + 1)
+  }
+
+  // Batch query last login from auth meta
+  const authLastLogin = new Map(
+    (authUsersData?.users ?? []).map(u => [u.id, u.last_sign_in_at ?? null])
+  )
+
   const rows = (users ?? []).map(u => {
     const meta = authMeta.get(u.id)
     const bannedUntil = meta?.banned_until ?? null
@@ -68,45 +84,13 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
       ...(u as unknown as Profile & { is_admin: boolean }),
       created_at: meta?.created_at ?? new Date(0).toISOString(),
       isBanned,
+      storyCount: storyCountMap.get(u.id) ?? 0,
+      lastLogin: authLastLogin.get(u.id) ?? null,
     }
   }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      {/* Nav */}
-      <header className="border-b border-gray-800 px-4 sm:px-6 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Link href="/admin" className="font-serif text-base sm:text-lg font-semibold text-white">
-            Nest &amp; Quill
-          </Link>
-          <span className="hidden sm:inline-block text-xs font-semibold bg-brand-500 text-white px-2 py-0.5 rounded-full">
-            Admin
-          </span>
-        </div>
-        <div className="flex items-center gap-3 sm:gap-6">
-          <Link href="/admin" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
-            Stories
-          </Link>
-          <Link href="/admin/library" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
-            Library
-          </Link>
-          <Link href="/admin/users" className="text-xs font-semibold text-white">
-            Users
-          </Link>
-          <Link href="/admin/guests" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
-            Guests
-          </Link>
-          <Link href="/admin/settings" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
-            Settings
-          </Link>
-          <Link href="/admin/writer" className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors">
-            Writer →
-          </Link>
-          <AdminLogoutButton />
-        </div>
-      </header>
-
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+    <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
@@ -132,6 +116,8 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                     <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
                       <th className="text-left px-4 py-3">Email</th>
                       <th className="text-left px-4 py-3 hidden sm:table-cell">Signed up</th>
+                      <th className="text-left px-4 py-3 hidden lg:table-cell">Last login</th>
+                      <th className="text-left px-4 py-3 hidden md:table-cell">Stories</th>
                       <th className="text-left px-4 py-3">Plan &amp; quota</th>
                       <th className="px-4 py-3"></th>
                     </tr>
@@ -154,6 +140,12 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                         <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell whitespace-nowrap">
                           {formatAZTimeShort(user.created_at)}
                         </td>
+                        <td className="px-4 py-3 text-gray-500 text-xs hidden lg:table-cell whitespace-nowrap">
+                          {user.lastLogin ? formatAZTimeShort(user.lastLogin) : '—'}
+                        </td>
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          <span className="text-xs text-gray-300 font-mono">{user.storyCount}</span>
+                        </td>
                         <td className="px-4 py-3">
                           <div className="space-y-2">
                             <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${PLAN_BADGE[user.plan_tier] ?? 'bg-gray-800 text-gray-400'}`}>
@@ -173,19 +165,20 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                             />
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 text-right space-y-1">
                           <Link
                             href={`/admin?q=${encodeURIComponent(user.email)}`}
                             className="text-xs text-brand-400 hover:text-brand-300 font-medium whitespace-nowrap"
                           >
                             View stories →
                           </Link>
+                          <UserDetailPanel userId={user.id} />
                         </td>
                       </tr>
                     ))}
                     {rows.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="px-4 py-8 text-center text-gray-600">
+                        <td colSpan={6} className="px-4 py-8 text-center text-gray-600">
                           {q ? 'No users match that search.' : 'No users yet.'}
                         </td>
                       </tr>
@@ -202,7 +195,6 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
           </div>
         </div>
 
-      </div>
     </div>
   )
 }

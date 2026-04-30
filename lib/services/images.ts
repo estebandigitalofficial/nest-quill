@@ -5,6 +5,8 @@ export interface ImageOptions {
   style: IllustrationStyle
   size?: '1024x1024' | '1792x1024'
   quality?: 'standard' | 'hd'
+  styleHintOverride?: string
+  safetySuffixOverride?: string
 }
 
 export interface ImageResult {
@@ -39,8 +41,9 @@ export async function generateImage(prompt: string, options: ImageOptions): Prom
 
 async function generateWithOpenAI(prompt: string, options: ImageOptions): Promise<ImageResult> {
   const openai = getOpenAI()
-  const styleHint = STYLE_HINTS[options.style] ?? STYLE_HINTS.storybook
-  const fullPrompt = `${styleHint}. ${prompt}. Child-safe, no text, no words in image.`
+  const styleHint = options.styleHintOverride ?? STYLE_HINTS[options.style] ?? STYLE_HINTS.storybook
+  const safetySuffix = options.safetySuffixOverride ?? 'Child-safe, no text, no words in image.'
+  const fullPrompt = `${styleHint}. ${prompt}. ${safetySuffix}`
 
   const response = await openai.images.generate({
     model: 'dall-e-3',

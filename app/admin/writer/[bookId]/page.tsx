@@ -12,7 +12,7 @@ export default async function BookPage({
   searchParams: Promise<{ mode?: string }>
 }) {
   const adminCtx = await getAdminContext()
-  if (!adminCtx) redirect('/')
+  if (!adminCtx) return null
 
   const [{ bookId }, { mode }] = await Promise.all([params, searchParams])
   const initialMode = mode === 'edit' ? 'edit' : 'read'

@@ -476,6 +476,36 @@ export async function sendSignupDripEmail(step: number, opts: SignupDripOptions)
   if (error) throw new Error(`Resend error (signup drip step ${step}): ${error.message}`)
 }
 
+// ── Generic template-based drip email sender ─────────────────────────────────
+
+export async function sendDripEmailFromTemplate(
+  template: { subject: string; body_html: string },
+  opts: {
+    toEmail: string
+    variables?: Record<string, string>
+  }
+): Promise<void> {
+  let subject = template.subject
+  let body = template.body_html
+
+  // Replace placeholders
+  for (const [key, value] of Object.entries(opts.variables ?? {})) {
+    const placeholder = `{${key}}`
+    subject = subject.replaceAll(placeholder, value)
+    body = body.replaceAll(placeholder, value)
+  }
+
+  const html = emailShell(body)
+  const resend = getResend()
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: opts.toEmail,
+    subject,
+    html,
+  })
+  if (error) throw new Error(`Resend error (template drip): ${error.message}`)
+}
+
 // ── Welcome email ─────────────────────────────────────────────────────────────
 
 export async function sendWelcomeEmail(toEmail: string): Promise<void> {

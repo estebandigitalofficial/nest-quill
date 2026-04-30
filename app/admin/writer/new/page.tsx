@@ -1,11 +1,10 @@
-import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
 import NewBookForm from '@/components/admin/writer/NewBookForm'
 
 export default async function NewBookPage() {
   const ctx = await getAdminContext()
-  if (!ctx) redirect('/')
+  if (!ctx) return null
 
   // Fetch admin users list for the owner dropdown (super admin only)
   let adminUsers: { userId: string; displayName: string; role: 'admin' | 'super_admin' }[] = [

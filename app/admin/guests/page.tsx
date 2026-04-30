@@ -1,10 +1,7 @@
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getAdminContext } from '@/lib/admin/guard'
 import AdminUserSearch from '@/components/admin/AdminUserSearch'
-import AdminLogoutButton from '@/components/admin/AdminLogoutButton'
 import { formatAZTimeShort } from '@/lib/utils/formatTime'
 
 interface PageProps {
@@ -12,9 +9,6 @@ interface PageProps {
 }
 
 export default async function AdminGuestsPage({ searchParams }: PageProps) {
-  const ctx = await getAdminContext()
-  if (!ctx) redirect('/')
-
   const { q } = await searchParams
   const adminSupabase = createAdminClient()
 
@@ -86,41 +80,7 @@ export default async function AdminGuestsPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      {/* Nav */}
-      <header className="border-b border-gray-800 px-4 sm:px-6 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Link href="/admin" className="font-serif text-base sm:text-lg font-semibold text-white">
-            Nest &amp; Quill
-          </Link>
-          <span className="hidden sm:inline-block text-xs font-semibold bg-brand-500 text-white px-2 py-0.5 rounded-full">
-            Admin
-          </span>
-        </div>
-        <div className="flex items-center gap-3 sm:gap-6">
-          <Link href="/admin" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
-            Stories
-          </Link>
-          <Link href="/admin/library" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
-            Library
-          </Link>
-          <Link href="/admin/users" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
-            Users
-          </Link>
-          <Link href="/admin/guests" className="text-xs font-semibold text-white">
-            Guests
-          </Link>
-          <Link href="/admin/settings" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
-            Settings
-          </Link>
-          <Link href="/admin/writer" className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors">
-            Writer →
-          </Link>
-          <AdminLogoutButton />
-        </div>
-      </header>
-
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+    <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
@@ -202,7 +162,6 @@ export default async function AdminGuestsPage({ searchParams }: PageProps) {
           </div>
         </div>
 
-      </div>
     </div>
   )
 }
