@@ -11,7 +11,6 @@ export const metadata: Metadata = {
 const TOOLS = [
   {
     href: '/learning/scan-homework',
-    emoji: '📸',
     title: 'Scan Homework',
     desc: 'Snap a photo of any worksheet or textbook page — instantly get flashcards, explanations, study guides, spelling practice, or trivia.',
     tag: 'New',
@@ -19,7 +18,6 @@ const TOOLS = [
   },
   {
     href: '/learning/quiz',
-    emoji: '🧠',
     title: 'Quiz Generator',
     desc: 'Type any topic or snap a photo of homework — get a 5-question quiz instantly.',
     tag: 'Photo upload',
@@ -27,7 +25,6 @@ const TOOLS = [
   },
   {
     href: '/learning/flashcards',
-    emoji: '🃏',
     title: 'Flashcards',
     desc: 'Any topic or photo → 10 study cards. Tap to flip. Mark what you know.',
     tag: 'Photo upload',
@@ -35,7 +32,6 @@ const TOOLS = [
   },
   {
     href: '/learning/explain',
-    emoji: '💡',
     title: 'Concept Explainer',
     desc: 'Ask about anything or upload a photo. Get a simple explanation, a real-world analogy, and something to try at home.',
     tag: 'Photo upload',
@@ -43,7 +39,6 @@ const TOOLS = [
   },
   {
     href: '/learning/study-guide',
-    emoji: '📋',
     title: 'Study Guide',
     desc: 'Key terms, main concepts, memory tips, and practice questions — from any topic or photo.',
     tag: 'Photo upload',
@@ -51,7 +46,6 @@ const TOOLS = [
   },
   {
     href: '/learning/spelling',
-    emoji: '✏️',
     title: 'Spelling Practice',
     desc: 'Paste your word list from school. Practice one at a time, track your score.',
     tag: 'No AI needed',
@@ -59,7 +53,6 @@ const TOOLS = [
   },
   {
     href: '/learning/math',
-    emoji: '🔢',
     title: 'Math Practice',
     desc: 'Pick a topic and grade — get 8 problems with step-by-step solutions.',
     tag: null,
@@ -67,7 +60,6 @@ const TOOLS = [
   },
   {
     href: '/learning/reading',
-    emoji: '📖',
     title: 'Reading Comprehension',
     desc: 'Paste any passage and get 5 questions — literal and inferential.',
     tag: null,
@@ -117,7 +109,6 @@ export default function LearningPage() {
           <div className="max-w-4xl mx-auto">
             <div className="bg-brand-50 border border-brand-200 rounded-2xl px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <span className="text-3xl shrink-0">📖</span>
                 <div>
                   <p className="font-semibold text-oxford text-sm">Also: Learning Stories</p>
                   <p className="text-xs text-charcoal-light">A personalized illustrated storybook with your child&apos;s topic woven in — plus a quiz at the end.</p>
@@ -141,8 +132,7 @@ export default function LearningPage() {
                 return (
                   <Link key={tool.href} href={tool.href}
                     className={`bg-white rounded-2xl border-2 border-gray-100 ${c.border} px-5 py-5 flex flex-col gap-3 transition-all hover:shadow-md group`}>
-                    <div className={`w-12 h-12 ${c.bg} rounded-2xl flex items-center justify-center text-2xl`}>
-                      {tool.emoji}
+                    <div className={`w-12 h-12 ${c.bg} rounded-2xl flex items-center justify-center`}>
                     </div>
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-2 mb-1">
@@ -167,11 +157,10 @@ export default function LearningPage() {
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Coming Soon</p>
             <div className="grid sm:grid-cols-2 gap-4">
               {[
-                { emoji: '🏫', title: 'Class Hub', desc: 'Teachers assign content, students complete from home with a class code' },
-                { emoji: '🏆', title: 'Rewards & Streaks', desc: 'Earn coins and badges for consistent daily learning' },
+                { title: 'Class Hub', desc: 'Teachers assign content, students complete from home with a class code' },
+                { title: 'Rewards & Streaks', desc: 'Earn coins and badges for consistent daily learning' },
               ].map(item => (
                 <div key={item.title} className="bg-white border border-gray-100 rounded-2xl px-5 py-5 flex gap-4 items-start opacity-60">
-                  <span className="text-2xl shrink-0">{item.emoji}</span>
                   <div>
                     <p className="font-semibold text-sm text-oxford mb-1">{item.title}</p>
                     <p className="text-xs text-charcoal-light">{item.desc}</p>

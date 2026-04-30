@@ -19,7 +19,6 @@ export default function ScanHomeworkPage() {
 
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-2xl">📸</span>
               <h1 className="font-serif text-2xl text-oxford">Scan Homework</h1>
             </div>
             <p className="text-sm text-charcoal-light">

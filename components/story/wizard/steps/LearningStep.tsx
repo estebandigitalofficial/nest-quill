@@ -4,12 +4,12 @@ import { useFormContext } from 'react-hook-form'
 import type { StoryFormValues } from '@/lib/validators/story-form'
 
 const SUBJECTS = [
-  { value: 'math', label: '➕ Math', emoji: '➕' },
-  { value: 'reading', label: '📖 Reading & Language', emoji: '📖' },
-  { value: 'science', label: '🔬 Science', emoji: '🔬' },
-  { value: 'social_studies', label: '🌍 Social Studies', emoji: '🌍' },
-  { value: 'spelling', label: '✏️ Spelling & Writing', emoji: '✏️' },
-  { value: 'history', label: '🏛️ History', emoji: '🏛️' },
+  { value: 'math', label: 'Math' },
+  { value: 'reading', label: 'Reading & Language' },
+  { value: 'science', label: 'Science' },
+  { value: 'social_studies', label: 'Social Studies' },
+  { value: 'spelling', label: 'Spelling & Writing' },
+  { value: 'history', label: 'History' },
 ]
 
 const TOPIC_HINTS: Record<string, string[]> = {
@@ -116,7 +116,7 @@ export default function LearningStep() {
       </div>
 
       <div className="bg-brand-50 border border-brand-100 rounded-xl px-4 py-3 text-xs text-brand-700 leading-relaxed">
-        ✨ After the story, there will be a short 5-question quiz to reinforce what they learned.
+        After the story, there will be a short 5-question quiz to reinforce what they learned.
       </div>
     </div>
   )

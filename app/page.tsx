@@ -105,7 +105,6 @@ function Hero() {
             key={book.title}
             className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-5 text-left space-y-2"
           >
-            <div className="text-2xl">{book.emoji}</div>
             <p className="font-serif text-sm font-semibold text-gray-800 leading-snug">{book.title}</p>
             <p className="text-xs text-gray-400">{book.detail}</p>
           </div>
@@ -116,9 +115,9 @@ function Hero() {
 }
 
 const SAMPLE_BOOKS = [
-  { emoji: '🦕', title: "Xavior's Dinosaur Adventure", detail: 'Age 6 · Adventure · Watercolor' },
-  { emoji: '🌊', title: "Sofia Under the Sea", detail: 'Age 4 · Magical · Cartoon' },
-  { emoji: '🚀', title: "Luca Saves the Stars", detail: 'Age 8 · Brave · Digital Art' },
+  { title: "Xavior's Dinosaur Adventure", detail: 'Age 6 · Adventure · Watercolor' },
+  { title: "Sofia Under the Sea", detail: 'Age 4 · Magical · Cartoon' },
+  { title: "Luca Saves the Stars", detail: 'Age 8 · Brave · Digital Art' },
 ]
 
 // ── Learning teaser ───────────────────────────────────────────────────────────
@@ -145,7 +144,7 @@ function LearningStoriesSection() {
         </p>
 
         <div className="flex flex-wrap justify-center gap-3 pt-2">
-          {['📖 Learning Stories', '🧠 Quiz Generator', '🎓 Grades 1–8', '✅ Auto-graded'].map(tag => (
+          {['Learning Stories', 'Quiz Generator', 'Grades 1–8', 'Auto-graded'].map(tag => (
             <span key={tag} className="bg-white/8 border border-white/15 text-white/70 text-xs font-medium px-3 py-1.5 rounded-full">
               {tag}
             </span>
@@ -185,8 +184,8 @@ function HowItWorks() {
         <div className="grid sm:grid-cols-3 gap-8">
           {STEPS.map((step, i) => (
             <div key={step.title} className="text-center space-y-3">
-              <div className="w-12 h-12 bg-brand-50 rounded-2xl flex items-center justify-center text-2xl mx-auto">
-                {step.emoji}
+              <div className="w-12 h-12 bg-brand-50 rounded-2xl flex items-center justify-center text-2xl mx-auto font-bold text-brand-500">
+                {i + 1}
               </div>
               <div className="text-xs font-bold text-brand-400 uppercase tracking-widest">
                 Step {i + 1}
@@ -203,17 +202,14 @@ function HowItWorks() {
 
 const STEPS = [
   {
-    emoji: '✏️',
     title: 'Tell us about your child',
     description: "Their name, age, what they love — the more you share, the more personal the story feels.",
   },
   {
-    emoji: '✨',
     title: 'We write & illustrate',
     description: 'Our AI writes a unique story and creates illustrations styled exactly how you want.',
   },
   {
-    emoji: '📖',
     title: 'Read & share',
     description: 'Your finished storybook is ready to read online and share instantly. Download the full PDF on paid plans.',
   },
@@ -240,7 +236,6 @@ function SamplePreview() {
               key={feature.title}
               className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5 flex gap-4 items-start"
             >
-              <div className="text-2xl shrink-0 mt-0.5">{feature.emoji}</div>
               <div>
                 <h3 className="font-semibold text-oxford text-sm mb-1">{feature.title}</h3>
                 <p className="text-xs text-charcoal-light leading-relaxed">{feature.description}</p>
@@ -255,32 +250,26 @@ function SamplePreview() {
 
 const PREVIEW_FEATURES = [
   {
-    emoji: '🎨',
     title: '5 illustration styles',
     description: 'Choose from watercolor, cartoon, classic storybook, pencil sketch, or digital art.',
   },
   {
-    emoji: '📝',
     title: 'Up to 32 pages',
     description: 'Short bedtime story or a full adventure — you control the length.',
   },
   {
-    emoji: '💌',
     title: 'Dedication page',
     description: 'Add a personal message printed on the opening page of the book.',
   },
   {
-    emoji: '📄',
     title: 'Full PDF download',
     description: 'Download and keep your story forever. Print at home or at any print shop. Included on all paid plans.',
   },
   {
-    emoji: '🧒',
     title: 'Truly personalized',
     description: "The story is written around your child's name, age, personality, and interests.",
   },
   {
-    emoji: '⚡',
     title: 'Ready in minutes',
     description: 'No waiting days. Your story is generated and ready to read almost instantly.',
   },

@@ -5,15 +5,15 @@ import AvatarSetup from './AvatarSetup'
 import CelebrationModal from './CelebrationModal'
 import { levelProgress } from '@/lib/utils/xp'
 
-const TOOL_META: Record<string, { emoji: string; label: string; path: string }> = {
-  quiz:            { emoji: '🧠', label: 'Quiz',                  path: '/learning/quiz' },
-  flashcards:      { emoji: '🃏', label: 'Flashcards',            path: '/learning/flashcards' },
-  explain:         { emoji: '💡', label: 'Concept Explainer',     path: '/learning/explain' },
-  'study-guide':   { emoji: '📋', label: 'Study Guide',           path: '/learning/study-guide' },
-  math:            { emoji: '🔢', label: 'Math Practice',         path: '/learning/math' },
-  reading:         { emoji: '📖', label: 'Reading Comprehension', path: '/learning/reading' },
-  spelling:        { emoji: '✏️', label: 'Spelling Practice',     path: '/learning/spelling' },
-  'study-helper':  { emoji: '🧩', label: 'Study Helper',          path: '/learning/study-helper' },
+const TOOL_META: Record<string, { label: string; path: string }> = {
+  quiz:            { label: 'Quiz',                  path: '/learning/quiz' },
+  flashcards:      { label: 'Flashcards',            path: '/learning/flashcards' },
+  explain:         { label: 'Concept Explainer',     path: '/learning/explain' },
+  'study-guide':   { label: 'Study Guide',           path: '/learning/study-guide' },
+  math:            { label: 'Math Practice',         path: '/learning/math' },
+  reading:         { label: 'Reading Comprehension', path: '/learning/reading' },
+  spelling:        { label: 'Spelling Practice',     path: '/learning/spelling' },
+  'study-helper':  { label: 'Study Helper',          path: '/learning/study-helper' },
 }
 
 const MAT_MODE_LABELS: Record<string, string> = {
@@ -200,7 +200,7 @@ export default function StudentDashboard() {
           <div className="flex items-center gap-2 mb-0.5">
             <p className="font-serif text-lg text-white leading-none">{profile.display_name}</p>
             {profile.streak_days >= 3 && (
-              <span className="text-sm" title={`${profile.streak_days}-day streak`}>🔥</span>
+              <span className="text-xs font-bold text-amber-500" title={`${profile.streak_days}-day streak`}>Streak</span>
             )}
           </div>
           <p className="text-xs text-white/50 mb-2">Level {prog.level} · {prog.title}</p>
@@ -229,21 +229,20 @@ export default function StudentDashboard() {
       ) : pending.length === 0 && completed.length === 0 ? (
         /* Empty state — no classes yet */
         <div className="bg-white rounded-2xl border border-gray-100 px-8 py-14 text-center space-y-3">
-          <div className="text-5xl">🗺️</div>
+          <p className="text-xl font-bold text-gray-400">No quests</p>
           <p className="font-semibold text-oxford">No quests yet</p>
           <p className="text-sm text-charcoal-light">Enter the join code from your teacher below to get started.</p>
         </div>
       ) : pending.length === 0 ? (
         /* All caught up */
         <div className="bg-green-50 border border-green-200 rounded-2xl px-6 py-5 text-center space-y-1">
-          <p className="text-2xl">🎉</p>
           <p className="font-semibold text-green-800">All caught up!</p>
           <p className="text-sm text-green-600">You&apos;ve completed every quest. Check back when your teacher assigns more.</p>
         </div>
       ) : (
         <div className="space-y-3">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-            ⚔️ Active Quests ({pending.length})
+            Active Quests ({pending.length})
           </p>
 
           {/* Featured next quest */}
@@ -256,7 +255,7 @@ export default function StudentDashboard() {
                 className="block bg-indigo-600 hover:bg-indigo-500 rounded-2xl px-6 py-5 transition-colors group">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-white/15 rounded-xl flex items-center justify-center text-3xl shrink-0">
-                    {tool?.emoji ?? '📚'}
+                    {tool?.label?.charAt(0) ?? 'Q'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-0.5">Up next</p>
@@ -266,7 +265,7 @@ export default function StudentDashboard() {
                     </p>
                     {due && (
                       <p className={`text-[11px] font-semibold mt-1 ${due.overdue ? 'text-red-300' : 'text-indigo-300'}`}>
-                        {due.overdue ? '⚠️ ' : ''}{due.text}
+                        {due.overdue ? '' : ''}{due.text}
                       </p>
                     )}
                   </div>
@@ -288,7 +287,7 @@ export default function StudentDashboard() {
                 className="block bg-white rounded-2xl border-2 border-gray-100 hover:border-indigo-200 hover:shadow-sm transition-all px-5 py-4">
                 <div className="flex items-center gap-4">
                   <div className="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center text-xl shrink-0">
-                    {tool?.emoji ?? '📚'}
+                    {tool?.label?.charAt(0) ?? 'Q'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-oxford text-sm truncate">{a.title}</p>
@@ -297,7 +296,7 @@ export default function StudentDashboard() {
                     </p>
                     {due && (
                       <p className={`text-[11px] font-semibold mt-0.5 ${due.overdue ? 'text-red-500' : 'text-gray-400'}`}>
-                        {due.overdue ? '⚠️ ' : ''}{due.text}
+                        {due.overdue ? '' : ''}{due.text}
                       </p>
                     )}
                   </div>
@@ -313,13 +312,13 @@ export default function StudentDashboard() {
       {stories.length > 0 && (
         <div className="space-y-3">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-            📖 Story Rewards ({stories.length})
+            Story Rewards ({stories.length})
           </p>
           {stories.map(s => (
             <div key={s.id}
               className="bg-white rounded-2xl border-2 border-amber-100 hover:border-amber-200 transition-all px-5 py-4 flex items-center gap-4">
-              <div className="w-11 h-11 bg-amber-50 rounded-xl flex items-center justify-center text-2xl shrink-0">
-                📖
+              <div className="w-11 h-11 bg-amber-50 rounded-xl flex items-center justify-center text-sm font-bold text-amber-600 shrink-0">
+                S
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-oxford text-sm truncate">
@@ -349,7 +348,7 @@ export default function StudentDashboard() {
             onClick={() => setShowCompleted(v => !v)}
             className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors w-full text-left"
           >
-            <span>✅ Completed ({completed.length})</span>
+            <span>Completed ({completed.length})</span>
             <span className="text-gray-300 font-normal normal-case tracking-normal">{showCompleted ? '▲ hide' : '▼ show'}</span>
           </button>
 
@@ -363,7 +362,7 @@ export default function StudentDashboard() {
                   <div key={a.id}
                     className="bg-white rounded-2xl border border-gray-100 px-5 py-3.5 flex items-center gap-4 opacity-60">
                     <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-lg shrink-0">
-                      {tool?.emoji ?? '📚'}
+                      {tool?.label?.charAt(0) ?? 'Q'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-oxford text-sm truncate">{a.title}</p>
@@ -390,7 +389,7 @@ export default function StudentDashboard() {
       {/* ── Study Helper CTA ── */}
       <div className="bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-100 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-2xl shadow-sm shrink-0">🧩</div>
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-sm font-bold text-indigo-500 shadow-sm shrink-0">SH</div>
           <div>
             <p className="font-semibold text-oxford text-sm">Study Helper</p>
             <p className="text-xs text-charcoal-light mt-0.5">Paste notes — get quizzes, flashcards & more</p>
@@ -419,7 +418,7 @@ export default function StudentDashboard() {
           </button>
         </form>
         {joinError   && <p className="text-sm text-red-500 mt-2">{joinError}</p>}
-        {joinSuccess && <p className="text-sm text-green-600 mt-2 font-medium">{joinSuccess} 🎉</p>}
+        {joinSuccess && <p className="text-sm text-green-600 mt-2 font-medium">{joinSuccess}</p>}
       </div>
 
     </div>

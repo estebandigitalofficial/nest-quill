@@ -113,7 +113,7 @@ export default function EducatorDashboard() {
       {/* Class list */}
       {classrooms.length === 0 && !showCreate ? (
         <div className="bg-white rounded-2xl border border-gray-100 px-8 py-14 text-center space-y-4">
-          <div className="text-5xl">🏫</div>
+          <p className="text-xl font-bold text-gray-400">No classes</p>
           <p className="font-semibold text-oxford">No classes yet</p>
           <p className="text-sm text-charcoal-light">Create a class to get a join code for your students.</p>
           <button onClick={() => setShowCreate(true)}
@@ -130,7 +130,7 @@ export default function EducatorDashboard() {
               <Link key={cls.id} href={`/classroom/educator/${cls.id}`}
                 className="bg-white rounded-2xl border border-gray-100 hover:border-brand-200 px-6 py-5 flex items-center justify-between gap-4 transition-all hover:shadow-sm group">
                 <div className="flex items-center gap-4 min-w-0">
-                  <div className="w-11 h-11 bg-brand-50 rounded-xl flex items-center justify-center text-xl shrink-0">🏫</div>
+                  <div className="w-11 h-11 bg-brand-50 rounded-xl flex items-center justify-center text-sm font-bold text-brand-500 shrink-0">C</div>
                   <div className="min-w-0">
                     <p className="font-semibold text-oxford truncate">{cls.name}</p>
                     <p className="text-xs text-charcoal-light mt-0.5">

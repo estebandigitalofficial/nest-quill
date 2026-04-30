@@ -49,7 +49,6 @@ export default async function ClassroomPage() {
           <div className="max-w-2xl mx-auto grid sm:grid-cols-2 gap-6">
             <Link href={isLoggedIn ? '/classroom/activate?role=educator' : '/signup?role=educator'}
               className="bg-white rounded-2xl border-2 border-gray-100 hover:border-brand-300 px-7 py-8 flex flex-col gap-4 transition-all hover:shadow-md group">
-              <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-3xl">🏫</div>
               <div>
                 <p className="font-semibold text-oxford text-lg mb-1">I&apos;m an Educator</p>
                 <p className="text-sm text-charcoal-light leading-relaxed">Create a class, assign learning tools, and track every student&apos;s progress and scores.</p>
@@ -59,7 +58,6 @@ export default async function ClassroomPage() {
 
             <Link href={isLoggedIn ? '/classroom/activate?role=student' : '/signup?role=student'}
               className="bg-white rounded-2xl border-2 border-gray-100 hover:border-indigo-300 px-7 py-8 flex flex-col gap-4 transition-all hover:shadow-md group">
-              <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-3xl">🎒</div>
               <div>
                 <p className="font-semibold text-oxford text-lg mb-1">I&apos;m a Student</p>
                 <p className="text-sm text-charcoal-light leading-relaxed">Enter your class join code to see your assignments and complete them at your own pace.</p>

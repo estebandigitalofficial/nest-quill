@@ -13,17 +13,17 @@ interface Props {
   onClose: () => void
 }
 
-const BADGE_INFO: Record<string, { emoji: string; name: string }> = {
-  first_quest:   { emoji: '⭐', name: 'First Quest' },
-  quiz_master:   { emoji: '🏆', name: 'Quiz Master' },
-  high_scorer:   { emoji: '🎯', name: 'High Scorer' },
-  streak_3:      { emoji: '🔥', name: '3-Day Streak' },
-  streak_7:      { emoji: '⚡', name: '7-Day Streak' },
-  completionist: { emoji: '💎', name: 'Completionist' },
-  speed_reader:  { emoji: '📖', name: 'Speed Reader' },
-  math_whiz:     { emoji: '🔢', name: 'Math Whiz' },
-  wordsmith:     { emoji: '✏️', name: 'Wordsmith' },
-  ten_quests:    { emoji: '🗺️', name: '10 Quests Done' },
+const BADGE_INFO: Record<string, { name: string }> = {
+  first_quest:   { name: 'First Quest' },
+  quiz_master:   { name: 'Quiz Master' },
+  high_scorer:   { name: 'High Scorer' },
+  streak_3:      { name: '3-Day Streak' },
+  streak_7:      { name: '7-Day Streak' },
+  completionist: { name: 'Completionist' },
+  speed_reader:  { name: 'Speed Reader' },
+  math_whiz:     { name: 'Math Whiz' },
+  wordsmith:     { name: 'Wordsmith' },
+  ten_quests:    { name: '10 Quests Done' },
 }
 
 export default function CelebrationModal({ xpEarned, newXP, newLevel, leveledUp, newStreak, newBadges, onClose }: Props) {
@@ -47,7 +47,7 @@ export default function CelebrationModal({ xpEarned, newXP, newLevel, leveledUp,
 
         {leveledUp ? (
           <>
-            <div className="text-6xl animate-bounce">🎉</div>
+            <p className="text-3xl font-bold animate-bounce">Level Up!</p>
             <div>
               <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-1">Level Up!</p>
               <p className="font-serif text-3xl text-oxford">Level {newLevel}</p>
@@ -56,7 +56,7 @@ export default function CelebrationModal({ xpEarned, newXP, newLevel, leveledUp,
           </>
         ) : (
           <>
-            <div className="text-5xl">✨</div>
+            <p className="text-2xl font-bold text-indigo-500">Quest Complete!</p>
             <div>
               <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-1">Quest Complete!</p>
               <p className="font-serif text-3xl text-oxford">+{xpEarned} XP</p>
@@ -81,7 +81,7 @@ export default function CelebrationModal({ xpEarned, newXP, newLevel, leveledUp,
         {/* Streak */}
         {newStreak > 1 && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center justify-center gap-2">
-            <span className="text-xl">🔥</span>
+            <span className="text-sm font-bold text-amber-600">Streak</span>
             <p className="text-sm font-semibold text-amber-700">{newStreak}-day streak!</p>
           </div>
         )}
@@ -95,7 +95,6 @@ export default function CelebrationModal({ xpEarned, newXP, newLevel, leveledUp,
                 const b = BADGE_INFO[slug]
                 return b ? (
                   <div key={slug} className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 rounded-full px-3 py-1.5">
-                    <span className="text-base">{b.emoji}</span>
                     <span className="text-xs font-semibold text-indigo-700">{b.name}</span>
                   </div>
                 ) : null

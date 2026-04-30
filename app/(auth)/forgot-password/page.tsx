@@ -34,7 +34,6 @@ export default function ForgotPasswordPage() {
     return (
       <div className="w-full max-w-sm">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 space-y-4 text-center">
-          <p className="text-3xl">📬</p>
           <h1 className="font-serif text-2xl text-gray-900">Check your email</h1>
           <p className="text-sm text-gray-500 leading-relaxed">
             We sent a password reset link to <strong className="text-gray-700">{email}</strong>.

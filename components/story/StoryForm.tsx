@@ -249,7 +249,7 @@ function SuccessScreen({
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 text-center space-y-5">
-      <div className="text-5xl">📖</div>
+      <p className="text-xl font-bold text-brand-500">Story Queued</p>
 
       <div>
         <h2 className="text-2xl font-serif text-gray-900 mb-2">

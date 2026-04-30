@@ -94,7 +94,7 @@ export default function StoryStatusPage({ requestId, isAdmin }: { requestId: str
     return (
       <PageShell>
         <div className="text-center space-y-4 py-8">
-          <div className="text-4xl">⚠️</div>
+          <p className="text-xl font-bold text-red-500">!</p>
           <h2 className="text-xl font-serif text-gray-900">Something went wrong</h2>
           <p className="text-sm text-gray-500 max-w-sm mx-auto">
             We ran into a problem generating this story.
@@ -163,7 +163,7 @@ function ErrorView({ message }: { message: string }) {
       <SiteHeader />
       <div className="flex-1 overflow-y-auto flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-10 text-center max-w-sm w-full space-y-4">
-          <div className="text-4xl">🔍</div>
+          <p className="text-xl font-bold text-gray-400">Oops</p>
           <h2 className="text-lg font-serif text-oxford">Oops</h2>
           <p className="text-sm text-charcoal-light">{message}</p>
           <Link href="/create" className="inline-block text-sm font-semibold text-brand-600 hover:text-brand-700 underline underline-offset-2">
@@ -180,7 +180,7 @@ function ProcessingView({ status }: { status: StoryStatusResponse }) {
   const pct = Math.max(5, status.progressPct ?? 0)
   return (
     <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-10 text-center space-y-6">
-      <div className="text-5xl animate-pulse">📖</div>
+      <div className="text-xl font-bold text-brand-500 animate-pulse">Creating...</div>
       <div>
         <h2 className="text-2xl font-serif text-oxford mb-1">
           {status.childName ? `Creating ${status.childName}'s story…` : 'Creating your story…'}
@@ -503,7 +503,7 @@ function EndPage({ pdfUrl, canDownload, backHref, hasQuiz, onTakeQuiz }: { pdfUr
             onClick={onTakeQuiz}
             style={{ fontSize: 13, fontWeight: 600, color: 'white', background: '#4f46e5', padding: '10px 24px', borderRadius: 12, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
-            🎓 Take the quiz →
+            Take the quiz →
           </button>
         )}
         {pdfUrl && canDownload && (
@@ -523,7 +523,7 @@ function EndPage({ pdfUrl, canDownload, backHref, hasQuiz, onTakeQuiz }: { pdfUr
             href="/pricing"
             style={{ fontSize: 13, fontWeight: 600, color: '#C99700', background: '#fff8f0', border: '1.5px solid #f5d9b0', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
-            🔒 Upgrade to download PDF
+            Upgrade to download PDF
           </Link>
         )}
         <Link
@@ -577,8 +577,8 @@ function QuizPage({ quiz, requestId }: { quiz: StoryQuizResponse; requestId: str
     return (
       <div style={{ width: '100%', maxHeight: '70vh', overflowY: 'auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <p style={{ fontSize: '2.2rem', marginBottom: 8 }}>
-            {score === totalQ ? '🏆' : score >= totalQ * 0.6 ? '⭐' : '📚'}
+          <p style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 8 }}>
+            {score === totalQ ? 'Perfect!' : score >= totalQ * 0.6 ? 'Great job!' : 'Keep going!'}
           </p>
           <p style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: '1.3rem', color: '#0C2340', fontWeight: 700 }}>
             {score} / {totalQ} correct

@@ -126,7 +126,7 @@ export default function StoryWizard() {
                 : 'text-gray-400 hover:text-gray-600'
             )}
           >
-            📖 Story
+            Story
           </button>
           <button
             type="button"
@@ -138,7 +138,7 @@ export default function StoryWizard() {
                 : 'text-gray-400 hover:text-gray-600'
             )}
           >
-            🎓 Learning Story
+            Learning Story
           </button>
         </div>
       )}

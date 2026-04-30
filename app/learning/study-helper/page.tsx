@@ -58,7 +58,7 @@ export default async function StudyHelperPage({
         <div className="max-w-xl mx-auto">
           {!assignmentId && (
             <div className="text-center mb-8 space-y-2">
-              <div className="text-4xl">🧩</div>
+              <p className="text-xl font-bold text-indigo-500">Study Helper</p>
               <h1 className="font-serif text-3xl text-oxford">Study Helper</h1>
               <p className="text-sm text-charcoal-light max-w-sm mx-auto">
                 Paste your notes or homework, then choose how you want to study it.

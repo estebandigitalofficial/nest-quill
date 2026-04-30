@@ -62,7 +62,7 @@ export default async function WriterPage() {
       <div className="max-w-4xl mx-auto px-6 py-8">
         {(!books || books.length === 0) ? (
           <div className="text-center py-20 space-y-3">
-            <p className="text-4xl">📚</p>
+            <p className="font-serif text-xl text-gray-300">No books yet</p>
             <p className="text-gray-400">No books yet. Start writing.</p>
             <Link
               href="/admin/writer/new"

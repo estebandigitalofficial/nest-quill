@@ -21,7 +21,7 @@ export default async function EducatorPage() {
     <div className="h-dvh bg-parchment flex flex-col">
       <SiteHeader right={
         <div className="flex items-center gap-4">
-          <span className="text-xs text-charcoal-light hidden sm:block">🏫 Educator</span>
+          <span className="text-xs text-charcoal-light hidden sm:block">Educator</span>
           <Link href="/classroom" className="text-sm text-charcoal-light hover:text-oxford">← Classroom</Link>
         </div>
       } />

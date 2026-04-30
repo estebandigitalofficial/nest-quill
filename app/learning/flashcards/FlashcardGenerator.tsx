@@ -120,7 +120,7 @@ export default function FlashcardGenerator({ assignmentId, initialTopic, initial
       <div className="space-y-4">
         {/* Think First nudge */}
         <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
-          <span className="text-lg shrink-0 mt-0.5">💭</span>
+          <span className="text-sm font-bold text-amber-600 shrink-0 mt-0.5">!</span>
           <p className="text-xs text-amber-800 leading-relaxed">
             <span className="font-semibold">Think first, then flip.</span> Try to recall the answer before revealing the back of each card — it makes your memory stronger.
           </p>
@@ -129,7 +129,7 @@ export default function FlashcardGenerator({ assignmentId, initialTopic, initial
         {assignmentId && (
           <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
             <div>
-              <p className="text-white font-semibold text-sm">Quest Complete! ✨</p>
+              <p className="text-white font-semibold text-sm">Quest Complete!</p>
               <p className="text-indigo-200 text-xs">{xpEarned != null ? `+${xpEarned} XP earned` : 'Submitting…'}</p>
             </div>
             <button onClick={() => { window.location.href = '/classroom/student' }}

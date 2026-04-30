@@ -5,12 +5,12 @@ import Link from 'next/link'
 import { submitAssignment } from '@/lib/utils/submitAssignment'
 
 const SUBJECTS = [
-  { value: 'math', label: '➕ Math' },
-  { value: 'science', label: '🔬 Science' },
-  { value: 'reading', label: '📖 Reading' },
-  { value: 'history', label: '🏛️ History' },
-  { value: 'social_studies', label: '🌍 Social Studies' },
-  { value: 'spelling', label: '✏️ Spelling' },
+  { value: 'math', label: 'Math' },
+  { value: 'science', label: 'Science' },
+  { value: 'reading', label: 'Reading' },
+  { value: 'history', label: 'History' },
+  { value: 'social_studies', label: 'Social Studies' },
+  { value: 'spelling', label: 'Spelling' },
 ]
 
 interface Question {
@@ -198,7 +198,7 @@ export default function QuizGenerator({ assignmentId, initialTopic, initialGrade
               onClick={() => fileRef.current?.click()}
               className="w-full border-2 border-dashed border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/40 rounded-xl py-6 text-center transition-colors group"
             >
-              <div className="text-3xl mb-2">📷</div>
+              <div className="text-base font-semibold text-gray-400 mb-2">Upload</div>
               <p className="text-sm font-medium text-gray-500 group-hover:text-indigo-600">
                 Tap to snap or upload a photo of homework
               </p>
@@ -291,7 +291,7 @@ export default function QuizGenerator({ assignmentId, initialTopic, initialGrade
       <div className="space-y-4">
         {tabWarning && (
           <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 flex items-start gap-3">
-            <span className="text-lg shrink-0">⚠️</span>
+            <span className="text-sm font-bold text-amber-600 shrink-0">!</span>
             <div className="flex-1">
               <p className="text-sm font-semibold text-amber-800">You left the quiz!</p>
               <p className="text-xs text-amber-700 mt-0.5">Switching tabs or windows is recorded. Stay on this page to complete your quiz.</p>
@@ -349,7 +349,7 @@ export default function QuizGenerator({ assignmentId, initialTopic, initialGrade
         {assignmentId && (
           <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
             <div>
-              <p className="text-white font-semibold text-sm">Quest Complete! ✨</p>
+              <p className="text-white font-semibold text-sm">Quest Complete!</p>
               <p className="text-indigo-200 text-xs">{xpEarned != null ? `+${xpEarned} XP earned` : 'Submitting…'}</p>
             </div>
             <button onClick={() => { window.location.href = '/classroom/student' }}
@@ -359,7 +359,7 @@ export default function QuizGenerator({ assignmentId, initialTopic, initialGrade
           </div>
         )}
         <div className={`rounded-2xl px-6 py-6 text-center space-y-1 ${pct === 1 ? 'bg-yellow-50 border border-yellow-200' : pct >= 0.8 ? 'bg-green-50 border border-green-200' : pct >= 0.6 ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 border border-gray-200'}`}>
-          <div className="text-4xl mb-2">{pct === 1 ? '🏆' : pct >= 0.8 ? '⭐' : pct >= 0.6 ? '👏' : '📚'}</div>
+          <p className="text-xl font-bold mb-2">{pct === 1 ? 'Perfect!' : pct >= 0.8 ? 'Great job!' : pct >= 0.6 ? 'Good effort!' : 'Keep going!'}</p>
           <p className="text-2xl font-bold text-gray-900">{score} / {total}</p>
           <p className="text-sm font-medium text-gray-600">{pct === 1 ? 'Perfect score!' : pct >= 0.8 ? 'Great work!' : pct >= 0.6 ? 'Good effort!' : 'Keep studying!'}</p>
         </div>

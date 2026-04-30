@@ -3,21 +3,21 @@
 import { useState, useEffect } from 'react'
 
 const TOOLS = [
-  { value: 'quiz',          label: 'Quiz',                  emoji: '🧠', hasScore: true },
-  { value: 'flashcards',    label: 'Flashcards',            emoji: '🃏', hasScore: false },
-  { value: 'explain',       label: 'Concept Explainer',     emoji: '💡', hasScore: false },
-  { value: 'study-guide',   label: 'Study Guide',           emoji: '📋', hasScore: false },
-  { value: 'math',          label: 'Math Practice',         emoji: '🔢', hasScore: false },
-  { value: 'reading',       label: 'Reading',               emoji: '📖', hasScore: false },
-  { value: 'spelling',      label: 'Spelling',              emoji: '✏️', hasScore: false },
-  { value: 'study-helper',  label: 'Study Helper',          emoji: '🧩', hasScore: true },
+  { value: 'quiz',          label: 'Quiz',                  hasScore: true },
+  { value: 'flashcards',    label: 'Flashcards',            hasScore: false },
+  { value: 'explain',       label: 'Concept Explainer',     hasScore: false },
+  { value: 'study-guide',   label: 'Study Guide',           hasScore: false },
+  { value: 'math',          label: 'Math Practice',         hasScore: false },
+  { value: 'reading',       label: 'Reading',               hasScore: false },
+  { value: 'spelling',      label: 'Spelling',              hasScore: false },
+  { value: 'study-helper',  label: 'Study Helper',          hasScore: true },
 ]
 
 const MAT_MODES = [
-  { value: 'quiz',        emoji: '🧠', label: 'Quiz Me' },
-  { value: 'flashcards',  emoji: '🃏', label: 'Flashcards' },
-  { value: 'explain',     emoji: '💡', label: 'Explain It' },
-  { value: 'study-guide', emoji: '📋', label: 'Study Guide' },
+  { value: 'quiz',        label: 'Quiz Me' },
+  { value: 'flashcards',  label: 'Flashcards' },
+  { value: 'explain',     label: 'Explain It' },
+  { value: 'study-guide', label: 'Study Guide' },
 ]
 
 const MAT_MODE_LABELS: Record<string, string> = {
@@ -237,7 +237,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
                               ? 'border-brand-400 bg-brand-50 text-brand-700'
                               : 'border-gray-200 hover:border-gray-300 text-gray-600'
                           }`}>
-                          <span className="text-xl">{t.emoji}</span>
+                          <span className="text-xs font-bold text-gray-500">{t.label.charAt(0)}</span>
                           <span className="text-[10px] font-semibold leading-tight">{t.label}</span>
                         </button>
                       ))}
@@ -278,7 +278,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
                               ? 'border-brand-400 bg-brand-50 text-brand-700'
                               : 'border-gray-200 hover:border-gray-300 text-gray-600'
                           }`}>
-                          <span className="text-lg shrink-0">{m.emoji}</span>
+                          <span className="text-xs font-bold text-gray-500 shrink-0">{m.label.charAt(0)}</span>
                           <span className="text-xs font-semibold">{m.label}</span>
                         </button>
                       ))}
@@ -333,7 +333,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
           {/* Assignment list */}
           {assignments.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 px-8 py-12 text-center space-y-3">
-              <div className="text-4xl">📋</div>
+              <p className="text-lg font-bold text-gray-400">No assignments</p>
               <p className="font-semibold text-oxford">No assignments yet</p>
               <p className="text-sm text-charcoal-light">Create an assignment and your students will see it in their queue.</p>
             </div>
@@ -357,7 +357,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
                   <div key={a.id} className="bg-white rounded-2xl border border-gray-100 px-6 py-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-2xl shrink-0">{tool?.emoji ?? '📚'}</span>
+                        <span className="text-sm font-bold text-gray-500 shrink-0">{tool?.label?.charAt(0) ?? 'A'}</span>
                         <div className="min-w-0">
                           <p className="font-semibold text-oxford text-sm truncate">{a.title}</p>
                           <p className="text-xs text-charcoal-light mt-0.5 truncate">
@@ -410,7 +410,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
         <div className="space-y-3">
           {members.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 px-8 py-12 text-center space-y-3">
-              <div className="text-4xl">🎒</div>
+              <p className="text-lg font-bold text-gray-400">No students</p>
               <p className="font-semibold text-oxford">No students yet</p>
               <p className="text-sm text-charcoal-light">
                 Share the join code <span className="font-mono font-bold text-oxford">{classroom.join_code}</span> with your students.
@@ -436,12 +436,12 @@ export default function ClassDetail({ classId }: { classId: string }) {
                 <div key={m.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4 space-y-3">
                   <div className="flex items-center gap-4">
                     <div className={`w-11 h-11 ${avatarBg} rounded-xl flex items-center justify-center text-2xl shrink-0`}>
-                      {sp?.avatar_emoji ?? '🎒'}
+                      {sp?.avatar_emoji ?? ''}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold text-oxford">{heroName}</p>
-                        {sp && sp.streak_days >= 3 && <span className="text-xs">🔥</span>}
+                        {sp && sp.streak_days >= 3 && <span className="text-xs font-bold text-amber-500">Streak</span>}
                       </div>
                       <p className="text-xs text-charcoal-light">
                         {sp ? `Level ${sp.level} · ${sp.xp} XP` : 'No avatar set yet'}

@@ -16,7 +16,6 @@ export default async function ExplainPage({ searchParams }: PageProps) {
       <div className="flex-1 overflow-y-auto py-10 px-4">
         <div className="max-w-xl mx-auto">
           <div className="text-center mb-8 space-y-2">
-            <div className="text-4xl">💡</div>
             <h1 className="font-serif text-3xl text-oxford">Concept Explainer</h1>
             <p className="text-sm text-charcoal-light max-w-sm mx-auto">Ask about anything they&apos;re learning. We&apos;ll explain it simply, with a real-world analogy and something to try at home.</p>
           </div>

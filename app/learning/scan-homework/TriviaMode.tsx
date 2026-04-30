@@ -122,7 +122,7 @@ export default function TriviaMode({ grade, initialImage, onReset }: Props) {
     return (
       <div className="space-y-4">
         <div className={`rounded-2xl px-6 py-8 text-center space-y-2 ${pct === 1 ? 'bg-yellow-50 border border-yellow-200' : pct >= 0.7 ? 'bg-green-50 border border-green-200' : 'bg-indigo-50 border border-indigo-200'}`}>
-          <div className="text-5xl mb-3">{pct === 1 ? '🏆' : pct >= 0.7 ? '⭐' : '🎯'}</div>
+          <p className="text-xl font-bold mb-3">{pct === 1 ? 'Perfect!' : pct >= 0.7 ? 'Great job!' : 'Keep going!'}</p>
           <p className="text-3xl font-bold text-gray-900">{score} / {questions.length}</p>
           <p className="font-semibold text-gray-700">{pct === 1 ? 'Perfect! You know it all!' : pct >= 0.7 ? 'Great score!' : 'Good effort — keep studying!'}</p>
         </div>

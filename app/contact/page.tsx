@@ -53,7 +53,6 @@ export default function ContactPage() {
         <main className="max-w-xl mx-auto px-6 py-16 w-full">
           {status === 'sent' ? (
             <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-12 text-center space-y-4">
-              <div className="text-4xl">📬</div>
               <h1 className="font-serif text-2xl text-oxford">Message sent!</h1>
               <p className="text-sm text-charcoal-light max-w-xs mx-auto">
                 Thanks for reaching out. We typically reply within one business day.

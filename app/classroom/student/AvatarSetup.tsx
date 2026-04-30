@@ -3,18 +3,18 @@
 import { useState } from 'react'
 
 const CHARACTERS = [
-  { emoji: '🦊', name: 'Fox' },
-  { emoji: '🦁', name: 'Lion' },
-  { emoji: '🐺', name: 'Wolf' },
-  { emoji: '🐯', name: 'Tiger' },
-  { emoji: '🐻', name: 'Bear' },
-  { emoji: '🦋', name: 'Butterfly' },
-  { emoji: '🦅', name: 'Eagle' },
-  { emoji: '🐬', name: 'Dolphin' },
-  { emoji: '🧙', name: 'Wizard' },
-  { emoji: '🚀', name: 'Astronaut' },
-  { emoji: '🧑‍🔬', name: 'Scientist' },
-  { emoji: '🦸', name: 'Hero' },
+  { name: 'Fox' },
+  { name: 'Lion' },
+  { name: 'Wolf' },
+  { name: 'Tiger' },
+  { name: 'Bear' },
+  { name: 'Butterfly' },
+  { name: 'Eagle' },
+  { name: 'Dolphin' },
+  { name: 'Wizard' },
+  { name: 'Astronaut' },
+  { name: 'Scientist' },
+  { name: 'Hero' },
 ]
 
 const COLORS: { value: string; bg: string; ring: string }[] = [
@@ -34,7 +34,7 @@ interface Props {
 
 export default function AvatarSetup({ onComplete }: Props) {
   const [step, setStep] = useState<'character' | 'color' | 'name'>('character')
-  const [emoji, setEmoji] = useState('🦊')
+  const [emoji, setEmoji] = useState('Fox')
   const [color, setColor] = useState('indigo')
   const [name, setName] = useState('')
   const [saving, setSaving] = useState(false)
@@ -74,9 +74,9 @@ export default function AvatarSetup({ onComplete }: Props) {
               <p className="font-semibold text-oxford text-center">Pick your character</p>
               <div className="grid grid-cols-4 gap-3">
                 {CHARACTERS.map(c => (
-                  <button key={c.emoji} onClick={() => setEmoji(c.emoji)}
-                    className={`flex flex-col items-center gap-1 p-3 rounded-2xl border-2 transition-all ${emoji === c.emoji ? 'border-indigo-500 bg-indigo-50 scale-105' : 'border-gray-200 hover:border-gray-300'}`}>
-                    <span className="text-3xl">{c.emoji}</span>
+                  <button key={c.name} onClick={() => setEmoji(c.name)}
+                    className={`flex flex-col items-center gap-1 p-3 rounded-2xl border-2 transition-all ${emoji === c.name ? 'border-indigo-500 bg-indigo-50 scale-105' : 'border-gray-200 hover:border-gray-300'}`}>
+                    <span className="text-sm font-bold text-gray-600">{c.name.charAt(0)}</span>
                     <span className="text-[10px] text-gray-500 font-medium">{c.name}</span>
                   </button>
                 ))}
@@ -122,7 +122,7 @@ export default function AvatarSetup({ onComplete }: Props) {
                   className="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">← Back</button>
                 <button onClick={handleSave} disabled={!name.trim() || saving}
                   className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold text-sm transition-colors">
-                  {saving ? 'Saving…' : "Let's go! 🚀"}
+                  {saving ? 'Saving…' : "Let's go!"}
                 </button>
               </div>
             </div>

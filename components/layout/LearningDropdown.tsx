@@ -1,14 +1,14 @@
 import Link from 'next/link'
 
 const TOOLS = [
-  { href: '/learning/scan-homework', emoji: '📸', label: 'Scan Homework' },
-  { href: '/learning/quiz',          emoji: '🧠', label: 'Quiz Generator' },
-  { href: '/learning/flashcards',    emoji: '🃏', label: 'Flashcards' },
-  { href: '/learning/explain',       emoji: '💡', label: 'Concept Explainer' },
-  { href: '/learning/study-guide',   emoji: '📋', label: 'Study Guide' },
-  { href: '/learning/math',          emoji: '🔢', label: 'Math Practice' },
-  { href: '/learning/spelling',      emoji: '✏️', label: 'Spelling Practice' },
-  { href: '/learning/reading',       emoji: '📖', label: 'Reading Comprehension' },
+  { href: '/learning/scan-homework', label: 'Scan Homework' },
+  { href: '/learning/quiz',          label: 'Quiz Generator' },
+  { href: '/learning/flashcards',    label: 'Flashcards' },
+  { href: '/learning/explain',       label: 'Concept Explainer' },
+  { href: '/learning/study-guide',   label: 'Study Guide' },
+  { href: '/learning/math',          label: 'Math Practice' },
+  { href: '/learning/spelling',      label: 'Spelling Practice' },
+  { href: '/learning/reading',       label: 'Reading Comprehension' },
 ]
 
 export default function LearningDropdown() {
@@ -36,7 +36,6 @@ export default function LearningDropdown() {
           {TOOLS.map(t => (
             <Link key={t.href} href={t.href}
               className="flex items-center gap-2.5 px-4 py-2 text-sm text-charcoal hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-lg mx-1">
-              <span className="text-base w-5 text-center">{t.emoji}</span>
               {t.label}
             </Link>
           ))}

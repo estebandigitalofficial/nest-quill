@@ -263,7 +263,7 @@ export default function SpellingPractice({ assignmentId, initialWords }: Props) 
         {assignmentId && (
           <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
             <div>
-              <p className="text-white font-semibold text-sm">Quest Complete! ✨</p>
+              <p className="text-white font-semibold text-sm">Quest Complete!</p>
               <p className="text-indigo-200 text-xs">{xpEarned != null ? `+${xpEarned} XP earned` : 'Submitting…'}</p>
             </div>
             <button onClick={() => { window.location.href = '/classroom/student' }}
@@ -273,7 +273,7 @@ export default function SpellingPractice({ assignmentId, initialWords }: Props) 
           </div>
         )}
         <div className={`rounded-2xl px-6 py-6 text-center space-y-1 ${pct === 1 ? 'bg-yellow-50 border border-yellow-200' : pct >= 0.8 ? 'bg-green-50 border border-green-200' : 'bg-indigo-50 border border-indigo-200'}`}>
-          <div className="text-4xl mb-2">{pct === 1 ? '🏆' : pct >= 0.8 ? '⭐' : '📚'}</div>
+          <p className="text-xl font-bold mb-2">{pct === 1 ? 'Perfect!' : pct >= 0.8 ? 'Great job!' : 'Keep going!'}</p>
           <p className="text-2xl font-bold text-gray-900">{score} / {words.length}</p>
           <p className="text-sm text-gray-600">{pct === 1 ? 'All correct! Amazing!' : pct >= 0.8 ? 'Great job!' : 'Keep practicing!'}</p>
         </div>

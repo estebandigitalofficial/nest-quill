@@ -129,7 +129,7 @@ export default function ConceptExplainer({ assignmentId, initialTopic, initialGr
         </div>
         <div className="space-y-2 pt-1">
           <label className="block text-sm font-semibold text-gray-700">
-            💭 Think first: What do you already know or what would you try first?
+            Think first: What do you already know or what would you try first?
           </label>
           <textarea
             value={thinkFirst}
@@ -161,7 +161,7 @@ export default function ConceptExplainer({ assignmentId, initialTopic, initialGr
           {assignmentId && (
             <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
               <div>
-                <p className="text-white font-semibold text-sm">Quest Complete! ✨</p>
+                <p className="text-white font-semibold text-sm">Quest Complete!</p>
                 <p className="text-indigo-200 text-xs">{xpEarned != null ? `+${xpEarned} XP earned` : 'Submitting…'}</p>
               </div>
               <button onClick={() => { window.location.href = '/classroom/student' }}
@@ -194,12 +194,12 @@ export default function ConceptExplainer({ assignmentId, initialTopic, initialGr
           </div>
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-2xl px-6 py-5 space-y-2">
-            <p className="text-xs font-bold text-yellow-600 uppercase tracking-widest">Fun Fact ⚡</p>
+            <p className="text-xs font-bold text-yellow-600 uppercase tracking-widest">Fun Fact</p>
             <p className="text-sm text-gray-700 leading-relaxed">{result.fun_fact}</p>
           </div>
 
           <div className="bg-green-50 border border-green-200 rounded-2xl px-6 py-5 space-y-2">
-            <p className="text-xs font-bold text-green-600 uppercase tracking-widest">Try This at Home 🧪</p>
+            <p className="text-xs font-bold text-green-600 uppercase tracking-widest">Try This at Home</p>
             <p className="text-sm text-gray-700 leading-relaxed">{result.try_this}</p>
           </div>
 

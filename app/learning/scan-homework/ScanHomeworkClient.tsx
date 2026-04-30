@@ -18,12 +18,12 @@ interface UploadedImage {
 
 type Activity = 'flashcards' | 'explain' | 'study-guide' | 'spelling' | 'trivia'
 
-const ACTIVITIES: { id: Activity; emoji: string; label: string; desc: string }[] = [
-  { id: 'flashcards', emoji: '🃏', label: 'Flashcards', desc: '10 study cards' },
-  { id: 'explain', emoji: '💡', label: 'Explain It', desc: 'Simple explanation' },
-  { id: 'study-guide', emoji: '📋', label: 'Study Guide', desc: 'Key terms & concepts' },
-  { id: 'spelling', emoji: '✏️', label: 'Spelling', desc: 'Extract & practice words' },
-  { id: 'trivia', emoji: '🎯', label: 'Trivia Game', desc: 'Rapid-fire questions' },
+const ACTIVITIES: { id: Activity; label: string; desc: string }[] = [
+  { id: 'flashcards', label: 'Flashcards', desc: '10 study cards' },
+  { id: 'explain', label: 'Explain It', desc: 'Simple explanation' },
+  { id: 'study-guide', label: 'Study Guide', desc: 'Key terms & concepts' },
+  { id: 'spelling', label: 'Spelling', desc: 'Extract & practice words' },
+  { id: 'trivia', label: 'Trivia Game', desc: 'Rapid-fire questions' },
 ]
 
 export default function ScanHomeworkClient() {
@@ -105,7 +105,7 @@ export default function ScanHomeworkClient() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={image.preview} alt="Homework" className="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{actInfo.emoji} {actInfo.label}</p>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{actInfo.label}</p>
           </div>
           <button onClick={resetActivity} className="text-xs text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap shrink-0">← Change</button>
         </div>
@@ -160,7 +160,7 @@ export default function ScanHomeworkClient() {
             onClick={() => { setFileSizeError(false); fileRef.current?.click() }}
             className={`w-full border-2 border-dashed rounded-2xl py-12 text-center transition-colors group ${fileSizeError ? 'border-red-300 bg-red-50/30' : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/30'}`}
           >
-            <div className="text-5xl mb-3">📷</div>
+            <div className="text-base font-semibold text-gray-400 mb-3">Upload</div>
             <p className="text-base font-semibold text-gray-600 group-hover:text-indigo-700 transition-colors">
               Tap to snap or upload a homework photo
             </p>
@@ -198,7 +198,7 @@ export default function ScanHomeworkClient() {
 
           <div className="space-y-1.5">
             <label className="block text-sm font-semibold text-gray-700">
-              💭 Think first: What do you already know or what would you try first?
+              Think first: What do you already know or what would you try first?
             </label>
             <textarea
               value={thinkFirst}
@@ -219,7 +219,7 @@ export default function ScanHomeworkClient() {
                 disabled={extractingSpelling}
                 className="flex flex-col items-start gap-2 bg-white border-2 border-gray-100 hover:border-indigo-300 hover:bg-indigo-50/30 rounded-2xl px-4 py-4 text-left transition-all group disabled:opacity-50"
               >
-                <span className="text-2xl">{act.emoji}</span>
+                <span className="text-sm font-bold text-indigo-400">{act.label.charAt(0)}</span>
                 <div>
                   <p className="text-sm font-semibold text-oxford group-hover:text-indigo-700 transition-colors">
                     {act.id === 'spelling' && extractingSpelling ? 'Extracting…' : act.label}

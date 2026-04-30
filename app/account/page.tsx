@@ -122,7 +122,6 @@ export default async function AccountPage() {
 
           {rows.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-12 text-center space-y-3">
-              <p className="text-3xl">📖</p>
               <p className="font-serif text-lg text-oxford">No stories yet</p>
               <p className="text-sm text-gray-500">Create your first personalized storybook.</p>
               <Link

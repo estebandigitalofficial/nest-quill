@@ -8,10 +8,10 @@ import { Suspense } from 'react'
 
 type Role = 'parent' | 'educator' | 'student'
 
-const ROLES: { value: Role; label: string; emoji: string; desc: string }[] = [
-  { value: 'parent', label: 'Parent / Family', emoji: '👨‍👩‍👧', desc: 'Create stories for my child' },
-  { value: 'educator', label: 'Educator', emoji: '🏫', desc: 'Assign learning tools to my class' },
-  { value: 'student', label: 'Student', emoji: '🎒', desc: 'Complete assignments from my teacher' },
+const ROLES: { value: Role; label: string; desc: string }[] = [
+  { value: 'parent', label: 'Parent / Family', desc: 'Create stories for my child' },
+  { value: 'educator', label: 'Educator', desc: 'Assign learning tools to my class' },
+  { value: 'student', label: 'Student', desc: 'Complete assignments from my teacher' },
 ]
 
 function SignupForm() {
@@ -62,7 +62,6 @@ function SignupForm() {
     return (
       <div className="w-full max-w-sm">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 text-center space-y-4">
-          <div className="text-4xl">📬</div>
           <h2 className="font-serif text-xl text-oxford">Check your email</h2>
           <p className="text-sm text-charcoal-light">
             We sent a confirmation link to{' '}
@@ -93,7 +92,6 @@ function SignupForm() {
             {ROLES.map(r => (
               <button key={r.value} type="button" onClick={() => setRole(r.value)}
                 className={`flex flex-col items-center gap-1 px-2 py-3 rounded-xl border-2 text-center transition-all ${role === r.value ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                <span className="text-xl">{r.emoji}</span>
                 <span className={`text-[11px] font-semibold leading-tight ${role === r.value ? 'text-brand-700' : 'text-gray-600'}`}>{r.label}</span>
               </button>
             ))}

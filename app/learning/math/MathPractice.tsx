@@ -4,14 +4,14 @@ import { useState, useRef, useEffect } from 'react'
 import { submitAssignment } from '@/lib/utils/submitAssignment'
 
 const TOPICS = [
-  { value: 'addition', label: '➕ Addition' },
-  { value: 'subtraction', label: '➖ Subtraction' },
-  { value: 'multiplication', label: '✖️ Multiplication' },
-  { value: 'division', label: '➗ Division' },
-  { value: 'fractions', label: '½ Fractions' },
-  { value: 'geometry', label: '📐 Geometry' },
-  { value: 'word problems', label: '📝 Word Problems' },
-  { value: 'decimals', label: '0.5 Decimals' },
+  { value: 'addition', label: 'Addition' },
+  { value: 'subtraction', label: 'Subtraction' },
+  { value: 'multiplication', label: 'Multiplication' },
+  { value: 'division', label: 'Division' },
+  { value: 'fractions', label: 'Fractions' },
+  { value: 'geometry', label: 'Geometry' },
+  { value: 'word problems', label: 'Word Problems' },
+  { value: 'decimals', label: 'Decimals' },
 ]
 
 interface Problem { problem: string; answer: string; steps: string[] }
@@ -156,7 +156,7 @@ export default function MathPractice({ assignmentId, initialTopic, initialGrade 
 
         {!revealed ? (
           <>
-            <p className="text-center text-xs text-gray-400 font-medium">💭 Work it out, then type your answer</p>
+            <p className="text-center text-xs text-gray-400 font-medium">Work it out, then type your answer</p>
             <input ref={inputRef} type="text" value={answer}
               onChange={e => setAnswer(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && answer.trim()) handleCheck() }}
@@ -204,7 +204,7 @@ export default function MathPractice({ assignmentId, initialTopic, initialGrade 
         {assignmentId && (
           <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
             <div>
-              <p className="text-white font-semibold text-sm">Quest Complete! ✨</p>
+              <p className="text-white font-semibold text-sm">Quest Complete!</p>
               <p className="text-indigo-200 text-xs">{xpEarned != null ? `+${xpEarned} XP earned` : 'Submitting…'}</p>
             </div>
             <button onClick={() => { window.location.href = '/classroom/student' }}
@@ -214,7 +214,7 @@ export default function MathPractice({ assignmentId, initialTopic, initialGrade 
           </div>
         )}
         <div className={`rounded-2xl px-6 py-6 text-center space-y-1 ${pct === 1 ? 'bg-yellow-50 border border-yellow-200' : pct >= 0.75 ? 'bg-green-50 border border-green-200' : 'bg-indigo-50 border border-indigo-200'}`}>
-          <div className="text-4xl mb-2">{pct === 1 ? '🏆' : pct >= 0.75 ? '⭐' : '📚'}</div>
+          <p className="text-xl font-bold mb-2">{pct === 1 ? 'Perfect!' : pct >= 0.75 ? 'Great job!' : 'Keep going!'}</p>
           <p className="text-2xl font-bold text-gray-900">{score} / {problems.length}</p>
           <p className="text-sm text-gray-600">{topic}{grade ? ` · Grade ${grade}` : ''}</p>
         </div>

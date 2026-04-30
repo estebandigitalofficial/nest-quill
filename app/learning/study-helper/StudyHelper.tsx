@@ -22,11 +22,11 @@ interface StudyGuideContent {
   practice_questions: { question: string; answer: string }[]
 }
 
-const MODES: { value: Mode; emoji: string; label: string; desc: string }[] = [
-  { value: 'quiz',        emoji: '🧠', label: 'Quiz Me',      desc: '5 multiple-choice questions' },
-  { value: 'flashcards',  emoji: '🃏', label: 'Flashcards',   desc: 'Key terms to flip through' },
-  { value: 'explain',     emoji: '💡', label: 'Explain It',   desc: 'Simple breakdown of the ideas' },
-  { value: 'study-guide', emoji: '📋', label: 'Study Guide',  desc: 'Terms, concepts, and practice Qs' },
+const MODES: { value: Mode; label: string; desc: string }[] = [
+  { value: 'quiz',        label: 'Quiz Me',      desc: '5 multiple-choice questions' },
+  { value: 'flashcards',  label: 'Flashcards',   desc: 'Key terms to flip through' },
+  { value: 'explain',     label: 'Explain It',   desc: 'Simple breakdown of the ideas' },
+  { value: 'study-guide', label: 'Study Guide',  desc: 'Terms, concepts, and practice Qs' },
 ]
 
 const CHAR_WARN = 4000
@@ -224,7 +224,7 @@ export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMateri
       return (
         <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
           <div>
-            <p className="text-white font-semibold text-sm">Quest Complete! 🎉</p>
+            <p className="text-white font-semibold text-sm">Quest Complete!</p>
             <p className="text-indigo-200 text-xs">{xpEarned ? `+${xpEarned} XP earned` : 'Progress saved'}</p>
           </div>
           <a href="/classroom/student" className="bg-white text-indigo-600 text-xs font-bold px-4 py-2 rounded-xl whitespace-nowrap hover:bg-indigo-50 transition-colors shrink-0">
@@ -261,7 +261,7 @@ export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMateri
     return (
       <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
         <div>
-          <p className="text-white font-semibold text-sm">Session Complete! ✨</p>
+          <p className="text-white font-semibold text-sm">Session Complete!</p>
           <p className="text-indigo-200 text-xs">+{xpEarned} XP earned</p>
         </div>
         <a href="/classroom/student" className="bg-white text-indigo-600 text-xs font-bold px-4 py-2 rounded-xl whitespace-nowrap hover:bg-indigo-50 transition-colors shrink-0">
@@ -278,7 +278,7 @@ export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMateri
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-14 text-center space-y-4">
           {error ? (
             <>
-              <div className="text-4xl">⚠️</div>
+              <p className="text-xl font-bold text-red-500">!</p>
               <p className="text-sm font-medium text-red-500">{error}</p>
               <a href="/classroom/student" className="inline-block text-xs font-semibold text-indigo-600 hover:underline">← Back to Dashboard</a>
             </>
@@ -332,7 +332,7 @@ export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMateri
               {MODES.map(m => (
                 <button key={m.value} type="button" onClick={() => setMode(m.value)}
                   className={`text-left px-4 py-3 rounded-xl border-2 text-sm transition-all ${mode === m.value ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                  <span className="text-lg">{m.emoji}</span>
+                  <span className="text-sm font-bold text-gray-400">{m.label.charAt(0)}</span>
                   <p className={`font-semibold mt-1 ${mode === m.value ? 'text-indigo-700' : 'text-gray-700'}`}>{m.label}</p>
                   <p className={`text-xs mt-0.5 ${mode === m.value ? 'text-indigo-500' : 'text-gray-400'}`}>{m.desc}</p>
                 </button>
@@ -443,7 +443,7 @@ export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMateri
     return (
       <div className="space-y-4">
         <div className={`rounded-2xl px-6 py-6 text-center space-y-1 ${pct === 1 ? 'bg-yellow-50 border border-yellow-200' : pct >= 0.8 ? 'bg-green-50 border border-green-200' : pct >= 0.6 ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 border border-gray-200'}`}>
-          <div className="text-4xl mb-2">{pct === 1 ? '🏆' : pct >= 0.8 ? '⭐' : pct >= 0.6 ? '👏' : '📚'}</div>
+          <p className="text-xl font-bold mb-2">{pct === 1 ? 'Perfect!' : pct >= 0.8 ? 'Great job!' : pct >= 0.6 ? 'Good effort!' : 'Keep going!'}</p>
           <p className="text-2xl font-bold text-gray-900">{score} / {total}</p>
           <p className="text-sm font-medium text-gray-600">{pct === 1 ? 'Perfect score!' : pct >= 0.8 ? 'Great work!' : pct >= 0.6 ? 'Good effort!' : 'Keep studying!'}</p>
         </div>
@@ -503,7 +503,7 @@ export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMateri
         {flipped ? (
           <div className="flex gap-3">
             <button onClick={() => handleCardKnow(false)}
-              className="flex-1 py-3.5 rounded-xl border-2 border-red-200 bg-red-50 text-red-600 font-semibold text-sm hover:bg-red-100 transition-colors">Still learning 🔄</button>
+              className="flex-1 py-3.5 rounded-xl border-2 border-red-200 bg-red-50 text-red-600 font-semibold text-sm hover:bg-red-100 transition-colors">Still learning</button>
             <button onClick={() => handleCardKnow(true)}
               className="flex-1 py-3.5 rounded-xl border-2 border-green-200 bg-green-50 text-green-700 font-semibold text-sm hover:bg-green-100 transition-colors">Got it ✓</button>
           </div>
@@ -528,7 +528,7 @@ export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMateri
     return (
       <div className="space-y-4">
         <div className={`rounded-2xl px-6 py-6 text-center space-y-2 ${knownCount === total ? 'bg-yellow-50 border border-yellow-200' : 'bg-indigo-50 border border-indigo-200'}`}>
-          <div className="text-4xl mb-1">{knownCount === total ? '🏆' : '📚'}</div>
+          <p className="text-xl font-bold mb-1">{knownCount === total ? 'Perfect!' : 'Keep going!'}</p>
           <p className="text-2xl font-bold text-gray-900">{knownCount} / {total}</p>
           <p className="text-sm text-gray-600">cards marked as known</p>
         </div>
@@ -632,7 +632,7 @@ export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMateri
           ))}
         </div>
         <div className="bg-indigo-50 border border-indigo-100 rounded-2xl px-6 py-5 space-y-3">
-          <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest">Remember 🧠</p>
+          <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest">Remember</p>
           <ul className="space-y-2">
             {sg.remember.map((tip, i) => (
               <li key={i} className="flex gap-2 text-sm text-indigo-800"><span className="shrink-0">•</span>{tip}</li>

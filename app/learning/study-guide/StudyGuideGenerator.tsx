@@ -124,7 +124,7 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
         {assignmentId && (
           <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
             <div>
-              <p className="text-white font-semibold text-sm">Quest Complete! ✨</p>
+              <p className="text-white font-semibold text-sm">Quest Complete!</p>
               <p className="text-indigo-200 text-xs">{xpEarned != null ? `+${xpEarned} XP earned` : 'Submitting…'}</p>
             </div>
             <button onClick={() => { window.location.href = '/classroom/student' }}
@@ -163,7 +163,7 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
         </div>
 
         <div className="bg-indigo-50 border border-indigo-100 rounded-2xl px-6 py-5 space-y-3">
-          <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest">Remember 🧠</p>
+          <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest">Remember</p>
           <ul className="space-y-2">
             {guide.remember.map((tip, i) => (
               <li key={i} className="flex gap-2 text-sm text-indigo-800">
@@ -255,7 +255,7 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
       </div>
       <div className="space-y-2 pt-1">
         <label className="block text-sm font-semibold text-gray-700">
-          💭 Think first: What do you already know or what would you try first?
+          Think first: What do you already know or what would you try first?
         </label>
         <textarea
           value={thinkFirst}
