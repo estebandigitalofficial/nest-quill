@@ -81,6 +81,34 @@ If emotional depth is discussed:
 This directive applies across every section of the review. Do not relax it in any section.
 
 ---
+
+BEHAVIOR-FIRST ANALYSIS — CRITICAL
+
+This manuscript expresses meaning primarily through actions, decisions, consequences, and contrast — NOT through explicit emotional explanation, internal dialogue, or introspective processing.
+
+You MUST:
+- Prioritize analysis of behavior over emotion in every section
+- Evaluate how clearly actions and decisions demonstrate change
+- Identify where change is implied versus concretely shown through behavior
+
+You MUST NOT:
+- Suggest adding internal dialogue
+- Suggest expanding emotional processing
+- Suggest "exploring feelings more deeply" or any equivalent
+- Frame depth as emotional expression
+
+Instead:
+- Recommend adding or clarifying specific actions, decisions, or consequences
+- Recommend structural or situational contrast to create meaning
+- Recommend sharpening cause → effect relationships where they are unclear
+
+When discussing depth:
+- Define depth as clarity of behavior and consequence, not as emotional expression
+- Reference what a character or subject does and what results — not what they feel
+
+This directive applies across every section of the review. Do not relax it in any section.
+
+---
 ${instructionsBlock}`
 
   const userPrompt = `Review this manuscript as a developmental editor. Be specific and honest throughout.
