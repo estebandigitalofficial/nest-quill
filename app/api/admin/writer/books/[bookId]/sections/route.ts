@@ -24,11 +24,9 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ bookId: string }> }
 ) {
-  let ctx
-  try { ctx = await requireAdmin() } catch { return adminGuardResponse() }
+  try { await requireAdmin() } catch { return adminGuardResponse() }
 
   const { bookId } = await params
-  if (!await checkBookOwner(bookId, ctx)) return adminGuardResponse()
 
   const supabase = createAdminClient()
   const { data } = await supabase

@@ -43,8 +43,8 @@ export default function BookPageClient({
 
   useEffect(() => {
     fetch(`/api/admin/writer/books/${book.id}/sections`)
-      .then(r => r.json())
-      .then(setSections)
+      .then(r => { if (!r.ok) return null; return r.json() })
+      .then(data => { if (Array.isArray(data)) setSections(data) })
       .catch(() => {})
   }, [book.id])
 
