@@ -25,6 +25,7 @@ export default function SiteHeader({ right }: Props) {
 
         {/* Desktop nav — hidden on mobile */}
         <nav className="hidden md:flex items-center gap-5">
+          <Link href="/create" className="text-sm text-charcoal-light hover:text-oxford transition-colors">Create a Story</Link>
           <LearningDropdown />
           <Link href="/classroom" className="text-sm text-charcoal-light hover:text-oxford transition-colors">Classroom</Link>
           <Link href="/pricing" className="text-sm text-charcoal-light hover:text-oxford transition-colors">Pricing</Link>
