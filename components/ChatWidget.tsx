@@ -202,7 +202,7 @@ export default function ChatWidget() {
           background: 'transparent',
           border: 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          filter: 'drop-shadow(0 4px 12px rgba(201,151,0,0.4))',
+          filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.55)) drop-shadow(0 4px 16px rgba(0,0,0,0.3))',
           transition: 'transform 0.2s',
           lineHeight: 0,
         }}
