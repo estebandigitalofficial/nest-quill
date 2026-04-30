@@ -12,7 +12,7 @@ export default function SiteFooter() {
             alt="Nest & Quill"
             width={140}
             height={42}
-            className="brightness-0 invert md:w-[52px]"
+            className="brightness-0 invert md:w-[62px]"
           />
           <div>
             <p className="font-serif text-parchment font-semibold md:text-xs">Nest &amp; Quill</p>
