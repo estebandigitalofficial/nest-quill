@@ -6,13 +6,16 @@ import BookPageClient from '@/components/admin/writer/BookPageClient'
 
 export default async function BookPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ bookId: string }>
+  searchParams: Promise<{ mode?: string }>
 }) {
   const adminCtx = await getAdminContext()
   if (!adminCtx) redirect('/')
 
-  const { bookId } = await params
+  const [{ bookId }, { mode }] = await Promise.all([params, searchParams])
+  const initialMode = mode === 'edit' ? 'edit' : 'read'
   const adminSupabase = createAdminClient()
 
   const { data: book } = await adminSupabase
@@ -53,6 +56,7 @@ export default async function BookPage({
       totalScenes={totalScenes}
       doneScenes={doneScenes}
       totalWords={totalWords}
+      initialMode={initialMode}
     />
   )
 }

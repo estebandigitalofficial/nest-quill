@@ -25,6 +25,7 @@ export default function BookPageClient({
   totalScenes,
   doneScenes,
   totalWords,
+  initialMode = 'read',
 }: {
   book: WriterBook
   bookData: WriterBookWithChapters
@@ -32,9 +33,9 @@ export default function BookPageClient({
   totalScenes: number
   doneScenes: number
   totalWords: number
+  initialMode?: Mode
 }) {
-  // Default to read mode — the book opens as an ebook
-  const [mode, setMode] = useState<Mode>('read')
+  const [mode, setMode] = useState<Mode>(initialMode)
   const [bookStatus, setBookStatus] = useState<WriterBook['status']>(book.status)
   const [sections, setSections] = useState<WriterBookSection[]>([])
   const [focusChapterId, setFocusChapterId] = useState<string | null>(null)

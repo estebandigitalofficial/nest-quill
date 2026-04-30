@@ -117,7 +117,7 @@ export default async function WriterPage() {
                     </Link>
                     {canEdit ? (
                       <Link
-                        href={`/admin/writer/${book.id}`}
+                        href={`/admin/writer/${book.id}?mode=edit`}
                         className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
                       >
                         Edit
