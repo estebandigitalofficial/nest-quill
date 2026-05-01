@@ -26,6 +26,7 @@ async function isMaintenanceModeOn(): Promise<boolean> {
           apikey: serviceKey,
           Authorization: `Bearer ${serviceKey}`,
         },
+        next: { revalidate: 30 },
       }
     )
     if (!res.ok) return false
