@@ -255,30 +255,23 @@ function NumericRow({ settingKey, value, status, label, hint, onSave }: {
 }) {
   const [draft, setDraft] = useState(String(value))
   useEffect(() => { setDraft(String(value)) }, [value])
-  const isDirty = Number(draft) !== value && Number.isFinite(Number(draft))
-  function handleSave() {
+  function handleBlur() {
     const n = Number(draft)
     if (Number.isFinite(n) && n !== value) onSave(settingKey, n, value)
     else setDraft(String(value))
   }
   return (
-    <div className={`flex items-center justify-between gap-4 bg-adm-bg/50 border rounded-xl px-4 py-3.5 ${isDirty ? 'border-brand-500/50' : 'border-adm-border'}`}>
+    <div className="flex items-center justify-between gap-4 bg-adm-bg/50 border border-adm-border rounded-xl px-4 py-3.5">
       <div className="min-w-0">
         <p className="text-sm font-medium text-adm-text">{label}</p>
         <p className="text-[11px] text-adm-muted mt-0.5 leading-relaxed">{hint}</p>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-2.5 shrink-0">
         <SaveDot status={status} />
-        <input type="number" value={draft} onChange={e => setDraft(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSave()}
+        <input type="number" value={draft} onChange={e => setDraft(e.target.value)} onBlur={handleBlur}
+          onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur() } }}
           disabled={status === 'saving'}
           className="w-20 text-center text-sm bg-adm-bg border border-adm-border rounded-lg px-2 py-1.5 text-adm-text focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50" />
-        {isDirty && (
-          <button onClick={handleSave} disabled={status === 'saving'}
-            className="shrink-0 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
-            Save
-          </button>
-        )}
       </div>
     </div>
   )
@@ -290,10 +283,9 @@ function StringRow({ settingKey, value, status, label, hint, onSave }: {
 }) {
   const [draft, setDraft] = useState(value)
   useEffect(() => { setDraft(value) }, [value])
-  const isDirty = draft !== value
-  function handleSave() { if (isDirty) onSave(settingKey, draft, value) }
+  function handleBlur() { if (draft !== value) onSave(settingKey, draft, value) }
   return (
-    <div className={`bg-adm-bg/50 border rounded-xl px-4 py-3.5 ${isDirty ? 'border-brand-500/50' : 'border-adm-border'}`}>
+    <div className="bg-adm-bg/50 border border-adm-border rounded-xl px-4 py-3.5">
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="min-w-0">
           <p className="text-sm font-medium text-adm-text">{label}</p>
@@ -301,18 +293,10 @@ function StringRow({ settingKey, value, status, label, hint, onSave }: {
         </div>
         <SaveDot status={status} />
       </div>
-      <div className="flex gap-2">
-        <input type="text" value={draft} onChange={e => setDraft(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSave()}
-          disabled={status === 'saving'}
-          className="flex-1 min-w-0 text-sm bg-adm-bg border border-adm-border rounded-lg px-3 py-2 text-adm-text focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 font-mono" />
-        {isDirty && (
-          <button onClick={handleSave} disabled={status === 'saving'}
-            className="shrink-0 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition-colors">
-            Save
-          </button>
-        )}
-      </div>
+      <input type="text" value={draft} onChange={e => setDraft(e.target.value)} onBlur={handleBlur}
+        onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur() } }}
+        disabled={status === 'saving'}
+        className="w-full text-sm bg-adm-bg border border-adm-border rounded-lg px-3 py-2 text-adm-text focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 font-mono" />
     </div>
   )
 }
@@ -323,12 +307,13 @@ function ColorRow({ settingKey, value, status, label, hint, onSave }: {
 }) {
   const [draft, setDraft] = useState(value)
   useEffect(() => { setDraft(value) }, [value])
-  const isDirty = draft !== value
-  function handleSave() { if (isDirty) onSave(settingKey, draft, value) }
+  function handleBlur() { if (draft !== value) onSave(settingKey, draft, value) }
   return (
-    <div className={`flex items-center justify-between gap-3 bg-adm-bg/50 border rounded-xl px-4 py-3.5 ${isDirty ? 'border-brand-500/50' : 'border-adm-border'}`}>
+    <div className="flex items-center justify-between gap-3 bg-adm-bg/50 border border-adm-border rounded-xl px-4 py-3.5">
       <div className="flex items-center gap-3 min-w-0">
-        <input type="color" value={draft.startsWith('#') ? draft : '#000000'} onChange={e => setDraft(e.target.value)} disabled={status === 'saving'}
+        <input type="color" value={draft.startsWith('#') ? draft : '#000000'}
+          onChange={e => { setDraft(e.target.value); onSave(settingKey, e.target.value, value) }}
+          disabled={status === 'saving'}
           className="w-9 h-9 rounded-lg border border-adm-border cursor-pointer disabled:opacity-50 shrink-0" />
         <div className="min-w-0">
           <p className="text-sm font-medium text-adm-text">{label}</p>
@@ -337,16 +322,10 @@ function ColorRow({ settingKey, value, status, label, hint, onSave }: {
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <SaveDot status={status} />
-        <input type="text" value={draft} onChange={e => setDraft(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSave()}
+        <input type="text" value={draft} onChange={e => setDraft(e.target.value)} onBlur={handleBlur}
+          onKeyDown={e => { if (e.key === 'Enter') { e.currentTarget.blur() } }}
           disabled={status === 'saving'}
           className="w-24 text-center text-xs bg-adm-bg border border-adm-border rounded-lg px-2 py-1.5 text-adm-text font-mono focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50" />
-        {isDirty && (
-          <button onClick={handleSave} disabled={status === 'saving'}
-            className="shrink-0 bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
-            Save
-          </button>
-        )}
       </div>
     </div>
   )
