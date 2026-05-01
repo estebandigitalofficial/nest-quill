@@ -3,6 +3,7 @@ import { Playfair_Display, Nunito } from 'next/font/google'
 import './globals.css'
 import CookieBanner from '@/components/CookieBanner'
 import ChatWidget from '@/components/ChatWidget'
+import FloatingToggles from '@/components/FloatingToggles'
 import ThemeProvider from '@/components/ThemeProvider'
 import { LanguageProvider } from '@/lib/i18n/context'
 
@@ -70,6 +71,7 @@ export default function RootLayout({
             {children}
             <CookieBanner />
             <ChatWidget />
+            <FloatingToggles />
           </LanguageProvider>
         </ThemeProvider>
       </body>
