@@ -1,6 +1,6 @@
 import { getAdminContext } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
-import NotificationToggles from './NotificationToggles'
+import SettingsHub from './SettingsHub'
 import type { AdminNotificationType } from '@/lib/services/adminNotifications'
 
 const VALID_TYPES: AdminNotificationType[] = [
@@ -33,19 +33,12 @@ export default async function AdminSettingsPage() {
   )
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8 space-y-8">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">Settings</h1>
-        <p className="text-sm text-adm-muted mt-1">Manage your personal admin preferences.</p>
+        <h1 className="text-xl font-semibold text-adm-text">Settings</h1>
+        <p className="text-sm text-adm-muted mt-1">Manage admin preferences and configure product behavior.</p>
       </div>
-
-      <section className="space-y-4">
-        <div>
-          <p className="text-xs font-bold text-adm-muted uppercase tracking-widest mb-1">Email Notifications</p>
-          <p className="text-xs text-adm-subtle">Choose which system events send you an email. Settings are per-admin.</p>
-        </div>
-        <NotificationToggles initialSettings={initialSettings} />
-      </section>
+      <SettingsHub initialSettings={initialSettings} />
     </div>
   )
 }
