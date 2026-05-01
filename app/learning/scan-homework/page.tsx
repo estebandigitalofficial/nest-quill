@@ -11,7 +11,10 @@ export const metadata: Metadata = {
 }
 
 export default async function ScanHomeworkPage() {
-  const enabled = await getSetting('scan_homework_enabled', true)
+  const [enabled, triviaEnabled] = await Promise.all([
+    getSetting('scan_homework_enabled', true),
+    getSetting('trivia_enabled', true),
+  ])
 
   if (!enabled) {
     return (
@@ -53,7 +56,7 @@ export default async function ScanHomeworkPage() {
             </p>
           </div>
 
-          <ScanHomeworkClient />
+          <ScanHomeworkClient triviaEnabled={triviaEnabled} />
 
         </div>
       </div>

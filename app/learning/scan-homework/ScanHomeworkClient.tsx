@@ -26,7 +26,7 @@ const ACTIVITIES: { id: Activity; label: string; desc: string }[] = [
   { id: 'trivia', label: 'Trivia Game', desc: 'Rapid-fire questions' },
 ]
 
-export default function ScanHomeworkClient() {
+export default function ScanHomeworkClient({ triviaEnabled }: { triviaEnabled: boolean }) {
   const [image, setImage] = useState<UploadedImage | null>(null)
   const [grade, setGrade] = useState<number | null>(null)
   const [activity, setActivity] = useState<Activity | null>(null)
@@ -122,7 +122,7 @@ export default function ScanHomeworkClient() {
         {activity === 'spelling' && spellingWords && (
           <SpellingPractice initialWords={spellingWords} />
         )}
-        {activity === 'trivia' && (
+        {activity === 'trivia' && triviaEnabled && (
           <TriviaMode initialImage={image} grade={grade} onReset={resetActivity} />
         )}
       </div>
@@ -212,7 +212,7 @@ export default function ScanHomeworkClient() {
           <NudgePrompt />
           {spellingError && <p className="text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2">{spellingError}</p>}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {ACTIVITIES.map(act => (
+            {ACTIVITIES.filter(a => a.id !== 'trivia' || triviaEnabled).map(act => (
               <button
                 key={act.id}
                 onClick={() => handleActivitySelect(act.id)}

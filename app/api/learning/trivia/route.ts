@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { NEUTRALITY_RULE } from '@/lib/utils/learningGuardrails'
+import { getSetting } from '@/lib/settings/appSettings'
 
 export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'trivia')
   if (limited) return limited
+
+  const triviaEnabled = await getSetting('trivia_enabled', true)
+  if (!triviaEnabled) {
+    return NextResponse.json({ message: 'Trivia mode is currently unavailable.' }, { status: 403 })
+  }
 
   try {
     const { topic, grade, imageBase64, mimeType } = await request.json() as {
