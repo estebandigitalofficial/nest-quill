@@ -49,7 +49,7 @@ export default function DripSequenceView({
         const seqTemplates = templates.filter((t) => t.sequence === seq).sort((a, b) => a.step - b.step)
         return (
           <div key={seq}>
-            <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-4">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
               {seq} sequence
             </p>
             <div className="space-y-2">
@@ -63,22 +63,22 @@ export default function DripSequenceView({
                     )}
                   </div>
                   {/* Card */}
-                  <div className="flex-1 bg-adm-surface border border-adm-border rounded-xl px-4 py-3">
+                  <div className="flex-1 bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium text-white">Step {template.step}</span>
-                          <span className="text-[10px] text-adm-subtle">+{template.delay_days}d</span>
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${template.enabled ? 'bg-green-900 text-green-400' : 'bg-adm-surface text-adm-muted'}`}>
+                          <span className="text-[10px] text-gray-600">+{template.delay_days}d</span>
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${template.enabled ? 'bg-green-900 text-green-400' : 'bg-gray-800 text-gray-500'}`}>
                             {template.enabled ? 'enabled' : 'disabled'}
                           </span>
                         </div>
-                        <p className="text-xs text-adm-muted mt-1 truncate">{template.subject}</p>
+                        <p className="text-xs text-gray-400 mt-1 truncate">{template.subject}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <button
                           onClick={() => toggleTemplate(template.id, !template.enabled)}
-                          className="text-xs text-adm-muted hover:text-adm-muted transition-colors"
+                          className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
                         >
                           {template.enabled ? 'Disable' : 'Enable'}
                         </button>
@@ -107,7 +107,7 @@ export default function DripSequenceView({
       {/* Rules */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest">Trigger Rules</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Trigger Rules</p>
           <button
             onClick={() => setEditingRule('new')}
             className="text-xs text-brand-400 hover:text-brand-300 font-medium"
@@ -116,14 +116,14 @@ export default function DripSequenceView({
           </button>
         </div>
         {rules.length === 0 ? (
-          <p className="text-sm text-adm-subtle">No rules configured.</p>
+          <p className="text-sm text-gray-600">No rules configured.</p>
         ) : (
           <div className="space-y-2">
             {rules.map((rule) => (
-              <div key={rule.id} className="bg-adm-surface border border-adm-border rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+              <div key={rule.id} className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-white">{rule.name}</p>
-                  <p className="text-xs text-adm-muted">
+                  <p className="text-xs text-gray-500">
                     {rule.trigger_type} · +{rule.delay_days}d
                     {rule.enabled ? '' : ' · disabled'}
                   </p>

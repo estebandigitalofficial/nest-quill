@@ -121,9 +121,9 @@ export default function NewBookForm({
   }
 
   return (
-    <div className="min-h-screen bg-adm-bg text-adm-text">
-      <header className="border-b border-adm-border px-6 h-14 flex items-center gap-3">
-        <Link href="/admin/writer" className="text-xs text-adm-muted hover:text-adm-muted">← Books</Link>
+    <div className="min-h-screen bg-gray-950 text-gray-100">
+      <header className="border-b border-gray-800 px-6 h-14 flex items-center gap-3">
+        <Link href="/admin/writer" className="text-xs text-gray-500 hover:text-gray-300">← Books</Link>
         <span className="text-gray-700">/</span>
         <span className="font-semibold text-white">New book</span>
       </header>
@@ -132,7 +132,7 @@ export default function NewBookForm({
 
         {isSuperAdmin && adminUsers.length > 1 && (
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-adm-muted">Author</label>
+            <label className="block text-sm font-medium text-gray-300">Author</label>
             <select className={input} defaultValue={currentUserId}>
               {adminUsers.map(u => (
                 <option key={u.userId} value={u.userId}>
@@ -144,14 +144,14 @@ export default function NewBookForm({
         )}
 
         {/* PDF upload — primary path */}
-        <div className="bg-adm-surface border border-adm-border rounded-xl px-6 py-6 space-y-3">
+        <div className="bg-gray-900 border border-gray-700 rounded-xl px-6 py-6 space-y-3">
           <div>
             <p className="text-base font-semibold text-white">Upload a PDF</p>
-            <p className="text-sm text-adm-muted mt-0.5">Reedsy export or any text-based PDF — title, genre, and premise will be pulled automatically</p>
+            <p className="text-sm text-gray-500 mt-0.5">Reedsy export or any text-based PDF — title, genre, and premise will be pulled automatically</p>
           </div>
 
           {pdfStatus === 'uploading' ? (
-            <div className="flex items-center gap-2 text-sm text-adm-muted py-1">
+            <div className="flex items-center gap-2 text-sm text-gray-400 py-1">
               <span className="w-4 h-4 border-2 border-brand-700 border-t-brand-400 rounded-full animate-spin shrink-0" />
               Creating book from PDF…
             </div>
@@ -173,16 +173,16 @@ export default function NewBookForm({
 
         {/* Divider */}
         <div className="flex items-center gap-3">
-          <div className="flex-1 border-t border-adm-border" />
-          <span className="text-xs text-adm-subtle">or</span>
-          <div className="flex-1 border-t border-adm-border" />
+          <div className="flex-1 border-t border-gray-800" />
+          <span className="text-xs text-gray-600">or</span>
+          <div className="flex-1 border-t border-gray-800" />
         </div>
 
         {/* Manual form — secondary path */}
         {mode === 'choose' ? (
           <button
             onClick={() => setMode('manual')}
-            className="w-full border border-dashed border-adm-border hover:border-adm-border text-adm-muted hover:text-adm-muted text-sm py-4 rounded-xl transition-colors"
+            className="w-full border border-dashed border-gray-700 hover:border-gray-500 text-gray-500 hover:text-gray-300 text-sm py-4 rounded-xl transition-colors"
           >
             Start from scratch — fill in details manually
           </button>
@@ -239,7 +239,7 @@ export default function NewBookForm({
             {formError && <p className="text-sm text-red-400 bg-red-900/30 rounded-lg px-3 py-2">{formError}</p>}
 
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setMode('choose')} className="flex-1 text-center py-3 rounded-xl border border-adm-border text-adm-muted hover:border-adm-border text-sm font-semibold transition-colors">
+              <button type="button" onClick={() => setMode('choose')} className="flex-1 text-center py-3 rounded-xl border border-gray-700 text-gray-400 hover:border-gray-500 text-sm font-semibold transition-colors">
                 Cancel
               </button>
               <button type="submit" disabled={saving} className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-800 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
@@ -256,13 +256,13 @@ export default function NewBookForm({
 function Field({ label, hint, required, children }: { label: string; hint?: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-adm-muted">
+      <label className="block text-sm font-medium text-gray-300">
         {label}{required && <span className="text-brand-400 ml-0.5">*</span>}
       </label>
       {children}
-      {hint && <p className="text-xs text-adm-subtle">{hint}</p>}
+      {hint && <p className="text-xs text-gray-600">{hint}</p>}
     </div>
   )
 }
 
-const input = 'w-full bg-adm-surface border border-adm-border rounded-lg px-3.5 py-2.5 text-sm text-white placeholder:text-adm-subtle focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors'
+const input = 'w-full bg-gray-900 border border-gray-700 rounded-lg px-3.5 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors'

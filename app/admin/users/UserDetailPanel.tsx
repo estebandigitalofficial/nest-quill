@@ -59,26 +59,26 @@ export default function UserDetailPanel({ userId }: { userId: string }) {
       </button>
 
       {open && (
-        <div className="mt-3 bg-adm-surface/50 rounded-xl border border-adm-border p-4 space-y-4">
+        <div className="mt-3 bg-gray-800/50 rounded-xl border border-gray-700 p-4 space-y-4">
           {loading ? (
-            <p className="text-xs text-adm-muted">Loading...</p>
+            <p className="text-xs text-gray-500">Loading...</p>
           ) : data ? (
             <>
               {/* Stories */}
               <div>
-                <p className="text-[10px] font-semibold text-adm-muted uppercase tracking-widest mb-2">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">
                   Stories ({data.stories.length})
                 </p>
                 {data.stories.length === 0 ? (
-                  <p className="text-xs text-adm-subtle">No stories.</p>
+                  <p className="text-xs text-gray-600">No stories.</p>
                 ) : (
                   <div className="space-y-1">
                     {data.stories.map((s) => (
                       <div key={s.id} className="flex items-center gap-3 text-xs">
                         <StatusDot status={s.status} />
-                        <span className="text-adm-muted truncate flex-1">{s.child_name} — {s.story_theme}</span>
-                        <span className="text-adm-subtle shrink-0">{s.genre ?? ''}</span>
-                        <span className="text-adm-subtle shrink-0">{new Date(s.created_at).toLocaleDateString()}</span>
+                        <span className="text-gray-300 truncate flex-1">{s.child_name} — {s.story_theme}</span>
+                        <span className="text-gray-600 shrink-0">{s.genre ?? ''}</span>
+                        <span className="text-gray-600 shrink-0">{new Date(s.created_at).toLocaleDateString()}</span>
                         <Link href={`/admin/stories/${s.id}`} className="text-brand-400 hover:text-brand-300 shrink-0">View</Link>
                       </div>
                     ))}
@@ -88,18 +88,18 @@ export default function UserDetailPanel({ userId }: { userId: string }) {
 
               {/* Email History */}
               <div>
-                <p className="text-[10px] font-semibold text-adm-muted uppercase tracking-widest mb-2">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">
                   Email History ({data.deliveryLogs.length})
                 </p>
                 {data.deliveryLogs.length === 0 ? (
-                  <p className="text-xs text-adm-subtle">No emails sent.</p>
+                  <p className="text-xs text-gray-600">No emails sent.</p>
                 ) : (
                   <div className="space-y-1">
                     {data.deliveryLogs.slice(0, 10).map((l) => (
                       <div key={l.id} className="flex items-center gap-3 text-xs">
                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${l.status === 'sent' ? 'bg-green-400' : 'bg-red-400'}`} />
-                        <span className="text-adm-muted font-mono">{l.email_type ?? 'story_ready'}</span>
-                        <span className="text-adm-subtle flex-1">{new Date(l.created_at).toLocaleDateString()}</span>
+                        <span className="text-gray-400 font-mono">{l.email_type ?? 'story_ready'}</span>
+                        <span className="text-gray-600 flex-1">{new Date(l.created_at).toLocaleDateString()}</span>
                       </div>
                     ))}
                   </div>
@@ -108,15 +108,15 @@ export default function UserDetailPanel({ userId }: { userId: string }) {
 
               {/* Drip Progress */}
               <div>
-                <p className="text-[10px] font-semibold text-adm-muted uppercase tracking-widest mb-2">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">
                   Drip Progress
                 </p>
                 {data.dripLogs.length === 0 ? (
-                  <p className="text-xs text-adm-subtle">No drip emails sent yet.</p>
+                  <p className="text-xs text-gray-600">No drip emails sent yet.</p>
                 ) : (
                   <div className="flex gap-2 flex-wrap">
                     {data.dripLogs.map((d) => (
-                      <span key={d.id} className="text-[10px] bg-adm-surface text-adm-muted px-2 py-0.5 rounded-full">
+                      <span key={d.id} className="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">
                         {d.sequence} step {d.step}
                       </span>
                     ))}

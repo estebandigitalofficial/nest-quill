@@ -163,23 +163,23 @@ export default function ChapterEditor({
     <div className="space-y-6">
       {/* Chapter header */}
       <div className="space-y-1">
-        <p className="text-xs font-bold text-adm-subtle uppercase tracking-widest">Chapter {chapter.chapter_number}</p>
+        <p className="text-xs font-bold text-gray-600 uppercase tracking-widest">Chapter {chapter.chapter_number}</p>
         <h1 className="font-serif text-2xl text-white">{chapter.title}</h1>
-        <p className="text-sm text-adm-muted">{chapter.brief}</p>
-        <p className="text-xs text-adm-subtle pt-1">
+        <p className="text-sm text-gray-500">{chapter.brief}</p>
+        <p className="text-xs text-gray-600 pt-1">
           {scenes.length} scenes · {totalWords.toLocaleString()} words written
         </p>
         {/* Mode toggle */}
         <div className="flex items-center gap-1 pt-2">
           <button
             onClick={() => setMode('preserve_voice')}
-            className={`text-xs px-3 py-1 rounded-full border transition-colors ${mode === 'preserve_voice' ? 'border-brand-500 text-brand-400 bg-brand-500/10' : 'border-adm-border text-adm-subtle hover:border-adm-border'}`}
+            className={`text-xs px-3 py-1 rounded-full border transition-colors ${mode === 'preserve_voice' ? 'border-brand-500 text-brand-400 bg-brand-500/10' : 'border-gray-700 text-gray-600 hover:border-gray-500'}`}
           >
             Preserve voice
           </button>
           <button
             onClick={() => setMode('rewrite_free')}
-            className={`text-xs px-3 py-1 rounded-full border transition-colors ${mode === 'rewrite_free' ? 'border-brand-500 text-brand-400 bg-brand-500/10' : 'border-adm-border text-adm-subtle hover:border-adm-border'}`}
+            className={`text-xs px-3 py-1 rounded-full border transition-colors ${mode === 'rewrite_free' ? 'border-brand-500 text-brand-400 bg-brand-500/10' : 'border-gray-700 text-gray-600 hover:border-gray-500'}`}
           >
             Rewrite freely
           </button>
@@ -187,20 +187,20 @@ export default function ChapterEditor({
       </div>
 
       {/* Correction notes */}
-      <div className="bg-adm-surface border border-adm-border rounded-xl overflow-hidden">
+      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
         <button
           onClick={() => setNotesOpen(o => !o)}
           className="w-full px-5 py-3 flex items-center justify-between text-left"
         >
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-adm-muted uppercase tracking-widest">Correction Notes</span>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Correction Notes</span>
             {notes && <span className="w-1.5 h-1.5 rounded-full bg-brand-500 inline-block" />}
           </div>
-          <span className="text-xs text-adm-subtle">{notesOpen ? '▲' : '▼'}</span>
+          <span className="text-xs text-gray-600">{notesOpen ? '▲' : '▼'}</span>
         </button>
 
         {notesOpen && (
-          <div className="border-t border-adm-border px-5 py-4 space-y-3">
+          <div className="border-t border-gray-800 px-5 py-4 space-y-3">
             {preflight && (
               <div className="bg-yellow-950 border border-yellow-700 rounded-lg px-4 py-3 space-y-2">
                 <p className="text-xs font-bold text-yellow-400 uppercase tracking-widest">Generation blocked — possible fabrication</p>
@@ -212,9 +212,9 @@ export default function ChapterEditor({
                 <p className="text-xs text-yellow-600">Add correction notes below to address these, then try generating again.</p>
               </div>
             )}
-            <p className="text-xs text-adm-muted">Tell the AI what to correct or avoid in this chapter — facts it got wrong, people who weren't there, details it invented.</p>
+            <p className="text-xs text-gray-500">Tell the AI what to correct or avoid in this chapter — facts it got wrong, people who weren't there, details it invented.</p>
             <textarea
-              className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2.5 text-sm text-adm-text placeholder:text-adm-subtle resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
               rows={4}
               placeholder="e.g. My daughter was not present in this chapter. The conversation happened at home, not at a restaurant. Do not mention the neighbor."
               value={notes}
@@ -223,11 +223,11 @@ export default function ChapterEditor({
             <button
               onClick={saveNotes}
               disabled={savingNotes}
-              className="text-xs bg-gray-700 hover:bg-adm-border text-adm-text font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+              className="text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50"
             >
               {savingNotes ? 'Saving…' : 'Save notes'}
             </button>
-            <p className="text-xs text-adm-subtle">These notes are included every time you generate a scene in this chapter.</p>
+            <p className="text-xs text-gray-600">These notes are included every time you generate a scene in this chapter.</p>
           </div>
         )}
       </div>
@@ -235,25 +235,25 @@ export default function ChapterEditor({
       {/* Scenes */}
       <div className="space-y-4">
         {scenes.map((scene, idx) => (
-          <div key={scene.id} className="bg-adm-surface border border-adm-border rounded-xl overflow-hidden">
+          <div key={scene.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
             {/* Scene header */}
-            <div className="px-5 py-3 border-b border-adm-border flex items-center justify-between gap-4">
+            <div className="px-5 py-3 border-b border-gray-800 flex items-center justify-between gap-4">
               <div>
-                <span className="text-xs font-bold text-adm-subtle uppercase tracking-widest">Scene {idx + 1}</span>
-                <p className="text-xs text-adm-muted mt-0.5">{scene.brief}</p>
+                <span className="text-xs font-bold text-gray-600 uppercase tracking-widest">Scene {idx + 1}</span>
+                <p className="text-xs text-gray-500 mt-0.5">{scene.brief}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {scene.status === 'final' && (
                   <span className="text-[10px] font-bold text-green-500 uppercase tracking-widest">Final</span>
                 )}
                 {scene.word_count && (
-                  <span className="text-xs text-adm-subtle">{scene.word_count.toLocaleString()}w</span>
+                  <span className="text-xs text-gray-600">{scene.word_count.toLocaleString()}w</span>
                 )}
                 {editingId === scene.id ? (
                   <>
                     <button
                       onClick={() => setEditingId(null)}
-                      className="text-xs text-adm-muted hover:text-adm-muted px-2 py-1 rounded transition-colors"
+                      className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded transition-colors"
                     >
                       Cancel
                     </button>
@@ -271,7 +271,7 @@ export default function ChapterEditor({
                       <button
                         onClick={() => toggleLock(scene)}
                         title={scene.locked ? 'Unlock scene' : 'Lock scene (prevent regeneration)'}
-                        className={`text-xs px-2 py-1 rounded transition-colors ${scene.locked ? 'text-yellow-500 hover:text-yellow-400' : 'text-gray-700 hover:text-adm-muted'}`}
+                        className={`text-xs px-2 py-1 rounded transition-colors ${scene.locked ? 'text-yellow-500 hover:text-yellow-400' : 'text-gray-700 hover:text-gray-400'}`}
                       >
                         {scene.locked ? '🔒' : '🔓'}
                       </button>
@@ -279,7 +279,7 @@ export default function ChapterEditor({
                     {scene.content && !scene.locked && (
                       <button
                         onClick={() => startEdit(scene)}
-                        className="text-xs text-adm-muted hover:text-adm-muted px-2 py-1 rounded transition-colors"
+                        className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded transition-colors"
                       >
                         Edit
                       </button>
@@ -290,7 +290,7 @@ export default function ChapterEditor({
                       className={cn(
                         'text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors',
                         scene.content
-                          ? 'bg-adm-surface hover:bg-adm-border text-adm-muted'
+                          ? 'bg-gray-800 hover:bg-gray-700 text-gray-300'
                           : 'bg-brand-500 hover:bg-brand-600 text-white',
                         generatingId === scene.id && 'opacity-50 cursor-not-allowed'
                       )}
@@ -309,7 +309,7 @@ export default function ChapterEditor({
             {/* Scene content */}
             <div className="px-5 py-4">
               {generatingId === scene.id ? (
-                <div className="flex items-center gap-2 text-sm text-adm-muted py-4">
+                <div className="flex items-center gap-2 text-sm text-gray-500 py-4">
                   <span className="w-4 h-4 border-2 border-brand-700 border-t-brand-400 rounded-full animate-spin" />
                   Writing scene…
                 </div>
@@ -318,15 +318,15 @@ export default function ChapterEditor({
                   autoFocus
                   value={editContent}
                   onChange={e => setEditContent(e.target.value)}
-                  className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-3 text-sm text-adm-text leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-3 text-sm text-gray-100 leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   rows={Math.max(8, editContent.split('\n').length + 2)}
                 />
               ) : scene.content ? (
-                <div className="text-sm text-adm-muted leading-relaxed whitespace-pre-wrap font-serif">
+                <div className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-serif">
                   {scene.content}
                 </div>
               ) : (
-                <p className="text-sm text-adm-subtle italic py-2">
+                <p className="text-sm text-gray-600 italic py-2">
                   Not written yet. Click Generate to write this scene.
                 </p>
               )}
@@ -336,11 +336,11 @@ export default function ChapterEditor({
 
         {/* Add scene */}
         {addingScene ? (
-          <div className="bg-adm-surface border border-brand-700 rounded-xl px-5 py-4 space-y-3">
+          <div className="bg-gray-900 border border-brand-700 rounded-xl px-5 py-4 space-y-3">
             <p className="text-xs font-semibold text-brand-400 uppercase tracking-widest">Scene {scenes.length + 1}</p>
             <textarea
               autoFocus
-              className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-adm-subtle focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
               rows={2}
               placeholder="What happens in this scene? (brief — guides the AI)"
               value={newSceneBrief}
@@ -349,13 +349,13 @@ export default function ChapterEditor({
             <button
               type="button"
               onClick={() => setShowContentInput(v => !v)}
-              className="text-xs text-adm-muted hover:text-adm-muted transition-colors"
+              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
             >
               {showContentInput ? '− Remove content' : '+ Paste your own content'}
             </button>
             {showContentInput && (
               <textarea
-                className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2.5 text-sm text-adm-text placeholder:text-adm-subtle focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
                 rows={8}
                 placeholder="Paste or type the scene content here — skips AI generation"
                 value={newSceneContent}
@@ -365,7 +365,7 @@ export default function ChapterEditor({
             <div className="flex gap-2">
               <button
                 onClick={() => { setAddingScene(false); setNewSceneBrief(''); setNewSceneContent(''); setShowContentInput(false) }}
-                className="flex-1 text-sm text-adm-muted py-2 rounded-lg border border-adm-border hover:border-adm-border transition-colors"
+                className="flex-1 text-sm text-gray-500 py-2 rounded-lg border border-gray-700 hover:border-gray-500 transition-colors"
               >
                 Cancel
               </button>
@@ -381,7 +381,7 @@ export default function ChapterEditor({
         ) : (
           <button
             onClick={() => setAddingScene(true)}
-            className="w-full border border-dashed border-adm-border hover:border-adm-border text-adm-subtle hover:text-adm-muted text-sm py-3 rounded-xl transition-colors"
+            className="w-full border border-dashed border-gray-700 hover:border-gray-500 text-gray-600 hover:text-gray-400 text-sm py-3 rounded-xl transition-colors"
           >
             + Add scene
           </button>

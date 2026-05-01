@@ -71,7 +71,7 @@ export default function AdminUserActions({ userId, isSelf, userEmail, isBanned: 
     <div className="mt-2">
       <button
         onClick={() => setOpen(o => !o)}
-        className="text-[10px] text-adm-subtle hover:text-adm-muted transition-colors"
+        className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors"
       >
         {open ? 'Hide actions ▲' : 'More actions ▼'}
       </button>
@@ -91,7 +91,7 @@ export default function AdminUserActions({ userId, isSelf, userEmail, isBanned: 
             }
             className={btnClass(
               recoveryState,
-              'text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-adm-surface text-adm-muted hover:bg-adm-border border border-adm-border'
+              'text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
             )}
           >
             {label(recoveryState, 'Send recovery email', 'Sent ✓')}
@@ -110,7 +110,7 @@ export default function AdminUserActions({ userId, isSelf, userEmail, isBanned: 
             }
             className={btnClass(
               magicState,
-              'text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-adm-surface text-adm-muted hover:bg-adm-border border border-adm-border'
+              'text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
             )}
           >
             {label(magicState, 'Send magic link', 'Sent ✓')}
@@ -129,7 +129,7 @@ export default function AdminUserActions({ userId, isSelf, userEmail, isBanned: 
             }
             className={btnClass(
               mfaState,
-              'text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-adm-surface text-adm-muted hover:bg-adm-border border border-adm-border'
+              'text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
             )}
           >
             {label(mfaState, 'Remove MFA', 'Removed ✓')}
@@ -139,14 +139,14 @@ export default function AdminUserActions({ userId, isSelf, userEmail, isBanned: 
           {!confirmResetUsage && (
             <button
               onClick={() => setConfirmResetUsage(true)}
-              className="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-adm-surface text-adm-muted hover:bg-adm-border border border-adm-border"
+              className="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
             >
               Reset usage
             </button>
           )}
           {confirmResetUsage && (
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-adm-muted">Reset usage for {userEmail}?</span>
+              <span className="text-[10px] text-gray-400">Reset usage for {userEmail}?</span>
               <button
                 disabled={resetUsageState !== 'idle'}
                 onClick={() =>
@@ -167,7 +167,7 @@ export default function AdminUserActions({ userId, isSelf, userEmail, isBanned: 
               </button>
               <button
                 onClick={() => setConfirmResetUsage(false)}
-                className="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-adm-surface text-adm-muted hover:bg-adm-border"
+                className="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-gray-800 text-gray-400 hover:bg-gray-700"
               >
                 Cancel
               </button>
@@ -190,7 +190,7 @@ export default function AdminUserActions({ userId, isSelf, userEmail, isBanned: 
               className={btnClass(
                 banState,
                 banned
-                  ? 'text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-adm-surface text-adm-muted hover:bg-adm-border border border-adm-border'
+                  ? 'text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
                   : 'text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-orange-950 text-orange-400 hover:bg-orange-900 border border-orange-800'
               )}
             >
@@ -230,7 +230,7 @@ export default function AdminUserActions({ userId, isSelf, userEmail, isBanned: 
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-adm-surface text-adm-muted hover:bg-adm-border"
+                className="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-gray-800 text-gray-400 hover:bg-gray-700"
               >
                 Cancel
               </button>

@@ -50,7 +50,7 @@ export default function BookReader({
   if (writtenChapters.length === 0 && frontMatter.length === 0 && backMatter.length === 0) {
     return (
       <div className="flex items-center justify-center py-24">
-        <p className="text-adm-subtle italic text-sm font-serif">No content yet. Switch to Edit to get started.</p>
+        <p className="text-gray-600 italic text-sm font-serif">No content yet. Switch to Edit to get started.</p>
       </div>
     )
   }
@@ -58,11 +58,11 @@ export default function BookReader({
   return (
     <div className="max-w-2xl mx-auto px-6 py-12 space-y-16">
       {/* Title */}
-      <div className="text-center space-y-3 pb-8 border-b border-adm-border">
+      <div className="text-center space-y-3 pb-8 border-b border-gray-800">
         <h1 className="font-serif text-white text-3xl">{book.title}</h1>
-        {book.subtitle && <p className="font-serif italic text-adm-muted">{book.subtitle}</p>}
+        {book.subtitle && <p className="font-serif italic text-gray-400">{book.subtitle}</p>}
         {(book.pen_name || book.author_name) && (
-          <p className="text-adm-subtle text-xs tracking-widest uppercase mt-1">
+          <p className="text-gray-600 text-xs tracking-widest uppercase mt-1">
             {book.pen_name || book.author_name}
           </p>
         )}
@@ -75,10 +75,10 @@ export default function BookReader({
             <h2 className="font-serif text-white text-xl">{SECTION_LABELS[s.type] ?? s.type}</h2>
             <button
               onClick={() => onEditSection('front')}
-              className="text-xs text-adm-subtle hover:text-adm-muted shrink-0 transition-colors"
+              className="text-xs text-gray-600 hover:text-gray-400 shrink-0 transition-colors"
             >Edit</button>
           </div>
-          <div className="space-y-4 font-serif text-adm-muted text-base leading-relaxed">
+          <div className="space-y-4 font-serif text-gray-300 text-base leading-relaxed">
             {(s.content ?? '').split(/\n\n+/).filter(p => p.trim()).map((para, i) => (
               <p key={i}>{para.trim()}</p>
             ))}
@@ -95,18 +95,18 @@ export default function BookReader({
           <div key={ch.id} className="space-y-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs text-adm-subtle uppercase tracking-widest mb-1">Chapter {ch.chapter_number}</p>
+                <p className="text-xs text-gray-600 uppercase tracking-widest mb-1">Chapter {ch.chapter_number}</p>
                 <h2 className="font-serif text-white text-xl">{ch.title}</h2>
               </div>
               <button
                 onClick={() => onEditChapter(ch.id)}
-                className="text-xs text-adm-subtle hover:text-adm-muted shrink-0 mt-1 transition-colors"
+                className="text-xs text-gray-600 hover:text-gray-400 shrink-0 mt-1 transition-colors"
               >Edit</button>
             </div>
             {scenes.map((scene, si) => (
               <div key={scene.id}>
-                {si > 0 && <div className="my-6 border-t border-adm-border" />}
-                <div className="font-serif text-adm-muted text-base leading-relaxed space-y-4">
+                {si > 0 && <div className="my-6 border-t border-gray-800" />}
+                <div className="font-serif text-gray-300 text-base leading-relaxed space-y-4">
                   {(scene.content ?? '').split(/\n\n+/).filter(p => p.trim()).map((para, pi) => (
                     <p key={pi} style={{ textIndent: pi === 0 ? 0 : '1.5em' }}>{para.trim()}</p>
                   ))}
@@ -124,10 +124,10 @@ export default function BookReader({
             <h2 className="font-serif text-white text-xl">{SECTION_LABELS[s.type] ?? s.type}</h2>
             <button
               onClick={() => onEditSection('back')}
-              className="text-xs text-adm-subtle hover:text-adm-muted shrink-0 transition-colors"
+              className="text-xs text-gray-600 hover:text-gray-400 shrink-0 transition-colors"
             >Edit</button>
           </div>
-          <div className="space-y-4 font-serif text-adm-muted text-base leading-relaxed">
+          <div className="space-y-4 font-serif text-gray-300 text-base leading-relaxed">
             {(s.content ?? '').split(/\n\n+/).filter(p => p.trim()).map((para, i) => (
               <p key={i}>{para.trim()}</p>
             ))}

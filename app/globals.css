@@ -12,14 +12,6 @@
     --parchment-dark: 237 233 220;   /* #EDE9DC */
     --charcoal:       46  46  46;    /* #2E2E2E */
     --charcoal-light: 74  74  74;    /* #4A4A4A */
-
-    /* Admin panel — default to light */
-    --adm-bg:      248 250 252;
-    --adm-surface: 255 255 255;
-    --adm-border:  226 232 240;
-    --adm-text:    15  23  42;
-    --adm-muted:   100 116 139;
-    --adm-subtle:  148 163 184;
   }
 
   /* Explicit light mode (next-themes adds class="light") — mirrors :root */
@@ -28,14 +20,6 @@
     --parchment-dark: 237 233 220;
     --charcoal:       46  46  46;
     --charcoal-light: 74  74  74;
-
-    /* Admin panel — light */
-    --adm-bg:      248 250 252;   /* slate-50  */
-    --adm-surface: 255 255 255;   /* white     */
-    --adm-border:  226 232 240;   /* slate-200 */
-    --adm-text:    15  23  42;    /* slate-900 */
-    --adm-muted:   100 116 139;   /* slate-500 */
-    --adm-subtle:  148 163 184;   /* slate-400 */
   }
 
   /* Dark mode overrides */
@@ -44,14 +28,6 @@
     --parchment-dark: 16  25  40;    /* slightly lighter navy */
     --charcoal:       216 210 196;   /* warm off-white */
     --charcoal-light: 172 166 152;   /* muted warm */
-
-    /* Admin panel — dark */
-    --adm-bg:      3   7   18;    /* gray-950 */
-    --adm-surface: 17  24  39;    /* gray-900 */
-    --adm-border:  31  41  55;    /* gray-800 */
-    --adm-text:    243 244 246;   /* gray-100 */
-    --adm-muted:   156 163 175;   /* gray-400 */
-    --adm-subtle:  75  85  99;    /* gray-600 */
   }
 
   html {

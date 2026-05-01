@@ -42,67 +42,67 @@ export default function BookSettingsPanel({ book }: { book: WriterBook }) {
   }
 
   return (
-    <div className="bg-adm-surface border border-adm-border rounded-xl overflow-hidden">
+    <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full px-5 py-3 flex items-center justify-between text-left"
       >
-        <span className="text-xs font-bold text-adm-muted uppercase tracking-widest">Book Settings</span>
-        <span className="text-xs text-adm-subtle">{open ? '▲' : '▼'}</span>
+        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Book Settings</span>
+        <span className="text-xs text-gray-600">{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
-        <div className="border-t border-adm-border px-5 py-4 space-y-4">
+        <div className="border-t border-gray-800 px-5 py-4 space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="text-xs text-adm-muted font-medium">Title</label>
+              <label className="text-xs text-gray-400 font-medium">Title</label>
               <input
-                className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-sm text-adm-text focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs text-adm-muted font-medium">Subtitle <span className="text-adm-subtle">(optional)</span></label>
+              <label className="text-xs text-gray-400 font-medium">Subtitle <span className="text-gray-600">(optional)</span></label>
               <input
-                className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-sm text-adm-text focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 value={subtitle}
                 onChange={e => setSubtitle(e.target.value)}
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs text-adm-muted font-medium">Genre</label>
+              <label className="text-xs text-gray-400 font-medium">Genre</label>
               <input
-                className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-sm text-adm-text focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 value={genre}
                 onChange={e => setGenre(e.target.value)}
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs text-adm-muted font-medium">Tone</label>
+              <label className="text-xs text-gray-400 font-medium">Tone</label>
               <input
-                className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-sm text-adm-text focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 value={tone}
                 onChange={e => setTone(e.target.value)}
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs text-adm-muted font-medium">Target chapters</label>
+              <label className="text-xs text-gray-400 font-medium">Target chapters</label>
               <input
                 type="number"
                 min={1}
-                className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-sm text-adm-text focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 value={targetChapters}
                 onChange={e => setTargetChapters(Number(e.target.value))}
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs text-adm-muted font-medium">Target words per chapter</label>
+              <label className="text-xs text-gray-400 font-medium">Target words per chapter</label>
               <input
                 type="number"
                 min={100}
                 step={100}
-                className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-sm text-adm-text focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 value={targetWords}
                 onChange={e => setTargetWords(Number(e.target.value))}
               />
@@ -110,29 +110,29 @@ export default function BookSettingsPanel({ book }: { book: WriterBook }) {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs text-adm-muted font-medium">Premise</label>
+            <label className="text-xs text-gray-400 font-medium">Premise</label>
             <textarea
               rows={3}
-              className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-sm text-adm-text resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
               value={premise}
               onChange={e => setPremise(e.target.value)}
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs text-adm-muted font-medium">Writing instructions</label>
+            <label className="text-xs text-gray-400 font-medium">Writing instructions</label>
             <textarea
               rows={4}
               placeholder="e.g. Write in first person, casual and conversational. Don't make it sound like a published novel."
-              className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-sm text-adm-text placeholder:text-adm-subtle resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder:text-gray-600 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
               value={instructions}
               onChange={e => setInstructions(e.target.value)}
             />
-            <p className="text-xs text-adm-subtle">Sent to the AI on every scene generation for this book.</p>
+            <p className="text-xs text-gray-600">Sent to the AI on every scene generation for this book.</p>
           </div>
 
           <div className="flex items-center justify-between pt-1">
-            <p className="text-xs text-adm-subtle">Changes apply to future generations only — existing scenes are not affected.</p>
+            <p className="text-xs text-gray-600">Changes apply to future generations only — existing scenes are not affected.</p>
             <button
               onClick={save}
               disabled={saving}

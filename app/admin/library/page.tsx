@@ -27,7 +27,7 @@ interface LibraryRow {
 const STATUS_BADGE: Record<string, string> = {
   complete:           'bg-green-900/50 text-green-400 border border-green-800',
   failed:             'bg-red-900/50 text-red-400 border border-red-800',
-  queued:             'bg-adm-surface text-adm-muted border border-adm-border',
+  queued:             'bg-gray-800 text-gray-400 border border-gray-700',
   generating_text:    'bg-yellow-900/40 text-yellow-400 border border-yellow-800',
   generating_images:  'bg-yellow-900/40 text-yellow-400 border border-yellow-800',
   assembling_pdf:     'bg-yellow-900/40 text-yellow-400 border border-yellow-800',
@@ -110,7 +110,7 @@ export default async function AdminLibraryPage({ searchParams }: PageProps) {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-semibold text-white">Story Library</h1>
-          <p className="text-sm text-adm-muted mt-1">
+          <p className="text-sm text-gray-400 mt-1">
             {rows.length} {rows.length === 200 ? '(limit 200)' : ''} {q || status !== 'all' || genreFilter || styleFilter ? 'matching' : 'most recent'} stories
           </p>
         </div>
@@ -132,11 +132,11 @@ export default async function AdminLibraryPage({ searchParams }: PageProps) {
         </div>
       )}
 
-      <div className="rounded-2xl border border-adm-border overflow-hidden">
+      <div className="rounded-2xl border border-gray-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-adm-border text-xs text-adm-muted uppercase tracking-widest">
+              <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-widest">
                 <th className="text-left px-5 py-3 font-semibold">Title</th>
                 <th className="text-left px-5 py-3 font-semibold hidden sm:table-cell">Email</th>
                 <th className="text-left px-5 py-3 font-semibold hidden lg:table-cell">Genre</th>
@@ -152,7 +152,7 @@ export default async function AdminLibraryPage({ searchParams }: PageProps) {
               {rows.map((row, i) => {
                 const title = row.generated_stories?.[0]?.title ?? `${row.child_name}'s Story`
                 const email = row.user_email ?? '—'
-                const badgeClass = STATUS_BADGE[row.status] ?? 'bg-adm-surface text-adm-muted border border-adm-border'
+                const badgeClass = STATUS_BADGE[row.status] ?? 'bg-gray-800 text-gray-400 border border-gray-700'
                 const badgeLabel = STATUS_LABEL[row.status] ?? row.status
                 const isProcessing = PROCESSING_STATUSES.includes(row.status)
                 const isStuck = isProcessing && Date.now() - new Date(row.updated_at).getTime() > STUCK_THRESHOLD_MS
@@ -162,7 +162,7 @@ export default async function AdminLibraryPage({ searchParams }: PageProps) {
                 return (
                   <tr
                     key={row.id}
-                    className={`border-b border-adm-border/50 hover:bg-adm-surface transition-colors ${i === rows.length - 1 ? 'border-b-0' : ''}`}
+                    className={`border-b border-gray-800/50 hover:bg-gray-900 transition-colors ${i === rows.length - 1 ? 'border-b-0' : ''}`}
                   >
                     <td className="px-5 py-3.5">
                       <div className="max-w-[220px] sm:max-w-sm truncate">
@@ -174,22 +174,22 @@ export default async function AdminLibraryPage({ searchParams }: PageProps) {
                           {title}
                         </Link>
                       </div>
-                      <p className="text-xs text-adm-muted mt-0.5">{row.child_name} · {row.plan_tier}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{row.child_name} · {row.plan_tier}</p>
                     </td>
                     <td className="px-5 py-3.5 hidden sm:table-cell">
-                      <span className="text-adm-muted text-xs">{email}</span>
+                      <span className="text-gray-400 text-xs">{email}</span>
                     </td>
                     <td className="px-5 py-3.5 hidden lg:table-cell">
-                      <span className="text-xs text-adm-muted">{row.genre ?? '—'}</span>
+                      <span className="text-xs text-gray-400">{row.genre ?? '—'}</span>
                     </td>
                     <td className="px-5 py-3.5 hidden lg:table-cell">
-                      <span className="text-xs text-adm-muted">{row.illustration_style}</span>
+                      <span className="text-xs text-gray-400">{row.illustration_style}</span>
                     </td>
                     <td className="px-5 py-3.5 hidden xl:table-cell">
-                      <span className="text-xs text-adm-muted">{row.story_tone?.join(', ') ?? '—'}</span>
+                      <span className="text-xs text-gray-500">{row.story_tone?.join(', ') ?? '—'}</span>
                     </td>
                     <td className="px-5 py-3.5 hidden xl:table-cell">
-                      <span className="text-xs text-adm-muted font-mono">{row.story_length}p / {imageCount}img</span>
+                      <span className="text-xs text-gray-400 font-mono">{row.story_length}p / {imageCount}img</span>
                     </td>
                     <td className="px-5 py-3.5">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${badgeClass}`}>
@@ -197,11 +197,11 @@ export default async function AdminLibraryPage({ searchParams }: PageProps) {
                       </span>
                     </td>
                     <td className="px-5 py-3.5 hidden md:table-cell">
-                      <span className="text-xs text-adm-muted">{formatAZTimeShort(row.created_at)}</span>
+                      <span className="text-xs text-gray-500">{formatAZTimeShort(row.created_at)}</span>
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-2 sm:gap-3">
-                        <Link href={`/story/${row.id}`} target="_blank" className="text-xs text-adm-muted hover:text-adm-text transition-colors whitespace-nowrap">View ↗</Link>
+                        <Link href={`/story/${row.id}`} target="_blank" className="text-xs text-gray-400 hover:text-gray-200 transition-colors whitespace-nowrap">View ↗</Link>
                         <Link href={`/admin/stories/${row.id}`} className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors whitespace-nowrap">Detail</Link>
                         {isFailed && <AdminRetryButton requestId={row.id} />}
                         {isStuck && <AdminForceRequeueButton requestId={row.id} />}
@@ -213,7 +213,7 @@ export default async function AdminLibraryPage({ searchParams }: PageProps) {
 
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-5 py-12 text-center text-adm-subtle text-sm">
+                  <td colSpan={9} className="px-5 py-12 text-center text-gray-600 text-sm">
                     {q || status !== 'all' ? 'No stories match your filters.' : 'No stories yet.'}
                   </td>
                 </tr>
@@ -241,12 +241,12 @@ function FilterDropdown({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-adm-muted">{label}:</span>
+      <span className="text-xs text-gray-500">{label}:</span>
       <div className="flex gap-1 flex-wrap">
         {current && (
           <Link
             href={`/admin/library?${buildParams({ ...searchParams, [paramName]: undefined })}`}
-            className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-adm-surface text-adm-muted hover:text-white transition-colors"
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 hover:text-white transition-colors"
           >
             All
           </Link>
@@ -258,7 +258,7 @@ function FilterDropdown({
             className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors ${
               current === opt
                 ? 'bg-brand-900 text-brand-400'
-                : 'bg-adm-surface text-adm-muted hover:text-adm-muted'
+                : 'bg-gray-800 text-gray-500 hover:text-gray-300'
             }`}
           >
             {opt.replace(/_/g, ' ')}

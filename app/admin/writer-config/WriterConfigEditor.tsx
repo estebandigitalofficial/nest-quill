@@ -91,7 +91,7 @@ export default function WriterConfigEditor({
     <div className="space-y-8">
       {SECTIONS.map((section) => (
         <div key={section.title}>
-          <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-4">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">
             {section.title}
           </p>
           <div className="space-y-4">
@@ -101,12 +101,12 @@ export default function WriterConfigEditor({
               const isLong = (values[key] ?? '').length > 120
 
               return (
-                <div key={key} className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
+                <div key={key} className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <div>
                       <p className="text-sm font-medium text-white">{key}</p>
                       {config.description && (
-                        <p className="text-xs text-adm-muted mt-0.5">{config.description}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{config.description}</p>
                       )}
                     </div>
                     {values[key] !== config.value && (
@@ -117,7 +117,7 @@ export default function WriterConfigEditor({
                   </div>
                   {isLong ? (
                     <textarea
-                      className="w-full bg-adm-surface border border-adm-border rounded-lg px-3.5 py-2.5 text-sm text-adm-text font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none resize-y min-h-[100px]"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3.5 py-2.5 text-sm text-gray-200 font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none resize-y min-h-[100px]"
                       rows={Math.min(12, Math.ceil((values[key] ?? '').length / 80))}
                       value={values[key] ?? ''}
                       onChange={(e) =>
@@ -127,7 +127,7 @@ export default function WriterConfigEditor({
                   ) : (
                     <input
                       type="text"
-                      className="w-full bg-adm-surface border border-adm-border rounded-lg px-3.5 py-2.5 text-sm text-adm-text font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3.5 py-2.5 text-sm text-gray-200 font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
                       value={values[key] ?? ''}
                       onChange={(e) =>
                         setValues((v) => ({ ...v, [key]: e.target.value }))
@@ -142,7 +142,7 @@ export default function WriterConfigEditor({
       ))}
 
       {/* Save area */}
-      <div className="sticky bottom-0 bg-adm-bg/90 backdrop-blur border-t border-adm-border py-4 flex items-center gap-4">
+      <div className="sticky bottom-0 bg-gray-950/90 backdrop-blur border-t border-gray-800 py-4 flex items-center gap-4">
         <button
           onClick={() => setShowConfirm(true)}
           disabled={!hasChanges || saving}
@@ -160,15 +160,15 @@ export default function WriterConfigEditor({
       {/* Confirmation dialog */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-adm-surface border border-adm-border rounded-2xl px-8 py-6 max-w-md mx-4 space-y-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl px-8 py-6 max-w-md mx-4 space-y-4">
             <h3 className="text-lg font-semibold text-white">Confirm changes</h3>
-            <p className="text-sm text-adm-muted">
+            <p className="text-sm text-gray-400">
               Are you sure you want to change the Nest &amp; Quill writer settings? This will affect all future story generations.
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowConfirm(false)}
-                className="text-sm text-adm-muted hover:text-white px-4 py-2 rounded-lg border border-adm-border hover:border-adm-border transition-colors"
+                className="text-sm text-gray-400 hover:text-white px-4 py-2 rounded-lg border border-gray-700 hover:border-gray-500 transition-colors"
               >
                 Cancel
               </button>

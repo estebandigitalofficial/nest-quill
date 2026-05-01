@@ -49,7 +49,7 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
 
         {/* Breadcrumb + title */}
         <div>
-          <Link href="/admin" className="text-xs text-adm-muted hover:text-adm-muted transition-colors">
+          <Link href="/admin" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
             ← Back to stories
           </Link>
           <div className="flex items-start justify-between mt-3 gap-4 flex-wrap">
@@ -57,7 +57,7 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
               <h1 className="text-xl font-semibold text-white">
                 {story?.title ?? `${req.child_name}'s Story`}
               </h1>
-              <p className="text-sm text-adm-muted mt-1 font-mono">{req.id}</p>
+              <p className="text-sm text-gray-500 mt-1 font-mono">{req.id}</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <StatusBadge status={req.status} />
@@ -108,12 +108,12 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
         {/* Scenes */}
         <Section title={`Scenes (${scenes.length})`}>
           {scenes.length === 0 ? (
-            <p className="text-sm text-adm-subtle">No scenes yet.</p>
+            <p className="text-sm text-gray-600">No scenes yet.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-adm-border text-adm-muted uppercase tracking-wider">
+                  <tr className="border-b border-gray-800 text-gray-500 uppercase tracking-wider">
                     <th className="text-left pb-2 pr-4">Page</th>
                     <th className="text-left pb-2 pr-4">Image</th>
                     <th className="text-left pb-2 pr-4">Status</th>
@@ -121,18 +121,18 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
                     <th className="text-left pb-2">Text excerpt</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-adm-border/60">
+                <tbody className="divide-y divide-gray-800/60">
                   {scenes.map(scene => {
                     const imgUrl = scene.storage_path ? signedMap[scene.storage_path] : null
                     return (
-                      <tr key={scene.id} className="hover:bg-adm-surface/30 transition-colors">
-                        <td className="py-2.5 pr-4 font-mono text-adm-muted">{scene.page_number}</td>
+                      <tr key={scene.id} className="hover:bg-gray-800/30 transition-colors">
+                        <td className="py-2.5 pr-4 font-mono text-gray-400">{scene.page_number}</td>
                         <td className="py-2.5 pr-4">
                           {imgUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={imgUrl} alt={`Page ${scene.page_number}`} className="w-12 h-12 rounded-lg object-cover border border-adm-border" />
+                            <img src={imgUrl} alt={`Page ${scene.page_number}`} className="w-12 h-12 rounded-lg object-cover border border-gray-700" />
                           ) : (
-                            <div className="w-12 h-12 rounded-lg bg-adm-surface border border-adm-border flex items-center justify-center text-adm-subtle text-[10px]">
+                            <div className="w-12 h-12 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-600 text-[10px]">
                               {scene.image_status === 'pending' ? '…' : '✕'}
                             </div>
                           )}
@@ -145,8 +145,8 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
                             </p>
                           )}
                         </td>
-                        <td className="py-2.5 pr-4 text-adm-muted font-mono">{scene.generation_attempts}</td>
-                        <td className="py-2.5 text-adm-muted max-w-xs truncate">{scene.page_text}</td>
+                        <td className="py-2.5 pr-4 text-gray-500 font-mono">{scene.generation_attempts}</td>
+                        <td className="py-2.5 text-gray-400 max-w-xs truncate">{scene.page_text}</td>
                       </tr>
                     )
                   })}
@@ -169,14 +169,14 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
               {story.generation_time_ms && <Field label="Generation time" value={`${(story.generation_time_ms / 1000).toFixed(1)}s`} />}
             </div>
             {story.full_text_json?.length > 0 && (
-              <div className="space-y-3 mt-4 border-t border-adm-border pt-4">
-                <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest">Pages</p>
+              <div className="space-y-3 mt-4 border-t border-gray-800 pt-4">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Pages</p>
                 {story.full_text_json.map(page => (
-                  <div key={page.page} className="bg-adm-surface rounded-xl px-4 py-3 border border-adm-border">
-                    <p className="text-[10px] text-adm-subtle font-mono mb-1">Page {page.page}</p>
-                    <p className="text-sm text-adm-muted leading-relaxed">{page.text}</p>
+                  <div key={page.page} className="bg-gray-900 rounded-xl px-4 py-3 border border-gray-800">
+                    <p className="text-[10px] text-gray-600 font-mono mb-1">Page {page.page}</p>
+                    <p className="text-sm text-gray-300 leading-relaxed">{page.text}</p>
                     {page.image_description && (
-                      <p className="text-[11px] text-adm-subtle mt-2 italic">↳ {page.image_description}</p>
+                      <p className="text-[11px] text-gray-600 mt-2 italic">↳ {page.image_description}</p>
                     )}
                   </div>
                 ))}
@@ -188,18 +188,18 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
         {/* Pipeline logs */}
         <Section title={`Pipeline logs (${logs.length})`}>
           {logs.length === 0 ? (
-            <p className="text-sm text-adm-subtle">No logs for this request.</p>
+            <p className="text-sm text-gray-600">No logs for this request.</p>
           ) : (
             <div className="space-y-1 font-mono text-xs">
               {logs.map(log => (
-                <div key={log.id} className={`flex gap-3 px-3 py-2 rounded-lg ${log.level === 'error' ? 'bg-red-950/40' : 'hover:bg-adm-surface/40'}`}>
+                <div key={log.id} className={`flex gap-3 px-3 py-2 rounded-lg ${log.level === 'error' ? 'bg-red-950/40' : 'hover:bg-gray-800/40'}`}>
                   <span className={`shrink-0 font-bold uppercase w-12 ${log.level === 'error' ? 'text-red-400' : log.level === 'warning' ? 'text-amber-400' : 'text-blue-400'}`}>
                     {log.level}
                   </span>
-                  <span className="shrink-0 text-adm-subtle w-28 truncate">{log.stage}</span>
-                  <span className="text-adm-muted flex-1">{log.message}</span>
+                  <span className="shrink-0 text-gray-600 w-28 truncate">{log.stage}</span>
+                  <span className="text-gray-300 flex-1">{log.message}</span>
                   {log.duration_ms != null && (
-                    <span className="shrink-0 text-adm-subtle">{log.duration_ms}ms</span>
+                    <span className="shrink-0 text-gray-600">{log.duration_ms}ms</span>
                   )}
                   <span className="shrink-0 text-gray-700">{formatAZTimeOnly(log.created_at)}</span>
                 </div>
@@ -217,8 +217,8 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-4">{title}</h2>
-      <div className="bg-adm-surface rounded-2xl border border-adm-border px-6 py-5">
+      <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-4">{title}</h2>
+      <div className="bg-gray-900 rounded-2xl border border-gray-800 px-6 py-5">
         {children}
       </div>
     </div>
@@ -228,8 +228,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label, value, mono, wide }: { label: string; value: string; mono?: boolean; wide?: boolean }) {
   return (
     <div className={wide ? 'sm:col-span-2' : ''}>
-      <p className="text-[10px] text-adm-subtle uppercase tracking-widest mb-0.5">{label}</p>
-      <p className={`text-sm text-adm-text break-all ${mono ? 'font-mono' : ''}`}>{value}</p>
+      <p className="text-[10px] text-gray-600 uppercase tracking-widest mb-0.5">{label}</p>
+      <p className={`text-sm text-gray-200 break-all ${mono ? 'font-mono' : ''}`}>{value}</p>
     </div>
   )
 }
@@ -238,13 +238,13 @@ function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     complete: 'bg-green-900 text-green-400',
     failed: 'bg-red-900 text-red-400',
-    queued: 'bg-adm-surface text-adm-muted',
+    queued: 'bg-gray-800 text-gray-400',
     generating_text: 'bg-brand-900 text-brand-400',
     generating_images: 'bg-brand-900 text-brand-400',
     assembling_pdf: 'bg-brand-900 text-brand-400',
   }
   return (
-    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${styles[status] ?? 'bg-adm-surface text-adm-muted'}`}>
+    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${styles[status] ?? 'bg-gray-800 text-gray-400'}`}>
       {status.replace(/_/g, ' ')}
     </span>
   )
@@ -254,11 +254,11 @@ function ImageStatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     complete: 'text-green-400',
     failed: 'text-red-400',
-    pending: 'text-adm-muted',
+    pending: 'text-gray-500',
     generating: 'text-amber-400',
   }
   return (
-    <span className={`text-[10px] font-semibold uppercase ${styles[status] ?? 'text-adm-muted'}`}>
+    <span className={`text-[10px] font-semibold uppercase ${styles[status] ?? 'text-gray-500'}`}>
       {status}
     </span>
   )

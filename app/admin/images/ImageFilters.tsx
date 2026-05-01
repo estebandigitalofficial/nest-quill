@@ -28,7 +28,7 @@ export default function ImageFilters({
   return (
     <div className={`flex gap-3 flex-wrap items-center ${isPending ? 'opacity-60' : ''}`}>
       <select
-        className="bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-xs text-adm-muted focus:ring-2 focus:ring-brand-500 focus:outline-none"
+        className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 focus:ring-2 focus:ring-brand-500 focus:outline-none"
         value={searchParams.get('style') ?? ''}
         onChange={(e) => update('style', e.target.value)}
       >
@@ -41,7 +41,7 @@ export default function ImageFilters({
       <input
         type="text"
         placeholder="Search theme..."
-        className="bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-xs text-adm-muted focus:ring-2 focus:ring-brand-500 focus:outline-none w-40"
+        className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 focus:ring-2 focus:ring-brand-500 focus:outline-none w-40"
         defaultValue={searchParams.get('theme') ?? ''}
         onKeyDown={(e) => {
           if (e.key === 'Enter') update('theme', (e.target as HTMLInputElement).value)
@@ -51,7 +51,7 @@ export default function ImageFilters({
       <input
         type="text"
         placeholder="Search tags..."
-        className="bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-xs text-adm-muted focus:ring-2 focus:ring-brand-500 focus:outline-none w-40"
+        className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 focus:ring-2 focus:ring-brand-500 focus:outline-none w-40"
         defaultValue={searchParams.get('tags') ?? ''}
         onKeyDown={(e) => {
           if (e.key === 'Enter') update('tags', (e.target as HTMLInputElement).value)
@@ -60,14 +60,14 @@ export default function ImageFilters({
 
       <input
         type="date"
-        className="bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-xs text-adm-muted focus:ring-2 focus:ring-brand-500 focus:outline-none"
+        className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 focus:ring-2 focus:ring-brand-500 focus:outline-none"
         value={searchParams.get('from') ?? ''}
         onChange={(e) => update('from', e.target.value)}
       />
-      <span className="text-xs text-adm-subtle">to</span>
+      <span className="text-xs text-gray-600">to</span>
       <input
         type="date"
-        className="bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-xs text-adm-muted focus:ring-2 focus:ring-brand-500 focus:outline-none"
+        className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 focus:ring-2 focus:ring-brand-500 focus:outline-none"
         value={searchParams.get('to') ?? ''}
         onChange={(e) => update('to', e.target.value)}
       />

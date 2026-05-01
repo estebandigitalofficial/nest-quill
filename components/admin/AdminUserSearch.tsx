@@ -19,7 +19,7 @@ export default function AdminUserSearch({ defaultValue }: { defaultValue: string
           router.push(val ? `${pathname}?q=${encodeURIComponent(val)}` : pathname)
         })
       }}
-      className="w-full sm:max-w-sm bg-adm-surface border border-adm-border rounded-xl px-4 py-2.5 text-sm text-adm-text placeholder:text-adm-subtle focus:outline-none focus:border-brand-500 transition-colors"
+      className="w-full sm:max-w-sm bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-brand-500 transition-colors"
     />
   )
 }

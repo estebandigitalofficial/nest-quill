@@ -39,12 +39,12 @@ export default function AdminFilters() {
         placeholder="Search by email or child name…"
         defaultValue={q}
         onChange={e => update('q', e.target.value)}
-        className="flex-1 bg-adm-surface border border-adm-border rounded-xl px-4 py-2.5 text-sm text-adm-text placeholder:text-adm-subtle focus:outline-none focus:border-brand-500 transition-colors"
+        className="flex-1 bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-brand-500 transition-colors"
       />
       <select
         defaultValue={status}
         onChange={e => update('status', e.target.value)}
-        className="bg-adm-surface border border-adm-border rounded-xl px-4 py-2.5 text-sm text-adm-text focus:outline-none focus:border-brand-500 transition-colors"
+        className="bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-brand-500 transition-colors"
       >
         {STATUSES.map(s => (
           <option key={s.value} value={s.value}>{s.label}</option>

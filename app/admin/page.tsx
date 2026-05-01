@@ -179,7 +179,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
         {/* Today's metrics */}
         <div>
-          <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">Today</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Today</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <StatCard label="Stories" value={storiesToday ?? 0}
               href={view === 'recent-stories' ? clearHref : mkViewHref('recent-stories')}
@@ -196,20 +196,20 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
         {/* System Health */}
         <div>
-          <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">System Health</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">System Health</p>
           <div className="grid grid-cols-3 gap-4 mb-4">
             <StatCard label="Queued" value={queuedCount ?? 0} color={(queuedCount ?? 0) > 0 ? 'amber' : undefined} />
             <StatCard label="Processing" value={processingCount ?? 0} color={(processingCount ?? 0) > 0 ? 'amber' : undefined} />
             <StatCard label="Stuck" value={stuckStories.length} color={stuckStories.length > 0 ? 'red' : undefined} />
           </div>
-          <div className="bg-adm-surface rounded-2xl border border-adm-border overflow-hidden">
-            <div className="px-4 py-3 border-b border-adm-border">
-              <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest">Recent failures</p>
+          <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-800">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Recent failures</p>
             </div>
             {(recentFailed ?? []).length === 0 ? (
-              <p className="px-4 py-6 text-center text-adm-subtle text-sm">No recent failures.</p>
+              <p className="px-4 py-6 text-center text-gray-600 text-sm">No recent failures.</p>
             ) : (
-              <ul className="divide-y divide-adm-border">
+              <ul className="divide-y divide-gray-800">
                 {(recentFailed as unknown as StoryRequest[]).slice(0, 5).map((story) => (
                   <li key={story.id} className="px-4 py-3 flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
@@ -217,7 +217,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                       <p className="text-xs text-red-400 truncate" title={story.last_error ?? ''}>{story.last_error ?? '—'}</p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-xs text-adm-subtle whitespace-nowrap hidden sm:inline">{formatAZTimeShort(story.updated_at!)}</span>
+                      <span className="text-xs text-gray-600 whitespace-nowrap hidden sm:inline">{formatAZTimeShort(story.updated_at!)}</span>
                       <Link href={`/admin/stories/${story.id}`} className="text-xs text-brand-400 hover:text-brand-300 font-medium">View →</Link>
                       <AdminRetryButton requestId={story.id} />
                     </div>
@@ -230,20 +230,20 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
         {/* Usage & Limits */}
         <div>
-          <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">Usage &amp; Limits</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Usage &amp; Limits</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Link href="/admin/users" className="block">
-              <div className={`rounded-2xl border px-5 py-4 transition-colors ${(usersAtLimitCount ?? 0) > 0 ? 'bg-red-950/30 border-red-800 hover:border-red-600' : 'bg-adm-surface border-adm-border hover:border-brand-600'}`}>
-                <p className="text-xs text-adm-muted mb-1">Users at free limit</p>
+              <div className={`rounded-2xl border px-5 py-4 transition-colors ${(usersAtLimitCount ?? 0) > 0 ? 'bg-red-950/30 border-red-800 hover:border-red-600' : 'bg-gray-900 border-gray-800 hover:border-brand-600'}`}>
+                <p className="text-xs text-gray-500 mb-1">Users at free limit</p>
                 <p className={`text-3xl font-bold ${(usersAtLimitCount ?? 0) > 0 ? 'text-red-400' : 'text-white'}`}>{usersAtLimitCount ?? 0}</p>
-                <p className="text-[10px] text-adm-subtle mt-1">view users →</p>
+                <p className="text-[10px] text-gray-600 mt-1">view users →</p>
               </div>
             </Link>
             <Link href="/admin/guests" className="block">
-              <div className={`rounded-2xl border px-5 py-4 transition-colors ${guestAtLimitCount > 0 ? 'bg-amber-950/30 border-amber-800 hover:border-amber-600' : 'bg-adm-surface border-adm-border hover:border-brand-600'}`}>
-                <p className="text-xs text-adm-muted mb-1">Guests at trial limit</p>
+              <div className={`rounded-2xl border px-5 py-4 transition-colors ${guestAtLimitCount > 0 ? 'bg-amber-950/30 border-amber-800 hover:border-amber-600' : 'bg-gray-900 border-gray-800 hover:border-brand-600'}`}>
+                <p className="text-xs text-gray-500 mb-1">Guests at trial limit</p>
                 <p className={`text-3xl font-bold ${guestAtLimitCount > 0 ? 'text-amber-400' : 'text-white'}`}>{guestAtLimitCount}</p>
-                <p className="text-[10px] text-adm-subtle mt-1">view guests →</p>
+                <p className="text-[10px] text-gray-600 mt-1">view guests →</p>
               </div>
             </Link>
             <StatCard label="Registered users" value={totalUsers ?? 0} />
@@ -255,22 +255,22 @@ export default async function AdminPage({ searchParams }: PageProps) {
         {view && viewRows && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest">
+              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest">
                 {{
                   'failed-stories': 'Failed stories (24h)',
                   'recent-stories': 'Stories created (24h)',
                   'emails':         'Emails sent (24h)',
                   'submissions':    'Assignments completed (24h)',
                 }[view]}
-                <span className="text-adm-subtle font-normal ml-2">({viewRows.length})</span>
+                <span className="text-gray-600 font-normal ml-2">({viewRows.length})</span>
               </h2>
               <Link href={clearHref}
-                className="text-xs text-adm-muted hover:text-adm-muted border border-adm-border hover:border-adm-border px-3 py-1.5 rounded-lg transition-colors">
+                className="text-xs text-gray-500 hover:text-gray-300 border border-gray-700 hover:border-gray-500 px-3 py-1.5 rounded-lg transition-colors">
                 ✕ Clear
               </Link>
             </div>
 
-            <div className="bg-adm-surface rounded-2xl border border-adm-border overflow-hidden">
+            <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
               <div className="overflow-x-auto">
 
                 {/* Failed stories */}
@@ -278,11 +278,11 @@ export default async function AdminPage({ searchParams }: PageProps) {
                   type Row = { id: string; child_name: string; user_email: string; last_error: string | null; updated_at: string }
                   const rows = viewRows as Row[]
                   return rows.length === 0
-                    ? <p className="px-4 py-6 text-center text-adm-subtle text-sm">No failures in the last 24 h.</p>
+                    ? <p className="px-4 py-6 text-center text-gray-600 text-sm">No failures in the last 24 h.</p>
                     : (
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-adm-border text-xs text-adm-muted uppercase tracking-wider">
+                          <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
                             <th className="text-left px-4 py-3">Child</th>
                             <th className="text-left px-4 py-3 hidden sm:table-cell">Email</th>
                             <th className="text-left px-4 py-3">Error</th>
@@ -290,13 +290,13 @@ export default async function AdminPage({ searchParams }: PageProps) {
                             <th className="px-4 py-3"></th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-adm-border">
+                        <tbody className="divide-y divide-gray-800">
                           {rows.map(r => (
-                            <tr key={r.id} className="hover:bg-adm-surface/50 transition-colors">
+                            <tr key={r.id} className="hover:bg-gray-800/50 transition-colors">
                               <td className="px-4 py-3 font-medium text-white">{r.child_name}</td>
-                              <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell">{r.user_email}</td>
+                              <td className="px-4 py-3 text-gray-400 text-xs hidden sm:table-cell">{r.user_email}</td>
                               <td className="px-4 py-3 text-red-400 text-xs max-w-[260px] truncate" title={r.last_error ?? ''}>{r.last_error ?? '—'}</td>
-                              <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell whitespace-nowrap">{formatAZTimeShort(r.updated_at)}</td>
+                              <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell whitespace-nowrap">{formatAZTimeShort(r.updated_at)}</td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-3">
                                   <Link href={`/admin/stories/${r.id}`} className="text-xs text-brand-400 hover:text-brand-300 font-medium">View →</Link>
@@ -315,11 +315,11 @@ export default async function AdminPage({ searchParams }: PageProps) {
                   type Row = { id: string; child_name: string; user_email: string; status: string; created_at: string }
                   const rows = viewRows as Row[]
                   return rows.length === 0
-                    ? <p className="px-4 py-6 text-center text-adm-subtle text-sm">No stories in the last 24 h.</p>
+                    ? <p className="px-4 py-6 text-center text-gray-600 text-sm">No stories in the last 24 h.</p>
                     : (
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-adm-border text-xs text-adm-muted uppercase tracking-wider">
+                          <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
                             <th className="text-left px-4 py-3">Child</th>
                             <th className="text-left px-4 py-3 hidden sm:table-cell">Email</th>
                             <th className="text-left px-4 py-3">Status</th>
@@ -327,13 +327,13 @@ export default async function AdminPage({ searchParams }: PageProps) {
                             <th className="px-4 py-3"></th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-adm-border">
+                        <tbody className="divide-y divide-gray-800">
                           {rows.map(r => (
-                            <tr key={r.id} className="hover:bg-adm-surface/50 transition-colors">
+                            <tr key={r.id} className="hover:bg-gray-800/50 transition-colors">
                               <td className="px-4 py-3 font-medium text-white">{r.child_name}</td>
-                              <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell">{r.user_email}</td>
+                              <td className="px-4 py-3 text-gray-400 text-xs hidden sm:table-cell">{r.user_email}</td>
                               <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
-                              <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell whitespace-nowrap">{formatAZTimeShort(r.created_at)}</td>
+                              <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell whitespace-nowrap">{formatAZTimeShort(r.created_at)}</td>
                               <td className="px-4 py-3">
                                 <Link href={`/admin/stories/${r.id}`} className="text-xs text-brand-400 hover:text-brand-300 font-medium">View →</Link>
                               </td>
@@ -349,11 +349,11 @@ export default async function AdminPage({ searchParams }: PageProps) {
                   type Row = { id: string; email_type: string | null; status: string; recipient_email: string | null; created_at: string; request_id: string }
                   const rows = viewRows as Row[]
                   return rows.length === 0
-                    ? <p className="px-4 py-6 text-center text-adm-subtle text-sm">No emails sent in the last 24 h.</p>
+                    ? <p className="px-4 py-6 text-center text-gray-600 text-sm">No emails sent in the last 24 h.</p>
                     : (
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-adm-border text-xs text-adm-muted uppercase tracking-wider">
+                          <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
                             <th className="text-left px-4 py-3">Type</th>
                             <th className="text-left px-4 py-3 hidden sm:table-cell">Recipient</th>
                             <th className="text-left px-4 py-3">Status</th>
@@ -361,17 +361,17 @@ export default async function AdminPage({ searchParams }: PageProps) {
                             <th className="px-4 py-3"></th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-adm-border">
+                        <tbody className="divide-y divide-gray-800">
                           {rows.map(r => (
-                            <tr key={r.id} className="hover:bg-adm-surface/50 transition-colors">
-                              <td className="px-4 py-3 font-mono text-xs text-adm-muted">{r.email_type ?? 'story_ready'}</td>
-                              <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell">{r.recipient_email ?? '—'}</td>
+                            <tr key={r.id} className="hover:bg-gray-800/50 transition-colors">
+                              <td className="px-4 py-3 font-mono text-xs text-gray-300">{r.email_type ?? 'story_ready'}</td>
+                              <td className="px-4 py-3 text-gray-400 text-xs hidden sm:table-cell">{r.recipient_email ?? '—'}</td>
                               <td className="px-4 py-3">
                                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${r.status === 'sent' ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}`}>
                                   {r.status}
                                 </span>
                               </td>
-                              <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell whitespace-nowrap">{formatAZTimeShort(r.created_at)}</td>
+                              <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell whitespace-nowrap">{formatAZTimeShort(r.created_at)}</td>
                               <td className="px-4 py-3">
                                 <Link href={`/admin/stories/${r.request_id}`} className="text-xs text-brand-400 hover:text-brand-300 font-medium">Story →</Link>
                               </td>
@@ -387,26 +387,26 @@ export default async function AdminPage({ searchParams }: PageProps) {
                   type Row = { id: string; assignment_id: string; student_id: string; status: string; score: number | null; total: number | null; completed_at: string | null }
                   const rows = viewRows as Row[]
                   return rows.length === 0
-                    ? <p className="px-4 py-6 text-center text-adm-subtle text-sm">No submissions in the last 24 h.</p>
+                    ? <p className="px-4 py-6 text-center text-gray-600 text-sm">No submissions in the last 24 h.</p>
                     : (
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-adm-border text-xs text-adm-muted uppercase tracking-wider">
+                          <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
                             <th className="text-left px-4 py-3">Assignment</th>
                             <th className="text-left px-4 py-3 hidden sm:table-cell">Student</th>
                             <th className="text-left px-4 py-3">Score</th>
                             <th className="text-left px-4 py-3 hidden sm:table-cell">Completed</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-adm-border">
+                        <tbody className="divide-y divide-gray-800">
                           {rows.map(r => (
-                            <tr key={r.id} className="hover:bg-adm-surface/50 transition-colors">
-                              <td className="px-4 py-3 font-mono text-[10px] text-adm-muted">{r.assignment_id.slice(0, 8)}…</td>
-                              <td className="px-4 py-3 font-mono text-[10px] text-adm-muted hidden sm:table-cell">{r.student_id.slice(0, 8)}…</td>
+                            <tr key={r.id} className="hover:bg-gray-800/50 transition-colors">
+                              <td className="px-4 py-3 font-mono text-[10px] text-gray-400">{r.assignment_id.slice(0, 8)}…</td>
+                              <td className="px-4 py-3 font-mono text-[10px] text-gray-400 hidden sm:table-cell">{r.student_id.slice(0, 8)}…</td>
                               <td className="px-4 py-3 text-white font-semibold text-sm">
-                                {r.score != null && r.total ? `${r.score}/${r.total}` : <span className="text-adm-subtle">—</span>}
+                                {r.score != null && r.total ? `${r.score}/${r.total}` : <span className="text-gray-600">—</span>}
                               </td>
-                              <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell whitespace-nowrap">
+                              <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell whitespace-nowrap">
                                 {r.completed_at ? formatAZTimeShort(r.completed_at) : '—'}
                               </td>
                             </tr>
@@ -435,25 +435,25 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
           {/* Classroom snapshot */}
           <div>
-            <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest mb-4">
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">
               Classroom (24 h)
             </h2>
             <div className="grid grid-cols-2 gap-3 mb-4">
               <StatCard label="Assignments created" value={assignmentsToday ?? 0} />
               <StatCard label="Submissions" value={submissionsToday ?? 0} />
             </div>
-            <div className="bg-adm-surface rounded-2xl border border-adm-border overflow-hidden">
+            <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
               {(activeClassList ?? []).length === 0 ? (
-                <p className="px-4 py-6 text-center text-adm-subtle text-sm">No active classrooms.</p>
+                <p className="px-4 py-6 text-center text-gray-600 text-sm">No active classrooms.</p>
               ) : (
-                <ul className="divide-y divide-adm-border">
+                <ul className="divide-y divide-gray-800">
                   {(activeClassList as unknown as { id: string; name: string; grade: number | null; updated_at: string }[]).map((cls) => (
                     <li key={cls.id} className="px-4 py-3 flex items-center justify-between gap-4">
                       <div>
                         <p className="text-sm font-medium text-white">{cls.name}</p>
-                        {cls.grade && <p className="text-xs text-adm-muted">Grade {cls.grade}</p>}
+                        {cls.grade && <p className="text-xs text-gray-500">Grade {cls.grade}</p>}
                       </div>
-                      <span className="text-xs text-adm-subtle whitespace-nowrap shrink-0">
+                      <span className="text-xs text-gray-600 whitespace-nowrap shrink-0">
                         {formatAZTimeShort(cls.updated_at)}
                       </span>
                     </li>
@@ -465,19 +465,19 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
           {/* Email activity */}
           <div>
-            <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest mb-4">
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">
               Email activity (24 h)
             </h2>
-            <div className="bg-adm-surface rounded-2xl border border-adm-border overflow-hidden">
+            <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
               {Object.keys(emailBreakdown).length === 0 ? (
-                <p className="px-4 py-6 text-center text-adm-subtle text-sm">No emails sent in the last 24 h.</p>
+                <p className="px-4 py-6 text-center text-gray-600 text-sm">No emails sent in the last 24 h.</p>
               ) : (
-                <ul className="divide-y divide-adm-border">
+                <ul className="divide-y divide-gray-800">
                   {Object.entries(emailBreakdown)
                     .sort((a, b) => b[1] - a[1])
                     .map(([type, count]) => (
                       <li key={type} className="px-4 py-3 flex items-center justify-between">
-                        <span className="text-sm font-mono text-adm-muted">{type}</span>
+                        <span className="text-sm font-mono text-gray-300">{type}</span>
                         <span className="text-sm font-bold text-white tabular-nums">{count}</span>
                       </li>
                     ))}
@@ -490,7 +490,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
         {/* Search + filter */}
         <div>
-          <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest mb-4">
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">
             Submissions
           </h2>
           <div className="space-y-4">
@@ -498,11 +498,11 @@ export default async function AdminPage({ searchParams }: PageProps) {
               <AdminFilters />
             </Suspense>
 
-            <div className="bg-adm-surface rounded-2xl border border-adm-border overflow-hidden">
+            <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-adm-border text-xs text-adm-muted uppercase tracking-wider">
+                    <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
                       <th className="text-left px-4 py-3">Child</th>
                       <th className="text-left px-4 py-3 hidden sm:table-cell">Theme</th>
                       <th className="text-left px-4 py-3 hidden md:table-cell">Email</th>
@@ -513,16 +513,16 @@ export default async function AdminPage({ searchParams }: PageProps) {
                       <th className="px-4 py-3"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-adm-border">
+                  <tbody className="divide-y divide-gray-800">
                     {rows.map((story) => (
-                      <tr key={story.id} className="hover:bg-adm-surface/50 transition-colors">
+                      <tr key={story.id} className="hover:bg-gray-800/50 transition-colors">
                         <td className="px-4 py-3 font-medium text-white">{story.child_name}</td>
-                        <td className="px-4 py-3 text-adm-muted hidden sm:table-cell max-w-[180px] truncate">
+                        <td className="px-4 py-3 text-gray-400 hidden sm:table-cell max-w-[180px] truncate">
                           {story.story_theme}
                         </td>
-                        <td className="px-4 py-3 text-adm-muted hidden md:table-cell">{story.user_email}</td>
+                        <td className="px-4 py-3 text-gray-400 hidden md:table-cell">{story.user_email}</td>
                         <td className="px-4 py-3">
-                          <span className="text-xs text-adm-muted font-mono">{story.plan_tier}</span>
+                          <span className="text-xs text-gray-400 font-mono">{story.plan_tier}</span>
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={story.status} />
@@ -532,13 +532,13 @@ export default async function AdminPage({ searchParams }: PageProps) {
                             </p>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-adm-muted text-xs hidden lg:table-cell whitespace-nowrap">
+                        <td className="px-4 py-3 text-gray-500 text-xs hidden lg:table-cell whitespace-nowrap">
                           {story.geo_city || story.geo_region || story.geo_country
                             ? [story.geo_city, story.geo_region, story.geo_country].filter(Boolean).join(', ')
                             : <span className="text-gray-700">—</span>
                           }
                         </td>
-                        <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell whitespace-nowrap">
+                        <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell whitespace-nowrap">
                           {formatAZTimeShort(story.created_at)}
                         </td>
                         <td className="px-4 py-3">
@@ -561,7 +561,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                     ))}
                     {rows.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="px-4 py-8 text-center text-adm-subtle">
+                        <td colSpan={7} className="px-4 py-8 text-center text-gray-600">
                           {q || status ? 'No stories match your filters.' : 'No submissions yet.'}
                         </td>
                       </tr>
@@ -570,7 +570,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                 </table>
               </div>
               {rows.length === 100 && (
-                <p className="text-xs text-adm-subtle text-center py-3 border-t border-adm-border">
+                <p className="text-xs text-gray-600 text-center py-3 border-t border-gray-800">
                   Showing first 100 results — use filters to narrow down
                 </p>
               )}
@@ -580,14 +580,14 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
         {/* Pipeline logs */}
         <div>
-          <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest mb-4">
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">
             Pipeline logs
           </h2>
-          <div className="bg-adm-surface rounded-2xl border border-adm-border overflow-hidden">
+          <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm font-mono">
                 <thead>
-                  <tr className="border-b border-adm-border text-xs text-adm-muted uppercase tracking-wider">
+                  <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
                     <th className="text-left px-4 py-3">Level</th>
                     <th className="text-left px-4 py-3">Stage</th>
                     <th className="text-left px-4 py-3">Message</th>
@@ -595,27 +595,27 @@ export default async function AdminPage({ searchParams }: PageProps) {
                     <th className="text-left px-4 py-3 hidden sm:table-cell">Time</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-adm-border">
+                <tbody className="divide-y divide-gray-800">
                   {(logs ?? []).map((log) => (
-                    <tr key={log.id} className="hover:bg-adm-surface/50 transition-colors">
+                    <tr key={log.id} className="hover:bg-gray-800/50 transition-colors">
                       <td className="px-4 py-2.5">
                         <LogLevelBadge level={log.level} />
                       </td>
-                      <td className="px-4 py-2.5 text-adm-muted text-xs">{log.stage}</td>
-                      <td className="px-4 py-2.5 text-adm-muted text-xs max-w-xs truncate">{log.message}</td>
-                      <td className="px-4 py-2.5 text-adm-subtle text-xs hidden sm:table-cell">
+                      <td className="px-4 py-2.5 text-gray-400 text-xs">{log.stage}</td>
+                      <td className="px-4 py-2.5 text-gray-300 text-xs max-w-xs truncate">{log.message}</td>
+                      <td className="px-4 py-2.5 text-gray-600 text-xs hidden sm:table-cell">
                         <Link href={`/story/${log.request_id}`} className="hover:text-brand-400">
                           {log.request_id.slice(0, 8)}…
                         </Link>
                       </td>
-                      <td className="px-4 py-2.5 text-adm-subtle text-xs hidden sm:table-cell whitespace-nowrap">
+                      <td className="px-4 py-2.5 text-gray-600 text-xs hidden sm:table-cell whitespace-nowrap">
                         {formatAZTimeOnly(log.created_at)}
                       </td>
                     </tr>
                   ))}
                   {(!logs || logs.length === 0) && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-adm-subtle">
+                      <td colSpan={5} className="px-4 py-8 text-center text-gray-600">
                         No logs yet.
                       </td>
                     </tr>
@@ -641,12 +641,12 @@ function StatCard({ label, value, color, href, active }: {
       active
         ? 'bg-brand-950/40 border-brand-600'
         : href
-        ? 'bg-adm-surface border-adm-border hover:border-brand-600 cursor-pointer'
-        : 'bg-adm-surface border-adm-border'
+        ? 'bg-gray-900 border-gray-700 hover:border-brand-600 cursor-pointer'
+        : 'bg-gray-900 border-gray-800'
     }`}>
-      <p className="text-xs text-adm-muted mb-1">{label}</p>
+      <p className="text-xs text-gray-500 mb-1">{label}</p>
       <p className={`text-3xl font-bold ${valueColor}`}>{value}</p>
-      {href && <p className="text-[10px] text-adm-subtle mt-1">{active ? 'click to close' : 'click to view'}</p>}
+      {href && <p className="text-[10px] text-gray-600 mt-1">{active ? 'click to close' : 'click to view'}</p>}
     </div>
   )
   return href ? <Link href={href} className="block">{card}</Link> : card
@@ -656,13 +656,13 @@ function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     complete: 'bg-green-900 text-green-400',
     failed: 'bg-red-900 text-red-400',
-    queued: 'bg-adm-surface text-adm-muted',
+    queued: 'bg-gray-800 text-gray-400',
     generating_text: 'bg-brand-900 text-brand-400',
     generating_images: 'bg-brand-900 text-brand-400',
     assembling_pdf: 'bg-brand-900 text-brand-400',
   }
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${styles[status] ?? 'bg-adm-surface text-adm-muted'}`}>
+    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${styles[status] ?? 'bg-gray-800 text-gray-400'}`}>
       {status.replace(/_/g, ' ')}
     </span>
   )
@@ -675,7 +675,7 @@ function LogLevelBadge({ level }: { level: string }) {
     error: 'text-red-400',
   }
   return (
-    <span className={`text-[10px] font-bold uppercase ${styles[level] ?? 'text-adm-muted'}`}>
+    <span className={`text-[10px] font-bold uppercase ${styles[level] ?? 'text-gray-400'}`}>
       {level}
     </span>
   )

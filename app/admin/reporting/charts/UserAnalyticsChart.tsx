@@ -35,20 +35,20 @@ export default function UserAnalyticsChart({
     <div className="space-y-6">
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
-          <p className="text-xs text-adm-muted mb-1">Total Users</p>
+        <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+          <p className="text-xs text-gray-500 mb-1">Total Users</p>
           <p className="text-2xl font-bold text-white">{totals.totalUsers}</p>
         </div>
-        <div className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
-          <p className="text-xs text-adm-muted mb-1">Paid Users</p>
+        <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+          <p className="text-xs text-gray-500 mb-1">Paid Users</p>
           <p className="text-2xl font-bold text-green-400">{totals.paidUsers}</p>
         </div>
-        <div className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
-          <p className="text-xs text-adm-muted mb-1">Active (period)</p>
+        <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+          <p className="text-xs text-gray-500 mb-1">Active (period)</p>
           <p className="text-2xl font-bold text-amber-400">{totals.activeUsers}</p>
         </div>
-        <div className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
-          <p className="text-xs text-adm-muted mb-1">Conversion Rate</p>
+        <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+          <p className="text-xs text-gray-500 mb-1">Conversion Rate</p>
           <p className="text-2xl font-bold text-brand-400">{totals.conversionRate}%</p>
         </div>
       </div>
@@ -56,7 +56,7 @@ export default function UserAnalyticsChart({
       <div className="grid md:grid-cols-2 gap-6">
         {/* Signups over time */}
         <div>
-          <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">Signups Over Time</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Signups Over Time</p>
           {signupData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={signupData}>
@@ -67,13 +67,13 @@ export default function UserAnalyticsChart({
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-center text-adm-subtle text-sm py-8">No signup data for this period.</p>
+            <p className="text-center text-gray-600 text-sm py-8">No signup data for this period.</p>
           )}
         </div>
 
         {/* Users by plan */}
         <div>
-          <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">Users by Plan</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Users by Plan</p>
           {planData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={planData}>
@@ -89,7 +89,7 @@ export default function UserAnalyticsChart({
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-center text-adm-subtle text-sm py-8">No data.</p>
+            <p className="text-center text-gray-600 text-sm py-8">No data.</p>
           )}
         </div>
       </div>
