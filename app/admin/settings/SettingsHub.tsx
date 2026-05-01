@@ -92,6 +92,18 @@ function GridIcon({ className = 'w-4 h-4' }: { className?: string }) {
   )
 }
 
+function PaletteIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>
+      <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
+      <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
+      <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
+      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+    </svg>
+  )
+}
+
 function ChevronDown({ className = 'w-4 h-4' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -119,6 +131,36 @@ type SectionDef = {
 // ─── Section definitions ──────────────────────────────────────────────────────
 
 const SECTIONS: SectionDef[] = [
+  {
+    id: 'branding',
+    label: 'Branding & Identity',
+    description: 'Logos, colors, contact info — controls the look and feel of the entire site.',
+    Icon: PaletteIcon,
+    live: false,
+    items: [
+      // Assets
+      { label: 'Favicon URL',       hint: 'Browser tab icon (use a CDN URL to a .webp, .png, or .ico)',     key: 'branding_favicon_url' },
+      { label: 'Header Logo URL',   hint: 'Logo shown in the public site header',                           key: 'branding_header_logo_url' },
+      { label: 'Footer Logo URL',   hint: 'Logo shown in the footer (usually a light version for dark bg)', key: 'branding_footer_logo_url' },
+      // Contact
+      { label: 'Contact Email',     hint: 'Public-facing contact email (contact page, footer)',              key: 'contact_email' },
+      { label: 'Support Email',     hint: 'Customer support inquiries',                                     key: 'support_email' },
+      { label: 'Stories From Email', hint: 'Sender address for story delivery emails',                       key: 'stories_from_email' },
+      { label: 'Admin Alert Email', hint: 'Receives admin notifications (new stories, errors)',              key: 'admin_alert_email' },
+      { label: 'Phone Number',      hint: 'Displayed on contact page (leave empty to hide)',                 key: 'phone_number' },
+      // Light mode colors
+      { label: 'Brand Primary',           hint: 'Buttons, links, accents (light mode)',    key: 'color_brand_primary' },
+      { label: 'Oxford Navy',             hint: 'Headings and dark text (light mode)',     key: 'color_oxford' },
+      { label: 'Parchment Background',    hint: 'Main background (light mode)',            key: 'color_parchment' },
+      { label: 'Charcoal Text',           hint: 'Body text (light mode)',                  key: 'color_charcoal' },
+      // Dark mode colors
+      { label: 'Brand Primary (Dark)',    hint: 'Accent color in dark mode',               key: 'color_dark_brand_primary' },
+      { label: 'Background (Dark)',       hint: 'Main background in dark mode',            key: 'color_dark_bg' },
+      { label: 'Surface (Dark)',          hint: 'Card/surface background in dark mode',    key: 'color_dark_surface' },
+      { label: 'Text (Dark)',             hint: 'Primary text in dark mode',               key: 'color_dark_text' },
+      { label: 'Muted Text (Dark)',       hint: 'Secondary text in dark mode',             key: 'color_dark_muted' },
+    ],
+  },
   {
     id: 'notifications',
     label: 'Notifications',
@@ -328,6 +370,91 @@ function NumericRow({
   )
 }
 
+// ─── String input row ────────────────────────────────────────────────────────
+
+function StringRow({
+  settingKey, value, status, label, hint, onSave, placeholder,
+}: {
+  settingKey: string; value: string; status: SaveStatus; label: string; hint: string;
+  onSave: (key: string, next: unknown, prev: unknown) => void; placeholder?: string
+}) {
+  const [draft, setDraft] = useState(value)
+  useEffect(() => { setDraft(value) }, [value])
+
+  function handleBlur() {
+    if (draft !== value) onSave(settingKey, draft, value)
+  }
+
+  return (
+    <div className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-adm-text">{label}</p>
+          <p className="text-xs text-adm-muted mt-0.5">{hint}</p>
+        </div>
+        <SaveDot status={status} />
+      </div>
+      <input
+        type="text"
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        disabled={status === 'saving'}
+        className="w-full text-sm bg-adm-bg border border-adm-border rounded-lg px-3.5 py-2 text-adm-text focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 font-mono"
+      />
+    </div>
+  )
+}
+
+// ─── Color picker row ────────────────────────────────────────────────────────
+
+function ColorRow({
+  settingKey, value, status, label, hint, onSave,
+}: {
+  settingKey: string; value: string; status: SaveStatus; label: string; hint: string;
+  onSave: (key: string, next: unknown, prev: unknown) => void
+}) {
+  const [draft, setDraft] = useState(value)
+  useEffect(() => { setDraft(value) }, [value])
+
+  function handleChange(newVal: string) {
+    setDraft(newVal)
+  }
+
+  function handleBlur() {
+    if (draft !== value) onSave(settingKey, draft, value)
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-4 bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-adm-text">{label}</p>
+        <p className="text-xs text-adm-muted mt-0.5">{hint}</p>
+      </div>
+      <div className="flex items-center gap-3 shrink-0">
+        <SaveDot status={status} />
+        <input
+          type="text"
+          value={draft}
+          onChange={e => handleChange(e.target.value)}
+          onBlur={handleBlur}
+          disabled={status === 'saving'}
+          className="w-24 text-center text-xs bg-adm-bg border border-adm-border rounded-lg px-2 py-1.5 text-adm-text font-mono focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
+        />
+        <input
+          type="color"
+          value={draft}
+          onChange={e => handleChange(e.target.value)}
+          onBlur={handleBlur}
+          disabled={status === 'saving'}
+          className="w-8 h-8 rounded-lg border border-adm-border cursor-pointer disabled:opacity-50"
+        />
+      </div>
+    </div>
+  )
+}
+
 // ─── Placeholder row (not yet wired to app_settings) ─────────────────────────
 
 function PlaceholderRow({ label, hint }: { label: string; hint: string }) {
@@ -453,7 +580,36 @@ export default function SettingsHub({ initialSettings }: Props) {
             )
           }
 
-          // String or unhandled JSONB type — not wired yet
+          if (typeof value === 'string') {
+            // Color fields — show color picker
+            if (item.key?.startsWith('color_')) {
+              return (
+                <ColorRow
+                  key={item.key}
+                  settingKey={item.key}
+                  value={value}
+                  status={status}
+                  label={item.label}
+                  hint={item.hint}
+                  onSave={saveSetting}
+                />
+              )
+            }
+            // All other strings — text input
+            return (
+              <StringRow
+                key={item.key}
+                settingKey={item.key}
+                value={value}
+                status={status}
+                label={item.label}
+                hint={item.hint}
+                onSave={saveSetting}
+              />
+            )
+          }
+
+          // Unhandled JSONB type — not wired yet
           return <PlaceholderRow key={item.label} label={item.label} hint={item.hint} />
         })}
       </div>

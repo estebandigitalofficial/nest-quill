@@ -6,6 +6,7 @@ import ChatWidget from '@/components/ChatWidget'
 import FloatingToggles from '@/components/FloatingToggles'
 import ThemeProvider from '@/components/ThemeProvider'
 import { LanguageProvider } from '@/lib/i18n/context'
+import { getSetting } from '@/lib/settings/appSettings'
 
 const nunito = Nunito({
   subsets: ['latin'],
@@ -23,39 +24,46 @@ const playfair = Playfair_Display({
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
-export const metadata: Metadata = {
-  metadataBase: new URL(APP_URL),
-  icons: {
-    icon: 'https://nestandquill.b-cdn.net/Nest%20and%20Quill%20favicon.webp',
-    apple: 'https://nestandquill.b-cdn.net/Nest%20and%20Quill%20favicon.webp',
-  },
-  title: {
-    default: 'Nest & Quill — Personalized Storybooks for Children',
-    template: '%s | Nest & Quill',
-  },
-  description:
-    'Create a one-of-a-kind illustrated storybook starring your child. Powered by AI, delivered to your inbox.',
-  openGraph: {
-    type: 'website',
-    siteName: 'Nest & Quill',
-    title: 'Nest & Quill — Personalized Storybooks for Children',
-    description: 'Create a one-of-a-kind illustrated storybook starring your child. Powered by AI, delivered to your inbox.',
-    url: APP_URL,
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Nest & Quill — Personalized AI Storybooks',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Nest & Quill — Personalized Storybooks for Children',
-    description: 'Create a one-of-a-kind illustrated storybook starring your child. Powered by AI, delivered to your inbox.',
-    images: ['/og-image.png'],
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  const faviconUrl = await getSetting(
+    'branding_favicon_url',
+    'https://nestandquill.b-cdn.net/Nest%20and%20Quill%20favicon.webp',
+  )
+
+  return {
+    metadataBase: new URL(APP_URL),
+    icons: {
+      icon: faviconUrl,
+      apple: faviconUrl,
+    },
+    title: {
+      default: 'Nest & Quill — Personalized Storybooks for Children',
+      template: '%s | Nest & Quill',
+    },
+    description:
+      'Create a one-of-a-kind illustrated storybook starring your child. Powered by AI, delivered to your inbox.',
+    openGraph: {
+      type: 'website',
+      siteName: 'Nest & Quill',
+      title: 'Nest & Quill — Personalized Storybooks for Children',
+      description: 'Create a one-of-a-kind illustrated storybook starring your child. Powered by AI, delivered to your inbox.',
+      url: APP_URL,
+      images: [
+        {
+          url: '/og-image.png',
+          width: 1200,
+          height: 630,
+          alt: 'Nest & Quill — Personalized AI Storybooks',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Nest & Quill — Personalized Storybooks for Children',
+      description: 'Create a one-of-a-kind illustrated storybook starring your child. Powered by AI, delivered to your inbox.',
+      images: ['/og-image.png'],
+    },
+  }
 }
 
 export default function RootLayout({

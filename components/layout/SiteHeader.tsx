@@ -10,14 +10,17 @@ interface Props {
 }
 
 export default async function SiteHeader({ right }: Props) {
-  const classroomEnabled = await getSetting('classroom_enabled', true)
+  const [classroomEnabled, headerLogoUrl] = await Promise.all([
+    getSetting('classroom_enabled', true),
+    getSetting('branding_header_logo_url', 'https://nestandquill.b-cdn.net/Nest%20and%20Quill%20Full%20Color.webp'),
+  ])
 
   return (
     <header className="bg-parchment/95 dark:bg-parchment/95 backdrop-blur border-b border-parchment-dark dark:border-white/10 shrink-0 relative z-40">
       <div className="max-w-5xl mx-auto px-6 h-[58px] md:h-[60px] flex items-center justify-between gap-4">
         <Link href="/" className="shrink-0 flex items-center">
           <Image
-            src="https://nestandquill.b-cdn.net/Nest%20and%20Quill%20Full%20Color.webp"
+            src={headerLogoUrl}
             alt="Nest & Quill"
             width={320}
             height={96}

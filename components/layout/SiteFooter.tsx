@@ -3,14 +3,17 @@ import Link from 'next/link'
 import { getSetting } from '@/lib/settings/appSettings'
 
 export default async function SiteFooter() {
-  const classroomEnabled = await getSetting('classroom_enabled', true)
+  const [classroomEnabled, footerLogoUrl] = await Promise.all([
+    getSetting('classroom_enabled', true),
+    getSetting('branding_footer_logo_url', 'https://nestandquill.b-cdn.net/nestandquill%20brand%20start-03.webp'),
+  ])
   return (
     <footer className="bg-oxford-dark py-4 sm:py-5 md:py-[5px] ls:py-2.5 px-6">
       <div className="max-w-5xl mx-auto flex flex-col items-center gap-2 md:gap-1.5 text-xs sm:text-sm text-white/55 sm:flex-row sm:justify-between">
         {/* Brand block — hidden on portrait mobile and landscape phones */}
         <div className="hidden sm:flex ls:hidden items-center gap-2 md:gap-1.5 text-left">
           <Image
-            src="https://nestandquill.b-cdn.net/nestandquill%20brand%20start-03.webp"
+            src={footerLogoUrl}
             alt="Nest & Quill"
             width={140}
             height={42}
