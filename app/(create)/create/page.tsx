@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import StoryWizard from '@/components/story/wizard/StoryWizard'
-import { FREE_ACCOUNT_LIMIT } from '@/lib/plans/limits'
+import { getSetting } from '@/lib/settings/appSettings'
 
 export const metadata: Metadata = {
   title: 'Create Your Story',
@@ -19,26 +19,32 @@ export default async function CreatePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  let planTier: string = 'free'
-  let booksGenerated = 0
-  let isAdmin = false
+  // Fetch live limits and user profile in parallel
+  const [[guestLimit, freeLimit], profileResult] = await Promise.all([
+    Promise.all([
+      getSetting('guest_story_limit', 1),
+      getSetting('free_user_story_limit', 2),
+    ]),
+    user
+      ? createAdminClient()
+          .from('profiles')
+          .select('plan_tier, books_generated, is_admin')
+          .eq('id', user.id)
+          .single()
+      : Promise.resolve({ data: null }),
+  ])
 
-  if (user) {
-    const adminSupabase = createAdminClient()
-    const { data: profile } = await adminSupabase
-      .from('profiles')
-      .select('plan_tier, books_generated, is_admin')
-      .eq('id', user.id)
-      .single()
-
-    planTier = profile?.plan_tier ?? 'free'
-    booksGenerated = profile?.books_generated ?? 0
-    isAdmin = profile?.is_admin ?? false
-  }
+  const profile = 'data' in profileResult ? profileResult.data : null
+  const planTier     = profile?.plan_tier     ?? 'free'
+  const booksGenerated = profile?.books_generated ?? 0
+  const isAdmin      = profile?.is_admin      ?? false
 
   const isGuest = !user
-  const isFree = planTier === 'free'
-  const atLimit = !isAdmin && isFree && booksGenerated >= FREE_ACCOUNT_LIMIT
+  const isFree  = planTier === 'free'
+  const atLimit = !isAdmin && isFree && booksGenerated >= freeLimit
+
+  // Pluralise "story" / "stories"
+  const stories = (n: number) => `${n} ${n === 1 ? 'story' : 'stories'}`
 
   return (
     <div className="py-10 px-4">
@@ -57,16 +63,16 @@ export default async function CreatePage() {
           <div className="mb-6">
             {isGuest && (
               <p className="text-center text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5">
-                Try 1 story free without an account.{' '}
+                Try {stories(guestLimit)} free without an account.{' '}
                 <Link href="/signup" className="text-brand-600 font-medium hover:text-brand-700">
                   Create a free account
                 </Link>{' '}
-                for 2 stories.
+                for {stories(freeLimit)}.
               </p>
             )}
             {!isGuest && isFree && !atLimit && (
               <p className="text-center text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5">
-                <span className="font-semibold text-gray-700">{booksGenerated} / {FREE_ACCOUNT_LIMIT}</span> free stories used.{' '}
+                <span className="font-semibold text-gray-700">{booksGenerated} / {freeLimit}</span> free stories used.{' '}
                 <Link href="/pricing" className="text-brand-600 font-medium hover:text-brand-700">
                   Upgrade
                 </Link>{' '}
@@ -76,7 +82,7 @@ export default async function CreatePage() {
             {!isGuest && isFree && atLimit && (
               <div className="text-center bg-brand-50 border border-brand-200 rounded-xl px-5 py-3.5 space-y-2">
                 <p className="text-sm font-semibold text-oxford">
-                  You&apos;ve reached your free limit ({FREE_ACCOUNT_LIMIT} / {FREE_ACCOUNT_LIMIT} stories used)
+                  You&apos;ve reached your free limit ({freeLimit} / {freeLimit} stories used)
                 </p>
                 <p className="text-xs text-charcoal-light">Upgrade your plan to create more personalized storybooks.</p>
                 <Link
