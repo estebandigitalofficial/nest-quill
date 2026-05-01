@@ -2,19 +2,17 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useLanguage } from '@/lib/i18n/context'
+
+const NAV_LINKS = [
+  { href: '/create',    label: 'Create a story' },
+  { href: '/learning',  label: 'Learning' },
+  { href: '/classroom', label: 'Classroom' },
+  { href: '/pricing',   label: 'Pricing' },
+]
 
 export default function MobileMenu() {
   const [open, setOpen] = useState(false)
-  const { t } = useLanguage()
   const close = () => setOpen(false)
-
-  const NAV_LINKS = [
-    { href: '/create',    label: t.nav.create },
-    { href: '/learning',  label: t.nav.learning },
-    { href: '/classroom', label: t.nav.classroom },
-    { href: '/pricing',   label: t.nav.pricing },
-  ]
 
   return (
     <>
@@ -30,7 +28,12 @@ export default function MobileMenu() {
 
       {open && (
         <>
-          <div className="fixed inset-0 z-40 md:hidden" onClick={close} />
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 md:hidden"
+            onClick={close}
+          />
+          {/* Panel — fixed directly below the header (h-16 = 64px) */}
           <div className="fixed inset-x-0 top-16 z-50 md:hidden bg-parchment border-b border-parchment-dark shadow-lg">
             <nav className="max-w-5xl mx-auto px-6 py-3 flex flex-col">
               {NAV_LINKS.map(({ href, label }) => (
