@@ -6,24 +6,28 @@
 
 -- SELECT: any authenticated user can read all books (admin-only pages are
 -- protected at the app layer via getAdminContext).
+DROP POLICY IF EXISTS "Admins can read all writer_books" ON writer_books;
 CREATE POLICY "Admins can read all writer_books"
   ON writer_books FOR SELECT
   TO authenticated
   USING (true);
 
 -- INSERT: only the creating admin can insert (their user id must be the owner).
+DROP POLICY IF EXISTS "Admins can insert own writer_books" ON writer_books;
 CREATE POLICY "Admins can insert own writer_books"
   ON writer_books FOR INSERT
   TO authenticated
   WITH CHECK (owner_id = auth.uid());
 
 -- UPDATE: only the owner can update their own book.
+DROP POLICY IF EXISTS "Admins can update own writer_books" ON writer_books;
 CREATE POLICY "Admins can update own writer_books"
   ON writer_books FOR UPDATE
   TO authenticated
   USING (owner_id = auth.uid());
 
 -- DELETE: only the owner can delete their own book.
+DROP POLICY IF EXISTS "Admins can delete own writer_books" ON writer_books;
 CREATE POLICY "Admins can delete own writer_books"
   ON writer_books FOR DELETE
   TO authenticated

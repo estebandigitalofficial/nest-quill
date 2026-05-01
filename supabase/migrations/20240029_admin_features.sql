@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS ai_writer_config (
 
 ALTER TABLE ai_writer_config ENABLE ROW LEVEL SECURITY;
 -- Service role only — no public access
+DROP POLICY IF EXISTS "ai_writer_config_service_only" ON ai_writer_config;
 CREATE POLICY "ai_writer_config_service_only" ON ai_writer_config
   FOR ALL USING (false);
 
@@ -61,6 +62,7 @@ CREATE TABLE IF NOT EXISTS email_drip_templates (
 );
 
 ALTER TABLE email_drip_templates ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "email_drip_templates_service_only" ON email_drip_templates;
 CREATE POLICY "email_drip_templates_service_only" ON email_drip_templates
   FOR ALL USING (false);
 
@@ -112,6 +114,7 @@ CREATE TABLE IF NOT EXISTS email_drip_rules (
 );
 
 ALTER TABLE email_drip_rules ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "email_drip_rules_service_only" ON email_drip_rules;
 CREATE POLICY "email_drip_rules_service_only" ON email_drip_rules
   FOR ALL USING (false);
 
@@ -134,6 +137,7 @@ CREATE TABLE IF NOT EXISTS image_library (
 );
 
 ALTER TABLE image_library ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "image_library_service_only" ON image_library;
 CREATE POLICY "image_library_service_only" ON image_library
   FOR ALL USING (false);
 

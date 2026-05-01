@@ -15,14 +15,18 @@ CREATE INDEX IF NOT EXISTS idx_admin_notif_settings_user
 ALTER TABLE admin_notification_settings ENABLE ROW LEVEL SECURITY;
 
 -- Admins can only read/write their own settings (service-role key bypasses RLS)
+DROP POLICY IF EXISTS "admin_notif_own_select" ON admin_notification_settings;
 CREATE POLICY "admin_notif_own_select" ON admin_notification_settings
   FOR SELECT USING (auth.uid() = admin_user_id);
 
+DROP POLICY IF EXISTS "admin_notif_own_insert" ON admin_notification_settings;
 CREATE POLICY "admin_notif_own_insert" ON admin_notification_settings
   FOR INSERT WITH CHECK (auth.uid() = admin_user_id);
 
+DROP POLICY IF EXISTS "admin_notif_own_update" ON admin_notification_settings;
 CREATE POLICY "admin_notif_own_update" ON admin_notification_settings
   FOR UPDATE USING (auth.uid() = admin_user_id);
 
+DROP POLICY IF EXISTS "admin_notif_own_delete" ON admin_notification_settings;
 CREATE POLICY "admin_notif_own_delete" ON admin_notification_settings
   FOR DELETE USING (auth.uid() = admin_user_id);
