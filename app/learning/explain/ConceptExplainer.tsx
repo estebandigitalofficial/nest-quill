@@ -23,9 +23,10 @@ interface Props {
   thinkFirstEnabled?: boolean
   teachBackEnabled?: boolean
   nudgesEnabled?: boolean
+  maxImageMb?: number
 }
 
-export default function ConceptExplainer({ assignmentId, initialTopic, initialGrade, initialImage, thinkFirstEnabled = true, teachBackEnabled = true, nudgesEnabled = true }: Props) {
+export default function ConceptExplainer({ assignmentId, initialTopic, initialGrade, initialImage, thinkFirstEnabled = true, teachBackEnabled = true, nudgesEnabled = true, maxImageMb = 5 }: Props) {
   const [topic, setTopic] = useState(initialTopic ?? '')
   const [grade, setGrade] = useState<number | null>(initialGrade ?? null)
   const [imageBase64, setImageBase64] = useState<string | null>(initialImage?.base64 ?? null)
@@ -119,6 +120,7 @@ export default function ConceptExplainer({ assignmentId, initialTopic, initialGr
             onSelect={handleImageSelect}
             onClear={clearImage}
             label="Upload homework photo"
+            maxSizeMb={maxImageMb}
           />
         </div>
         <div className="space-y-2">

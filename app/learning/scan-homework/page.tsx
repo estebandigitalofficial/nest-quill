@@ -11,12 +11,13 @@ export const metadata: Metadata = {
 }
 
 export default async function ScanHomeworkPage() {
-  const [enabled, triviaEnabled, thinkFirstEnabled, teachBackEnabled, nudgesEnabled] = await Promise.all([
+  const [enabled, triviaEnabled, thinkFirstEnabled, teachBackEnabled, nudgesEnabled, maxImageMb] = await Promise.all([
     getSetting('scan_homework_enabled', true),
     getSetting('trivia_enabled', true),
     getSetting('think_first_enabled', true),
     getSetting('teach_back_enabled', true),
     getSetting('learning_nudges_enabled', true),
+    getSetting('max_image_upload_mb', 5),
   ])
 
   if (!enabled) {
@@ -59,7 +60,7 @@ export default async function ScanHomeworkPage() {
             </p>
           </div>
 
-          <ScanHomeworkClient triviaEnabled={triviaEnabled} thinkFirstEnabled={thinkFirstEnabled} teachBackEnabled={teachBackEnabled} nudgesEnabled={nudgesEnabled} />
+          <ScanHomeworkClient triviaEnabled={triviaEnabled} thinkFirstEnabled={thinkFirstEnabled} teachBackEnabled={teachBackEnabled} nudgesEnabled={nudgesEnabled} maxImageMb={maxImageMb} />
 
         </div>
       </div>

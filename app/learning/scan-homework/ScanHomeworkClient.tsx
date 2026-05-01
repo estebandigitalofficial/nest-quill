@@ -31,9 +31,10 @@ interface ScanHomeworkClientProps {
   thinkFirstEnabled: boolean
   teachBackEnabled: boolean
   nudgesEnabled: boolean
+  maxImageMb: number
 }
 
-export default function ScanHomeworkClient({ triviaEnabled, thinkFirstEnabled, teachBackEnabled, nudgesEnabled }: ScanHomeworkClientProps) {
+export default function ScanHomeworkClient({ triviaEnabled, thinkFirstEnabled, teachBackEnabled, nudgesEnabled, maxImageMb }: ScanHomeworkClientProps) {
   const [image, setImage] = useState<UploadedImage | null>(null)
   const [grade, setGrade] = useState<number | null>(null)
   const [activity, setActivity] = useState<Activity | null>(null)
@@ -47,7 +48,7 @@ export default function ScanHomeworkClient({ triviaEnabled, thinkFirstEnabled, t
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > maxImageMb * 1024 * 1024) {
       setFileSizeError(true)
       e.target.value = ''
       return
@@ -118,16 +119,16 @@ export default function ScanHomeworkClient({ triviaEnabled, thinkFirstEnabled, t
         </div>
 
         {activity === 'flashcards' && (
-          <FlashcardGenerator initialImage={image} initialGrade={grade ?? undefined} thinkFirstEnabled={thinkFirstEnabled} />
+          <FlashcardGenerator initialImage={image} initialGrade={grade ?? undefined} thinkFirstEnabled={thinkFirstEnabled} maxImageMb={maxImageMb} />
         )}
         {activity === 'explain' && (
-          <ConceptExplainer initialImage={image} initialGrade={grade ?? undefined} thinkFirstEnabled={thinkFirstEnabled} teachBackEnabled={teachBackEnabled} nudgesEnabled={nudgesEnabled} />
+          <ConceptExplainer initialImage={image} initialGrade={grade ?? undefined} thinkFirstEnabled={thinkFirstEnabled} teachBackEnabled={teachBackEnabled} nudgesEnabled={nudgesEnabled} maxImageMb={maxImageMb} />
         )}
         {activity === 'study-guide' && (
-          <StudyGuideGenerator initialImage={image} initialGrade={grade ?? undefined} thinkFirstEnabled={thinkFirstEnabled} teachBackEnabled={teachBackEnabled} nudgesEnabled={nudgesEnabled} />
+          <StudyGuideGenerator initialImage={image} initialGrade={grade ?? undefined} thinkFirstEnabled={thinkFirstEnabled} teachBackEnabled={teachBackEnabled} nudgesEnabled={nudgesEnabled} maxImageMb={maxImageMb} />
         )}
         {activity === 'spelling' && spellingWords && (
-          <SpellingPractice initialWords={spellingWords} nudgesEnabled={nudgesEnabled} />
+          <SpellingPractice initialWords={spellingWords} nudgesEnabled={nudgesEnabled} maxImageMb={maxImageMb} />
         )}
         {activity === 'trivia' && triviaEnabled && (
           <TriviaMode initialImage={image} grade={grade} onReset={resetActivity} />
@@ -172,11 +173,11 @@ export default function ScanHomeworkClient({ triviaEnabled, thinkFirstEnabled, t
               Tap to snap or upload a homework photo
             </p>
             {fileSizeError ? (
-              <p className="text-sm text-red-500 font-medium mt-1">Image too large — please use a photo under 5 MB</p>
+              <p className="text-sm text-red-500 font-medium mt-1">Image too large — please use a photo under {maxImageMb} MB</p>
             ) : (
               <>
                 <p className="text-sm text-gray-400 mt-1">Works with worksheets, textbooks, notes</p>
-                <p className="text-xs text-gray-300 mt-2">JPG, PNG up to 5 MB</p>
+                <p className="text-xs text-gray-300 mt-2">JPG, PNG up to {maxImageMb} MB</p>
               </>
             )}
           </button>

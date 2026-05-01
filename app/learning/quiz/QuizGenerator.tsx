@@ -31,9 +31,10 @@ interface Props {
   initialTopic?: string
   initialGrade?: number
   initialSubject?: string
+  maxImageMb?: number
 }
 
-export default function QuizGenerator({ assignmentId, initialTopic, initialGrade, initialSubject }: Props) {
+export default function QuizGenerator({ assignmentId, initialTopic, initialGrade, initialSubject, maxImageMb = 5 }: Props) {
   const [topic, setTopic] = useState(initialTopic ?? '')
   const [subject, setSubject] = useState(initialSubject ?? '')
   const [grade, setGrade] = useState<number | null>(initialGrade ?? null)
@@ -83,7 +84,7 @@ export default function QuizGenerator({ assignmentId, initialTopic, initialGrade
   }, [])
 
   function handleImageSelect(file: File) {
-    if (file.size > 5 * 1024 * 1024) { setError('Image must be under 5 MB.'); return }
+    if (file.size > maxImageMb * 1024 * 1024) { setError(`Image must be under ${maxImageMb} MB.`); return }
     setImageMime(file.type || 'image/jpeg')
     const reader = new FileReader()
     reader.onload = e => {
@@ -202,7 +203,7 @@ export default function QuizGenerator({ assignmentId, initialTopic, initialGrade
               <p className="text-sm font-medium text-gray-500 group-hover:text-indigo-600">
                 Tap to snap or upload a photo of homework
               </p>
-              <p className="text-xs text-gray-400 mt-1">JPG, PNG up to 5 MB</p>
+              <p className="text-xs text-gray-400 mt-1">JPG, PNG up to {maxImageMb} MB</p>
             </button>
           )}
           <input

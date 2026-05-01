@@ -10,11 +10,12 @@ export const metadata: Metadata = { title: 'Study Guide — Nest & Quill Learnin
 type PageProps = { searchParams: Promise<{ assignmentId?: string; topic?: string; grade?: string; subject?: string }> }
 
 export default async function StudyGuidePage({ searchParams }: PageProps) {
-  const [{ assignmentId, topic, grade, subject }, thinkFirstEnabled, teachBackEnabled, nudgesEnabled] = await Promise.all([
+  const [{ assignmentId, topic, grade, subject }, thinkFirstEnabled, teachBackEnabled, nudgesEnabled, maxImageMb] = await Promise.all([
     searchParams,
     getSetting('think_first_enabled', true),
     getSetting('teach_back_enabled', true),
     getSetting('learning_nudges_enabled', true),
+    getSetting('max_image_upload_mb', 5),
   ])
   return (
     <div className="h-dvh bg-parchment flex flex-col">
@@ -25,7 +26,7 @@ export default async function StudyGuidePage({ searchParams }: PageProps) {
             <h1 className="font-serif text-3xl text-oxford">Study Guide</h1>
             <p className="text-sm text-charcoal-light max-w-sm mx-auto">Enter a topic and get a complete study guide — key terms, main concepts, memory tips, and practice questions.</p>
           </div>
-          <StudyGuideGenerator assignmentId={assignmentId} initialTopic={topic} initialGrade={grade ? parseInt(grade) : undefined} initialSubject={subject} thinkFirstEnabled={thinkFirstEnabled} teachBackEnabled={teachBackEnabled} nudgesEnabled={nudgesEnabled} />
+          <StudyGuideGenerator assignmentId={assignmentId} initialTopic={topic} initialGrade={grade ? parseInt(grade) : undefined} initialSubject={subject} thinkFirstEnabled={thinkFirstEnabled} teachBackEnabled={teachBackEnabled} nudgesEnabled={nudgesEnabled} maxImageMb={maxImageMb} />
         </div>
       </div>
       <SiteFooter />

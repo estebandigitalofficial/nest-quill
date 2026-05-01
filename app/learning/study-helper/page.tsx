@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 import StudyHelper from './StudyHelper'
+import { getSetting } from '@/lib/settings/appSettings'
 
 export const metadata: Metadata = { title: 'Study Helper — Nest & Quill Learning Mode' }
 
@@ -14,7 +15,10 @@ export default async function StudyHelperPage({
 }: {
   searchParams: Promise<{ assignmentId?: string }>
 }) {
-  const { assignmentId } = await searchParams
+  const [{ assignmentId }, charMax] = await Promise.all([
+    searchParams,
+    getSetting('max_pasted_text_length', 5000),
+  ])
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -71,6 +75,7 @@ export default async function StudyHelperPage({
             assignmentMaterial={assignmentMaterial}
             assignmentMode={assignmentMode}
             assignmentGrade={assignmentGrade}
+            charMax={charMax}
           />
         </div>
       </div>

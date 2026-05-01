@@ -27,9 +27,10 @@ interface Props {
   thinkFirstEnabled?: boolean
   teachBackEnabled?: boolean
   nudgesEnabled?: boolean
+  maxImageMb?: number
 }
 
-export default function StudyGuideGenerator({ assignmentId, initialTopic, initialGrade, initialSubject, initialImage, thinkFirstEnabled = true, teachBackEnabled = true, nudgesEnabled = true }: Props) {
+export default function StudyGuideGenerator({ assignmentId, initialTopic, initialGrade, initialSubject, initialImage, thinkFirstEnabled = true, teachBackEnabled = true, nudgesEnabled = true, maxImageMb = 5 }: Props) {
   const [topic, setTopic] = useState(initialTopic ?? '')
   const [subject, setSubject] = useState(initialSubject ?? '')
   const [grade, setGrade] = useState<number | null>(initialGrade ?? null)
@@ -236,6 +237,7 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
           onSelect={handleImageSelect}
           onClear={clearImage}
           label="Upload homework photo"
+          maxSizeMb={maxImageMb}
         />
       </div>
       <div className="space-y-2">

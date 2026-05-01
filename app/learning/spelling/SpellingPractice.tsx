@@ -11,9 +11,10 @@ interface Props {
   initialWords?: string[]
   initialSentenceMode?: boolean
   nudgesEnabled?: boolean
+  maxImageMb?: number
 }
 
-export default function SpellingPractice({ assignmentId, initialWords, initialSentenceMode = false, nudgesEnabled = true }: Props) {
+export default function SpellingPractice({ assignmentId, initialWords, initialSentenceMode = false, nudgesEnabled = true, maxImageMb = 5 }: Props) {
   const [wordInput, setWordInput] = useState(initialWords ? initialWords.join('\n') : '')
   const [words, setWords] = useState<string[]>([])
   const [stage, setStage] = useState<Stage>('setup')
@@ -67,6 +68,7 @@ export default function SpellingPractice({ assignmentId, initialWords, initialSe
     const file = e.target.files?.[0]
     if (!file) return
     e.target.value = ''
+    if (file.size > maxImageMb * 1024 * 1024) { setExtractError(`Image must be under ${maxImageMb} MB.`); return }
     setExtractError(null)
     setExtracting(true)
 

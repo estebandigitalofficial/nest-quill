@@ -8,15 +8,16 @@ interface Props {
   onClear: () => void
   disabled?: boolean
   label?: string
+  maxSizeMb?: number
 }
 
-export default function PhotoUpload({ imagePreview, onSelect, onClear, disabled, label = 'Upload photo' }: Props) {
+export default function PhotoUpload({ imagePreview, onSelect, onClear, disabled, label = 'Upload photo', maxSizeMb = 5 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 5 * 1024 * 1024) return
+    if (file.size > maxSizeMb * 1024 * 1024) return
     const reader = new FileReader()
     reader.onload = () => {
       const dataUrl = reader.result as string

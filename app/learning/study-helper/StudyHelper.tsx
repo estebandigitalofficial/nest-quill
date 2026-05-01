@@ -29,18 +29,17 @@ const MODES: { value: Mode; label: string; desc: string }[] = [
   { value: 'study-guide', label: 'Study Guide',  desc: 'Terms, concepts, and practice Qs' },
 ]
 
-const CHAR_WARN = 4000
-const CHAR_MAX  = 5000
-
 interface Props {
   isLoggedIn: boolean
   assignmentId?: string
   assignmentMaterial?: string
   assignmentMode?: Mode
   assignmentGrade?: number
+  charMax?: number
 }
 
-export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMaterial, assignmentMode, assignmentGrade }: Props) {
+export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMaterial, assignmentMode, assignmentGrade, charMax = 5000 }: Props) {
+  const charWarn = Math.floor(charMax * 0.8)
   const isAssignment = !!assignmentId
 
   // ── Form state (pre-seeded from assignment props when in assignment mode) ─
@@ -306,18 +305,18 @@ export default function StudyHelper({ isLoggedIn, assignmentId, assignmentMateri
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="block text-sm font-semibold text-gray-700">Paste your notes or homework</label>
-              <span className={`text-xs font-medium ${len > CHAR_WARN ? 'text-amber-500' : 'text-gray-400'}`}>
-                {len}/{CHAR_MAX}
+              <span className={`text-xs font-medium ${len > charWarn ? 'text-amber-500' : 'text-gray-400'}`}>
+                {len}/{charMax}
               </span>
             </div>
-            {len > CHAR_WARN && len <= CHAR_MAX && (
+            {len > charWarn && len <= charMax && (
               <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
-                Getting long — try to keep it under {CHAR_MAX} characters for best results.
+                Getting long — try to keep it under {charMax} characters for best results.
               </p>
             )}
             <textarea
               rows={6}
-              maxLength={CHAR_MAX}
+              maxLength={charMax}
               placeholder="Paste chapter notes, a paragraph from a textbook, spelling words, math definitions…"
               value={material}
               onChange={e => setMaterial(e.target.value)}

@@ -10,9 +10,10 @@ export const metadata: Metadata = { title: 'Flashcards — Nest & Quill Learning
 type PageProps = { searchParams: Promise<{ assignmentId?: string; topic?: string; grade?: string }> }
 
 export default async function FlashcardsPage({ searchParams }: PageProps) {
-  const [{ assignmentId, topic, grade }, thinkFirstEnabled] = await Promise.all([
+  const [{ assignmentId, topic, grade }, thinkFirstEnabled, maxImageMb] = await Promise.all([
     searchParams,
     getSetting('think_first_enabled', true),
+    getSetting('max_image_upload_mb', 5),
   ])
   return (
     <div className="h-dvh bg-parchment flex flex-col">
@@ -23,7 +24,7 @@ export default async function FlashcardsPage({ searchParams }: PageProps) {
             <h1 className="font-serif text-3xl text-oxford">Flashcards</h1>
             <p className="text-sm text-charcoal-light max-w-sm mx-auto">Enter any topic and we&apos;ll generate 10 study cards. Tap each card to flip it.</p>
           </div>
-          <FlashcardGenerator assignmentId={assignmentId} initialTopic={topic} initialGrade={grade ? parseInt(grade) : undefined} thinkFirstEnabled={thinkFirstEnabled} />
+          <FlashcardGenerator assignmentId={assignmentId} initialTopic={topic} initialGrade={grade ? parseInt(grade) : undefined} thinkFirstEnabled={thinkFirstEnabled} maxImageMb={maxImageMb} />
         </div>
       </div>
       <SiteFooter />

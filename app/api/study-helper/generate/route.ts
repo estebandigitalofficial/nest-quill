@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { buildPrompts, VALID_ACTIVITY_MODES, ActivityMode } from '@/lib/services/materialActivity'
+import { getSetting } from '@/lib/settings/appSettings'
 
 export async function POST(request: NextRequest) {
   // Parse body first so we can check assignmentId before rate limiting
@@ -40,12 +41,14 @@ export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, rateLimitKey)
   if (limited) return limited
 
+  const maxPastedLength = await getSetting('max_pasted_text_length', 5000)
+
   try {
     if (!material || material.trim().length < 50) {
       return NextResponse.json({ message: 'Please paste at least 50 characters of material.' }, { status: 400 })
     }
-    if (material.length > 5000) {
-      return NextResponse.json({ message: 'Material is too long. Please limit to 5000 characters.' }, { status: 400 })
+    if (material.length > maxPastedLength) {
+      return NextResponse.json({ message: `Material is too long. Please limit to ${maxPastedLength} characters.` }, { status: 400 })
     }
     if (!VALID_ACTIVITY_MODES.includes(mode as ActivityMode)) {
       return NextResponse.json({ message: 'Invalid mode.' }, { status: 400 })

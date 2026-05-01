@@ -3,6 +3,7 @@ import QuizGenerator from './QuizGenerator'
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 import Link from 'next/link'
+import { getSetting } from '@/lib/settings/appSettings'
 
 export const metadata: Metadata = {
   title: 'Quiz Generator — Nest & Quill Learning Mode',
@@ -12,7 +13,10 @@ export const metadata: Metadata = {
 type PageProps = { searchParams: Promise<{ assignmentId?: string; topic?: string; grade?: string; subject?: string }> }
 
 export default async function QuizPage({ searchParams }: PageProps) {
-  const { assignmentId, topic, grade, subject } = await searchParams
+  const [{ assignmentId, topic, grade, subject }, maxImageMb] = await Promise.all([
+    searchParams,
+    getSetting('max_image_upload_mb', 5),
+  ])
   return (
     <div className="h-dvh bg-parchment flex flex-col">
       <SiteHeader right={
@@ -33,6 +37,7 @@ export default async function QuizPage({ searchParams }: PageProps) {
             initialTopic={topic}
             initialGrade={grade ? parseInt(grade) : undefined}
             initialSubject={subject}
+            maxImageMb={maxImageMb}
           />
         </div>
       </div>

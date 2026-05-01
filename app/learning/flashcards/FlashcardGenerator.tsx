@@ -14,9 +14,10 @@ interface Props {
   initialGrade?: number
   initialImage?: InitialImage
   thinkFirstEnabled?: boolean
+  maxImageMb?: number
 }
 
-export default function FlashcardGenerator({ assignmentId, initialTopic, initialGrade, initialImage, thinkFirstEnabled = true }: Props) {
+export default function FlashcardGenerator({ assignmentId, initialTopic, initialGrade, initialImage, thinkFirstEnabled = true, maxImageMb = 5 }: Props) {
   const [topic, setTopic] = useState(initialTopic ?? '')
   const [grade, setGrade] = useState<number | null>(initialGrade ?? null)
   const [imageBase64, setImageBase64] = useState<string | null>(initialImage?.base64 ?? null)
@@ -208,6 +209,7 @@ export default function FlashcardGenerator({ assignmentId, initialTopic, initial
           onSelect={handleImageSelect}
           onClear={clearImage}
           label="Upload homework photo"
+          maxSizeMb={maxImageMb}
         />
       </div>
 
