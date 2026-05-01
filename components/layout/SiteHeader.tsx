@@ -13,6 +13,7 @@ interface Props {
 export default function SiteHeader({ right }: Props) {
   return (
     <header className="bg-parchment/95 dark:bg-parchment/95 backdrop-blur border-b border-parchment-dark dark:border-white/10 shrink-0 relative z-40">
+      {/* Main row — logo + nav + right slot */}
       <div className="max-w-5xl mx-auto px-6 h-[58px] md:h-[60px] flex items-center justify-between gap-4">
         <Link href="/" className="shrink-0 flex items-center">
           <Image
@@ -31,17 +32,19 @@ export default function SiteHeader({ right }: Props) {
           <LearningDropdown />
           <Link href="/classroom" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford dark:hover:text-charcoal/70 transition-colors">Classroom</Link>
           <Link href="/pricing" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford dark:hover:text-charcoal/70 transition-colors">Pricing</Link>
-          <LanguageToggle />
-          <ThemeToggle />
         </nav>
 
         <div className="flex items-center gap-3">
           {right && <div className="flex items-center gap-4">{right}</div>}
-          <div className="md:hidden flex items-center gap-2">
-            <LanguageToggle />
-            <ThemeToggle />
-          </div>
           <MobileMenu />
+        </div>
+      </div>
+
+      {/* Toggles bar — sticky below the main header row */}
+      <div className="border-t border-black/5 dark:border-white/5 bg-parchment/80 dark:bg-parchment/80 backdrop-blur-sm py-1.5 px-6">
+        <div className="max-w-5xl mx-auto flex items-center justify-end gap-2">
+          <LanguageToggle />
+          <ThemeToggle />
         </div>
       </div>
     </header>
