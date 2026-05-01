@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
+import { getSetting } from '@/lib/settings/appSettings'
+import ClassroomDisabled from './ClassroomDisabled'
 
 export const metadata: Metadata = {
   title: 'Classroom — Nest & Quill',
@@ -11,6 +13,9 @@ export const metadata: Metadata = {
 }
 
 export default async function ClassroomPage() {
+  const classroomEnabled = await getSetting('classroom_enabled', true)
+  if (!classroomEnabled) return <ClassroomDisabled />
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -139,3 +144,4 @@ export default async function ClassroomPage() {
     </div>
   )
 }
+

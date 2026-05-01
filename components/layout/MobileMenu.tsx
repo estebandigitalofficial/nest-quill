@@ -3,15 +3,16 @@
 import { useState } from 'react'
 import Link from 'next/link'
 
-const NAV_LINKS = [
-  { href: '/create',    label: 'Create a story' },
-  { href: '/learning',  label: 'Learning' },
-  { href: '/classroom', label: 'Classroom' },
-  { href: '/pricing',   label: 'Pricing' },
+const BASE_LINKS = [
+  { href: '/create',    label: 'Create a story',  flag: null },
+  { href: '/learning',  label: 'Learning',         flag: null },
+  { href: '/classroom', label: 'Classroom',        flag: 'classroom' },
+  { href: '/pricing',   label: 'Pricing',          flag: null },
 ]
 
-export default function MobileMenu() {
+export default function MobileMenu({ classroomEnabled }: { classroomEnabled: boolean }) {
   const [open, setOpen] = useState(false)
+  const NAV_LINKS = BASE_LINKS.filter(l => l.flag !== 'classroom' || classroomEnabled)
   const close = () => setOpen(false)
 
   return (

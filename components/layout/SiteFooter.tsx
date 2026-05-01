@@ -1,7 +1,9 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { getSetting } from '@/lib/settings/appSettings'
 
-export default function SiteFooter() {
+export default async function SiteFooter() {
+  const classroomEnabled = await getSetting('classroom_enabled', true)
   return (
     <footer className="bg-oxford-dark py-4 sm:py-5 md:py-[5px] ls:py-2.5 px-6">
       <div className="max-w-5xl mx-auto flex flex-col items-center gap-2 md:gap-1.5 text-xs sm:text-sm text-white/55 sm:flex-row sm:justify-between">
@@ -23,7 +25,7 @@ export default function SiteFooter() {
         <div className="flex items-center justify-center gap-3 md:gap-3 whitespace-nowrap">
           <Link href="/create" className="hover:text-white/90 transition-colors">Create</Link>
           <Link href="/learning" className="hover:text-white/90 transition-colors">Learning</Link>
-          <Link href="/classroom" className="hover:text-white/90 transition-colors">Classroom</Link>
+          {classroomEnabled && <Link href="/classroom" className="hover:text-white/90 transition-colors">Classroom</Link>}
           <Link href="/pricing" className="hover:text-white/90 transition-colors">Pricing</Link>
           <Link href="/contact" className="hover:text-white/90 transition-colors">Contact</Link>
           <Link href="/privacy" className="hover:text-white/90 transition-colors">Privacy</Link>
