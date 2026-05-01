@@ -18,18 +18,8 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>([greeting])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [bouncing, setBouncing] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (open) return
-    const id = setInterval(() => {
-      setBouncing(true)
-      setTimeout(() => setBouncing(false), 950)
-    }, 5000)
-    return () => clearInterval(id)
-  }, [open])
 
   // Reset greeting when language changes
   useEffect(() => {
@@ -208,7 +198,7 @@ export default function ChatWidget() {
       {/* Toggle button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className={`chat-btn${bouncing && !open ? ' chat-btn-bouncing' : ''} bottom-8 right-3 sm:bottom-[68px] sm:right-5 ls:bottom-14`}
+        className={`chat-btn bottom-8 right-3 sm:bottom-[68px] sm:right-5 ls:bottom-14`}
         style={{
           position: 'fixed', zIndex: 50,
           width: 120, height: 120,

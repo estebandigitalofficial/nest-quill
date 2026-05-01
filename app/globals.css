@@ -74,27 +74,21 @@
   animation: quill-write 3s ease-in-out infinite;
 }
 
-/* Chat button — Tasmanian Devil spin every 5s */
-@keyframes chat-taz {
-  0%   { transform: translate(0,    0px)   rotate(0deg)    scale(1);    }
-  6%   { transform: translate(5px,  -24px) rotate(180deg)  scale(1.15); }
-  14%  { transform: translate(-7px, -14px) rotate(450deg)  scale(1.1);  }
-  22%  { transform: translate(6px,  -32px) rotate(720deg)  scale(1.18); }
-  30%  { transform: translate(-5px, -18px) rotate(960deg)  scale(1.12); }
-  40%  { transform: translate(4px,  -28px) rotate(1080deg) scale(1.14); }
-  52%  { transform: translate(-3px, -10px) rotate(1080deg) scale(1.06); }
-  65%  { transform: translate(2px,  -20px) rotate(1080deg) scale(1.08); }
-  78%  { transform: translate(-1px, -6px)  rotate(1080deg) scale(1.03); }
-  90%  { transform: translate(0,    -2px)  rotate(1080deg) scale(1.01); }
-  100% { transform: translate(0,    0px)   rotate(1080deg) scale(1);    }
+/* Chat button — gentle tinker idle */
+@keyframes chat-tinker {
+  0%, 100% { transform: rotate(0deg)   translateY(0);   }
+  15%       { transform: rotate(-8deg)  translateY(-2px); }
+  30%       { transform: rotate(6deg)   translateY(-1px); }
+  45%       { transform: rotate(-4deg)  translateY(-2px); }
+  60%       { transform: rotate(3deg)   translateY(0);   }
+  75%       { transform: rotate(-2deg)  translateY(-1px); }
 }
 
 .chat-btn {
+  animation: chat-tinker 3.6s ease-in-out infinite;
   transition: transform 0.2s ease;
 }
 .chat-btn:hover {
+  animation: none;
   transform: scale(1.07);
-}
-.chat-btn-bouncing {
-  animation: chat-taz 1.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important;
 }
