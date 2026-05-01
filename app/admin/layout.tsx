@@ -5,6 +5,7 @@ import { getAdminContext } from '@/lib/admin/guard'
 import AdminLogoutButton from '@/components/admin/AdminLogoutButton'
 import AdminNavLinks from '@/components/admin/AdminNavLinks'
 import AdminBottomNav from '@/components/admin/AdminBottomNav'
+import AdminHeaderToggles from '@/components/admin/AdminHeaderToggles'
 
 export default async function AdminLayout({
   children,
@@ -35,6 +36,9 @@ export default async function AdminLayout({
         <div className="flex items-center gap-3 sm:gap-6">
           <div className="hidden sm:flex items-center gap-6 overflow-x-auto">
             <AdminNavLinks />
+          </div>
+          <div className="hidden sm:flex items-center gap-4 border-l border-gray-800 pl-4">
+            <AdminHeaderToggles />
           </div>
           <AdminLogoutButton />
         </div>
