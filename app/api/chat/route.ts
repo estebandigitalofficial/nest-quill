@@ -1,8 +1,8 @@
 import OpenAI from 'openai'
 import { NextRequest } from 'next/server'
-import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, NEUTRALITY_RULE } from '@/lib/utils/learningGuardrails'
+import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 
-const SYSTEM_PROMPT = `You are the Nest & Quill assistant — a warm, friendly helper for a personalized AI-powered children's storybook service. You help in two ways:
+const SYSTEM_PROMPT_BASE = `You are the Nest & Quill assistant — a warm, friendly helper for a personalized AI-powered children's storybook service. You help in two ways:
 
 STORY CREATION HELP: Help parents brainstorm and craft the perfect story for their child.
 - Suggest creative themes (adventure, friendship, bravery, curiosity, kindness, bedtime, etc.)
@@ -32,9 +32,7 @@ Illustration styles: Watercolor, Cartoon, Storybook (classic painted fairy-tale)
 Free plan: Watercolor only. All paid plans: all 5 styles.
 
 Keep responses warm, concise (2–4 sentences unless more detail is needed), and family-friendly.
-If someone wants to create a story now, direct them to /create.
-
-${NEUTRALITY_RULE}`
+If someone wants to create a story now, direct them to /create.`
 
 let _openai: OpenAI | null = null
 function getOpenAI() {
@@ -63,15 +61,20 @@ export async function POST(req: NextRequest) {
   const language: string = body.language ?? 'en'
   const messages = body.messages.slice(-20) // any[] — passed directly to OpenAI SDK
 
+  const { neutralityRule, politicalClarificationEnabled } = await getActiveGuardrails()
+
   // Classify the latest user message and short-circuit before calling AI if needed
-  const lastUserMsg = [...messages].reverse().find((m: Record<string, unknown>) => m.role === 'user')
-  if (lastUserMsg && typeof lastUserMsg.content === 'string') {
-    const classification = classifyTopic(lastUserMsg.content)
-    if (classification === 'redirect') return guardedStream(REDIRECT_MESSAGE)
-    if (classification === 'clarify') return guardedStream(CLARIFY_MESSAGE)
+  if (politicalClarificationEnabled) {
+    const lastUserMsg = [...messages].reverse().find((m: Record<string, unknown>) => m.role === 'user')
+    if (lastUserMsg && typeof lastUserMsg.content === 'string') {
+      const classification = classifyTopic(lastUserMsg.content)
+      if (classification === 'redirect') return guardedStream(REDIRECT_MESSAGE)
+      if (classification === 'clarify') return guardedStream(CLARIFY_MESSAGE)
+    }
   }
 
-  const systemPrompt = language === 'es' ? SYSTEM_PROMPT + SPANISH_SYSTEM_NOTE : SYSTEM_PROMPT
+  const baseContent = neutralityRule ? SYSTEM_PROMPT_BASE + '\n\n' + neutralityRule : SYSTEM_PROMPT_BASE
+  const systemPrompt = language === 'es' ? baseContent + SPANISH_SYSTEM_NOTE : baseContent
 
   const stream = await getOpenAI().chat.completions.create({
     model: 'gpt-4o-mini',

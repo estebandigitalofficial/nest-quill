@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
-import { NEUTRALITY_RULE } from '@/lib/utils/learningGuardrails'
+import { getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 
 export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'reading')
   if (limited) return limited
+  const { neutralityRule } = await getActiveGuardrails()
   try {
     const { text, grade } = await request.json() as { text: string; grade?: number }
 
@@ -41,7 +42,7 @@ Rules:
 - All answers must be found in or directly inferred from the text
 - Mix literal (directly stated) and inferential (reading between the lines) questions
 - correct_index is 0-based
-- ${NEUTRALITY_RULE}`,
+- ${neutralityRule}`,
           },
           {
             role: 'user',

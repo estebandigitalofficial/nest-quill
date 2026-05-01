@@ -1,5 +1,3 @@
-import { NEUTRALITY_RULE } from '@/lib/utils/learningGuardrails'
-
 export type ActivityMode = 'quiz' | 'flashcards' | 'explain' | 'study-guide'
 
 export const VALID_ACTIVITY_MODES: ActivityMode[] = ['quiz', 'flashcards', 'explain', 'study-guide']
@@ -8,6 +6,7 @@ export function buildPrompts(
   mode: ActivityMode,
   material: string,
   gradeLabel: string,
+  neutralityRule: string,
 ): { system: string; user: string } {
   const user = `Study material:\n\n${material.trim()}`
 
@@ -20,7 +19,7 @@ Rules:
 - correct_index is 0-based
 - All 4 options must be plausible
 - Questions must be answerable from the provided text only
-- ${NEUTRALITY_RULE}
+- ${neutralityRule}
 
 Output valid JSON:
 {
@@ -46,7 +45,7 @@ Rules:
 - 8-10 cards, vocabulary matching ${gradeLabel} level
 - Cards must come directly from the provided text
 - Keep fronts short (1-5 words), backs informative (1-2 sentences)
-- ${NEUTRALITY_RULE}
+- ${neutralityRule}
 
 Output valid JSON:
 {
@@ -67,7 +66,7 @@ Rules:
 - 3-5 sections covering the main ideas
 - Language appropriate for ${gradeLabel} level
 - Explain concepts from the text only
-- ${NEUTRALITY_RULE}
+- ${neutralityRule}
 
 Output valid JSON:
 {
@@ -89,7 +88,7 @@ Rules:
 - 4-6 key terms, 3-4 main concepts, 3 remember tips, 3-4 practice questions
 - All content must come from the provided text
 - Vocabulary and complexity matching ${gradeLabel} level
-- ${NEUTRALITY_RULE}
+- ${neutralityRule}
 
 Output valid JSON:
 {

@@ -1,5 +1,6 @@
 // Shared guardrail helpers for all student-facing learning tools.
 // Import from here rather than duplicating across routes.
+import { getSetting } from '@/lib/settings/appSettings'
 
 // Historical and civics topics that are always safe to explain
 export const HISTORICAL_SAFE = [
@@ -60,3 +61,20 @@ export const REDIRECT_MESSAGE =
 export const NEUTRALITY_RULE =
   'Keep all content neutral, age-appropriate, and free from political, cultural, religious, or social bias. ' +
   'Do not advocate for any viewpoint, take sides, or frame one group, belief, or perspective as better or worse than another.'
+
+// Reads both safety flags from app_settings in a single round-trip.
+// neutralityRule is '' when strict_school_safe_mode is off (omit from prompts).
+// politicalClarificationEnabled controls whether classifyTopic() is run.
+export async function getActiveGuardrails(): Promise<{
+  neutralityRule: string
+  politicalClarificationEnabled: boolean
+}> {
+  const [schoolSafe, politicalClarify] = await Promise.all([
+    getSetting('strict_school_safe_mode', true),
+    getSetting('political_clarification_enabled', true),
+  ])
+  return {
+    neutralityRule: schoolSafe ? NEUTRALITY_RULE : '',
+    politicalClarificationEnabled: politicalClarify as boolean,
+  }
+}

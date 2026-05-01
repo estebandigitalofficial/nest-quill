@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
-import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, NEUTRALITY_RULE } from '@/lib/utils/learningGuardrails'
+import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 
 export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'explain')
   if (limited) return limited
+
+  const { neutralityRule, politicalClarificationEnabled } = await getActiveGuardrails()
 
   try {
     const { topic, grade, imageBase64, mimeType } = await request.json() as {
@@ -40,12 +42,14 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const classification = classifyTopic(topicTrimmed)
-      if (classification === 'redirect') {
-        return NextResponse.json({ message: REDIRECT_MESSAGE }, { status: 422 })
-      }
-      if (classification === 'clarify') {
-        return NextResponse.json({ message: CLARIFY_MESSAGE }, { status: 422 })
+      if (politicalClarificationEnabled) {
+        const classification = classifyTopic(topicTrimmed)
+        if (classification === 'redirect') {
+          return NextResponse.json({ message: REDIRECT_MESSAGE }, { status: 422 })
+        }
+        if (classification === 'clarify') {
+          return NextResponse.json({ message: CLARIFY_MESSAGE }, { status: 422 })
+        }
       }
 
       userContent = `Explain "${topicTrimmed}" to a ${gradeLabel} student.`
@@ -80,7 +84,7 @@ Handling political topics:
 
 If a topic is unclear or not appropriate, gently guide the student toward a safe, school-related explanation.
 
-${NEUTRALITY_RULE}
+${neutralityRule}
 
 Output valid JSON:
 {

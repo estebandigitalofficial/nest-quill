@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
-import { NEUTRALITY_RULE } from '@/lib/utils/learningGuardrails'
+import { getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 import { getSetting } from '@/lib/settings/appSettings'
 
 export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'trivia')
   if (limited) return limited
 
-  const triviaEnabled = await getSetting('trivia_enabled', true)
+  const [triviaEnabled, { neutralityRule }] = await Promise.all([
+    getSetting('trivia_enabled', true),
+    getActiveGuardrails(),
+  ])
   if (!triviaEnabled) {
     return NextResponse.json({ message: 'Trivia mode is currently unavailable.' }, { status: 403 })
   }
@@ -51,7 +54,7 @@ Rules:
 - 4 answer choices each
 - Make questions feel like a fun game show, not a test
 - Include a brief fun fact about the correct answer
-- ${NEUTRALITY_RULE}
+- ${neutralityRule}
 
 Output valid JSON:
 {

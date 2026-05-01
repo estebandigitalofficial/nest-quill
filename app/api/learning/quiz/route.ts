@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
-import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, NEUTRALITY_RULE } from '@/lib/utils/learningGuardrails'
+import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 
-const SYSTEM_PROMPT = (gradeLabel: string) => `You are an educational quiz writer for students in ${gradeLabel}. Create 5 multiple-choice questions.
+const SYSTEM_PROMPT = (gradeLabel: string, neutralityRule: string) => `You are an educational quiz writer for students in ${gradeLabel}. Create 5 multiple-choice questions.
 
 Rules:
 - Exactly 5 questions, vocabulary matching ${gradeLabel} level
 - correct_index is 0-based
 - All 4 options must be plausible
-- ${NEUTRALITY_RULE}
+- ${neutralityRule}
 
 Output valid JSON:
 {
@@ -26,6 +26,7 @@ Output valid JSON:
 export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'quiz')
   if (limited) return limited
+  const { neutralityRule, politicalClarificationEnabled } = await getActiveGuardrails()
   try {
     const body = await request.json()
     const { topic, subject, grade, imageBase64, mimeType } = body as {
@@ -57,12 +58,14 @@ export async function POST(request: NextRequest) {
       }
 
       // ── Topic classification (text path only) ─────────────────────────────
-      const classification = classifyTopic(topic.trim())
-      if (classification === 'redirect') {
-        return NextResponse.json({ message: REDIRECT_MESSAGE }, { status: 422 })
-      }
-      if (classification === 'clarify') {
-        return NextResponse.json({ message: CLARIFY_MESSAGE }, { status: 422 })
+      if (politicalClarificationEnabled) {
+        const classification = classifyTopic(topic.trim())
+        if (classification === 'redirect') {
+          return NextResponse.json({ message: REDIRECT_MESSAGE }, { status: 422 })
+        }
+        if (classification === 'clarify') {
+          return NextResponse.json({ message: CLARIFY_MESSAGE }, { status: 422 })
+        }
       }
 
       userContent = `Topic: ${subjectLabel}${topic.trim()}\n\nGenerate 5 quiz questions for a ${gradeLabel} student on this topic.`
@@ -74,7 +77,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT(gradeLabel) },
+          { role: 'system', content: SYSTEM_PROMPT(gradeLabel, neutralityRule) },
           { role: 'user', content: userContent },
         ],
         response_format: { type: 'json_object' },

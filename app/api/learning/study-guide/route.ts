@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
-import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, NEUTRALITY_RULE } from '@/lib/utils/learningGuardrails'
+import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 
 export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'study-guide')
   if (limited) return limited
+  const { neutralityRule, politicalClarificationEnabled } = await getActiveGuardrails()
   try {
     const { topic, subject, grade, imageBase64, mimeType } = await request.json() as {
       topic?: string
@@ -28,12 +29,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: 'Please enter a topic.' }, { status: 400 })
       }
 
-      const classification = classifyTopic(topic.trim())
-      if (classification === 'redirect') {
-        return NextResponse.json({ message: REDIRECT_MESSAGE }, { status: 422 })
-      }
-      if (classification === 'clarify') {
-        return NextResponse.json({ message: CLARIFY_MESSAGE }, { status: 422 })
+      if (politicalClarificationEnabled) {
+        const classification = classifyTopic(topic.trim())
+        if (classification === 'redirect') {
+          return NextResponse.json({ message: REDIRECT_MESSAGE }, { status: 422 })
+        }
+        if (classification === 'clarify') {
+          return NextResponse.json({ message: CLARIFY_MESSAGE }, { status: 422 })
+        }
       }
 
       userContent = `Create a study guide for: ${topic.trim()}${subject ? ` (${subject})` : ''}, ${gradeLabel}`
@@ -54,7 +57,7 @@ Rules:
 - 3-4 main concepts
 - 3 remember tips (memory tricks or key takeaways)
 - 3 practice questions with answers
-- ${NEUTRALITY_RULE}
+- ${neutralityRule}
 
 Output valid JSON:
 {

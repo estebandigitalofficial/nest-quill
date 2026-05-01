@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { buildPrompts, VALID_ACTIVITY_MODES, ActivityMode } from '@/lib/services/materialActivity'
 import { getSetting } from '@/lib/settings/appSettings'
+import { getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 
 export async function POST(request: NextRequest) {
   // Parse body first so we can check assignmentId before rate limiting
@@ -41,7 +42,10 @@ export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, rateLimitKey)
   if (limited) return limited
 
-  const maxPastedLength = await getSetting('max_pasted_text_length', 5000)
+  const [maxPastedLength, { neutralityRule }] = await Promise.all([
+    getSetting('max_pasted_text_length', 5000),
+    getActiveGuardrails(),
+  ])
 
   try {
     if (!material || material.trim().length < 50) {
@@ -55,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     const gradeLabel = grade ? `grade ${grade}` : 'elementary school'
-    const { system, user: userPrompt } = buildPrompts(mode as ActivityMode, material, gradeLabel)
+    const { system, user: userPrompt } = buildPrompts(mode as ActivityMode, material, gradeLabel, neutralityRule)
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

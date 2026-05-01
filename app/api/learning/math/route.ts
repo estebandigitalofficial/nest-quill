@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
-import { NEUTRALITY_RULE } from '@/lib/utils/learningGuardrails'
+import { getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 
 export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'math')
   if (limited) return limited
+  const { neutralityRule } = await getActiveGuardrails()
   try {
     const { topic, grade } = await request.json() as { topic: string; grade?: number }
 
@@ -41,7 +42,7 @@ Rules:
 - Steps should show clear working — don't just give the answer
 - Mix difficulty slightly (start easier, end harder)
 - For word problems, use relatable real-life scenarios with kids' names
-- ${NEUTRALITY_RULE}`,
+- ${neutralityRule}`,
           },
           {
             role: 'user',
