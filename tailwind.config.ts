@@ -43,14 +43,13 @@ const config: Config = {
           muted:   'rgb(var(--adm-muted)   / <alpha-value>)',
           subtle:  'rgb(var(--adm-subtle)  / <alpha-value>)',
         },
-        // parchment and charcoal are CSS-variable-driven so they flip with the theme
         parchment: {
-          DEFAULT: 'rgb(var(--parchment) / <alpha-value>)',
-          dark:    'rgb(var(--parchment-dark) / <alpha-value>)',
+          DEFAULT: '#F8F5EC',
+          dark:    '#EDE9DC',
         },
         charcoal: {
-          DEFAULT: 'rgb(var(--charcoal) / <alpha-value>)',
-          light:   'rgb(var(--charcoal-light) / <alpha-value>)',
+          DEFAULT: '#2E2E2E',
+          light:   '#4A4A4A',
         },
       },
     },
