@@ -17,11 +17,11 @@ export default async function SiteHeader({ right }: Props) {
       <div className="max-w-5xl mx-auto px-6 h-[58px] md:h-[60px] flex items-center justify-between gap-4">
         <Link href="/" className="shrink-0 flex items-center">
           <Image
-            src="https://nestandquill.b-cdn.net/nestandquill%20brand%20start-03.webp"
+            src="https://nestandquill.b-cdn.net/Nest%20and%20Quill%20Full%20Color.webp"
             alt="Nest & Quill"
             width={320}
             height={96}
-            className="h-20 md:h-20 w-auto brightness-0 dark:invert"
+            className="h-20 md:h-20 w-auto"
             priority
           />
         </Link>

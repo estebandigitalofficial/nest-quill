@@ -12,11 +12,11 @@ export default async function WriterConfigPage() {
   const configs = (data ?? []) as unknown as AiWriterConfig[]
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
+    <div className="max-w-6xl mx-auto px-6 py-8">
       <div className="mb-8">
         <h1 className="text-xl font-semibold text-white">AI Writer Config</h1>
         <p className="text-sm text-adm-muted mt-1">
-          Edit the prompts and rules used by the story generation pipeline.
+          Edit the prompts, rules, and style hints used by the story generation pipeline.
         </p>
       </div>
       <WriterConfigEditor initialConfigs={configs} />
