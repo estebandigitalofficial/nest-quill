@@ -125,17 +125,17 @@ export default function BookSourcePanel({
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <div className="bg-adm-surface border border-adm-border rounded-xl overflow-hidden">
       <div className="px-5 py-4 flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Source Manuscript</p>
+          <p className="text-xs font-bold text-adm-muted uppercase tracking-widest">Source Manuscript</p>
           {fileName ? (
-            <p className="text-sm text-gray-300 mt-0.5">
+            <p className="text-sm text-adm-muted mt-0.5">
               {fileName}
-              {wordCount && <span className="text-gray-600 ml-2">· {wordCount.toLocaleString()} words</span>}
+              {wordCount && <span className="text-adm-subtle ml-2">· {wordCount.toLocaleString()} words</span>}
             </p>
           ) : (
-            <p className="text-sm text-gray-600 mt-0.5">No manuscript uploaded yet</p>
+            <p className="text-sm text-adm-subtle mt-0.5">No manuscript uploaded yet</p>
           )}
           {uploadError && <p className="text-xs text-red-400 mt-1">{uploadError}</p>}
         </div>
@@ -154,13 +154,13 @@ export default function BookSourcePanel({
             <button
               onClick={handleReview}
               disabled={reviewing}
-              className="text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+              className="text-xs font-semibold bg-adm-surface hover:bg-adm-border text-adm-muted px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
             >
               {reviewing ? 'Reviewing…' : 'Review →'}
             </button>
           )}
           <label className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-            fileName ? 'bg-gray-800 hover:bg-gray-700 text-gray-400' : 'bg-brand-500 hover:bg-brand-600 text-white'
+            fileName ? 'bg-adm-surface hover:bg-adm-border text-adm-muted' : 'bg-brand-500 hover:bg-brand-600 text-white'
           } ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
             {uploading ? 'Uploading…' : fileName ? 'Replace PDF' : 'Upload PDF'}
             <input ref={fileRef} type="file" accept="application/pdf" className="hidden" onChange={handleUpload} />
@@ -170,18 +170,18 @@ export default function BookSourcePanel({
 
       {/* Analyze prompt banner */}
       {fileName && analyzeStatus === 'idle' && !analyzing && (
-        <div className="border-t border-gray-800 px-5 py-3">
-          <p className="text-xs text-gray-500">Click <span className="text-brand-400 font-semibold">Analyze →</span> to fill in title, genre, tone, and premise from the manuscript.</p>
+        <div className="border-t border-adm-border px-5 py-3">
+          <p className="text-xs text-adm-muted">Click <span className="text-brand-400 font-semibold">Analyze →</span> to fill in title, genre, tone, and premise from the manuscript.</p>
         </div>
       )}
 
       {/* Auto-outline */}
       {fileName && (
-        <div className="border-t border-gray-800 px-5 py-4 space-y-2">
+        <div className="border-t border-adm-border px-5 py-4 space-y-2">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Auto-outline</p>
-              <p className="text-xs text-gray-600 mt-0.5">
+              <p className="text-xs font-bold text-adm-muted uppercase tracking-widest">Auto-outline</p>
+              <p className="text-xs text-adm-subtle mt-0.5">
                 {outlineStatus === 'done' && outlineResult
                   ? `${outlineResult.chapterCount} chapters · ${outlineResult.sceneCount} scenes created`
                   : 'AI reads your manuscript and creates an improved chapter/scene structure'}
@@ -190,7 +190,7 @@ export default function BookSourcePanel({
             <button
               onClick={handleAutoOutline}
               disabled={outlining}
-              className="text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+              className="text-xs font-semibold bg-adm-surface hover:bg-adm-border text-adm-muted px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 shrink-0"
             >
               {outlining ? 'Outlining…' : outlineStatus === 'done' ? 'Re-outline' : 'Auto-outline →'}
             </button>
@@ -201,19 +201,19 @@ export default function BookSourcePanel({
 
       {/* Review output */}
       {reviewOpen && (
-        <div className="border-t border-gray-800">
+        <div className="border-t border-adm-border">
           <div className="px-5 py-3 flex items-center justify-between">
             <p className="text-xs font-bold text-brand-400 uppercase tracking-widest">Editorial Review</p>
-            <button onClick={() => setReviewOpen(false)} className="text-xs text-gray-600 hover:text-gray-400 transition-colors">✕</button>
+            <button onClick={() => setReviewOpen(false)} className="text-xs text-adm-subtle hover:text-adm-muted transition-colors">✕</button>
           </div>
           <div className="px-5 pb-5">
             {reviewing ? (
-              <div className="flex items-center gap-2 text-sm text-gray-500 py-4">
+              <div className="flex items-center gap-2 text-sm text-adm-muted py-4">
                 <span className="w-4 h-4 border-2 border-brand-700 border-t-brand-400 rounded-full animate-spin" />
                 Analyzing manuscript…
               </div>
             ) : (
-              <div className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{review}</div>
+              <div className="text-sm text-adm-muted leading-relaxed whitespace-pre-wrap">{review}</div>
             )}
           </div>
         </div>

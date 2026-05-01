@@ -62,7 +62,7 @@ export default function AdminUserControls({ userId, currentPlan, booksGenerated,
           value={plan}
           onChange={e => setPlan(e.target.value as PlanTier)}
           disabled={planState === 'saving'}
-          className="bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-brand-500 transition-colors disabled:opacity-50"
+          className="bg-adm-surface border border-adm-border rounded-lg px-2.5 py-1.5 text-xs text-adm-text focus:outline-none focus:border-brand-500 transition-colors disabled:opacity-50"
         >
           {PLAN_OPTIONS.map(o => (
             <option key={o.value} value={o.value}>{o.label}</option>
@@ -82,12 +82,12 @@ export default function AdminUserControls({ userId, currentPlan, booksGenerated,
       {/* Quota display + reset */}
       <div className="flex items-center gap-2">
         {/* Free accounts use a 2-story limit; books_limit in profiles may still show 1 */}
-        <span className="text-xs text-gray-500 font-mono">{booksGenerated}/{currentPlan === 'free' ? 2 : booksLimit} used</span>
+        <span className="text-xs text-adm-muted font-mono">{booksGenerated}/{currentPlan === 'free' ? 2 : booksLimit} used</span>
         {booksGenerated > 0 && (
           <button
             onClick={resetQuota}
             disabled={resetState === 'saving'}
-            className="text-xs text-gray-500 hover:text-amber-400 disabled:opacity-50 transition-colors"
+            className="text-xs text-adm-muted hover:text-amber-400 disabled:opacity-50 transition-colors"
           >
             {resetState === 'saving' ? 'Resetting…' : resetState === 'saved' ? 'Reset ✓' : resetState === 'error' ? 'Error' : 'Reset quota'}
           </button>

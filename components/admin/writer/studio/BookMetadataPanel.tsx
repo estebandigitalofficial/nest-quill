@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { WriterBook } from '@/types/writer'
 
-const input = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500'
-const label = 'text-xs text-gray-400 font-medium'
+const input = 'w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-sm text-adm-text focus:outline-none focus:ring-2 focus:ring-brand-500'
+const label = 'text-xs text-adm-muted font-medium'
 
 export default function BookMetadataPanel({ book }: { book: WriterBook }) {
   const router = useRouter()
@@ -65,28 +65,28 @@ export default function BookMetadataPanel({ book }: { book: WriterBook }) {
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <div className="bg-adm-surface border border-adm-border rounded-xl overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full px-5 py-3 flex items-center justify-between text-left"
       >
-        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Book Metadata</span>
-        <span className="text-xs text-gray-600">{open ? '▲' : '▼'}</span>
+        <span className="text-xs font-bold text-adm-muted uppercase tracking-widest">Book Metadata</span>
+        <span className="text-xs text-adm-subtle">{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
-        <div className="border-t border-gray-800 px-5 py-4 space-y-5">
+        <div className="border-t border-adm-border px-5 py-4 space-y-5">
 
           {/* Core */}
           <div>
-            <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">Core</p>
+            <p className="text-xs font-bold text-adm-subtle uppercase tracking-widest mb-3">Core</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <label className={label}>Title</label>
                 <input className={input} value={fields.title} onChange={e => set('title', e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <label className={label}>Subtitle <span className="text-gray-600">(optional)</span></label>
+                <label className={label}>Subtitle <span className="text-adm-subtle">(optional)</span></label>
                 <input className={input} value={fields.subtitle} onChange={e => set('subtitle', e.target.value)} />
               </div>
               <div className="space-y-1.5">
@@ -118,7 +118,7 @@ export default function BookMetadataPanel({ book }: { book: WriterBook }) {
 
           {/* Author & Publisher */}
           <div>
-            <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">Author & Publisher</p>
+            <p className="text-xs font-bold text-adm-subtle uppercase tracking-widest mb-3">Author & Publisher</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <label className={label}>Author name</label>
@@ -153,7 +153,7 @@ export default function BookMetadataPanel({ book }: { book: WriterBook }) {
 
           {/* ISBNs */}
           <div>
-            <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">ISBNs <span className="text-gray-700 normal-case font-normal">(optional)</span></p>
+            <p className="text-xs font-bold text-adm-subtle uppercase tracking-widest mb-3">ISBNs <span className="text-gray-700 normal-case font-normal">(optional)</span></p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {(['epub', 'kindle', 'paperback', 'hardcover', 'pdf'] as const).map(fmt => (
                 <div key={fmt} className="space-y-1.5">
@@ -165,7 +165,7 @@ export default function BookMetadataPanel({ book }: { book: WriterBook }) {
           </div>
 
           <div className="flex items-center justify-between pt-1">
-            <p className="text-xs text-gray-600">Changes apply to future generations and exports only.</p>
+            <p className="text-xs text-adm-subtle">Changes apply to future generations and exports only.</p>
             <button
               onClick={save}
               disabled={saving}

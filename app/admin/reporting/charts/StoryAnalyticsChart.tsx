@@ -42,7 +42,7 @@ export default function StoryAnalyticsChart({
     <div className="grid md:grid-cols-2 gap-6">
       {/* Status pie */}
       <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">By Status</p>
+        <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">By Status</p>
         <ResponsiveContainer width="100%" height={220}>
           <PieChart>
             <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ${value}`}>
@@ -57,7 +57,7 @@ export default function StoryAnalyticsChart({
 
       {/* Top themes */}
       <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Top Themes</p>
+        <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">Top Themes</p>
         {themeData.length > 0 ? (
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={themeData} layout="vertical">
@@ -68,13 +68,13 @@ export default function StoryAnalyticsChart({
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-center text-gray-600 text-sm py-8">No data.</p>
+          <p className="text-center text-adm-subtle text-sm py-8">No data.</p>
         )}
       </div>
 
       {/* Illustration styles */}
       <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">By Style</p>
+        <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">By Style</p>
         {styleData.length > 0 ? (
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={styleData}>
@@ -85,13 +85,13 @@ export default function StoryAnalyticsChart({
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-center text-gray-600 text-sm py-8">No data.</p>
+          <p className="text-center text-adm-subtle text-sm py-8">No data.</p>
         )}
       </div>
 
       {/* Completion rate */}
       <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Completion Rate</p>
+        <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">Completion Rate</p>
         {completionData.length > 0 ? (
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={completionData}>
@@ -102,7 +102,7 @@ export default function StoryAnalyticsChart({
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-center text-gray-600 text-sm py-8">No data.</p>
+          <p className="text-center text-adm-subtle text-sm py-8">No data.</p>
         )}
       </div>
     </div>

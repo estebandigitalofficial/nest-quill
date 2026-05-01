@@ -12,10 +12,10 @@ import GenerateAllButton from './GenerateAllButton'
 type Mode = 'read' | 'edit'
 
 const STATUS_OPTIONS: { value: WriterBook['status']; label: string; color: string }[] = [
-  { value: 'draft',       label: 'Draft',       color: 'text-gray-400' },
+  { value: 'draft',       label: 'Draft',       color: 'text-adm-muted' },
   { value: 'in_progress', label: 'In Progress', color: 'text-brand-400' },
   { value: 'complete',    label: 'Complete',    color: 'text-green-400' },
-  { value: 'archived',    label: 'Archived',    color: 'text-gray-600' },
+  { value: 'archived',    label: 'Archived',    color: 'text-adm-subtle' },
 ]
 
 export default function BookPageClient({
@@ -104,26 +104,26 @@ export default function BookPageClient({
   )
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      <header className="border-b border-gray-800 px-4 sm:px-6 h-13 flex items-center justify-between sticky top-0 bg-gray-950 z-10" style={{ height: 52 }}>
+    <div className="min-h-screen bg-adm-bg text-adm-text">
+      <header className="border-b border-adm-border px-4 sm:px-6 h-13 flex items-center justify-between sticky top-0 bg-adm-bg z-10" style={{ height: 52 }}>
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <Link href="/admin/writer" className="text-xs text-gray-500 hover:text-gray-300 shrink-0">← Books</Link>
+          <Link href="/admin/writer" className="text-xs text-adm-muted hover:text-adm-muted shrink-0">← Books</Link>
           <span className="text-gray-700 shrink-0">/</span>
           <span className="font-semibold text-white truncate text-sm">{book.title}</span>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           {/* Read / Edit toggle */}
-          <div className="flex bg-gray-900 border border-gray-800 rounded-lg p-0.5">
+          <div className="flex bg-adm-surface border border-adm-border rounded-lg p-0.5">
             <button
               onClick={() => setMode('read')}
-              className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${mode === 'read' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+              className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${mode === 'read' ? 'bg-adm-border text-adm-text' : 'text-adm-muted hover:text-adm-muted'}`}
             >
               Read
             </button>
             <button
               onClick={() => setMode('edit')}
-              className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${mode === 'edit' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+              className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${mode === 'edit' ? 'bg-adm-border text-adm-text' : 'text-adm-muted hover:text-adm-muted'}`}
             >
               Edit
             </button>
@@ -164,7 +164,7 @@ export default function BookPageClient({
           {/* Back to reading */}
           <button
             onClick={() => setMode('read')}
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-adm-muted hover:text-adm-muted transition-colors"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6"/>
@@ -173,18 +173,18 @@ export default function BookPageClient({
           </button>
 
           {/* Book header */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 sm:px-6 py-5 space-y-2">
+          <div className="bg-adm-surface border border-adm-border rounded-xl px-5 sm:px-6 py-5 space-y-2">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h1 className="font-serif text-xl sm:text-2xl text-white">{book.title}</h1>
-                {book.subtitle && <p className="text-gray-400 italic text-sm mt-0.5">{book.subtitle}</p>}
+                {book.subtitle && <p className="text-adm-muted italic text-sm mt-0.5">{book.subtitle}</p>}
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <p className="text-xs text-gray-500 hidden sm:block">{book.genre} · {book.tone}</p>
+                <p className="text-xs text-adm-muted hidden sm:block">{book.genre} · {book.tone}</p>
                 <select
                   value={bookStatus}
                   onChange={e => handleStatusChange(e.target.value as WriterBook['status'])}
-                  className={`text-xs font-semibold bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer transition-colors ${STATUS_OPTIONS.find(o => o.value === bookStatus)?.color ?? 'text-gray-400'}`}
+                  className={`text-xs font-semibold bg-adm-surface border border-adm-border rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer transition-colors ${STATUS_OPTIONS.find(o => o.value === bookStatus)?.color ?? 'text-adm-muted'}`}
                 >
                   {STATUS_OPTIONS.map(o => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -192,8 +192,8 @@ export default function BookPageClient({
                 </select>
               </div>
             </div>
-            <p className="text-sm text-gray-400">{book.premise}</p>
-            <div className="flex flex-wrap gap-4 sm:gap-6 pt-2 text-xs text-gray-500">
+            <p className="text-sm text-adm-muted">{book.premise}</p>
+            <div className="flex flex-wrap gap-4 sm:gap-6 pt-2 text-xs text-adm-muted">
               <span><span className="text-white font-semibold">{book.target_chapters}</span> chapters</span>
               <span><span className="text-white font-semibold">{doneScenes}/{totalScenes}</span> scenes</span>
               <span><span className="text-white font-semibold">{totalWords.toLocaleString()}</span> words</span>

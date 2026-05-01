@@ -18,7 +18,7 @@ export default function DeleteBookButton({ bookId, isOwner }: { bookId: string; 
     return (
       <span
         title="You can only delete your own books"
-        className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-gray-800 text-gray-700 cursor-not-allowed"
+        className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-adm-border text-gray-700 cursor-not-allowed"
       >
         Delete
       </span>
@@ -30,7 +30,7 @@ export default function DeleteBookButton({ bookId, isOwner }: { bookId: string; 
       <div className="flex gap-1 items-center relative z-10">
         <button
           onClick={e => { e.stopPropagation(); setConfirm(false) }}
-          className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-gray-700 text-gray-500 hover:text-gray-300 transition-colors"
+          className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-adm-border text-adm-muted hover:text-adm-muted transition-colors"
         >
           Cancel
         </button>
@@ -48,7 +48,7 @@ export default function DeleteBookButton({ bookId, isOwner }: { bookId: string; 
   return (
     <button
       onClick={e => { e.stopPropagation(); setConfirm(true) }}
-      className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-gray-700 text-gray-600 hover:text-red-400 hover:border-red-900 transition-colors relative z-10"
+      className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-adm-border text-adm-subtle hover:text-red-400 hover:border-red-900 transition-colors relative z-10"
     >
       Delete
     </button>

@@ -45,27 +45,27 @@ export default function BackMatterPanel({ bookId }: { bookId: string }) {
   const enabledCount = sections.filter(s => s.enabled).length
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <div className="bg-adm-surface border border-adm-border rounded-xl overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full px-5 py-3 flex items-center justify-between text-left"
       >
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Back Matter</span>
+          <span className="text-xs font-bold text-adm-muted uppercase tracking-widest">Back Matter</span>
           {enabledCount > 0 && (
             <span className="text-xs bg-brand-500/20 text-brand-400 px-2 py-0.5 rounded-full">{enabledCount} active</span>
           )}
         </div>
-        <span className="text-xs text-gray-600">{open ? '▲' : '▼'}</span>
+        <span className="text-xs text-adm-subtle">{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
-        <div className="border-t border-gray-800 px-5 py-4 space-y-2">
+        <div className="border-t border-adm-border px-5 py-4 space-y-2">
           {loading ? (
-            <p className="text-xs text-gray-600 py-2">Loading…</p>
+            <p className="text-xs text-adm-subtle py-2">Loading…</p>
           ) : (
             <>
-              <p className="text-xs text-gray-600 pb-1">Toggle sections on to include them in your book. Click Edit to add content.</p>
+              <p className="text-xs text-adm-subtle pb-1">Toggle sections on to include them in your book. Click Edit to add content.</p>
               {sections.map(section => (
                 <SectionEditor
                   key={section.id}

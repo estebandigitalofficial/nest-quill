@@ -69,7 +69,7 @@ export default function AdminBottomNav() {
 
   return (
     <nav
-      className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-gray-950 border-t border-gray-800"
+      className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-adm-bg border-t border-adm-border"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex items-stretch h-16">
@@ -80,10 +80,10 @@ export default function AdminBottomNav() {
               key={section.href}
               href={section.href}
               className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                active ? 'text-brand-400' : 'text-gray-500'
+                active ? 'text-brand-400' : 'text-adm-muted'
               }`}
             >
-              <span className={active ? 'text-brand-400' : 'text-gray-500'}>
+              <span className={active ? 'text-brand-400' : 'text-adm-muted'}>
                 {section.icon}
               </span>
               <span className="text-[10px] font-medium tracking-wide">

@@ -32,7 +32,7 @@ export default function AdminNavLinks() {
           className={`text-xs transition-colors whitespace-nowrap ${
             isActive(href, exact)
               ? 'font-semibold text-white'
-              : 'text-gray-400 hover:text-gray-200'
+              : 'text-adm-muted hover:text-adm-text'
           }`}
         >
           {label}

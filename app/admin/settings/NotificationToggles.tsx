@@ -51,10 +51,10 @@ export default function NotificationToggles({ initialSettings }: Props) {
         const hasError = errors[id]
 
         return (
-          <div key={id} className="flex items-center justify-between gap-4 bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
+          <div key={id} className="flex items-center justify-between gap-4 bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-100">{label}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+              <p className="text-sm font-semibold text-adm-text">{label}</p>
+              <p className="text-xs text-adm-muted mt-0.5">{desc}</p>
               {hasError && <p className="text-xs text-red-400 mt-1">Failed to save — try again</p>}
             </div>
             <button

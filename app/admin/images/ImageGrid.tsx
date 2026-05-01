@@ -48,7 +48,7 @@ export default function ImageGrid({
             <button
               key={img.id}
               onClick={() => openModal(img)}
-              className="aspect-square rounded-xl overflow-hidden border border-gray-800 hover:border-brand-500 transition-colors bg-gray-900"
+              className="aspect-square rounded-xl overflow-hidden border border-adm-border hover:border-brand-500 transition-colors bg-adm-surface"
             >
               {url ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -62,13 +62,13 @@ export default function ImageGrid({
       </div>
 
       {images.length === 0 && (
-        <p className="text-center text-gray-600 text-sm py-12">No images found.</p>
+        <p className="text-center text-adm-subtle text-sm py-12">No images found.</p>
       )}
 
       {/* Modal */}
       {selected && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setSelected(null)}>
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-adm-surface border border-adm-border rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 space-y-4">
               {signedUrls[selected.storage_path ?? ''] && (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -81,34 +81,34 @@ export default function ImageGrid({
 
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <p className="text-gray-600 uppercase tracking-widest mb-0.5">Style</p>
-                  <p className="text-gray-300">{selected.illustration_style ?? '—'}</p>
+                  <p className="text-adm-subtle uppercase tracking-widest mb-0.5">Style</p>
+                  <p className="text-adm-muted">{selected.illustration_style ?? '—'}</p>
                 </div>
                 <div>
-                  <p className="text-gray-600 uppercase tracking-widest mb-0.5">Theme</p>
-                  <p className="text-gray-300">{selected.theme ?? '—'}</p>
+                  <p className="text-adm-subtle uppercase tracking-widest mb-0.5">Theme</p>
+                  <p className="text-adm-muted">{selected.theme ?? '—'}</p>
                 </div>
                 <div>
-                  <p className="text-gray-600 uppercase tracking-widest mb-0.5">Age Range</p>
-                  <p className="text-gray-300">{selected.child_age_range ?? '—'}</p>
+                  <p className="text-adm-subtle uppercase tracking-widest mb-0.5">Age Range</p>
+                  <p className="text-adm-muted">{selected.child_age_range ?? '—'}</p>
                 </div>
                 <div>
-                  <p className="text-gray-600 uppercase tracking-widest mb-0.5">Created</p>
-                  <p className="text-gray-300">{new Date(selected.created_at).toLocaleDateString()}</p>
+                  <p className="text-adm-subtle uppercase tracking-widest mb-0.5">Created</p>
+                  <p className="text-adm-muted">{new Date(selected.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
 
               {selected.prompt_used && (
                 <div>
-                  <p className="text-xs text-gray-600 uppercase tracking-widest mb-1">Prompt</p>
-                  <p className="text-xs text-gray-400 bg-gray-800 rounded-lg px-3 py-2">{selected.prompt_used}</p>
+                  <p className="text-xs text-adm-subtle uppercase tracking-widest mb-1">Prompt</p>
+                  <p className="text-xs text-adm-muted bg-adm-surface rounded-lg px-3 py-2">{selected.prompt_used}</p>
                 </div>
               )}
 
               {/* Tags */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-600 uppercase tracking-widest">Tags</p>
+                  <p className="text-xs text-adm-subtle uppercase tracking-widest">Tags</p>
                   <button
                     onClick={() => setEditingTags(!editingTags)}
                     className="text-xs text-brand-400 hover:text-brand-300"
@@ -118,7 +118,7 @@ export default function ImageGrid({
                 </div>
                 <div className="flex gap-1.5 flex-wrap">
                   {tags.map((tag) => (
-                    <span key={tag} className="text-[10px] font-semibold bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">
+                    <span key={tag} className="text-[10px] font-semibold bg-adm-surface text-adm-muted px-2 py-0.5 rounded-full">
                       {tag}
                       {editingTags && (
                         <button
@@ -130,14 +130,14 @@ export default function ImageGrid({
                       )}
                     </span>
                   ))}
-                  {tags.length === 0 && <span className="text-xs text-gray-600">No tags</span>}
+                  {tags.length === 0 && <span className="text-xs text-adm-subtle">No tags</span>}
                 </div>
                 {editingTags && (
                   <div className="flex gap-2 mt-2">
                     <input
                       type="text"
                       placeholder="Add tag..."
-                      className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-300 focus:ring-2 focus:ring-brand-500 focus:outline-none flex-1"
+                      className="bg-adm-surface border border-adm-border rounded-lg px-3 py-1.5 text-xs text-adm-muted focus:ring-2 focus:ring-brand-500 focus:outline-none flex-1"
                       value={newTag}
                       onChange={(e) => setNewTag(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') addTag() }}
@@ -151,7 +151,7 @@ export default function ImageGrid({
 
               <button
                 onClick={() => setSelected(null)}
-                className="w-full text-sm text-gray-400 hover:text-white py-2 border border-gray-700 rounded-lg transition-colors"
+                className="w-full text-sm text-adm-muted hover:text-white py-2 border border-adm-border rounded-lg transition-colors"
               >
                 Close
               </button>

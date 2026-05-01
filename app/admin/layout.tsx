@@ -15,8 +15,8 @@ export default async function AdminLayout({
   if (!ctx) redirect('/')
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100">
-      <header className="sticky top-0 z-50 border-b border-gray-800 bg-gray-950 px-4 sm:px-6 h-14 flex items-center justify-between">
+    <div className="min-h-screen bg-adm-bg text-adm-text">
+      <header className="sticky top-0 z-50 border-b border-adm-border bg-adm-bg px-4 sm:px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-4">
           <Link href="/admin" className="flex items-center">
             <Image
@@ -24,7 +24,7 @@ export default async function AdminLayout({
               alt="Nest & Quill"
               width={160}
               height={48}
-              className="h-8 w-auto brightness-0 invert"
+              className="h-8 w-auto dark:brightness-0 dark:invert"
               priority
             />
           </Link>

@@ -14,7 +14,7 @@ interface PageProps {
 }
 
 const PLAN_BADGE: Record<PlanTier, string> = {
-  free: 'bg-gray-800 text-gray-400',
+  free: 'bg-adm-surface text-adm-muted',
   single: 'bg-blue-900 text-blue-300',
   story_pack: 'bg-violet-900 text-violet-300',
   story_pro: 'bg-brand-900 text-brand-400',
@@ -101,7 +101,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
 
         {/* Search + table */}
         <div>
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">
+          <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest mb-4">
             Registered users
           </h2>
           <div className="space-y-4">
@@ -109,11 +109,11 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
               <AdminUserSearch defaultValue={q ?? ''} />
             </Suspense>
 
-            <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+            <div className="bg-adm-surface rounded-2xl border border-adm-border overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
+                    <tr className="border-b border-adm-border text-xs text-adm-muted uppercase tracking-wider">
                       <th className="text-left px-4 py-3">Email</th>
                       <th className="text-left px-4 py-3 hidden sm:table-cell">Signed up</th>
                       <th className="text-left px-4 py-3 hidden lg:table-cell">Last login</th>
@@ -122,9 +122,9 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                       <th className="px-4 py-3"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-800">
+                  <tbody className="divide-y divide-adm-border">
                     {rows.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-800/50 transition-colors">
+                      <tr key={user.id} className="hover:bg-adm-surface/50 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-white font-medium text-sm">{user.email}</span>
@@ -135,20 +135,20 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                               <span className="text-[10px] bg-orange-950 text-orange-400 font-semibold px-1.5 py-0.5 rounded-full">banned</span>
                             )}
                           </div>
-                          <p className="text-[10px] text-gray-600 font-mono mt-0.5">{user.id.slice(0, 8)}…</p>
+                          <p className="text-[10px] text-adm-subtle font-mono mt-0.5">{user.id.slice(0, 8)}…</p>
                         </td>
-                        <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell whitespace-nowrap">
+                        <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell whitespace-nowrap">
                           {formatAZTimeShort(user.created_at)}
                         </td>
-                        <td className="px-4 py-3 text-gray-500 text-xs hidden lg:table-cell whitespace-nowrap">
+                        <td className="px-4 py-3 text-adm-muted text-xs hidden lg:table-cell whitespace-nowrap">
                           {user.lastLogin ? formatAZTimeShort(user.lastLogin) : '—'}
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
-                          <span className="text-xs text-gray-300 font-mono">{user.storyCount}</span>
+                          <span className="text-xs text-adm-muted font-mono">{user.storyCount}</span>
                         </td>
                         <td className="px-4 py-3">
                           <div className="space-y-2">
-                            <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${PLAN_BADGE[user.plan_tier] ?? 'bg-gray-800 text-gray-400'}`}>
+                            <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${PLAN_BADGE[user.plan_tier] ?? 'bg-adm-surface text-adm-muted'}`}>
                               {user.plan_tier.replace('_', ' ')}
                             </span>
                             <AdminUserControls
@@ -178,7 +178,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                     ))}
                     {rows.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center text-gray-600">
+                        <td colSpan={6} className="px-4 py-8 text-center text-adm-subtle">
                           {q ? 'No users match that search.' : 'No users yet.'}
                         </td>
                       </tr>
@@ -187,7 +187,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                 </table>
               </div>
               {rows.length === 100 && (
-                <p className="text-xs text-gray-600 text-center py-3 border-t border-gray-800">
+                <p className="text-xs text-adm-subtle text-center py-3 border-t border-adm-border">
                   Showing first 100 — search by email to narrow down
                 </p>
               )}
@@ -202,8 +202,8 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
 function StatCard({ label, value, color }: { label: string; value: number; color?: 'green' | 'amber' }) {
   const valueColor = color === 'green' ? 'text-green-400' : color === 'amber' ? 'text-amber-400' : 'text-white'
   return (
-    <div className="bg-gray-900 rounded-2xl border border-gray-800 px-5 py-4">
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
+    <div className="bg-adm-surface rounded-2xl border border-adm-border px-5 py-4">
+      <p className="text-xs text-adm-muted mb-1">{label}</p>
       <p className={`text-3xl font-bold ${valueColor}`}>{value}</p>
     </div>
   )

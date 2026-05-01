@@ -76,7 +76,7 @@ export default async function AdminImagesPage({ searchParams }: PageProps) {
     <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
       <div>
         <h1 className="text-xl font-semibold text-white">Image Library</h1>
-        <p className="text-sm text-gray-400 mt-1">
+        <p className="text-sm text-adm-muted mt-1">
           {count ?? 0} images total
           {page > 1 && ` — page ${page}`}
         </p>
@@ -92,13 +92,13 @@ export default async function AdminImagesPage({ searchParams }: PageProps) {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-4">
           {page > 1 && (
-            <Link href={buildPageUrl(page - 1)} className="text-xs text-gray-400 hover:text-white px-3 py-1.5 border border-gray-700 rounded-lg transition-colors">
+            <Link href={buildPageUrl(page - 1)} className="text-xs text-adm-muted hover:text-white px-3 py-1.5 border border-adm-border rounded-lg transition-colors">
               ← Prev
             </Link>
           )}
-          <span className="text-xs text-gray-500">Page {page} of {totalPages}</span>
+          <span className="text-xs text-adm-muted">Page {page} of {totalPages}</span>
           {page < totalPages && (
-            <Link href={buildPageUrl(page + 1)} className="text-xs text-gray-400 hover:text-white px-3 py-1.5 border border-gray-700 rounded-lg transition-colors">
+            <Link href={buildPageUrl(page + 1)} className="text-xs text-adm-muted hover:text-white px-3 py-1.5 border border-adm-border rounded-lg transition-colors">
               Next →
             </Link>
           )}

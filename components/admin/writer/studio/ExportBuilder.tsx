@@ -26,22 +26,22 @@ export default function ExportBuilder({ bookId }: { bookId: string }) {
   ]
 
   const toggleClass = (on: boolean) =>
-    `flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${on ? 'border-brand-500 bg-brand-500/10' : 'border-gray-700 hover:border-gray-600'}`
+    `flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${on ? 'border-brand-500 bg-brand-500/10' : 'border-adm-border hover:border-adm-border'}`
 
   return (
     <div className="space-y-6">
       {/* Format */}
       <div>
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Format</p>
+        <p className="text-xs font-bold text-adm-muted uppercase tracking-widest mb-3">Format</p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {formats.map(f => (
             <button
               key={f.id}
               onClick={() => setFormat(f.id)}
-              className={`px-4 py-3 rounded-xl border text-left transition-colors space-y-0.5 ${format === f.id ? 'border-brand-500 bg-brand-500/10' : 'border-gray-700 hover:border-gray-600'}`}
+              className={`px-4 py-3 rounded-xl border text-left transition-colors space-y-0.5 ${format === f.id ? 'border-brand-500 bg-brand-500/10' : 'border-adm-border hover:border-adm-border'}`}
             >
-              <p className={`text-sm font-semibold ${format === f.id ? 'text-brand-400' : 'text-gray-300'}`}>{f.label}</p>
-              <p className="text-xs text-gray-500">{f.desc}</p>
+              <p className={`text-sm font-semibold ${format === f.id ? 'text-brand-400' : 'text-adm-muted'}`}>{f.label}</p>
+              <p className="text-xs text-adm-muted">{f.desc}</p>
             </button>
           ))}
         </div>
@@ -49,27 +49,27 @@ export default function ExportBuilder({ bookId }: { bookId: string }) {
 
       {/* Include options */}
       <div>
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Include</p>
+        <p className="text-xs font-bold text-adm-muted uppercase tracking-widest mb-3">Include</p>
         <div className="space-y-2">
           <label className={toggleClass(frontMatter)}>
             <input type="checkbox" checked={frontMatter} onChange={e => setFrontMatter(e.target.checked)} className="accent-brand-500" />
             <div>
-              <p className="text-sm text-gray-200 font-medium">Front Matter</p>
-              <p className="text-xs text-gray-500">Dedication, Epigraph, Foreword, Preface, Acknowledgments</p>
+              <p className="text-sm text-adm-text font-medium">Front Matter</p>
+              <p className="text-xs text-adm-muted">Dedication, Epigraph, Foreword, Preface, Acknowledgments</p>
             </div>
           </label>
           <label className={toggleClass(copyright)}>
             <input type="checkbox" checked={copyright} onChange={e => setCopyright(e.target.checked)} className="accent-brand-500" />
             <div>
-              <p className="text-sm text-gray-200 font-medium">Copyright Page</p>
-              <p className="text-xs text-gray-500">Generated from your copyright settings</p>
+              <p className="text-sm text-adm-text font-medium">Copyright Page</p>
+              <p className="text-xs text-adm-muted">Generated from your copyright settings</p>
             </div>
           </label>
           <label className={toggleClass(backMatter)}>
             <input type="checkbox" checked={backMatter} onChange={e => setBackMatter(e.target.checked)} className="accent-brand-500" />
             <div>
-              <p className="text-sm text-gray-200 font-medium">Back Matter</p>
-              <p className="text-xs text-gray-500">Conclusion, Notes, About the Author, Also By</p>
+              <p className="text-sm text-adm-text font-medium">Back Matter</p>
+              <p className="text-xs text-adm-muted">Conclusion, Notes, About the Author, Also By</p>
             </div>
           </label>
         </div>
@@ -82,7 +82,7 @@ export default function ExportBuilder({ bookId }: { bookId: string }) {
         Build & Download {formats.find(f => f.id === format)?.label} →
       </a>
 
-      <p className="text-xs text-gray-600 text-center">
+      <p className="text-xs text-adm-subtle text-center">
         Only enabled front/back matter sections with content will be included.
       </p>
     </div>
