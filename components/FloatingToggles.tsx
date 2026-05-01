@@ -37,6 +37,14 @@ function SystemIcon() {
 const THEME_CYCLE = ['light', 'dark', 'system'] as const
 type ThemeOption = typeof THEME_CYCLE[number]
 
+const btnClass = `
+  w-9 h-9 rounded-full flex items-center justify-center
+  bg-oxford/10 dark:bg-white/10 backdrop-blur-sm
+  border border-oxford/20 dark:border-white/15
+  text-oxford dark:text-gray-200
+  shadow-sm hover:shadow-md hover:scale-110 transition-all
+`.trim()
+
 export default function FloatingToggles() {
   const { theme, setTheme } = useTheme()
   const { lang, setLang } = useLanguage()
@@ -53,16 +61,14 @@ export default function FloatingToggles() {
   const ThemeIcon = theme === 'light' ? SunIcon : theme === 'dark' ? MoonIcon : SystemIcon
 
   return (
-    <div className="fixed top-[72px] right-3 z-40 flex flex-col gap-1.5">
+    <div className="fixed top-[68px] right-3 z-40 flex flex-row gap-1.5">
       {/* Language toggle */}
       <button
+        role="switch"
+        aria-checked={lang === 'es'}
         onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
         title={lang === 'en' ? 'Switch to Spanish' : 'Cambiar a inglés'}
-        className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold
-          bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm
-          border border-black/10 dark:border-white/10
-          text-charcoal dark:text-gray-200
-          shadow-sm hover:shadow-md hover:scale-110 transition-all"
+        className={`${btnClass} text-[11px] font-bold`}
       >
         {lang.toUpperCase()}
       </button>
@@ -71,11 +77,7 @@ export default function FloatingToggles() {
       <button
         onClick={cycleTheme}
         title={`Theme: ${theme} — click to change`}
-        className="w-9 h-9 rounded-full flex items-center justify-center
-          bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm
-          border border-black/10 dark:border-white/10
-          text-charcoal dark:text-gray-200
-          shadow-sm hover:shadow-md hover:scale-110 transition-all"
+        className={btnClass}
       >
         <ThemeIcon />
       </button>

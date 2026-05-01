@@ -3,10 +3,10 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
 import { cn } from '@/lib/utils/cn'
-import AnimatedQuill from '@/components/AnimatedQuill'
-import LogoutButton from '@/components/auth/LogoutButton'
 import SiteFooter from '@/components/layout/SiteFooter'
 import SiteHeader from '@/components/layout/SiteHeader'
+import SiteHeaderAuthButtons from '@/components/layout/SiteHeaderAuthButtons'
+import HomeHero from '@/components/HomeHero'
 import { getAdminContext } from '@/lib/admin/guard'
 
 export default async function HomePage() {
@@ -20,30 +20,9 @@ export default async function HomePage() {
 
   return (
     <div className="h-dvh bg-parchment font-sans flex flex-col">
-      <SiteHeader right={
-        <>
-          {user ? (
-            <>
-              <Link href="/account"
-                className="text-sm text-charcoal hover:text-oxford font-medium transition-colors hidden sm:block">
-                My stories
-              </Link>
-              <LogoutButton />
-            </>
-          ) : (
-            <Link href="/login"
-              className="text-sm text-charcoal hover:text-oxford font-medium transition-colors">
-              Sign in
-            </Link>
-          )}
-          <Link href="/create"
-            className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors">
-            Create a story →
-          </Link>
-        </>
-      } />
+      <SiteHeader right={<SiteHeaderAuthButtons isLoggedIn={!!user} />} />
       <div className="flex-1 overflow-y-auto">
-        <Hero />
+        <HomeHero />
         <LearningStoriesSection />
         <HowItWorks />
         <SamplePreview />
@@ -55,70 +34,6 @@ export default async function HomePage() {
     </div>
   )
 }
-
-// ── Hero ──────────────────────────────────────────────────────────────────────
-
-function Hero() {
-  return (
-    <section className="bg-brand-50 pt-20 pb-24 px-6 text-center">
-      <div className="max-w-3xl mx-auto space-y-7">
-        <div className="inline-block bg-brand-100 text-brand-700 text-xs font-semibold px-3 py-1 rounded-full tracking-wide uppercase">
-          Free during beta
-        </div>
-
-        <div className="flex items-center justify-center gap-6">
-          <h1 className="font-serif text-5xl sm:text-6xl text-oxford leading-tight text-balance">
-            A storybook made{' '}
-            <span className="text-brand-500 italic">just for them.</span>
-          </h1>
-          <AnimatedQuill size={300} className="hidden sm:block shrink-0" />
-        </div>
-
-        <p className="text-lg text-charcoal max-w-xl mx-auto text-balance leading-relaxed">
-          Personalized AI-illustrated storybooks starring your child. Pick a theme, tell us about them, and we&apos;ll write and illustrate a unique book in minutes.
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-          <Link
-            href="/create"
-            className="bg-brand-500 hover:bg-brand-600 text-white font-semibold px-7 py-3.5 rounded-full text-base transition-all active:scale-[0.98] shadow-md shadow-brand-200"
-          >
-            Create your story free →
-          </Link>
-          <Link
-            href="#how-it-works"
-            className="bg-white text-oxford font-semibold px-7 py-3.5 rounded-full text-base border border-parchment-dark hover:border-oxford/30 transition-colors"
-          >
-            See how it works
-          </Link>
-        </div>
-
-        <p className="text-xs text-gray-400 pt-1">
-          No account required · Ready in under 2 minutes
-        </p>
-      </div>
-
-      {/* Decorative book cards */}
-      <div className="max-w-2xl mx-auto mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {SAMPLE_BOOKS.map((book) => (
-          <div
-            key={book.title}
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-5 text-left space-y-2"
-          >
-            <p className="font-serif text-sm font-semibold text-gray-800 leading-snug">{book.title}</p>
-            <p className="text-xs text-gray-400">{book.detail}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-const SAMPLE_BOOKS = [
-  { title: "Xavior's Dinosaur Adventure", detail: 'Age 6 · Adventure · Watercolor' },
-  { title: "Sofia Under the Sea", detail: 'Age 4 · Magical · Cartoon' },
-  { title: "Luca Saves the Stars", detail: 'Age 8 · Brave · Digital Art' },
-]
 
 // ── Learning teaser ───────────────────────────────────────────────────────────
 
