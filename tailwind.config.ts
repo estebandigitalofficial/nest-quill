@@ -6,12 +6,10 @@ const config: Config = {
     './components/**/*.{ts,tsx}',
     './lib/**/*.{ts,tsx}',
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       screens: {
-        // Targets landscape phones (orientation:landscape + small height) only.
-        // Placed last so these utilities override sm:/md: in the CSS cascade.
-        // Desktop is always tall (>500px), so this never fires there.
         'ls': { raw: '(orientation: landscape) and (max-height: 500px)' },
       },
       fontFamily: {
@@ -36,13 +34,14 @@ const config: Config = {
           light:   '#1a3a60',
           dark:    '#071828',
         },
+        // parchment and charcoal are CSS-variable-driven so they flip with the theme
         parchment: {
-          DEFAULT: '#F8F5EC',
-          dark:    '#ede9dc',
+          DEFAULT: 'rgb(var(--parchment) / <alpha-value>)',
+          dark:    'rgb(var(--parchment-dark) / <alpha-value>)',
         },
         charcoal: {
-          DEFAULT: '#2E2E2E',
-          light:   '#4a4a4a',
+          DEFAULT: 'rgb(var(--charcoal) / <alpha-value>)',
+          light:   'rgb(var(--charcoal-light) / <alpha-value>)',
         },
       },
     },

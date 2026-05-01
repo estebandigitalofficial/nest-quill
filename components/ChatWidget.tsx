@@ -20,8 +20,18 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>([GREETING])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [bouncing, setBouncing] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (open) return
+    const id = setInterval(() => {
+      setBouncing(true)
+      setTimeout(() => setBouncing(false), 950)
+    }, 5000)
+    return () => clearInterval(id)
+  }, [open])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -195,7 +205,7 @@ export default function ChatWidget() {
       {/* Toggle button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="bottom-8 right-3 sm:bottom-[68px] sm:right-5 ls:bottom-14"
+        className={`chat-btn${bouncing && !open ? ' chat-btn-bouncing' : ''} bottom-8 right-3 sm:bottom-[68px] sm:right-5 ls:bottom-14`}
         style={{
           position: 'fixed', zIndex: 50,
           width: 120, height: 120,
@@ -203,11 +213,8 @@ export default function ChatWidget() {
           border: 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.55)) drop-shadow(0 4px 16px rgba(0,0,0,0.3))',
-          transition: 'transform 0.2s',
           lineHeight: 0,
         }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.07)' }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)' }}
         aria-label={open ? 'Close chat' : 'Chat with us'}
       >
         {open ? (

@@ -6,6 +6,20 @@
   :root {
     --font-sans: 'Nunito', system-ui, sans-serif;
     --font-serif: 'Playfair Display', Georgia, serif;
+
+    /* Light mode — warm parchment palette */
+    --parchment:      248 245 236;   /* #F8F5EC */
+    --parchment-dark: 237 233 220;   /* #EDE9DC */
+    --charcoal:       46  46  46;    /* #2E2E2E */
+    --charcoal-light: 74  74  74;    /* #4A4A4A */
+  }
+
+  /* Dark mode overrides */
+  .dark {
+    --parchment:      10  16  26;    /* deep navy */
+    --parchment-dark: 16  25  40;    /* slightly lighter navy */
+    --charcoal:       216 210 196;   /* warm off-white */
+    --charcoal-light: 172 166 152;   /* muted warm */
   }
 
   html {
@@ -19,6 +33,19 @@
   h1, h2, h3, h4 {
     @apply font-serif text-oxford;
   }
+
+  /* Headings flip to warm off-white in dark mode */
+  .dark h1,
+  .dark h2,
+  .dark h3,
+  .dark h4 {
+    color: rgb(232 226 210);
+  }
+
+  /* Sections that use brand-50 as background adapt in dark mode */
+  .dark .dark-section {
+    background-color: rgb(14 22 36);
+  }
 }
 
 @layer utilities {
@@ -29,15 +56,9 @@
 
 /* Animated writing quill — tip stays planted, top sways */
 @keyframes quill-write {
-  0%, 100% {
-    transform: rotate(-3deg);
-  }
-  30% {
-    transform: rotate(2deg);
-  }
-  60% {
-    transform: rotate(-1.5deg);
-  }
+  0%, 100% { transform: rotate(-3deg); }
+  30%       { transform: rotate(2deg); }
+  60%       { transform: rotate(-1.5deg); }
 }
 
 .animate-quill-float {
@@ -45,3 +66,22 @@
   animation: quill-write 3s ease-in-out infinite;
 }
 
+/* Chat button idle bounce + spin every 5s */
+@keyframes chat-bounce-spin {
+  0%   { transform: translateY(0)     rotate(0deg)   scale(1);    }
+  18%  { transform: translateY(-18px) rotate(120deg) scale(1.08); }
+  40%  { transform: translateY(-10px) rotate(240deg) scale(1.04); }
+  60%  { transform: translateY(-16px) rotate(340deg) scale(1.07); }
+  78%  { transform: translateY(-4px)  rotate(360deg) scale(1.02); }
+  100% { transform: translateY(0)     rotate(360deg) scale(1);    }
+}
+
+.chat-btn {
+  transition: transform 0.2s ease;
+}
+.chat-btn:hover {
+  transform: scale(1.07);
+}
+.chat-btn-bouncing {
+  animation: chat-bounce-spin 0.95s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards !important;
+}

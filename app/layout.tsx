@@ -3,6 +3,7 @@ import { Playfair_Display, Nunito } from 'next/font/google'
 import './globals.css'
 import CookieBanner from '@/components/CookieBanner'
 import ChatWidget from '@/components/ChatWidget'
+import ThemeProvider from '@/components/ThemeProvider'
 
 const nunito = Nunito({
   subsets: ['latin'],
@@ -61,11 +62,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${nunito.variable} ${playfair.variable}`}>
+    <html lang="en" className={`${nunito.variable} ${playfair.variable}`} suppressHydrationWarning>
       <body>
-        {children}
-        <CookieBanner />
-        <ChatWidget />
+        <ThemeProvider>
+          {children}
+          <CookieBanner />
+          <ChatWidget />
+        </ThemeProvider>
       </body>
     </html>
   )
