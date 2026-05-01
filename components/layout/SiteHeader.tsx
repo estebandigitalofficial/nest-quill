@@ -40,12 +40,10 @@ export default function SiteHeader({ right }: Props) {
         </div>
       </div>
 
-      {/* Toggles bar — sticky below the main header row */}
-      <div className="border-t border-black/5 dark:border-white/5 bg-parchment/80 dark:bg-parchment/80 backdrop-blur-sm py-1.5 px-6">
-        <div className="max-w-5xl mx-auto flex items-center justify-end gap-2">
-          <LanguageToggle />
-          <ThemeToggle />
-        </div>
+      {/* Toggles — no bar, just the pills */}
+      <div className="max-w-5xl mx-auto px-6 pb-1.5 flex items-center justify-end gap-2">
+        <LanguageToggle />
+        <ThemeToggle />
       </div>
     </header>
   )

@@ -44,8 +44,8 @@ export default async function AdminLayout({
           </div>
         </div>
 
-        {/* Toggles bar */}
-        <div className="border-t border-gray-800 py-1.5 px-4 sm:px-6 flex items-center justify-end gap-2">
+        {/* Toggles — no bar, just the pills */}
+        <div className="pb-1.5 px-4 sm:px-6 flex items-center justify-end gap-2">
           <LanguageToggle variant="admin" />
           <ThemeToggle variant="admin" />
         </div>
