@@ -1,17 +1,22 @@
 import Link from 'next/link'
+import { getSetting } from '@/lib/settings/appSettings'
 
 const TOOLS = [
-  { href: '/learning/scan-homework', label: 'Scan Homework' },
-  { href: '/learning/quiz',          label: 'Quiz Generator' },
-  { href: '/learning/flashcards',    label: 'Flashcards' },
-  { href: '/learning/explain',       label: 'Concept Explainer' },
-  { href: '/learning/study-guide',   label: 'Study Guide' },
-  { href: '/learning/math',          label: 'Math Practice' },
-  { href: '/learning/spelling',      label: 'Spelling Practice' },
-  { href: '/learning/reading',       label: 'Reading Comprehension' },
+  { href: '/learning/scan-homework', label: 'Scan Homework',        flag: 'scan_homework' },
+  { href: '/learning/quiz',          label: 'Quiz Generator',        flag: null },
+  { href: '/learning/flashcards',    label: 'Flashcards',            flag: null },
+  { href: '/learning/explain',       label: 'Concept Explainer',     flag: null },
+  { href: '/learning/study-guide',   label: 'Study Guide',           flag: null },
+  { href: '/learning/math',          label: 'Math Practice',         flag: null },
+  { href: '/learning/spelling',      label: 'Spelling Practice',     flag: null },
+  { href: '/learning/reading',       label: 'Reading Comprehension', flag: null },
 ]
 
-export default function LearningDropdown() {
+export default async function LearningDropdown() {
+  const scanEnabled = await getSetting('scan_homework_enabled', true)
+
+  const tools = TOOLS.filter(t => t.flag !== 'scan_homework' || scanEnabled)
+
   return (
     <div className="group relative">
 
@@ -33,7 +38,7 @@ export default function LearningDropdown() {
             All Learning Tools →
           </Link>
           <div className="h-px bg-gray-100 mx-3 mb-1" />
-          {TOOLS.map(t => (
+          {tools.map(t => (
             <Link key={t.href} href={t.href}
               className="flex items-center gap-2.5 px-4 py-2 text-sm text-charcoal hover:bg-indigo-50 hover:text-indigo-700 transition-colors rounded-lg mx-1">
               {t.label}

@@ -2,19 +2,21 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
+import { getSetting } from '@/lib/settings/appSettings'
 
 export const metadata: Metadata = {
   title: 'Learning Mode — Nest & Quill',
   description: 'AI-powered learning tools for kids in grades 1–8. Quizzes, flashcards, study guides, spelling practice, math problems, and reading comprehension — all free.',
 }
 
-const TOOLS = [
+const ALL_TOOLS = [
   {
     href: '/learning/scan-homework',
     title: 'Scan Homework',
     desc: 'Snap a photo of any worksheet or textbook page — instantly get flashcards, explanations, study guides, spelling practice, or trivia.',
     tag: 'New',
     color: 'rose',
+    flag: 'scan_homework',
   },
   {
     href: '/learning/quiz',
@@ -22,6 +24,7 @@ const TOOLS = [
     desc: 'Type any topic or snap a photo of homework — get a 5-question quiz instantly.',
     tag: 'Photo upload',
     color: 'indigo',
+    flag: null,
   },
   {
     href: '/learning/flashcards',
@@ -29,6 +32,7 @@ const TOOLS = [
     desc: 'Any topic or photo → 10 study cards. Tap to flip. Mark what you know.',
     tag: 'Photo upload',
     color: 'violet',
+    flag: null,
   },
   {
     href: '/learning/explain',
@@ -36,6 +40,7 @@ const TOOLS = [
     desc: 'Ask about anything or upload a photo. Get a simple explanation, a real-world analogy, and something to try at home.',
     tag: 'Photo upload',
     color: 'amber',
+    flag: null,
   },
   {
     href: '/learning/study-guide',
@@ -43,6 +48,7 @@ const TOOLS = [
     desc: 'Key terms, main concepts, memory tips, and practice questions — from any topic or photo.',
     tag: 'Photo upload',
     color: 'emerald',
+    flag: null,
   },
   {
     href: '/learning/spelling',
@@ -50,6 +56,7 @@ const TOOLS = [
     desc: 'Paste your word list from school. Practice one at a time, track your score.',
     tag: 'No AI needed',
     color: 'pink',
+    flag: null,
   },
   {
     href: '/learning/math',
@@ -57,6 +64,7 @@ const TOOLS = [
     desc: 'Pick a topic and grade — get 8 problems with step-by-step solutions.',
     tag: null,
     color: 'blue',
+    flag: null,
   },
   {
     href: '/learning/reading',
@@ -64,21 +72,26 @@ const TOOLS = [
     desc: 'Paste any passage and get 5 questions — literal and inferential.',
     tag: null,
     color: 'teal',
+    flag: null,
   },
 ]
 
 const COLOR_MAP: Record<string, { border: string; bg: string; tag: string }> = {
-  rose: { border: 'hover:border-rose-300', bg: 'bg-rose-50', tag: 'bg-rose-100 text-rose-700' },
-  indigo: { border: 'hover:border-indigo-300', bg: 'bg-indigo-50', tag: 'bg-indigo-100 text-indigo-700' },
-  violet: { border: 'hover:border-violet-300', bg: 'bg-violet-50', tag: 'bg-violet-100 text-violet-700' },
-  amber: { border: 'hover:border-amber-300', bg: 'bg-amber-50', tag: 'bg-amber-100 text-amber-700' },
+  rose:    { border: 'hover:border-rose-300',    bg: 'bg-rose-50',    tag: 'bg-rose-100 text-rose-700' },
+  indigo:  { border: 'hover:border-indigo-300',  bg: 'bg-indigo-50',  tag: 'bg-indigo-100 text-indigo-700' },
+  violet:  { border: 'hover:border-violet-300',  bg: 'bg-violet-50',  tag: 'bg-violet-100 text-violet-700' },
+  amber:   { border: 'hover:border-amber-300',   bg: 'bg-amber-50',   tag: 'bg-amber-100 text-amber-700' },
   emerald: { border: 'hover:border-emerald-300', bg: 'bg-emerald-50', tag: 'bg-emerald-100 text-emerald-700' },
-  pink: { border: 'hover:border-pink-300', bg: 'bg-pink-50', tag: 'bg-pink-100 text-pink-700' },
-  blue: { border: 'hover:border-blue-300', bg: 'bg-blue-50', tag: 'bg-blue-100 text-blue-700' },
-  teal: { border: 'hover:border-teal-300', bg: 'bg-teal-50', tag: 'bg-teal-100 text-teal-700' },
+  pink:    { border: 'hover:border-pink-300',    bg: 'bg-pink-50',    tag: 'bg-pink-100 text-pink-700' },
+  blue:    { border: 'hover:border-blue-300',    bg: 'bg-blue-50',    tag: 'bg-blue-100 text-blue-700' },
+  teal:    { border: 'hover:border-teal-300',    bg: 'bg-teal-50',    tag: 'bg-teal-100 text-teal-700' },
 }
 
-export default function LearningPage() {
+export default async function LearningPage() {
+  const scanEnabled = await getSetting('scan_homework_enabled', true)
+
+  const TOOLS = ALL_TOOLS.filter(t => t.flag !== 'scan_homework' || scanEnabled)
+
   return (
     <div className="h-dvh bg-parchment flex flex-col">
       <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Home</Link>} />
