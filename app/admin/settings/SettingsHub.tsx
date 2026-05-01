@@ -13,111 +13,39 @@ function BellIcon({ className = 'w-4 h-4' }: { className?: string }) {
     </svg>
   )
 }
-
 function LayersIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-      <polyline points="2 17 12 22 22 17"/>
-      <polyline points="2 12 12 17 22 12"/>
-    </svg>
-  )
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>)
 }
-
 function FlagIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-      <line x1="4" y1="22" x2="4" y2="15"/>
-    </svg>
-  )
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>)
 }
-
 function BookOpenIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-    </svg>
-  )
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>)
 }
-
 function FileTextIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-      <line x1="16" y1="13" x2="8" y2="13"/>
-      <line x1="16" y1="17" x2="8" y2="17"/>
-      <polyline points="10 9 9 9 8 9"/>
-    </svg>
-  )
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>)
 }
-
 function MailIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-      <polyline points="22,6 12,13 2,6"/>
-    </svg>
-  )
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>)
 }
-
 function GlobeIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="2" y1="12" x2="22" y2="12"/>
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-    </svg>
-  )
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>)
 }
-
 function ShieldIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-    </svg>
-  )
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>)
 }
-
 function GridIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <rect x="3" y="3" width="7" height="7"/>
-      <rect x="14" y="3" width="7" height="7"/>
-      <rect x="14" y="14" width="7" height="7"/>
-      <rect x="3" y="14" width="7" height="7"/>
-    </svg>
-  )
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>)
 }
-
 function PaletteIcon({ className = 'w-4 h-4' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>
-      <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
-      <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
-      <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
-      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
-    </svg>
-  )
-}
-
-function ChevronDown({ className = 'w-4 h-4' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <polyline points="6 9 12 15 18 9"/>
-    </svg>
-  )
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>)
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
-// key links an item to a row in app_settings; absent = not yet wired
-type Item = { label: string; hint: string; key?: string }
+type Item = { label: string; hint: string; key?: string; group?: string }
 
 type SectionDef = {
   id: string
@@ -126,6 +54,8 @@ type SectionDef = {
   Icon: (props: { className?: string }) => React.ReactElement
   live: boolean
   items?: Item[]
+  /** Use a 2-col grid for items */
+  columns?: boolean
 }
 
 // ─── Section definitions ──────────────────────────────────────────────────────
@@ -137,145 +67,147 @@ const SECTIONS: SectionDef[] = [
     description: 'Logos, colors, contact info — controls the look and feel of the entire site.',
     Icon: PaletteIcon,
     live: false,
+    columns: true,
     items: [
-      // Assets
-      { label: 'Favicon URL',       hint: 'Browser tab icon (use a CDN URL to a .webp, .png, or .ico)',     key: 'branding_favicon_url' },
-      { label: 'Header Logo URL',   hint: 'Logo shown in the public site header',                           key: 'branding_header_logo_url' },
-      { label: 'Footer Logo URL',   hint: 'Logo shown in the footer (usually a light version for dark bg)', key: 'branding_footer_logo_url' },
-      // Contact
-      { label: 'Contact Email',     hint: 'Public-facing contact email (contact page, footer)',              key: 'contact_email' },
-      { label: 'Support Email',     hint: 'Customer support inquiries',                                     key: 'support_email' },
-      { label: 'Stories From Email', hint: 'Sender address for story delivery emails',                       key: 'stories_from_email' },
-      { label: 'Admin Alert Email', hint: 'Receives admin notifications (new stories, errors)',              key: 'admin_alert_email' },
-      { label: 'Phone Number',      hint: 'Displayed on contact page (leave empty to hide)',                 key: 'phone_number' },
-      // Light mode colors
-      { label: 'Brand Primary',           hint: 'Buttons, links, accents (light mode)',    key: 'color_brand_primary' },
-      { label: 'Oxford Navy',             hint: 'Headings and dark text (light mode)',     key: 'color_oxford' },
-      { label: 'Parchment Background',    hint: 'Main background (light mode)',            key: 'color_parchment' },
-      { label: 'Charcoal Text',           hint: 'Body text (light mode)',                  key: 'color_charcoal' },
-      // Dark mode colors
-      { label: 'Brand Primary (Dark)',    hint: 'Accent color in dark mode',               key: 'color_dark_brand_primary' },
-      { label: 'Background (Dark)',       hint: 'Main background in dark mode',            key: 'color_dark_bg' },
-      { label: 'Surface (Dark)',          hint: 'Card/surface background in dark mode',    key: 'color_dark_surface' },
-      { label: 'Text (Dark)',             hint: 'Primary text in dark mode',               key: 'color_dark_text' },
-      { label: 'Muted Text (Dark)',       hint: 'Secondary text in dark mode',             key: 'color_dark_muted' },
+      { label: 'Favicon URL',       hint: 'Browser tab icon (.webp, .png, or .ico)',                     key: 'branding_favicon_url',    group: 'Assets' },
+      { label: 'Header Logo URL',   hint: 'Logo shown in the public site header',                        key: 'branding_header_logo_url', group: 'Assets' },
+      { label: 'Footer Logo URL',   hint: 'Logo shown in the footer (light version for dark bg)',         key: 'branding_footer_logo_url', group: 'Assets' },
+      { label: 'Contact Email',     hint: 'Public-facing contact email',                                 key: 'contact_email',           group: 'Contact Info' },
+      { label: 'Support Email',     hint: 'Customer support inquiries',                                  key: 'support_email',           group: 'Contact Info' },
+      { label: 'Stories From Email', hint: 'Sender address for story emails',                             key: 'stories_from_email',      group: 'Contact Info' },
+      { label: 'Admin Alert Email', hint: 'Receives admin notifications',                                key: 'admin_alert_email',       group: 'Contact Info' },
+      { label: 'Phone Number',      hint: 'Displayed on contact page',                                   key: 'phone_number',            group: 'Contact Info' },
+      { label: 'Brand Primary',     hint: 'Buttons, links, accents',                                     key: 'color_brand_primary',     group: 'Light Mode Colors' },
+      { label: 'Oxford Navy',       hint: 'Headings and dark text',                                      key: 'color_oxford',            group: 'Light Mode Colors' },
+      { label: 'Parchment',         hint: 'Main background',                                             key: 'color_parchment',         group: 'Light Mode Colors' },
+      { label: 'Charcoal',          hint: 'Body text',                                                   key: 'color_charcoal',          group: 'Light Mode Colors' },
+      { label: 'Brand Primary',     hint: 'Accent color',                                                key: 'color_dark_brand_primary', group: 'Dark Mode Colors' },
+      { label: 'Background',        hint: 'Main background',                                             key: 'color_dark_bg',           group: 'Dark Mode Colors' },
+      { label: 'Surface',           hint: 'Card/surface background',                                     key: 'color_dark_surface',      group: 'Dark Mode Colors' },
+      { label: 'Text',              hint: 'Primary text',                                                key: 'color_dark_text',         group: 'Dark Mode Colors' },
+      { label: 'Muted Text',        hint: 'Secondary text',                                              key: 'color_dark_muted',        group: 'Dark Mode Colors' },
     ],
   },
   {
     id: 'notifications',
     label: 'Notifications',
-    description: 'Email alerts for system events. Settings are per-admin account.',
+    description: 'Email alerts for system events.',
     Icon: BellIcon,
     live: true,
   },
   {
     id: 'plans',
     label: 'Plans & Limits',
-    description: 'Story quotas, tier access controls, and pricing copy displayed to users.',
+    description: 'Story quotas and tier access controls.',
     Icon: LayersIcon,
     live: false,
+    columns: true,
     items: [
-      { label: 'Guest story limit',     hint: 'Max stories a guest can request before login is required', key: 'guest_story_limit' },
-      { label: 'Free user story limit', hint: 'Monthly cap for free-tier accounts',                       key: 'free_user_story_limit' },
-      { label: 'Max pages per tier',    hint: 'Page and image ceiling by plan level' },
-      { label: 'PDF & dedication access', hint: 'Which plan tiers unlock PDF download and dedication pages' },
-      { label: 'Pricing copy',          hint: 'Plan names, taglines, and call-to-action text' },
+      { label: 'Guest story limit',     hint: 'Max stories before login required', key: 'guest_story_limit' },
+      { label: 'Free user story limit', hint: 'Monthly cap for free accounts',     key: 'free_user_story_limit' },
+      { label: 'Max pages per tier',    hint: 'Page ceiling by plan level' },
+      { label: 'PDF & dedication access', hint: 'Which tiers unlock PDF and dedication' },
+      { label: 'Pricing copy',          hint: 'Plan names and CTAs' },
     ],
   },
   {
     id: 'flags',
     label: 'Feature Flags',
-    description: 'Enable or disable product features site-wide without a code deployment.',
+    description: 'Enable or disable features site-wide.',
     Icon: FlagIcon,
     live: false,
+    columns: true,
     items: [
-      { label: 'Scan Homework',         hint: 'Allow users to upload and scan homework documents',      key: 'scan_homework_enabled' },
-      { label: 'Classroom',             hint: 'Show Classroom section and educator flows',               key: 'classroom_enabled' },
-      { label: 'Publishing Requests',   hint: 'Enable user-facing publishing request form',              key: 'publishing_requests_enabled' },
-      { label: 'Trivia Mode',           hint: 'Enable trivia / quiz mode on completed stories',          key: 'trivia_enabled' },
-      { label: 'PDF Download',          hint: 'Allow users to download stories as PDF',                  key: 'pdf_download_enabled' },
-      { label: 'Maintenance Mode',      hint: 'Take the site offline and show a maintenance message',    key: 'maintenance_mode_enabled' },
+      { label: 'Scan Homework',       hint: 'Upload and scan homework',          key: 'scan_homework_enabled' },
+      { label: 'Classroom',           hint: 'Educator flows and class management', key: 'classroom_enabled' },
+      { label: 'Publishing Requests', hint: 'User publishing request form',      key: 'publishing_requests_enabled' },
+      { label: 'Trivia Mode',         hint: 'Quiz mode on completed stories',    key: 'trivia_enabled' },
+      { label: 'PDF Download',        hint: 'Download stories as PDF',           key: 'pdf_download_enabled' },
+      { label: 'Maintenance Mode',    hint: 'Take site offline',                 key: 'maintenance_mode_enabled' },
     ],
   },
   {
     id: 'learning',
-    label: 'Learning Tool Settings',
-    description: 'Configuration for the Learning section — rate limits, modes, and defaults.',
+    label: 'Learning Tools',
+    description: 'Learning section modes and defaults.',
     Icon: BookOpenIcon,
     live: false,
+    columns: true,
     items: [
-      { label: 'Rate limits',              hint: 'Max requests per user per session or day' },
-      { label: 'Grade range',              hint: 'Supported grade levels for learning tools' },
-      { label: 'Think First mode',         hint: 'Default on/off for Think First prompting',           key: 'think_first_enabled' },
-      { label: 'Teach Back mode',          hint: 'Default on/off for Teach Back exercises',             key: 'teach_back_enabled' },
-      { label: 'Nudges',                   hint: 'Enable in-session encouragement nudges',              key: 'learning_nudges_enabled' },
-      { label: 'Spelling sentence mode',   hint: 'Default mode for spelling sentence generation',       key: 'spelling_sentence_mode_default' },
+      { label: 'Think First mode',       hint: 'Think First prompting default',   key: 'think_first_enabled' },
+      { label: 'Teach Back mode',         hint: 'Teach Back exercises default',    key: 'teach_back_enabled' },
+      { label: 'Nudges',                  hint: 'In-session encouragement',        key: 'learning_nudges_enabled' },
+      { label: 'Spelling sentence mode',  hint: 'Sentence generation default',    key: 'spelling_sentence_mode_default' },
+      { label: 'Rate limits',             hint: 'Max requests per session/day' },
+      { label: 'Grade range',             hint: 'Supported grade levels' },
     ],
   },
   {
     id: 'site-copy',
     label: 'Site Copy',
-    description: 'Editable text shown across the public site — headlines, helper text, and limit messages.',
+    description: 'Editable text across the public site.',
     Icon: FileTextIcon,
     live: false,
     items: [
-      { label: 'Homepage headline',   hint: 'Main hero heading and subheadline' },
-      { label: 'Pricing copy',        hint: 'Descriptions shown on the pricing page' },
-      { label: 'Story helper text',   hint: 'Guidance shown during the story creation wizard' },
-      { label: 'Limit messages',      hint: 'Text shown when a user hits a quota or tier limit' },
-      { label: 'Classroom copy',      hint: 'Labels, descriptions, and CTAs in the Classroom section' },
+      { label: 'Homepage headline',   hint: 'Hero heading and subheadline' },
+      { label: 'Pricing copy',        hint: 'Pricing page descriptions' },
+      { label: 'Story helper text',   hint: 'Wizard guidance text' },
+      { label: 'Limit messages',      hint: 'Quota/tier limit text' },
+      { label: 'Classroom copy',      hint: 'Classroom labels and CTAs' },
     ],
   },
   {
     id: 'email',
     label: 'Email Settings',
-    description: 'Transactional email behavior — sender identity, copy, and delivery timing.',
+    description: 'Sender identity, copy, and timing.',
     Icon: MailIcon,
     live: false,
     items: [
-      { label: 'Sender name',            hint: 'Display name used in outgoing emails' },
-      { label: 'Story ready email copy', hint: 'Subject and body for story completion notifications' },
-      { label: 'Admin recipients',       hint: 'Email addresses that receive admin alert emails' },
-      { label: 'Drip timing',            hint: 'Delays between automated drip sequence emails' },
+      { label: 'Sender name',            hint: 'Display name in outgoing emails' },
+      { label: 'Story ready email copy', hint: 'Completion notification copy' },
+      { label: 'Admin recipients',       hint: 'Admin alert email addresses' },
+      { label: 'Drip timing',            hint: 'Drip sequence delays' },
     ],
   },
   {
     id: 'publishing',
-    label: 'Publishing Settings',
-    description: 'Options and copy for the user-facing publishing request flow.',
+    label: 'Publishing',
+    description: 'Publishing request flow options.',
     Icon: GlobeIcon,
     live: false,
     items: [
-      { label: 'Request form options', hint: 'Fields and choices shown on the publishing request form' },
-      { label: 'Intent dropdowns',     hint: 'Publishing intent options users can select' },
-      { label: 'Status options',       hint: 'Allowed status values for publishing requests' },
-      { label: 'Confirmation message', hint: 'Text shown after a publishing request is submitted' },
+      { label: 'Request form options', hint: 'Publishing form fields' },
+      { label: 'Intent dropdowns',     hint: 'User intent options' },
+      { label: 'Status options',       hint: 'Request status values' },
+      { label: 'Confirmation message', hint: 'Post-submission text' },
     ],
   },
   {
     id: 'safety',
-    label: 'Safety / Guardrails',
-    description: 'Content safety thresholds, input limits, and school-safe mode controls.',
+    label: 'Safety & Guardrails',
+    description: 'Content safety and input limits.',
     Icon: ShieldIcon,
     live: false,
+    columns: true,
     items: [
-      { label: 'Strict school-safe mode',  hint: 'Enforce conservative content filtering across all tools', key: 'strict_school_safe_mode' },
-      { label: 'Political clarification',  hint: 'Behavior when politically sensitive topics are detected',  key: 'political_clarification_enabled' },
-      { label: 'Max pasted text length',   hint: 'Character limit for user-pasted content',                  key: 'max_pasted_text_length' },
-      { label: 'Max image upload size (MB)', hint: 'File size ceiling for image uploads',                    key: 'max_image_upload_mb' },
-      { label: 'Image uploads per tool',   hint: 'How many images a user can upload per tool session' },
+      { label: 'School-safe mode',         hint: 'Conservative content filtering', key: 'strict_school_safe_mode' },
+      { label: 'Political clarification',  hint: 'Sensitive topic detection',      key: 'political_clarification_enabled' },
+      { label: 'Max pasted text',          hint: 'Character limit for inputs',     key: 'max_pasted_text_length' },
+      { label: 'Max image upload (MB)',    hint: 'File size ceiling',              key: 'max_image_upload_mb' },
+      { label: 'Image uploads per tool',   hint: 'Per-session upload limit' },
     ],
   },
   {
     id: 'dashboard',
-    label: 'Admin Dashboard Settings',
-    description: 'Control which cards appear on the admin home dashboard and alert thresholds.',
+    label: 'Dashboard',
+    description: 'Admin dashboard cards and thresholds.',
     Icon: GridIcon,
     live: false,
+    columns: true,
     items: [
-      { label: 'Visible dashboard cards',        hint: 'Which stat cards are shown on the admin home page' },
-      { label: 'Stuck-story threshold (minutes)', hint: 'Minutes before a generating story is flagged as stuck', key: 'stuck_story_threshold_minutes' },
-      { label: 'Alert thresholds',               hint: 'Error rate or queue depth values that trigger dashboard warnings' },
+      { label: 'Stuck-story threshold',  hint: 'Minutes before flagged as stuck', key: 'stuck_story_threshold_minutes' },
+      { label: 'Visible cards',           hint: 'Stat cards on admin home' },
+      { label: 'Alert thresholds',        hint: 'Error rate / queue depth alerts' },
     ],
   },
 ]
@@ -284,37 +216,31 @@ const SECTIONS: SectionDef[] = [
 
 function SaveDot({ status }: { status: SaveStatus }) {
   if (status === 'idle')   return null
-  if (status === 'saving') return <span className="text-[11px] text-adm-muted">Saving…</span>
+  if (status === 'saving') return <span className="text-[11px] text-adm-muted animate-pulse">Saving…</span>
   if (status === 'saved')  return <span className="text-[11px] text-green-500 font-medium">Saved</span>
   return                          <span className="text-[11px] text-red-400  font-medium">Failed</span>
 }
 
-// ─── Boolean toggle row ───────────────────────────────────────────────────────
+// ─── Row components ───────────────────────────────────────────────────────────
 
-function BooleanRow({
-  settingKey, value, status, label, hint, onSave,
-}: {
-  settingKey: string
-  value: boolean
-  status: SaveStatus
-  label: string
-  hint: string
+function BooleanRow({ settingKey, value, status, label, hint, onSave }: {
+  settingKey: string; value: boolean; status: SaveStatus; label: string; hint: string
   onSave: (key: string, next: unknown, prev: unknown) => void
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
+    <div className="flex items-center justify-between gap-4 bg-adm-bg/50 border border-adm-border rounded-xl px-4 py-3.5">
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-adm-text">{label}</p>
-        <p className="text-xs text-adm-muted mt-0.5">{hint}</p>
+        <p className="text-sm font-medium text-adm-text">{label}</p>
+        <p className="text-[11px] text-adm-muted mt-0.5 leading-relaxed">{hint}</p>
       </div>
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-2.5 shrink-0">
         <SaveDot status={status} />
         <button
           type="button"
           onClick={() => onSave(settingKey, !value, value)}
           disabled={status === 'saving'}
           aria-pressed={value}
-          className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${value ? 'bg-brand-500' : 'bg-gray-700'}`}
+          className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${value ? 'bg-brand-500' : 'bg-gray-600'}`}
         >
           <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${value ? 'translate-x-5' : 'translate-x-0'}`} />
         </button>
@@ -323,180 +249,112 @@ function BooleanRow({
   )
 }
 
-// ─── Numeric input row ────────────────────────────────────────────────────────
-
-function NumericRow({
-  settingKey, value, status, label, hint, onSave,
-}: {
-  settingKey: string
-  value: number
-  status: SaveStatus
-  label: string
-  hint: string
+function NumericRow({ settingKey, value, status, label, hint, onSave }: {
+  settingKey: string; value: number; status: SaveStatus; label: string; hint: string
   onSave: (key: string, next: unknown, prev: unknown) => void
 }) {
   const [draft, setDraft] = useState(String(value))
-
-  // Sync if the external value changes (revert on error, or updated externally)
   useEffect(() => { setDraft(String(value)) }, [value])
-
   function handleBlur() {
     const n = Number(draft)
-    if (Number.isFinite(n) && n !== value) {
-      onSave(settingKey, n, value)
-    } else {
-      setDraft(String(value))  // reset if invalid or unchanged
-    }
+    if (Number.isFinite(n) && n !== value) onSave(settingKey, n, value)
+    else setDraft(String(value))
   }
-
   return (
-    <div className="flex items-center justify-between gap-4 bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
+    <div className="flex items-center justify-between gap-4 bg-adm-bg/50 border border-adm-border rounded-xl px-4 py-3.5">
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-adm-text">{label}</p>
-        <p className="text-xs text-adm-muted mt-0.5">{hint}</p>
+        <p className="text-sm font-medium text-adm-text">{label}</p>
+        <p className="text-[11px] text-adm-muted mt-0.5 leading-relaxed">{hint}</p>
       </div>
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-2.5 shrink-0">
         <SaveDot status={status} />
-        <input
-          type="number"
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          onBlur={handleBlur}
-          disabled={status === 'saving'}
-          className="w-24 text-center text-sm bg-adm-bg border border-adm-border rounded-lg px-2 py-1.5 text-adm-text focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 disabled:opacity-50"
-        />
+        <input type="number" value={draft} onChange={e => setDraft(e.target.value)} onBlur={handleBlur} disabled={status === 'saving'}
+          className="w-20 text-center text-sm bg-adm-bg border border-adm-border rounded-lg px-2 py-1.5 text-adm-text focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50" />
       </div>
     </div>
   )
 }
 
-// ─── String input row ────────────────────────────────────────────────────────
-
-function StringRow({
-  settingKey, value, status, label, hint, onSave, placeholder,
-}: {
-  settingKey: string; value: string; status: SaveStatus; label: string; hint: string;
-  onSave: (key: string, next: unknown, prev: unknown) => void; placeholder?: string
-}) {
-  const [draft, setDraft] = useState(value)
-  useEffect(() => { setDraft(value) }, [value])
-
-  function handleBlur() {
-    if (draft !== value) onSave(settingKey, draft, value)
-  }
-
-  return (
-    <div className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-adm-text">{label}</p>
-          <p className="text-xs text-adm-muted mt-0.5">{hint}</p>
-        </div>
-        <SaveDot status={status} />
-      </div>
-      <input
-        type="text"
-        value={draft}
-        onChange={e => setDraft(e.target.value)}
-        onBlur={handleBlur}
-        placeholder={placeholder}
-        disabled={status === 'saving'}
-        className="w-full text-sm bg-adm-bg border border-adm-border rounded-lg px-3.5 py-2 text-adm-text focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 font-mono"
-      />
-    </div>
-  )
-}
-
-// ─── Color picker row ────────────────────────────────────────────────────────
-
-function ColorRow({
-  settingKey, value, status, label, hint, onSave,
-}: {
-  settingKey: string; value: string; status: SaveStatus; label: string; hint: string;
+function StringRow({ settingKey, value, status, label, hint, onSave }: {
+  settingKey: string; value: string; status: SaveStatus; label: string; hint: string
   onSave: (key: string, next: unknown, prev: unknown) => void
 }) {
   const [draft, setDraft] = useState(value)
   useEffect(() => { setDraft(value) }, [value])
-
-  function handleChange(newVal: string) {
-    setDraft(newVal)
-  }
-
-  function handleBlur() {
-    if (draft !== value) onSave(settingKey, draft, value)
-  }
-
+  function handleBlur() { if (draft !== value) onSave(settingKey, draft, value) }
   return (
-    <div className="flex items-center justify-between gap-4 bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-adm-text">{label}</p>
-        <p className="text-xs text-adm-muted mt-0.5">{hint}</p>
-      </div>
-      <div className="flex items-center gap-3 shrink-0">
+    <div className="bg-adm-bg/50 border border-adm-border rounded-xl px-4 py-3.5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-adm-text">{label}</p>
+          <p className="text-[11px] text-adm-muted mt-0.5">{hint}</p>
+        </div>
         <SaveDot status={status} />
-        <input
-          type="text"
-          value={draft}
-          onChange={e => handleChange(e.target.value)}
-          onBlur={handleBlur}
-          disabled={status === 'saving'}
-          className="w-24 text-center text-xs bg-adm-bg border border-adm-border rounded-lg px-2 py-1.5 text-adm-text font-mono focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
-        />
-        <input
-          type="color"
-          value={draft}
-          onChange={e => handleChange(e.target.value)}
-          onBlur={handleBlur}
-          disabled={status === 'saving'}
-          className="w-8 h-8 rounded-lg border border-adm-border cursor-pointer disabled:opacity-50"
-        />
+      </div>
+      <input type="text" value={draft} onChange={e => setDraft(e.target.value)} onBlur={handleBlur} disabled={status === 'saving'}
+        className="w-full text-sm bg-adm-bg border border-adm-border rounded-lg px-3 py-2 text-adm-text focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 font-mono" />
+    </div>
+  )
+}
+
+function ColorRow({ settingKey, value, status, label, hint, onSave }: {
+  settingKey: string; value: string; status: SaveStatus; label: string; hint: string
+  onSave: (key: string, next: unknown, prev: unknown) => void
+}) {
+  const [draft, setDraft] = useState(value)
+  useEffect(() => { setDraft(value) }, [value])
+  function handleBlur() { if (draft !== value) onSave(settingKey, draft, value) }
+  return (
+    <div className="flex items-center justify-between gap-3 bg-adm-bg/50 border border-adm-border rounded-xl px-4 py-3.5">
+      <div className="flex items-center gap-3 min-w-0">
+        <input type="color" value={draft.startsWith('#') ? draft : '#000000'} onChange={e => setDraft(e.target.value)} onBlur={handleBlur} disabled={status === 'saving'}
+          className="w-9 h-9 rounded-lg border border-adm-border cursor-pointer disabled:opacity-50 shrink-0" />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-adm-text">{label}</p>
+          <p className="text-[11px] text-adm-muted mt-0.5">{hint}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2.5 shrink-0">
+        <SaveDot status={status} />
+        <input type="text" value={draft} onChange={e => setDraft(e.target.value)} onBlur={handleBlur} disabled={status === 'saving'}
+          className="w-24 text-center text-xs bg-adm-bg border border-adm-border rounded-lg px-2 py-1.5 text-adm-text font-mono focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50" />
       </div>
     </div>
   )
 }
 
-// ─── Placeholder row (not yet wired to app_settings) ─────────────────────────
-
 function PlaceholderRow({ label, hint }: { label: string; hint: string }) {
   return (
-    <div className="flex items-start justify-between gap-3 bg-adm-bg border border-adm-border rounded-lg px-4 py-3">
+    <div className="flex items-center justify-between gap-3 bg-adm-bg/30 border border-dashed border-adm-border rounded-xl px-4 py-3.5 opacity-60">
       <div className="min-w-0">
         <p className="text-sm font-medium text-adm-text">{label}</p>
-        <p className="text-xs text-adm-muted mt-0.5 leading-relaxed">{hint}</p>
+        <p className="text-[11px] text-adm-muted mt-0.5">{hint}</p>
       </div>
-      <span className="shrink-0 mt-0.5 text-[10px] font-semibold tracking-wide uppercase text-adm-subtle border border-adm-border rounded px-1.5 py-0.5 whitespace-nowrap">
-        Not wired
+      <span className="shrink-0 text-[10px] font-semibold tracking-wide uppercase text-adm-subtle border border-adm-border rounded px-1.5 py-0.5">
+        Soon
       </span>
     </div>
   )
 }
 
-// ─── Skeleton row shown while app_settings are loading ───────────────────────
-
 function SkeletonRow() {
-  return <div className="h-16 bg-adm-bg border border-adm-border rounded-xl animate-pulse" />
+  return <div className="h-[60px] bg-adm-bg border border-adm-border rounded-xl animate-pulse" />
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-interface Props {
-  initialSettings: Record<string, boolean>
-}
+interface Props { initialSettings: Record<string, boolean> }
 
 export default function SettingsHub({ initialSettings }: Props) {
-  const [openMap,    setOpenMap]    = useState<Record<string, boolean>>({ notifications: true })
+  const [activeId, setActiveId] = useState(SECTIONS[0].id)
   const [appSettings, setAppSettings] = useState<Record<string, unknown>>({})
-  const [isLoading,  setIsLoading]  = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [loadFailed, setLoadFailed] = useState(false)
   const [saveStatus, setSaveStatus] = useState<Record<string, SaveStatus>>({})
 
-  // Fetch all app_settings once on mount and flatten into key → value map
   useEffect(() => {
     fetch('/api/admin/app-settings')
-      .then(r => {
-        if (!r.ok) throw new Error(`${r.status}`)
-        return r.json()
-      })
+      .then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json() })
       .then((data: { settings: Record<string, { key: string; value: unknown }[]> }) => {
         const flat: Record<string, unknown> = {}
         for (const rows of Object.values(data.settings ?? {})) {
@@ -509,9 +367,8 @@ export default function SettingsHub({ initialSettings }: Props) {
   }, [])
 
   async function saveSetting(key: string, next: unknown, prev: unknown) {
-    setAppSettings(s => ({ ...s, [key]: next }))           // optimistic
+    setAppSettings(s => ({ ...s, [key]: next }))
     setSaveStatus(s => ({ ...s, [key]: 'saving' }))
-
     try {
       const res = await fetch('/api/admin/app-settings', {
         method: 'PATCH',
@@ -525,145 +382,144 @@ export default function SettingsHub({ initialSettings }: Props) {
       setSaveStatus(s => ({ ...s, [key]: 'saved' }))
       setTimeout(() => setSaveStatus(s => s[key] === 'saved' ? { ...s, [key]: 'idle' } : s), 2000)
     } catch {
-      setAppSettings(s => ({ ...s, [key]: prev }))         // revert
+      setAppSettings(s => ({ ...s, [key]: prev }))
       setSaveStatus(s => ({ ...s, [key]: 'error' }))
     }
   }
 
-  function renderItems(items: Item[]) {
+  function renderItem(item: Item) {
+    if (!item.key) return <PlaceholderRow key={item.label} label={item.label} hint={item.hint} />
+    if (isLoading) return <SkeletonRow key={item.label} />
+    if (loadFailed || !(item.key in appSettings)) return <PlaceholderRow key={item.label} label={item.label} hint={item.hint} />
+
+    const value = appSettings[item.key]
+    const status = saveStatus[item.key] ?? 'idle'
+
+    if (typeof value === 'boolean') return <BooleanRow key={item.key} settingKey={item.key} value={value} status={status} label={item.label} hint={item.hint} onSave={saveSetting} />
+    if (typeof value === 'number') return <NumericRow key={item.key} settingKey={item.key} value={value} status={status} label={item.label} hint={item.hint} onSave={saveSetting} />
+    if (typeof value === 'string') {
+      if (item.key.startsWith('color_')) return <ColorRow key={item.key} settingKey={item.key} value={value} status={status} label={item.label} hint={item.hint} onSave={saveSetting} />
+      return <StringRow key={item.key} settingKey={item.key} value={value} status={status} label={item.label} hint={item.hint} onSave={saveSetting} />
+    }
+    return <PlaceholderRow key={item.label} label={item.label} hint={item.hint} />
+  }
+
+  function renderGroupedItems(items: Item[], columns?: boolean) {
+    // Group items by their group field
+    const groups: { name: string | null; items: Item[] }[] = []
+    let current: { name: string | null; items: Item[] } | null = null
+    for (const item of items) {
+      const g = item.group ?? null
+      if (!current || current.name !== g) {
+        current = { name: g, items: [] }
+        groups.push(current)
+      }
+      current.items.push(item)
+    }
+
     return (
-      <div className="space-y-2">
-        {items.map(item => {
-          // No key → always a placeholder
-          if (!item.key) {
-            return <PlaceholderRow key={item.label} label={item.label} hint={item.hint} />
-          }
-
-          // Key present but still fetching
-          if (isLoading) {
-            return <SkeletonRow key={item.label} />
-          }
-
-          // Fetch failed — fall back gracefully
-          if (loadFailed || !(item.key in appSettings)) {
-            return <PlaceholderRow key={item.label} label={item.label} hint={item.hint} />
-          }
-
-          const value  = appSettings[item.key]
-          const status = saveStatus[item.key] ?? 'idle'
-
-          if (typeof value === 'boolean') {
-            return (
-              <BooleanRow
-                key={item.key}
-                settingKey={item.key}
-                value={value}
-                status={status}
-                label={item.label}
-                hint={item.hint}
-                onSave={saveSetting}
-              />
-            )
-          }
-
-          if (typeof value === 'number') {
-            return (
-              <NumericRow
-                key={item.key}
-                settingKey={item.key}
-                value={value}
-                status={status}
-                label={item.label}
-                hint={item.hint}
-                onSave={saveSetting}
-              />
-            )
-          }
-
-          if (typeof value === 'string') {
-            // Color fields — show color picker
-            if (item.key?.startsWith('color_')) {
-              return (
-                <ColorRow
-                  key={item.key}
-                  settingKey={item.key}
-                  value={value}
-                  status={status}
-                  label={item.label}
-                  hint={item.hint}
-                  onSave={saveSetting}
-                />
-              )
-            }
-            // All other strings — text input
-            return (
-              <StringRow
-                key={item.key}
-                settingKey={item.key}
-                value={value}
-                status={status}
-                label={item.label}
-                hint={item.hint}
-                onSave={saveSetting}
-              />
-            )
-          }
-
-          // Unhandled JSONB type — not wired yet
-          return <PlaceholderRow key={item.label} label={item.label} hint={item.hint} />
-        })}
+      <div className="space-y-6">
+        {groups.map((group, gi) => (
+          <div key={gi}>
+            {group.name && (
+              <div className="flex items-center gap-3 mb-3">
+                <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest whitespace-nowrap">{group.name}</p>
+                <div className="flex-1 h-px bg-adm-border" />
+              </div>
+            )}
+            <div className={columns ? 'grid grid-cols-1 md:grid-cols-2 gap-3' : 'space-y-3'}>
+              {group.items.map(renderItem)}
+            </div>
+          </div>
+        ))}
       </div>
     )
   }
 
-  function toggleSection(id: string) {
-    setOpenMap(m => ({ ...m, [id]: !m[id] }))
-  }
+  const activeSec = SECTIONS.find(s => s.id === activeId) ?? SECTIONS[0]
+  const hasLiveItems = activeSec.items?.some(i => i.key) ?? false
+  const showComingSoon = !activeSec.live && !hasLiveItems
 
   return (
-    <div className="space-y-3">
-      {SECTIONS.map(sec => {
-        const isOpen       = !!openMap[sec.id]
-        const hasLiveItems = sec.items?.some(i => i.key) ?? false
-        const showComingSoon = !sec.live && !hasLiveItems
-
-        return (
-          <div key={sec.id} className="bg-adm-surface border border-adm-border rounded-xl overflow-hidden">
+    <div className="flex flex-col lg:flex-row gap-6 min-h-[500px]">
+      {/* Sidebar navigation */}
+      <nav className="lg:w-56 shrink-0">
+        {/* Mobile: horizontal scroll tabs */}
+        <div className="flex lg:hidden overflow-x-auto gap-1 pb-2 -mx-1 px-1">
+          {SECTIONS.map(sec => (
             <button
-              type="button"
-              onClick={() => toggleSection(sec.id)}
-              className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-adm-bg transition-colors"
+              key={sec.id}
+              onClick={() => setActiveId(sec.id)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                activeId === sec.id
+                  ? 'bg-brand-500 text-white'
+                  : 'text-adm-muted hover:text-adm-text hover:bg-adm-bg'
+              }`}
             >
-              <div className="shrink-0 w-8 h-8 rounded-lg bg-adm-bg border border-adm-border flex items-center justify-center text-adm-muted">
-                <sec.Icon className="w-4 h-4" />
+              <sec.Icon className="w-3.5 h-3.5" />
+              {sec.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Desktop: vertical sidebar */}
+        <div className="hidden lg:flex flex-col gap-0.5 bg-adm-surface border border-adm-border rounded-xl p-2 sticky top-20">
+          {SECTIONS.map(sec => {
+            const active = activeId === sec.id
+            const sectionHasLive = sec.live || sec.items?.some(i => i.key)
+            return (
+              <button
+                key={sec.id}
+                onClick={() => setActiveId(sec.id)}
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-colors ${
+                  active
+                    ? 'bg-brand-500/10 text-brand-500'
+                    : 'text-adm-muted hover:text-adm-text hover:bg-adm-bg'
+                }`}
+              >
+                <sec.Icon className={`w-4 h-4 shrink-0 ${active ? 'text-brand-500' : ''}`} />
+                <span className="text-sm font-medium truncate">{sec.label}</span>
+                {!sectionHasLive && (
+                  <span className="ml-auto text-[9px] font-bold uppercase tracking-wide text-adm-subtle opacity-60">Soon</span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </nav>
+
+      {/* Content area */}
+      <div className="flex-1 min-w-0">
+        <div className="bg-adm-surface border border-adm-border rounded-xl overflow-hidden">
+          {/* Section header */}
+          <div className="px-6 py-5 border-b border-adm-border">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-500 shrink-0">
+                <activeSec.Icon className="w-5 h-5" />
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-semibold text-adm-text">{sec.label}</span>
+              <div>
+                <h2 className="text-base font-semibold text-adm-text flex items-center gap-2">
+                  {activeSec.label}
                   {showComingSoon && (
                     <span className="text-[10px] font-bold uppercase tracking-wide text-adm-subtle border border-adm-border bg-adm-bg rounded px-1.5 py-0.5">
                       Coming soon
                     </span>
                   )}
-                </div>
-                <p className="text-xs text-adm-muted mt-0.5 leading-relaxed">{sec.description}</p>
+                </h2>
+                <p className="text-xs text-adm-muted mt-0.5">{activeSec.description}</p>
               </div>
-              <ChevronDown
-                className={`shrink-0 w-4 h-4 text-adm-subtle transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
-
-            {isOpen && (
-              <div className="border-t border-adm-border px-5 py-4">
-                {sec.live
-                  ? <NotificationToggles initialSettings={initialSettings} />
-                  : renderItems(sec.items ?? [])
-                }
-              </div>
-            )}
+            </div>
           </div>
-        )
-      })}
+
+          {/* Section content */}
+          <div className="px-6 py-5">
+            {activeSec.live
+              ? <NotificationToggles initialSettings={initialSettings} />
+              : renderGroupedItems(activeSec.items ?? [], activeSec.columns)
+            }
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
