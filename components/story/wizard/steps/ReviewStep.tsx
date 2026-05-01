@@ -5,8 +5,11 @@ import type { StoryFormValues } from '@/lib/validators/story-form'
 import { ILLUSTRATION_STYLES } from '@/types/story'
 import { PLAN_CONFIG } from '@/lib/plans/config'
 import { cn } from '@/lib/utils/cn'
+import { useLanguage } from '@/lib/i18n/context'
 
 export default function ReviewStep() {
+  const { t } = useLanguage()
+  const r = t.wizard.review
   const {
     register,
     watch,
@@ -22,63 +25,46 @@ export default function ReviewStep() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-serif text-gray-900">Review &amp; create</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Everything look right? We&apos;ll email the finished book when it&apos;s ready.
-        </p>
+        <h2 className="text-xl font-serif text-gray-900">{r.heading}</h2>
+        <p className="text-sm text-gray-500 mt-1">{r.sub}</p>
       </div>
 
       {/* Summary card */}
       <div className="bg-gray-50 rounded-2xl border border-gray-100 divide-y divide-gray-100 text-sm">
-        <Row label="Plan" value={plan.displayName} />
-        <Row label="Child" value={values.childName ?? '—'} />
-        <Row label="Age" value={values.childAge ? `~${values.childAge} years` : '—'} />
+        <Row label={r.labels.plan} value={plan.displayName} />
+        <Row label={r.labels.child} value={values.childName ?? '—'} />
+        <Row label={r.labels.age} value={values.childAge ? `~${values.childAge} ${t.common.years}` : '—'} />
         {values.childDescription && (
-          <Row label="Description" value={values.childDescription} />
+          <Row label={r.labels.description} value={values.childDescription} />
         )}
+        <Row label={r.labels.theme} value={values.storyTheme ? truncate(values.storyTheme, 60) : '—'} />
         <Row
-          label="Theme"
-          value={values.storyTheme ? truncate(values.storyTheme, 60) : '—'}
-        />
-        <Row
-          label="Tone"
+          label={r.labels.tone}
           value={
             values.storyTone?.length
-              ? values.storyTone
-                  .map((t) => t.charAt(0).toUpperCase() + t.slice(1))
-                  .join(', ')
+              ? values.storyTone.map((t) => t.charAt(0).toUpperCase() + t.slice(1)).join(', ')
               : '—'
           }
         />
-        {values.storyMoral && <Row label="Lesson" value={values.storyMoral} />}
-        <Row
-          label="Style"
-          value={styleInfo ? styleInfo.label : '—'}
-        />
-        <Row label="Length" value={values.storyLength ? `${values.storyLength} pages` : '—'} />
+        {values.storyMoral && <Row label={r.labels.lesson} value={values.storyMoral} />}
+        <Row label={r.labels.style} value={styleInfo ? styleInfo.label : '—'} />
+        <Row label={r.labels.length} value={values.storyLength ? `${values.storyLength} ${t.common.pages}` : '—'} />
         {values.dedicationText && (
-          <Row label="Dedication" value={truncate(values.dedicationText, 60)} />
+          <Row label={r.labels.dedication} value={truncate(values.dedicationText, 60)} />
         )}
         {values.supportingCharacters && (
-          <Row label="Characters" value={truncate(values.supportingCharacters, 60)} />
-        )}
-        {values.authorName && (
-          <Row label="Author" value={values.authorName} />
-        )}
-        {values.closingMessage && (
-          <Row label="Closing" value={truncate(values.closingMessage, 60)} />
+          <Row label={r.labels.characters} value={truncate(values.supportingCharacters, 60)} />
         )}
       </div>
 
       {/* Email */}
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-gray-700">
-          Where should we send the book?{' '}
-          <span className="text-brand-500">*</span>
+          {r.emailLabel} <span className="text-brand-500">*</span>
         </label>
         <input
           type="email"
-          placeholder="you@example.com"
+          placeholder={r.emailPlaceholder}
           autoComplete="email"
           {...register('userEmail')}
           className={inputClass(!!errors.userEmail)}
@@ -86,9 +72,6 @@ export default function ReviewStep() {
         {errors.userEmail && (
           <p className="text-xs text-red-500">{errors.userEmail.message}</p>
         )}
-        <p className="text-xs text-gray-400">
-          We&apos;ll send the finished PDF here — no account required.
-        </p>
       </div>
 
       {errors.root && (

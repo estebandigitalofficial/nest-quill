@@ -4,6 +4,7 @@ import './globals.css'
 import CookieBanner from '@/components/CookieBanner'
 import ChatWidget from '@/components/ChatWidget'
 import ThemeProvider from '@/components/ThemeProvider'
+import { LanguageProvider } from '@/lib/i18n/context'
 
 const nunito = Nunito({
   subsets: ['latin'],
@@ -65,9 +66,11 @@ export default function RootLayout({
     <html lang="en" className={`${nunito.variable} ${playfair.variable}`} suppressHydrationWarning>
       <body>
         <ThemeProvider>
-          {children}
-          <CookieBanner />
-          <ChatWidget />
+          <LanguageProvider>
+            {children}
+            <CookieBanner />
+            <ChatWidget />
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

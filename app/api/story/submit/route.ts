@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
   try {
     // ── 1. Parse and validate the incoming form data ────────────────────────
     const body = await request.json()
+    const language: string = body.language === 'es' ? 'es' : 'en'
     const formData = validateStoryForm(body)
 
     // ── 2. Identify the user (authenticated or guest) ───────────────────────
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
     // ── 6. Trigger the background processing pipeline + confirmation email ────
     after(async () => {
       try {
-        await triggerProcessingPipeline(requestId)
+        await triggerProcessingPipeline(requestId, language)
       } catch (err) {
         console.error('Failed to trigger pipeline for request', requestId, err)
       }
@@ -197,7 +198,7 @@ export async function POST(request: NextRequest) {
  * This is intentionally NOT awaited — the HTTP handler returns first,
  * then the pipeline runs in the background.
  */
-async function triggerProcessingPipeline(requestId: string): Promise<void> {
+async function triggerProcessingPipeline(requestId: string, language = 'en'): Promise<void> {
   const baseUrl = process.env.EDGE_FUNCTION_BASE_URL
   if (!baseUrl) {
     console.warn('EDGE_FUNCTION_BASE_URL not set — pipeline not triggered')
@@ -215,7 +216,7 @@ async function triggerProcessingPipeline(requestId: string): Promise<void> {
       // Production: falls back to SUPABASE_SERVICE_ROLE_KEY (same key on both sides in cloud).
       Authorization: `Bearer ${process.env.EDGE_FUNCTION_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY}`,
     },
-    body: JSON.stringify({ requestId }),
+    body: JSON.stringify({ requestId, language }),
   })
 
   if (!response.ok) {

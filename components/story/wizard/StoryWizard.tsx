@@ -7,6 +7,7 @@ import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { storyFormSchema, type StoryFormValues } from '@/lib/validators/story-form'
 import { cn } from '@/lib/utils/cn'
+import { useLanguage } from '@/lib/i18n/context'
 import WizardProgress from './WizardProgress'
 import PlanStep from './steps/PlanStep'
 import ChildStep from './steps/ChildStep'
@@ -39,6 +40,7 @@ const LEARNING_FIELDS: (keyof StoryFormValues)[][] = [
 export default function StoryWizard() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { lang, t } = useLanguage()
   const [step, setStep] = useState(0)
   const [learningMode, setLearningMode] = useState(false)
 
@@ -90,7 +92,7 @@ export default function StoryWizard() {
       const res = await fetch('/api/story/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, language: lang }),
       })
 
       const json = await res.json()
@@ -126,7 +128,7 @@ export default function StoryWizard() {
                 : 'text-gray-400 hover:text-gray-600'
             )}
           >
-            Story
+            {t.wizard.modeStory}
           </button>
           <button
             type="button"
@@ -138,7 +140,7 @@ export default function StoryWizard() {
                 : 'text-gray-400 hover:text-gray-600'
             )}
           >
-            Learning Story
+            {t.wizard.modeLearning}
           </button>
         </div>
       )}
@@ -195,7 +197,7 @@ export default function StoryWizard() {
               onClick={handleBack}
               className="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
             >
-              ← Back
+              {t.wizard.back}
             </button>
           )}
 
@@ -210,7 +212,7 @@ export default function StoryWizard() {
                   : 'bg-brand-500 hover:bg-brand-600 active:scale-[0.99]'
               )}
             >
-              {isSubmitting ? 'Creating your story…' : learningMode ? 'Create Learning Story →' : 'Create My Story →'}
+              {isSubmitting ? t.wizard.review.submitting : t.wizard.review.submit}
             </button>
           ) : (
             <button
@@ -218,7 +220,7 @@ export default function StoryWizard() {
               onClick={handleNext}
               className="flex-1 py-3.5 px-6 rounded-xl font-semibold text-white text-base bg-brand-500 hover:bg-brand-600 active:scale-[0.99] transition-all"
             >
-              Next →
+              {t.wizard.next}
             </button>
           )}
         </div>

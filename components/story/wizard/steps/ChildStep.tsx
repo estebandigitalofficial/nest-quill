@@ -4,15 +4,18 @@ import type { ReactNode } from 'react'
 import { useFormContext } from 'react-hook-form'
 import type { StoryFormValues } from '@/lib/validators/story-form'
 import { cn } from '@/lib/utils/cn'
+import { useLanguage } from '@/lib/i18n/context'
 
 const AGE_GROUPS = [
-  { label: '1–3', sublabel: 'Toddler', age: 2 },
-  { label: '4–6', sublabel: 'Pre-K', age: 5 },
-  { label: '7–9', sublabel: 'Early reader', age: 8 },
-  { label: '10–12', sublabel: 'Middle grade', age: 11 },
+  { label: '1–3', key: 'toddler' as const, age: 2 },
+  { label: '4–6', key: 'preK' as const, age: 5 },
+  { label: '7–9', key: 'earlyReader' as const, age: 8 },
+  { label: '10–12', key: 'middleGrade' as const, age: 11 },
 ]
 
 export default function ChildStep() {
+  const { t } = useLanguage()
+  const c = t.wizard.child
   const {
     register,
     watch,
@@ -25,25 +28,23 @@ export default function ChildStep() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-serif text-gray-900">About the child</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          The hero of the story — the more we know, the more personal it feels.
-        </p>
+        <h2 className="text-xl font-serif text-gray-900">{c.heading}</h2>
+        <p className="text-sm text-gray-500 mt-1">{c.sub}</p>
       </div>
 
-      <Field label="Child's name" error={errors.childName?.message} required>
+      <Field label={c.name} error={errors.childName?.message} required>
         <input
           type="text"
-          placeholder="e.g. Sofia"
+          placeholder={c.namePlaceholder}
           autoComplete="off"
           {...register('childName')}
           className={inputClass(!!errors.childName)}
         />
       </Field>
 
-      <Field label="Age group" error={errors.childAge?.message} required>
+      <Field label={c.ageGroup} error={errors.childAge?.message} required>
         <div className="grid grid-cols-4 gap-2">
-          {AGE_GROUPS.map(({ label, sublabel, age }) => {
+          {AGE_GROUPS.map(({ label, key, age }) => {
             const active = selectedAge === age
             return (
               <button
@@ -58,21 +59,17 @@ export default function ChildStep() {
                 )}
               >
                 <span className="font-semibold text-sm">{label}</span>
-                <span className="text-[10px] text-gray-400 mt-0.5">{sublabel}</span>
+                <span className="text-[10px] text-gray-400 mt-0.5">{c.ages[key]}</span>
               </button>
             )
           })}
         </div>
       </Field>
 
-      <Field
-        label="Tell us about them"
-        error={errors.childDescription?.message}
-        hint="Their personality, interests, favourite animal — anything that makes them unique."
-      >
+      <Field label={c.about} error={errors.childDescription?.message} hint={c.aboutHint}>
         <textarea
           rows={3}
-          placeholder="e.g. Loves dinosaurs, obsessed with the colour purple, very curious"
+          placeholder={c.aboutPlaceholder}
           {...register('childDescription')}
           className={cn(inputClass(!!errors.childDescription), 'resize-none')}
         />
@@ -95,17 +92,9 @@ export default function ChildStep() {
 }
 
 function Field({
-  label,
-  error,
-  hint,
-  required,
-  children,
+  label, error, hint, required, children,
 }: {
-  label: string
-  error?: string
-  hint?: string
-  required?: boolean
-  children: ReactNode
+  label: string; error?: string; hint?: string; required?: boolean; children: ReactNode
 }) {
   return (
     <div className="space-y-1.5">

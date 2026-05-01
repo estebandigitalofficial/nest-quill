@@ -2,22 +2,20 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
+import { useLanguage } from '@/lib/i18n/context'
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
 }
 
-const GREETING: Message = {
-  role: 'assistant',
-  content: "Hi! I'm the Nest & Quill assistant. I can help you brainstorm the perfect story for your child, or answer any questions about how the service works. What would you like to know?",
-}
-
-
 export default function ChatWidget() {
   const pathname = usePathname()
+  const { lang, t } = useLanguage()
+  const greeting: Message = { role: 'assistant', content: t.chat.greeting }
+
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState<Message[]>([GREETING])
+  const [messages, setMessages] = useState<Message[]>([greeting])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [bouncing, setBouncing] = useState(false)
@@ -32,6 +30,11 @@ export default function ChatWidget() {
     }, 5000)
     return () => clearInterval(id)
   }, [open])
+
+  // Reset greeting when language changes
+  useEffect(() => {
+    setMessages([{ role: 'assistant', content: t.chat.greeting }])
+  }, [lang, t.chat.greeting])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -54,7 +57,7 @@ export default function ChatWidget() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: next, language: lang }),
       })
 
       if (!res.ok || !res.body) throw new Error('Chat failed')
@@ -107,10 +110,10 @@ export default function ChatWidget() {
           <div style={{ background: '#0C2340', padding: '13px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#F8F5EC', fontFamily: '"Playfair Display", Georgia, serif', letterSpacing: '-0.2px' }}>
-                Nest &amp; Quill Assistant
+                {t.chat.title}
               </p>
               <p style={{ margin: '1px 0 0', fontSize: 11, color: 'rgba(248,245,236,0.55)' }}>
-                Story ideas &amp; product help
+                {t.chat.subtitle}
               </p>
             </div>
             <button
@@ -170,7 +173,7 @@ export default function ChatWidget() {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
-              placeholder="Ask anything…"
+              placeholder={t.chat.placeholder}
               disabled={loading}
               style={{
                 flex: 1, fontSize: 13, padding: '9px 12px',

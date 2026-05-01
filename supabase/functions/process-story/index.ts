@@ -103,7 +103,7 @@ async function generateImage(prompt: string, illustrationStyle: string, config: 
 
 // ── Story prompt builder ──────────────────────────────────────────────────────
 
-function buildStoryPrompt(request: Record<string, unknown>, config: ConfigMap = {}): object[] {
+function buildStoryPrompt(request: Record<string, unknown>, config: ConfigMap = {}, language = 'en'): object[] {
   const {
     child_name,
     child_age,
@@ -172,7 +172,11 @@ This story must naturally weave in educational content about "{learning_topic}" 
     r(config['story_ending_rule'] ?? 'End the story with a satisfying, uplifting conclusion'),
   ]
 
-  const systemPrompt = `${role}${learningSystemNote}\n\n${outputFormat}\n\nRules:\n${rules.map(r => `- ${r}`).join('\n')}`
+  const spanishNote = language === 'es'
+    ? '\n\nLANGUAGE REQUIREMENT: You MUST write the entire story — all page text, title, subtitle, synopsis, and dedication — in Spanish. All content must be in Spanish only.'
+    : ''
+
+  const systemPrompt = `${role}${learningSystemNote}${spanishNote}\n\n${outputFormat}\n\nRules:\n${rules.map(r => `- ${r}`).join('\n')}`
 
   const learningUserNote = isLearning
     ? `- Learning focus: ${learning_topic} (subject: ${learning_subject}, grade ${learning_grade})\n`
@@ -268,9 +272,11 @@ Deno.serve(async (req) => {
 
   // ── Parse body ────────────────────────────────────────────────────────────
   let requestId: string
+  let language = 'en'
   try {
     const body = await req.json()
     requestId = body.requestId
+    language = body.language === 'es' ? 'es' : 'en'
     if (!requestId) throw new Error('Missing requestId')
   } catch {
     return new Response('Bad request', { status: 400 })
@@ -428,7 +434,7 @@ Deno.serve(async (req) => {
     await log('generate_text', 'Calling OpenAI GPT-4o for story text')
     const t0 = Date.now()
 
-    const messages = buildStoryPrompt(storyRequest, configMap)
+    const messages = buildStoryPrompt(storyRequest, configMap, language)
     const rawContent = await callOpenAI(messages)
     const story = JSON.parse(rawContent)
 

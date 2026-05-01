@@ -6,6 +6,7 @@ import { ILLUSTRATION_STYLES } from '@/types/story'
 import { PLAN_CONFIG } from '@/lib/plans/config'
 import { cn } from '@/lib/utils/cn'
 import type { IllustrationStyle } from '@/types/story'
+import { useLanguage } from '@/lib/i18n/context'
 
 const STYLE_ORDER: IllustrationStyle[] = [
   'watercolor',
@@ -15,14 +16,12 @@ const STYLE_ORDER: IllustrationStyle[] = [
   'digital_art',
 ]
 
-const LENGTH_OPTIONS = [
-  { pages: 8, label: 'Short', sublabel: '8 pages' },
-  { pages: 16, label: 'Standard', sublabel: '16 pages' },
-  { pages: 24, label: 'Long', sublabel: '24 pages' },
-  { pages: 32, label: 'Epic', sublabel: '32 pages' },
-] as const
+const LENGTH_KEYS = ['short', 'standard', 'long', 'epic'] as const
+const LENGTH_PAGES = [8, 16, 24, 32] as const
 
 export default function StyleStep() {
+  const { t } = useLanguage()
+  const s = t.wizard.style
   const {
     register,
     watch,
@@ -41,16 +40,14 @@ export default function StyleStep() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-serif text-gray-900">Style &amp; length</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Choose how the illustrations should look and how long the story should be.
-        </p>
+        <h2 className="text-xl font-serif text-gray-900">{s.heading}</h2>
+        <p className="text-sm text-gray-500 mt-1">{s.sub}</p>
       </div>
 
       {/* Illustration style */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">
-          Illustration style <span className="text-brand-500">*</span>
+          {s.styleLabel} <span className="text-brand-500">*</span>
         </label>
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -78,7 +75,7 @@ export default function StyleStep() {
               >
                 {locked && (
                   <span className="absolute top-2 right-2 text-[10px] font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">
-                    Upgrade
+                    {s.locked}
                   </span>
                 )}
                 <p className={cn('text-sm font-semibold', active ? 'text-brand-700' : 'text-gray-800')}>
@@ -98,11 +95,12 @@ export default function StyleStep() {
       {/* Story length */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">
-          Story length <span className="text-brand-500">*</span>
+          {s.lengthLabel} <span className="text-brand-500">*</span>
         </label>
 
         <div className="grid grid-cols-4 gap-2">
-          {LENGTH_OPTIONS.map(({ pages, label, sublabel }) => {
+          {LENGTH_KEYS.map((key, i) => {
+            const pages = LENGTH_PAGES[i]
             const locked = pages > maxPages
             const active = selectedLength === pages
             return (
@@ -122,11 +120,11 @@ export default function StyleStep() {
                     : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                 )}
               >
-                <span className="font-semibold text-sm">{label}</span>
-                <span className="text-[10px] mt-0.5 opacity-70">{sublabel}</span>
+                <span className="font-semibold text-sm">{s.lengths[key]}</span>
+                <span className="text-[10px] mt-0.5 opacity-70">{pages} {t.common.pages}</span>
                 {locked && (
                   <span className="text-[9px] font-semibold text-gray-400 mt-1 bg-gray-100 px-1.5 rounded-full">
-                    Upgrade
+                    {s.locked}
                   </span>
                 )}
               </button>

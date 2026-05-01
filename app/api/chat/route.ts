@@ -52,12 +52,15 @@ function guardedStream(text: string): Response {
   return new Response(readable, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
 }
 
+const SPANISH_SYSTEM_NOTE = `\n\nIMPORTANT: The user has selected Spanish. You MUST respond entirely in Spanish for every message. All your responses, including product information, suggestions, and support, must be in Spanish.`
+
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
     return new Response('Bad request', { status: 400 })
   }
 
+  const language: string = body.language ?? 'en'
   const messages = body.messages.slice(-20) // any[] — passed directly to OpenAI SDK
 
   // Classify the latest user message and short-circuit before calling AI if needed
@@ -68,9 +71,11 @@ export async function POST(req: NextRequest) {
     if (classification === 'clarify') return guardedStream(CLARIFY_MESSAGE)
   }
 
+  const systemPrompt = language === 'es' ? SYSTEM_PROMPT + SPANISH_SYSTEM_NOTE : SYSTEM_PROMPT
+
   const stream = await getOpenAI().chat.completions.create({
     model: 'gpt-4o-mini',
-    messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+    messages: [{ role: 'system', content: systemPrompt }, ...messages],
     stream: true,
     max_tokens: 600,
     temperature: 0.7,

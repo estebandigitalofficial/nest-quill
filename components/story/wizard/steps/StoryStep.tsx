@@ -5,28 +5,33 @@ import { useFormContext } from 'react-hook-form'
 import type { StoryFormValues } from '@/lib/validators/story-form'
 import { STORY_TONES, type StoryTone } from '@/lib/validators/story-form'
 import { cn } from '@/lib/utils/cn'
+import { useLanguage } from '@/lib/i18n/context'
 
-const THEME_PRESETS = [
-  { label: 'Space adventure', value: 'A brave astronaut exploring the galaxy' },
-  { label: 'Forest magic', value: 'Discovering a magical forest full of talking animals' },
-  { label: 'Ocean explorer', value: 'An underwater expedition to find a hidden treasure' },
-  { label: 'Dinosaur quest', value: 'A journey back in time to meet friendly dinosaurs' },
-  { label: 'Superhero day', value: 'Discovering a special superpower and using it to help others' },
-  { label: 'Farm life', value: 'A fun day helping animals on a busy farm' },
-  { label: 'Making friends', value: 'Learning how to make a new friend at school' },
-  { label: 'Rainy day magic', value: 'Finding out that a rainy day holds wonderful surprises' },
+const THEME_PRESET_KEYS = ['space', 'forest', 'ocean', 'dinosaur', 'superhero', 'farm', 'friends', 'rainy'] as const
+const THEME_VALUES_EN = [
+  'A brave astronaut exploring the galaxy',
+  'Discovering a magical forest full of talking animals',
+  'An underwater expedition to find a hidden treasure',
+  'A journey back in time to meet friendly dinosaurs',
+  'Discovering a special superpower and using it to help others',
+  'A fun day helping animals on a busy farm',
+  'Learning how to make a new friend at school',
+  'Finding out that a rainy day holds wonderful surprises',
+]
+const THEME_VALUES_ES = [
+  'Un valiente astronauta explorando la galaxia',
+  'Descubriendo un bosque mágico lleno de animales que hablan',
+  'Una expedición submarina para encontrar un tesoro escondido',
+  'Un viaje al pasado para conocer a dinosaurios amistosos',
+  'Descubriendo un superpoder especial y usándolo para ayudar a otros',
+  'Un día divertido ayudando a los animales en una granja ocupada',
+  'Aprendiendo cómo hacer un nuevo amigo en la escuela',
+  'Descubriendo que un día lluvioso tiene maravillosas sorpresas',
 ]
 
-const TONE_LABELS: Record<StoryTone, string> = {
-  adventurous: 'Adventurous',
-  magical: 'Magical',
-  funny: 'Funny',
-  heartwarming: 'Heartwarming',
-  educational: 'Educational',
-  brave: 'Brave',
-}
-
 export default function StoryStep() {
+  const { lang, t } = useLanguage()
+  const s = t.wizard.story
   const {
     register,
     watch,
@@ -37,6 +42,8 @@ export default function StoryStep() {
   const [showCustom, setShowCustom] = useState(false)
   const selectedTheme = watch('storyTheme') ?? ''
   const selectedTones = watch('storyTone') ?? []
+
+  const themeValues = lang === 'es' ? THEME_VALUES_ES : THEME_VALUES_EN
 
   function selectPreset(value: string) {
     setValue('storyTheme', value, { shouldValidate: true })
@@ -52,39 +59,39 @@ export default function StoryStep() {
     setValue('storyTone', next, { shouldValidate: true })
   }
 
-  const isPresetActive = (value: string) => selectedTheme === value
-
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-serif text-gray-900">The story</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Pick a theme and mood — we&apos;ll craft the rest around them.
-        </p>
+        <h2 className="text-xl font-serif text-gray-900">{s.heading}</h2>
+        <p className="text-sm text-gray-500 mt-1">{s.themeSub}</p>
       </div>
 
       {/* Theme */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">
-          Story theme <span className="text-brand-500">*</span>
+          {s.themeLabel} <span className="text-brand-500">*</span>
         </label>
 
         <div className="grid grid-cols-2 gap-2">
-          {THEME_PRESETS.map(({ label, value }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => selectPreset(value)}
-              className={cn(
-                'text-left text-sm px-3.5 py-2.5 rounded-xl border-2 transition-all',
-                isPresetActive(value)
-                  ? 'border-brand-500 bg-brand-50 text-brand-700 font-medium'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-              )}
-            >
-              {label}
-            </button>
-          ))}
+          {THEME_PRESET_KEYS.map((key, i) => {
+            const value = themeValues[i]
+            const active = selectedTheme === value
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => selectPreset(value)}
+                className={cn(
+                  'text-left text-sm px-3.5 py-2.5 rounded-xl border-2 transition-all',
+                  active
+                    ? 'border-brand-500 bg-brand-50 text-brand-700 font-medium'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                )}
+              >
+                {s.themes[key]}
+              </button>
+            )
+          })}
 
           <button
             type="button"
@@ -99,7 +106,7 @@ export default function StoryStep() {
                 : 'border-dashed border-gray-300 bg-white text-gray-400 hover:border-gray-400'
             )}
           >
-            + Write my own theme
+            + {s.themeCustom}
           </button>
         </div>
 
@@ -107,7 +114,7 @@ export default function StoryStep() {
           <input
             type="text"
             autoFocus
-            placeholder="Describe the story in your own words…"
+            placeholder={s.themePlaceholder}
             {...register('storyTheme')}
             className={inputClass(!!errors.storyTheme)}
           />
@@ -126,9 +133,9 @@ export default function StoryStep() {
       <div className="space-y-2">
         <div className="flex items-baseline justify-between">
           <label className="block text-sm font-medium text-gray-700">
-            Story tone <span className="text-brand-500">*</span>
+            {s.toneLabel} <span className="text-brand-500">*</span>
           </label>
-          <span className="text-xs text-gray-400">Pick up to 3</span>
+          <span className="text-xs text-gray-400">{s.toneHint}</span>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -150,7 +157,7 @@ export default function StoryStep() {
                     : 'border-gray-200 bg-white text-gray-600 hover:border-brand-300'
                 )}
               >
-                {TONE_LABELS[tone]}
+                {s.tones[tone as keyof typeof s.tones]}
               </button>
             )
           })}
@@ -164,15 +171,15 @@ export default function StoryStep() {
       {/* Moral */}
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-gray-700">
-          A lesson to weave in{' '}
-          <span className="text-gray-400 font-normal">(optional)</span>
+          {s.moralLabel}
         </label>
         <input
           type="text"
-          placeholder="e.g. Sharing makes everyone happier"
+          placeholder={s.moralPlaceholder}
           {...register('storyMoral')}
           className={inputClass(!!errors.storyMoral)}
         />
+        {s.moralHint && <p className="text-xs text-gray-400">{s.moralHint}</p>}
         {errors.storyMoral && (
           <p className="text-xs text-red-500">{errors.storyMoral.message}</p>
         )}

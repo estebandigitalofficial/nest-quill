@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import LearningDropdown from './LearningDropdown'
 import MobileMenu from './MobileMenu'
 import ThemeToggle from '@/components/ThemeToggle'
+import LanguageToggle from '@/components/LanguageToggle'
 
 interface Props {
   right?: ReactNode
@@ -30,12 +31,14 @@ export default function SiteHeader({ right }: Props) {
           <LearningDropdown />
           <Link href="/classroom" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford dark:hover:text-charcoal/70 transition-colors">Classroom</Link>
           <Link href="/pricing" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford dark:hover:text-charcoal/70 transition-colors">Pricing</Link>
+          <LanguageToggle />
           <ThemeToggle />
         </nav>
 
         <div className="flex items-center gap-3">
           {right && <div className="flex items-center gap-4">{right}</div>}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center gap-2">
+            <LanguageToggle />
             <ThemeToggle />
           </div>
           <MobileMenu />
