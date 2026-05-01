@@ -34,7 +34,7 @@ export default function FloatingToggles() {
 
       <button
         onClick={cycleTheme}
-        title={`Theme: theme — click to change`}
+        title={`Theme: ${mounted ? 'click to change' : ''}`}
         className={btnClass}
       >
         <ThemeIcon />

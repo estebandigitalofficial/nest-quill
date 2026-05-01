@@ -73,7 +73,7 @@ export default function ChatWidget() {
       setLoading(false)
       setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' }])
     }
-  }, [input, loading, messages])
+  }, [input, loading, messages, lang])
 
   function handleKey(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }

@@ -21,7 +21,7 @@ export default async function SiteHeader({ right }: Props) {
             alt="Nest & Quill"
             width={320}
             height={96}
-            className="h-20 md:h-20 w-auto dark:brightness-0 dark:invert"
+            className="h-20 md:h-20 w-auto brightness-0 dark:invert"
             priority
           />
         </Link>

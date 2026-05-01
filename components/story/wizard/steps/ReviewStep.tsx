@@ -32,8 +32,8 @@ export default function ReviewStep() {
       {/* Summary card */}
       <div className="bg-gray-50 rounded-2xl border border-gray-100 divide-y divide-gray-100 text-sm">
         <Row label={r.labels.plan} value={plan.displayName} />
-        <Row label={r.labels.child} value={values.childName ?? '—'} />
-        <Row label={r.labels.age} value={values.childAge ? `~${values.childAge} ${t.common.years}` : '—'} />
+        <Row label={values.childAge && values.childAge >= 18 ? 'Name' : r.labels.child} value={values.childName ?? '—'} />
+        <Row label={r.labels.age} value={values.childAge ? (values.childAge >= 18 ? 'Adult (18+)' : `~${values.childAge} ${t.common.years}`) : '—'} />
         {values.childDescription && (
           <Row label={r.labels.description} value={values.childDescription} />
         )}

@@ -27,6 +27,17 @@ const SECTIONS: { title: string; keys: string[] }[] = [
     keys: ['quiz_system_prompt', 'quiz_rules'],
   },
   {
+    title: 'Adult Writer',
+    keys: [
+      'adult_story_role',
+      'adult_story_language_rules',
+      'adult_story_sentence_rules',
+      'adult_story_ending_rule',
+      'adult_image_safety_suffix',
+      'adult_story_tone_rule',
+    ],
+  },
+  {
     title: 'Image Styles',
     keys: [
       'image_safety_suffix',

@@ -60,11 +60,14 @@ async function callOpenAI(messages: object[], model = 'gpt-4o'): Promise<string>
   return json.choices[0].message.content
 }
 
-async function generateImage(prompt: string, illustrationStyle: string, config: ConfigMap = {}): Promise<Uint8Array> {
+async function generateImage(prompt: string, illustrationStyle: string, config: ConfigMap = {}, childAge?: number): Promise<Uint8Array> {
   const styleHint = config['image_style_' + illustrationStyle]
     ?? FALLBACK_STYLE_HINTS[illustrationStyle]
     ?? FALLBACK_STYLE_HINTS.storybook
-  const safetySuffix = config['image_safety_suffix'] ?? 'Child-safe, no text, no words in image.'
+  const isAdult = childAge !== undefined && childAge >= 18
+  const safetySuffix = isAdult
+    ? (config['adult_image_safety_suffix'] ?? 'Artistic illustration, tasteful, no explicit content, no text or words in image.')
+    : (config['image_safety_suffix'] ?? 'Child-safe, no text, no words in image.')
   const fullPrompt = `${styleHint}. ${prompt}. ${safetySuffix}`
 
   const res = await fetch('https://api.openai.com/v1/images/generations', {
@@ -124,6 +127,7 @@ function buildStoryPrompt(request: Record<string, unknown>, config: ConfigMap = 
   const toneList = Array.isArray(story_tone) ? story_tone.join(', ') : story_tone
   const pageCount = Number(story_length) || 16
   const isLearning = learning_mode === true
+  const isAdult = Number(child_age) >= 18
 
   // Helper to replace placeholders in config values
   function r(template: string): string {
@@ -144,7 +148,9 @@ This story must naturally weave in educational content about "{learning_topic}" 
 - Show the character applying or discovering the concept — don't just state facts
 - The learning should feel like part of the story, not a lesson bolted on`)}` : ''
 
-  const role = config['story_role'] ?? "You are a professional children's book author. You write warm, age-appropriate stories for young children."
+  const role = isAdult
+    ? (config['adult_story_role'] ?? 'You are a professional fiction author. You write engaging, well-crafted stories for adult readers. Your writing is sophisticated, nuanced, and tailored to mature audiences.')
+    : (config['story_role'] ?? "You are a professional children's book author. You write warm, age-appropriate stories for young children.")
   const outputFormat = config['story_output_format'] ?? `Your output must be valid JSON matching this exact structure:
 {
   "title": "string — a short, memorable book title",
@@ -163,13 +169,21 @@ This story must naturally weave in educational content about "{learning_topic}" 
 
   const rules = [
     r(config['story_page_rules'] ?? 'Write exactly {page_count} story pages'),
-    r(config['story_language_rules'] ?? 'Keep language simple and age-appropriate for a {child_age}-year-old'),
-    r(config['story_sentence_rules'] ?? 'Each page should have 2-4 sentences maximum'),
+    r(isAdult
+      ? (config['adult_story_language_rules'] ?? 'Write with sophisticated vocabulary appropriate for an adult reader. Use literary techniques, complex sentence structures, and nuanced character development.')
+      : (config['story_language_rules'] ?? 'Keep language simple and age-appropriate for a {child_age}-year-old')),
+    r(isAdult
+      ? (config['adult_story_sentence_rules'] ?? 'Each page should have 3-6 sentences with rich descriptive prose')
+      : (config['story_sentence_rules'] ?? 'Each page should have 2-4 sentences maximum')),
     r(config['story_image_desc_rules'] ?? 'Image descriptions should be vivid, specific, and describe a single scene'),
     r(config['story_illustration_style_rule'] ?? 'The illustration style is {illustration_style} — reflect this in image description language'),
-    r(config['story_tone_rule'] ?? 'Tone: {tone_list}'),
+    r(isAdult
+      ? (config['adult_story_tone_rule'] ?? 'Tone: {tone_list}. Write with emotional depth and literary sophistication.')
+      : (config['story_tone_rule'] ?? 'Tone: {tone_list}')),
     'Do not include page numbers or chapter headings in the text',
-    r(config['story_ending_rule'] ?? 'End the story with a satisfying, uplifting conclusion'),
+    r(isAdult
+      ? (config['adult_story_ending_rule'] ?? 'End the story with a satisfying, thought-provoking conclusion that resonates emotionally')
+      : (config['story_ending_rule'] ?? 'End the story with a satisfying, uplifting conclusion')),
   ]
 
   const spanishNote = language === 'es'
@@ -182,9 +196,9 @@ This story must naturally weave in educational content about "{learning_topic}" 
     ? `- Learning focus: ${learning_topic} (subject: ${learning_subject}, grade ${learning_grade})\n`
     : ''
 
-  const userPrompt = `Write a children's storybook with these details:
+  const userPrompt = `Write a ${isAdult ? 'story' : "children's storybook"} with these details:
 
-- Main character: ${child_name}, age ${child_age}
+- Main character: ${child_name}${isAdult ? '' : `, age ${child_age}`}
 ${child_description ? `- About ${child_name}: ${child_description}` : ''}
 ${supporting_characters ? `- Supporting characters to include: ${supporting_characters}` : ''}
 - Story theme: ${story_theme}
@@ -552,7 +566,7 @@ Deno.serve(async (req) => {
 
       for (const scene of scenes) {
         try {
-          const imageBytes = await generateImage(scene.image_prompt, storyRequest.illustration_style, configMap)
+          const imageBytes = await generateImage(scene.image_prompt, storyRequest.illustration_style, configMap, Number(storyRequest.child_age))
 
           const storagePath = `${requestId}/${scene.page_number}.png`
           const { error: uploadError } = await supabase.storage

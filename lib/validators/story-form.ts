@@ -37,7 +37,7 @@ export const storyFormSchema = z.object({
     .number({ required_error: 'Please select an age group', invalid_type_error: 'Please select an age group' })
     .int()
     .min(1)
-    .max(12),
+    .max(99),
 
   childDescription: z
     .string()
@@ -117,6 +117,9 @@ export const storyFormSchema = z.object({
     .max(200, 'Topic must be 200 characters or less')
     .trim()
     .optional(),
+
+  // ── Adult consent ────────────────────────────────────────────────────────
+  adultConsent: z.boolean().optional(),
 
   // ── Delivery ──────────────────────────────────────────────────────────────
   userEmail: z

@@ -79,6 +79,18 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
+        <Section title="Adult Content Data">
+          <p>
+            When users opt into adult story creation, we collect an additional consent acknowledgment
+            confirming the user is at least 18 years old. This consent record is stored alongside the
+            story request.
+          </p>
+          <p>
+            Adult story content is generated using a separate AI configuration. The same data handling
+            and retention policies apply to adult stories as to all other content on the platform.
+          </p>
+        </Section>
+
         <Section title="Data Sharing">
           <p>We do not sell your personal information.</p>
           <p>We may share data with:</p>

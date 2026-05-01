@@ -25,7 +25,7 @@ export default async function AdminLayout({
               alt="Nest & Quill"
               width={160}
               height={48}
-              className="h-11 w-auto dark:brightness-0 dark:invert"
+              className="h-11 w-auto brightness-0 invert"
               priority
             />
           </Link>
