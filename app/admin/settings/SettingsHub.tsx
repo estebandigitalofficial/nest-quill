@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import NotificationToggles from './NotificationToggles'
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -102,7 +102,10 @@ function ChevronDown({ className = 'w-4 h-4' }: { className?: string }) {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Item = { label: string; hint: string }
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+
+// key links an item to a row in app_settings; absent = not yet wired
+type Item = { label: string; hint: string; key?: string }
 
 type SectionDef = {
   id: string
@@ -130,11 +133,11 @@ const SECTIONS: SectionDef[] = [
     Icon: LayersIcon,
     live: false,
     items: [
-      { label: 'Guest story limit', hint: 'Max stories a guest can request before login is required' },
-      { label: 'Free user story limit', hint: 'Monthly cap for free-tier accounts' },
-      { label: 'Max pages per tier', hint: 'Page and image ceiling by plan level' },
+      { label: 'Guest story limit',     hint: 'Max stories a guest can request before login is required', key: 'guest_story_limit' },
+      { label: 'Free user story limit', hint: 'Monthly cap for free-tier accounts',                       key: 'free_user_story_limit' },
+      { label: 'Max pages per tier',    hint: 'Page and image ceiling by plan level' },
       { label: 'PDF & dedication access', hint: 'Which plan tiers unlock PDF download and dedication pages' },
-      { label: 'Pricing copy', hint: 'Plan names, taglines, and call-to-action text' },
+      { label: 'Pricing copy',          hint: 'Plan names, taglines, and call-to-action text' },
     ],
   },
   {
@@ -144,12 +147,12 @@ const SECTIONS: SectionDef[] = [
     Icon: FlagIcon,
     live: false,
     items: [
-      { label: 'Scan Homework', hint: 'Allow users to upload and scan homework documents' },
-      { label: 'Classroom', hint: 'Show Classroom section and educator flows' },
-      { label: 'Publishing Requests', hint: 'Enable user-facing publishing request form' },
-      { label: 'Trivia Mode', hint: 'Enable trivia / quiz mode on completed stories' },
-      { label: 'PDF Download', hint: 'Allow users to download stories as PDF' },
-      { label: 'Maintenance Mode', hint: 'Take the site offline and show a maintenance message' },
+      { label: 'Scan Homework',         hint: 'Allow users to upload and scan homework documents',      key: 'scan_homework_enabled' },
+      { label: 'Classroom',             hint: 'Show Classroom section and educator flows',               key: 'classroom_enabled' },
+      { label: 'Publishing Requests',   hint: 'Enable user-facing publishing request form',              key: 'publishing_requests_enabled' },
+      { label: 'Trivia Mode',           hint: 'Enable trivia / quiz mode on completed stories',          key: 'trivia_enabled' },
+      { label: 'PDF Download',          hint: 'Allow users to download stories as PDF',                  key: 'pdf_download_enabled' },
+      { label: 'Maintenance Mode',      hint: 'Take the site offline and show a maintenance message',    key: 'maintenance_mode_enabled' },
     ],
   },
   {
@@ -159,12 +162,12 @@ const SECTIONS: SectionDef[] = [
     Icon: BookOpenIcon,
     live: false,
     items: [
-      { label: 'Rate limits', hint: 'Max requests per user per session or day' },
-      { label: 'Grade range', hint: 'Supported grade levels for learning tools' },
-      { label: 'Think First mode', hint: 'Default on/off for Think First prompting' },
-      { label: 'Teach Back mode', hint: 'Default on/off for Teach Back exercises' },
-      { label: 'Nudges', hint: 'Enable in-session encouragement nudges' },
-      { label: 'Spelling sentence mode', hint: 'Default mode for spelling sentence generation' },
+      { label: 'Rate limits',              hint: 'Max requests per user per session or day' },
+      { label: 'Grade range',              hint: 'Supported grade levels for learning tools' },
+      { label: 'Think First mode',         hint: 'Default on/off for Think First prompting',           key: 'think_first_enabled' },
+      { label: 'Teach Back mode',          hint: 'Default on/off for Teach Back exercises',             key: 'teach_back_enabled' },
+      { label: 'Nudges',                   hint: 'Enable in-session encouragement nudges',              key: 'learning_nudges_enabled' },
+      { label: 'Spelling sentence mode',   hint: 'Default mode for spelling sentence generation',       key: 'spelling_sentence_mode_default' },
     ],
   },
   {
@@ -174,11 +177,11 @@ const SECTIONS: SectionDef[] = [
     Icon: FileTextIcon,
     live: false,
     items: [
-      { label: 'Homepage headline', hint: 'Main hero heading and subheadline' },
-      { label: 'Pricing copy', hint: 'Descriptions shown on the pricing page' },
-      { label: 'Story helper text', hint: 'Guidance shown during the story creation wizard' },
-      { label: 'Limit messages', hint: 'Text shown when a user hits a quota or tier limit' },
-      { label: 'Classroom copy', hint: 'Labels, descriptions, and CTAs in the Classroom section' },
+      { label: 'Homepage headline',   hint: 'Main hero heading and subheadline' },
+      { label: 'Pricing copy',        hint: 'Descriptions shown on the pricing page' },
+      { label: 'Story helper text',   hint: 'Guidance shown during the story creation wizard' },
+      { label: 'Limit messages',      hint: 'Text shown when a user hits a quota or tier limit' },
+      { label: 'Classroom copy',      hint: 'Labels, descriptions, and CTAs in the Classroom section' },
     ],
   },
   {
@@ -188,10 +191,10 @@ const SECTIONS: SectionDef[] = [
     Icon: MailIcon,
     live: false,
     items: [
-      { label: 'Sender name', hint: 'Display name used in outgoing emails' },
+      { label: 'Sender name',            hint: 'Display name used in outgoing emails' },
       { label: 'Story ready email copy', hint: 'Subject and body for story completion notifications' },
-      { label: 'Admin recipients', hint: 'Email addresses that receive admin alert emails' },
-      { label: 'Drip timing', hint: 'Delays between automated drip sequence emails' },
+      { label: 'Admin recipients',       hint: 'Email addresses that receive admin alert emails' },
+      { label: 'Drip timing',            hint: 'Delays between automated drip sequence emails' },
     ],
   },
   {
@@ -202,8 +205,8 @@ const SECTIONS: SectionDef[] = [
     live: false,
     items: [
       { label: 'Request form options', hint: 'Fields and choices shown on the publishing request form' },
-      { label: 'Intent dropdowns', hint: 'Publishing intent options users can select' },
-      { label: 'Status options', hint: 'Allowed status values for publishing requests' },
+      { label: 'Intent dropdowns',     hint: 'Publishing intent options users can select' },
+      { label: 'Status options',       hint: 'Allowed status values for publishing requests' },
       { label: 'Confirmation message', hint: 'Text shown after a publishing request is submitted' },
     ],
   },
@@ -214,11 +217,11 @@ const SECTIONS: SectionDef[] = [
     Icon: ShieldIcon,
     live: false,
     items: [
-      { label: 'Strict school-safe mode', hint: 'Enforce conservative content filtering across all tools' },
-      { label: 'Political clarification', hint: 'Behavior when politically sensitive topics are detected' },
-      { label: 'Max pasted text length', hint: 'Character limit for user-pasted content' },
-      { label: 'Max image upload size', hint: 'File size ceiling for image uploads' },
-      { label: 'Image uploads per tool', hint: 'How many images a user can upload per tool session' },
+      { label: 'Strict school-safe mode',  hint: 'Enforce conservative content filtering across all tools', key: 'strict_school_safe_mode' },
+      { label: 'Political clarification',  hint: 'Behavior when politically sensitive topics are detected',  key: 'political_clarification_enabled' },
+      { label: 'Max pasted text length',   hint: 'Character limit for user-pasted content',                  key: 'max_pasted_text_length' },
+      { label: 'Max image upload size (MB)', hint: 'File size ceiling for image uploads',                    key: 'max_image_upload_mb' },
+      { label: 'Image uploads per tool',   hint: 'How many images a user can upload per tool session' },
     ],
   },
   {
@@ -228,34 +231,123 @@ const SECTIONS: SectionDef[] = [
     Icon: GridIcon,
     live: false,
     items: [
-      { label: 'Visible dashboard cards', hint: 'Which stat cards are shown on the admin home page' },
-      { label: 'Stuck-story threshold', hint: 'Minutes before a generating story is flagged as stuck' },
-      { label: 'Alert thresholds', hint: 'Error rate or queue depth values that trigger dashboard warnings' },
+      { label: 'Visible dashboard cards',        hint: 'Which stat cards are shown on the admin home page' },
+      { label: 'Stuck-story threshold (minutes)', hint: 'Minutes before a generating story is flagged as stuck', key: 'stuck_story_threshold_minutes' },
+      { label: 'Alert thresholds',               hint: 'Error rate or queue depth values that trigger dashboard warnings' },
     ],
   },
 ]
 
-// ─── Placeholder content ──────────────────────────────────────────────────────
+// ─── Save-state indicator ─────────────────────────────────────────────────────
 
-function PlaceholderGrid({ items }: { items: Item[] }) {
+function SaveDot({ status }: { status: SaveStatus }) {
+  if (status === 'idle')   return null
+  if (status === 'saving') return <span className="text-[11px] text-adm-muted">Saving…</span>
+  if (status === 'saved')  return <span className="text-[11px] text-green-500 font-medium">Saved</span>
+  return                          <span className="text-[11px] text-red-400  font-medium">Failed</span>
+}
+
+// ─── Boolean toggle row ───────────────────────────────────────────────────────
+
+function BooleanRow({
+  settingKey, value, status, label, hint, onSave,
+}: {
+  settingKey: string
+  value: boolean
+  status: SaveStatus
+  label: string
+  hint: string
+  onSave: (key: string, next: unknown, prev: unknown) => void
+}) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-      {items.map(item => (
-        <div
-          key={item.label}
-          className="flex items-start justify-between gap-3 bg-adm-bg border border-adm-border rounded-lg px-4 py-3"
+    <div className="flex items-center justify-between gap-4 bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-adm-text">{label}</p>
+        <p className="text-xs text-adm-muted mt-0.5">{hint}</p>
+      </div>
+      <div className="flex items-center gap-3 shrink-0">
+        <SaveDot status={status} />
+        <button
+          type="button"
+          onClick={() => onSave(settingKey, !value, value)}
+          disabled={status === 'saving'}
+          aria-pressed={value}
+          className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${value ? 'bg-brand-500' : 'bg-gray-700'}`}
         >
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-adm-text">{item.label}</p>
-            <p className="text-xs text-adm-muted mt-0.5 leading-relaxed">{item.hint}</p>
-          </div>
-          <span className="shrink-0 mt-0.5 text-[10px] font-semibold tracking-wide uppercase text-adm-subtle border border-adm-border rounded px-1.5 py-0.5 whitespace-nowrap">
-            Not wired
-          </span>
-        </div>
-      ))}
+          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${value ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
     </div>
   )
+}
+
+// ─── Numeric input row ────────────────────────────────────────────────────────
+
+function NumericRow({
+  settingKey, value, status, label, hint, onSave,
+}: {
+  settingKey: string
+  value: number
+  status: SaveStatus
+  label: string
+  hint: string
+  onSave: (key: string, next: unknown, prev: unknown) => void
+}) {
+  const [draft, setDraft] = useState(String(value))
+
+  // Sync if the external value changes (revert on error, or updated externally)
+  useEffect(() => { setDraft(String(value)) }, [value])
+
+  function handleBlur() {
+    const n = Number(draft)
+    if (Number.isFinite(n) && n !== value) {
+      onSave(settingKey, n, value)
+    } else {
+      setDraft(String(value))  // reset if invalid or unchanged
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-4 bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-adm-text">{label}</p>
+        <p className="text-xs text-adm-muted mt-0.5">{hint}</p>
+      </div>
+      <div className="flex items-center gap-3 shrink-0">
+        <SaveDot status={status} />
+        <input
+          type="number"
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={handleBlur}
+          disabled={status === 'saving'}
+          className="w-24 text-center text-sm bg-adm-bg border border-adm-border rounded-lg px-2 py-1.5 text-adm-text focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 disabled:opacity-50"
+        />
+      </div>
+    </div>
+  )
+}
+
+// ─── Placeholder row (not yet wired to app_settings) ─────────────────────────
+
+function PlaceholderRow({ label, hint }: { label: string; hint: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3 bg-adm-bg border border-adm-border rounded-lg px-4 py-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-adm-text">{label}</p>
+        <p className="text-xs text-adm-muted mt-0.5 leading-relaxed">{hint}</p>
+      </div>
+      <span className="shrink-0 mt-0.5 text-[10px] font-semibold tracking-wide uppercase text-adm-subtle border border-adm-border rounded px-1.5 py-0.5 whitespace-nowrap">
+        Not wired
+      </span>
+    </div>
+  )
+}
+
+// ─── Skeleton row shown while app_settings are loading ───────────────────────
+
+function SkeletonRow() {
+  return <div className="h-16 bg-adm-bg border border-adm-border rounded-xl animate-pulse" />
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -265,21 +357,125 @@ interface Props {
 }
 
 export default function SettingsHub({ initialSettings }: Props) {
-  const [openMap, setOpenMap] = useState<Record<string, boolean>>({ notifications: true })
+  const [openMap,    setOpenMap]    = useState<Record<string, boolean>>({ notifications: true })
+  const [appSettings, setAppSettings] = useState<Record<string, unknown>>({})
+  const [isLoading,  setIsLoading]  = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<Record<string, SaveStatus>>({})
 
-  function toggle(id: string) {
+  // Fetch all app_settings once on mount and flatten into key → value map
+  useEffect(() => {
+    fetch('/api/admin/app-settings')
+      .then(r => {
+        if (!r.ok) throw new Error(`${r.status}`)
+        return r.json()
+      })
+      .then((data: { settings: Record<string, { key: string; value: unknown }[]> }) => {
+        const flat: Record<string, unknown> = {}
+        for (const rows of Object.values(data.settings ?? {})) {
+          for (const row of rows) flat[row.key] = row.value
+        }
+        setAppSettings(flat)
+      })
+      .catch(() => setLoadFailed(true))
+      .finally(() => setIsLoading(false))
+  }, [])
+
+  async function saveSetting(key: string, next: unknown, prev: unknown) {
+    setAppSettings(s => ({ ...s, [key]: next }))           // optimistic
+    setSaveStatus(s => ({ ...s, [key]: 'saving' }))
+
+    try {
+      const res = await fetch('/api/admin/app-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value: next }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string }
+        throw new Error(body.error ?? `HTTP ${res.status}`)
+      }
+      setSaveStatus(s => ({ ...s, [key]: 'saved' }))
+      setTimeout(() => setSaveStatus(s => s[key] === 'saved' ? { ...s, [key]: 'idle' } : s), 2000)
+    } catch {
+      setAppSettings(s => ({ ...s, [key]: prev }))         // revert
+      setSaveStatus(s => ({ ...s, [key]: 'error' }))
+    }
+  }
+
+  function renderItems(items: Item[]) {
+    return (
+      <div className="space-y-2">
+        {items.map(item => {
+          // No key → always a placeholder
+          if (!item.key) {
+            return <PlaceholderRow key={item.label} label={item.label} hint={item.hint} />
+          }
+
+          // Key present but still fetching
+          if (isLoading) {
+            return <SkeletonRow key={item.label} />
+          }
+
+          // Fetch failed — fall back gracefully
+          if (loadFailed || !(item.key in appSettings)) {
+            return <PlaceholderRow key={item.label} label={item.label} hint={item.hint} />
+          }
+
+          const value  = appSettings[item.key]
+          const status = saveStatus[item.key] ?? 'idle'
+
+          if (typeof value === 'boolean') {
+            return (
+              <BooleanRow
+                key={item.key}
+                settingKey={item.key}
+                value={value}
+                status={status}
+                label={item.label}
+                hint={item.hint}
+                onSave={saveSetting}
+              />
+            )
+          }
+
+          if (typeof value === 'number') {
+            return (
+              <NumericRow
+                key={item.key}
+                settingKey={item.key}
+                value={value}
+                status={status}
+                label={item.label}
+                hint={item.hint}
+                onSave={saveSetting}
+              />
+            )
+          }
+
+          // String or unhandled JSONB type — not wired yet
+          return <PlaceholderRow key={item.label} label={item.label} hint={item.hint} />
+        })}
+      </div>
+    )
+  }
+
+  function toggleSection(id: string) {
     setOpenMap(m => ({ ...m, [id]: !m[id] }))
   }
 
   return (
     <div className="space-y-3">
       {SECTIONS.map(sec => {
-        const isOpen = !!openMap[sec.id]
+        const isOpen       = !!openMap[sec.id]
+        const hasLiveItems = sec.items?.some(i => i.key) ?? false
+        const showComingSoon = !sec.live && !hasLiveItems
+
         return (
           <div key={sec.id} className="bg-adm-surface border border-adm-border rounded-xl overflow-hidden">
             <button
               type="button"
-              onClick={() => toggle(sec.id)}
+              onClick={() => toggleSection(sec.id)}
               className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-adm-bg transition-colors"
             >
               <div className="shrink-0 w-8 h-8 rounded-lg bg-adm-bg border border-adm-border flex items-center justify-center text-adm-muted">
@@ -288,7 +484,7 @@ export default function SettingsHub({ initialSettings }: Props) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-semibold text-adm-text">{sec.label}</span>
-                  {!sec.live && (
+                  {showComingSoon && (
                     <span className="text-[10px] font-bold uppercase tracking-wide text-adm-subtle border border-adm-border bg-adm-bg rounded px-1.5 py-0.5">
                       Coming soon
                     </span>
@@ -303,11 +499,10 @@ export default function SettingsHub({ initialSettings }: Props) {
 
             {isOpen && (
               <div className="border-t border-adm-border px-5 py-4">
-                {sec.live ? (
-                  <NotificationToggles initialSettings={initialSettings} />
-                ) : (
-                  <PlaceholderGrid items={sec.items ?? []} />
-                )}
+                {sec.live
+                  ? <NotificationToggles initialSettings={initialSettings} />
+                  : renderItems(sec.items ?? [])
+                }
               </div>
             )}
           </div>
