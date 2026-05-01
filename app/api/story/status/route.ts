@@ -7,6 +7,7 @@ import { sendBookReadyEmail } from '@/lib/services/email'
 import { sendAdminNotification, buildStoryCompletedEmail, buildStoryFailedEmail } from '@/lib/services/adminNotifications'
 import type { StoryRequest } from '@/types/database'
 import type { StoryStatusResponse } from '@/types/story'
+import { getSetting } from '@/lib/settings/appSettings'
 
 export async function GET(request: NextRequest) {
   try {
@@ -77,20 +78,24 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      const { data: exportData } = await adminSupabase
-        .from('book_exports')
-        .select('storage_path, storage_bucket')
-        .eq('request_id', requestId)
-        .eq('is_latest', true)
-        .single()
+      const pdfDownloadEnabled = await getSetting('pdf_download_enabled', false)
 
-      if (exportData) {
-        const exportRow = exportData as unknown as { storage_path: string; storage_bucket: string }
-        const { data: urlData } = await adminSupabase.storage
-          .from(exportRow.storage_bucket)
-          .createSignedUrl(exportRow.storage_path, 60 * 60 * 24 * 7) // 7 days
+      if (pdfDownloadEnabled) {
+        const { data: exportData } = await adminSupabase
+          .from('book_exports')
+          .select('storage_path, storage_bucket')
+          .eq('request_id', requestId)
+          .eq('is_latest', true)
+          .single()
 
-        signedUrl = urlData?.signedUrl
+        if (exportData) {
+          const exportRow = exportData as unknown as { storage_path: string; storage_bucket: string }
+          const { data: urlData } = await adminSupabase.storage
+            .from(exportRow.storage_bucket)
+            .createSignedUrl(exportRow.storage_path, 60 * 60 * 24 * 7) // 7 days
+
+          signedUrl = urlData?.signedUrl
+        }
       }
 
       // Send completion email once — scope to null email_type (user emails only)
