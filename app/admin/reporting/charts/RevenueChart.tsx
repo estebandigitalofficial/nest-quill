@@ -38,12 +38,12 @@ export default function RevenueChart({ data }: { data: RevenueRow[] }) {
   return (
     <div>
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
-          <p className="text-xs text-gray-500 mb-1">Total Revenue</p>
+        <div className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
+          <p className="text-xs text-adm-muted mb-1">Total Revenue</p>
           <p className="text-2xl font-bold text-white">${(totalRevenue / 100).toFixed(2)}</p>
         </div>
-        <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4">
-          <p className="text-xs text-gray-500 mb-1">Transactions</p>
+        <div className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
+          <p className="text-xs text-adm-muted mb-1">Transactions</p>
           <p className="text-2xl font-bold text-white">{data.length}</p>
         </div>
       </div>
@@ -65,7 +65,7 @@ export default function RevenueChart({ data }: { data: RevenueRow[] }) {
           </BarChart>
         </ResponsiveContainer>
       ) : (
-        <p className="text-center text-gray-600 text-sm py-8">No revenue data for this period.</p>
+        <p className="text-center text-adm-subtle text-sm py-8">No revenue data for this period.</p>
       )}
     </div>
   )

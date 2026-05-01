@@ -36,13 +36,13 @@ export default async function AdminSettingsPage() {
     <div className="max-w-2xl mx-auto px-6 py-8 space-y-8">
       <div>
         <h1 className="text-xl font-semibold text-white">Settings</h1>
-        <p className="text-sm text-gray-400 mt-1">Manage your personal admin preferences.</p>
+        <p className="text-sm text-adm-muted mt-1">Manage your personal admin preferences.</p>
       </div>
 
       <section className="space-y-4">
         <div>
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Email Notifications</p>
-          <p className="text-xs text-gray-600">Choose which system events send you an email. Settings are per-admin.</p>
+          <p className="text-xs font-bold text-adm-muted uppercase tracking-widest mb-1">Email Notifications</p>
+          <p className="text-xs text-adm-subtle">Choose which system events send you an email. Settings are per-admin.</p>
         </div>
         <NotificationToggles initialSettings={initialSettings} />
       </section>

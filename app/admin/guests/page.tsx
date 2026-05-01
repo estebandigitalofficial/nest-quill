@@ -91,17 +91,17 @@ export default async function AdminGuestsPage({ searchParams }: PageProps) {
 
         {/* Backfill notice */}
         {backfillCount > 0 && !q && (
-          <div className="bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-xs text-gray-400">
-            <span className="font-semibold text-gray-300">{backfillCount} submission{backfillCount !== 1 ? 's' : ''}</span>
+          <div className="bg-adm-surface border border-adm-border rounded-xl px-4 py-3 text-xs text-adm-muted">
+            <span className="font-semibold text-adm-muted">{backfillCount} submission{backfillCount !== 1 ? 's' : ''}</span>
             {' '}from emails that have since registered — excluded from this list.
-            These <code className="text-gray-500">story_requests</code> rows still have{' '}
-            <code className="text-gray-500">user_id IS NULL</code> and could be backfilled to the matching profile.
+            These <code className="text-adm-muted">story_requests</code> rows still have{' '}
+            <code className="text-adm-muted">user_id IS NULL</code> and could be backfilled to the matching profile.
           </div>
         )}
 
         {/* Search + table */}
         <div>
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">
+          <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest mb-4">
             Guest submissions
           </h2>
           <div className="space-y-4">
@@ -109,34 +109,34 @@ export default async function AdminGuestsPage({ searchParams }: PageProps) {
               <AdminUserSearch defaultValue={q ?? ''} />
             </Suspense>
 
-            <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+            <div className="bg-adm-surface rounded-2xl border border-adm-border overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-800 text-xs text-gray-500 uppercase tracking-wider">
+                    <tr className="border-b border-adm-border text-xs text-adm-muted uppercase tracking-wider">
                       <th className="text-left px-4 py-3">Email</th>
                       <th className="text-left px-4 py-3 hidden sm:table-cell">Last submission</th>
                       <th className="text-left px-4 py-3">Submissions</th>
                       <th className="px-4 py-3"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-800">
+                  <tbody className="divide-y divide-adm-border">
                     {guests.map((g) => (
-                      <tr key={g.email} className="hover:bg-gray-800/50 transition-colors">
+                      <tr key={g.email} className="hover:bg-adm-surface/50 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <span className="text-white font-medium text-sm">{g.email}</span>
-                            <span className="text-[10px] bg-gray-800 text-gray-500 font-semibold px-1.5 py-0.5 rounded-full">guest</span>
+                            <span className="text-[10px] bg-adm-surface text-adm-muted font-semibold px-1.5 py-0.5 rounded-full">guest</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell whitespace-nowrap">
+                        <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell whitespace-nowrap">
                           {formatAZTimeShort(g.lastAt)}
                         </td>
                         <td className="px-4 py-3">
-                          <span className="text-xs text-gray-300 font-mono">
+                          <span className="text-xs text-adm-muted font-mono">
                             {g.completed}/{g.total}
                           </span>
-                          <span className="text-[10px] text-gray-600 ml-1">completed</span>
+                          <span className="text-[10px] text-adm-subtle ml-1">completed</span>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <Link
@@ -150,7 +150,7 @@ export default async function AdminGuestsPage({ searchParams }: PageProps) {
                     ))}
                     {guests.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="px-4 py-8 text-center text-gray-600">
+                        <td colSpan={4} className="px-4 py-8 text-center text-adm-subtle">
                           {q ? 'No guest submissions match that search.' : 'No guest submissions yet.'}
                         </td>
                       </tr>
@@ -169,8 +169,8 @@ export default async function AdminGuestsPage({ searchParams }: PageProps) {
 function StatCard({ label, value, color }: { label: string; value: number; color?: 'green' | 'amber' }) {
   const valueColor = color === 'green' ? 'text-green-400' : color === 'amber' ? 'text-amber-400' : 'text-white'
   return (
-    <div className="bg-gray-900 rounded-2xl border border-gray-800 px-5 py-4">
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
+    <div className="bg-adm-surface rounded-2xl border border-adm-border px-5 py-4">
+      <p className="text-xs text-adm-muted mb-1">{label}</p>
       <p className={`text-3xl font-bold ${valueColor}`}>{value}</p>
     </div>
   )

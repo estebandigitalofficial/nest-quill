@@ -34,6 +34,15 @@ const config: Config = {
           light:   '#1a3a60',
           dark:    '#071828',
         },
+        // admin panel — CSS-variable-driven, flips with theme
+        adm: {
+          bg:      'rgb(var(--adm-bg)      / <alpha-value>)',
+          surface: 'rgb(var(--adm-surface) / <alpha-value>)',
+          border:  'rgb(var(--adm-border)  / <alpha-value>)',
+          text:    'rgb(var(--adm-text)    / <alpha-value>)',
+          muted:   'rgb(var(--adm-muted)   / <alpha-value>)',
+          subtle:  'rgb(var(--adm-subtle)  / <alpha-value>)',
+        },
         // parchment and charcoal are CSS-variable-driven so they flip with the theme
         parchment: {
           DEFAULT: 'rgb(var(--parchment) / <alpha-value>)',

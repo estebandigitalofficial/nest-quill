@@ -89,14 +89,14 @@ export default function GenerateAllButton({
 
   if (running && progress) {
     return (
-      <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 space-y-3">
+      <div className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4 space-y-3">
         <div className="flex items-center gap-3">
           <span className="w-4 h-4 border-2 border-brand-700 border-t-brand-400 rounded-full animate-spin shrink-0" />
-          <p className="text-sm text-gray-300">
+          <p className="text-sm text-adm-muted">
             Writing scenes… <span className="text-white font-semibold">{progress.done}/{progress.total}</span>
           </p>
         </div>
-        <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-adm-surface rounded-full overflow-hidden">
           <div
             className="h-full bg-brand-500 rounded-full transition-all duration-300"
             style={{ width: `${(progress.done / progress.total) * 100}%` }}
@@ -107,25 +107,25 @@ export default function GenerateAllButton({
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 space-y-4">
-      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Generate All Scenes</p>
+    <div className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4 space-y-4">
+      <p className="text-xs font-bold text-adm-muted uppercase tracking-widest">Generate All Scenes</p>
 
       {/* Writing instructions */}
       <div className="space-y-2">
-        <label className="text-xs text-gray-400 font-medium">Writing instructions</label>
+        <label className="text-xs text-adm-muted font-medium">Writing instructions</label>
         <textarea
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2.5 text-sm text-adm-text placeholder:text-adm-subtle resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"
           rows={3}
           placeholder="e.g. Write in first person, casual and conversational — like I'm telling this story to a close friend. Keep my natural voice. Don't make it sound like a published novel."
           value={instructions}
           onChange={e => { setInstructions(e.target.value); setInstructionsSaved(false) }}
         />
         <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-600">These instructions are sent to every scene generation for this book.</p>
+          <p className="text-xs text-adm-subtle">These instructions are sent to every scene generation for this book.</p>
           <button
             onClick={saveInstructions}
             disabled={savingInstructions || !instructions.trim()}
-            className="text-xs bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-gray-200 font-semibold px-3 py-1.5 rounded-lg transition-colors"
+            className="text-xs bg-gray-700 hover:bg-adm-border disabled:opacity-40 text-adm-text font-semibold px-3 py-1.5 rounded-lg transition-colors"
           >
             {savingInstructions ? 'Saving…' : instructionsSaved ? 'Saved ✓' : 'Save'}
           </button>
@@ -139,13 +139,13 @@ export default function GenerateAllButton({
           className={`px-3 py-3 rounded-xl border text-left transition-colors space-y-0.5 ${
             mode === 'preserve_voice'
               ? 'border-brand-500 bg-brand-500/10'
-              : 'border-gray-700 hover:border-gray-600'
+              : 'border-adm-border hover:border-adm-border'
           }`}
         >
-          <p className={`text-sm font-semibold ${mode === 'preserve_voice' ? 'text-brand-400' : 'text-gray-300'}`}>
+          <p className={`text-sm font-semibold ${mode === 'preserve_voice' ? 'text-brand-400' : 'text-adm-muted'}`}>
             Preserve my voice
           </p>
-          <p className="text-xs text-gray-500">Keeps your tone, rhythm, and style — improves structure and flow</p>
+          <p className="text-xs text-adm-muted">Keeps your tone, rhythm, and style — improves structure and flow</p>
         </button>
 
         <button
@@ -153,13 +153,13 @@ export default function GenerateAllButton({
           className={`px-3 py-3 rounded-xl border text-left transition-colors space-y-0.5 ${
             mode === 'rewrite_free'
               ? 'border-brand-500 bg-brand-500/10'
-              : 'border-gray-700 hover:border-gray-600'
+              : 'border-adm-border hover:border-adm-border'
           }`}
         >
-          <p className={`text-sm font-semibold ${mode === 'rewrite_free' ? 'text-brand-400' : 'text-gray-300'}`}>
+          <p className={`text-sm font-semibold ${mode === 'rewrite_free' ? 'text-brand-400' : 'text-adm-muted'}`}>
             Rewrite freely
           </p>
-          <p className="text-xs text-gray-500">AI takes creative control — may diverge from your original style</p>
+          <p className="text-xs text-adm-muted">AI takes creative control — may diverge from your original style</p>
         </button>
       </div>
 

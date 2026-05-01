@@ -44,17 +44,17 @@ export default function ReportingDashboard({ initialData }: { initialData: Repor
     <div className={`space-y-10 ${loading ? 'opacity-60' : ''}`}>
       {/* Date range selector */}
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-xs text-gray-500">From:</span>
+        <span className="text-xs text-adm-muted">From:</span>
         <input
           type="date"
-          className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+          className="bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-xs text-adm-muted focus:ring-2 focus:ring-brand-500 focus:outline-none"
           value={from}
           onChange={(e) => setFrom(e.target.value)}
         />
-        <span className="text-xs text-gray-500">To:</span>
+        <span className="text-xs text-adm-muted">To:</span>
         <input
           type="date"
-          className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-300 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+          className="bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-xs text-adm-muted focus:ring-2 focus:ring-brand-500 focus:outline-none"
           value={to}
           onChange={(e) => setTo(e.target.value)}
         />
@@ -69,13 +69,13 @@ export default function ReportingDashboard({ initialData }: { initialData: Repor
 
       {/* Revenue */}
       <section>
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">Revenue</h2>
+        <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest mb-4">Revenue</h2>
         <RevenueChart data={data.revenue} />
       </section>
 
       {/* Story Analytics */}
       <section>
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">Story Analytics</h2>
+        <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest mb-4">Story Analytics</h2>
         <StoryAnalyticsChart
           statusCounts={data.statusCounts}
           topThemes={data.topThemes}
@@ -86,7 +86,7 @@ export default function ReportingDashboard({ initialData }: { initialData: Repor
 
       {/* User Analytics */}
       <section>
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">User Analytics</h2>
+        <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest mb-4">User Analytics</h2>
         <UserAnalyticsChart
           signupsByDay={data.signupsByDay}
           planCounts={data.planCounts}

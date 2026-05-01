@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import type { WriterBook, WriterCopyright } from '@/types/writer'
 
-const input = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500'
-const label = 'text-xs text-gray-400 font-medium'
+const input = 'w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-sm text-adm-text focus:outline-none focus:ring-2 focus:ring-brand-500'
+const label = 'text-xs text-adm-muted font-medium'
 
 function buildCopyrightText(c: WriterCopyright, book: WriterBook): string {
   const name = c.pen_name || c.author_name || book.author_name || book.pen_name || 'The Author'
@@ -105,19 +105,19 @@ export default function CopyrightBuilder({ book }: { book: WriterBook }) {
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <div className="bg-adm-surface border border-adm-border rounded-xl overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full px-5 py-3 flex items-center justify-between text-left"
       >
-        <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Copyright Page</span>
-        <span className="text-xs text-gray-600">{open ? '▲' : '▼'}</span>
+        <span className="text-xs font-bold text-adm-muted uppercase tracking-widest">Copyright Page</span>
+        <span className="text-xs text-adm-subtle">{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
-        <div className="border-t border-gray-800 px-5 py-4 space-y-5">
+        <div className="border-t border-adm-border px-5 py-4 space-y-5">
           {loading || !copyright ? (
-            <p className="text-xs text-gray-600 py-2">Loading…</p>
+            <p className="text-xs text-adm-subtle py-2">Loading…</p>
           ) : (
             <>
               {/* Basic info */}
@@ -146,7 +146,7 @@ export default function CopyrightBuilder({ book }: { book: WriterBook }) {
 
               {/* Clauses */}
               <div>
-                <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-2">Clauses</p>
+                <p className="text-xs font-bold text-adm-subtle uppercase tracking-widest mb-2">Clauses</p>
                 <div className="space-y-2">
                   {copyright.clauses.map(cl => (
                     <label key={cl.key} className="flex items-start gap-3 cursor-pointer group">
@@ -156,7 +156,7 @@ export default function CopyrightBuilder({ book }: { book: WriterBook }) {
                         onChange={() => toggleClause(cl.key)}
                         className="mt-0.5 accent-brand-500"
                       />
-                      <span className={`text-xs leading-relaxed ${cl.enabled ? 'text-gray-300' : 'text-gray-600'}`}>{cl.label}</span>
+                      <span className={`text-xs leading-relaxed ${cl.enabled ? 'text-adm-muted' : 'text-adm-subtle'}`}>{cl.label}</span>
                     </label>
                   ))}
                 </div>
@@ -164,29 +164,29 @@ export default function CopyrightBuilder({ book }: { book: WriterBook }) {
 
               {/* Collaborators */}
               <div>
-                <p className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-2">Collaborators</p>
+                <p className="text-xs font-bold text-adm-subtle uppercase tracking-widest mb-2">Collaborators</p>
                 <div className="space-y-2">
                   {copyright.collaborators.map((col, i) => (
                     <div key={i} className="flex gap-2 items-center">
                       <input className={`${input} flex-1`} placeholder="Name" value={col.name} onChange={e => setCollaborator(i, 'name', e.target.value)} />
                       <input className={`${input} flex-1`} placeholder="Role (e.g. Editor)" value={col.role} onChange={e => setCollaborator(i, 'role', e.target.value)} />
-                      <button onClick={() => removeCollaborator(i)} className="text-gray-600 hover:text-red-400 text-xs px-2 transition-colors">✕</button>
+                      <button onClick={() => removeCollaborator(i)} className="text-adm-subtle hover:text-red-400 text-xs px-2 transition-colors">✕</button>
                     </div>
                   ))}
-                  <button onClick={addCollaborator} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">+ Add collaborator</button>
+                  <button onClick={addCollaborator} className="text-xs text-adm-muted hover:text-adm-muted transition-colors">+ Add collaborator</button>
                 </div>
               </div>
 
               {/* Preview / Edit */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-bold text-gray-600 uppercase tracking-widest">Preview & Edit</p>
-                  <button onClick={() => setPreview(p => !p)} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+                  <p className="text-xs font-bold text-adm-subtle uppercase tracking-widest">Preview & Edit</p>
+                  <button onClick={() => setPreview(p => !p)} className="text-xs text-adm-muted hover:text-adm-muted transition-colors">
                     {preview ? 'Edit raw text' : 'Preview generated'}
                   </button>
                 </div>
                 {preview ? (
-                  <div className="bg-gray-800 rounded-lg px-4 py-3 text-xs text-gray-300 whitespace-pre-wrap font-mono leading-relaxed">
+                  <div className="bg-adm-surface rounded-lg px-4 py-3 text-xs text-adm-muted whitespace-pre-wrap font-mono leading-relaxed">
                     {copyright.custom_text || buildCopyrightText(copyright, book)}
                   </div>
                 ) : (
@@ -198,7 +198,7 @@ export default function CopyrightBuilder({ book }: { book: WriterBook }) {
                     onChange={e => update({ custom_text: e.target.value || null })}
                   />
                 )}
-                <p className="text-xs text-gray-600 mt-1">Leave blank to auto-generate. Edit manually to override.</p>
+                <p className="text-xs text-adm-subtle mt-1">Leave blank to auto-generate. Edit manually to override.</p>
               </div>
 
               <div className="flex justify-end">

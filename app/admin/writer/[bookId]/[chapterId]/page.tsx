@@ -41,9 +41,9 @@ export default async function ChapterPage({
 
   return (
     <>
-      <header className="border-b border-gray-800 px-6 h-14 flex items-center justify-between">
+      <header className="border-b border-adm-border px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
-          <Link href={`/admin/writer/${bookId}`} className="text-xs text-gray-500 hover:text-gray-300 shrink-0">
+          <Link href={`/admin/writer/${bookId}`} className="text-xs text-adm-muted hover:text-adm-muted shrink-0">
             ← {(book as WriterBook).title}
           </Link>
           <span className="text-gray-700">/</span>

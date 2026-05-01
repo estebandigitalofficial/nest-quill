@@ -45,11 +45,11 @@ export default function LibraryFilters({ q, status }: Props) {
           type="text"
           defaultValue={q}
           placeholder="Search by name, email, or request ID…"
-          className="flex-1 bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 focus:outline-none focus:border-gray-500 transition-colors"
+          className="flex-1 bg-adm-surface border border-adm-border rounded-xl px-4 py-2.5 text-sm text-adm-text placeholder:text-adm-subtle focus:outline-none focus:border-gray-500 transition-colors"
         />
         <button
           type="submit"
-          className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl text-xs font-semibold text-gray-300 transition-colors whitespace-nowrap"
+          className="px-4 py-2.5 bg-adm-surface hover:bg-adm-border border border-adm-border rounded-xl text-xs font-semibold text-adm-muted transition-colors whitespace-nowrap"
         >
           Search
         </button>
@@ -64,7 +64,7 @@ export default function LibraryFilters({ q, status }: Props) {
             className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
               (status || 'all') === opt.value
                 ? 'bg-brand-500 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200 border border-gray-700'
+                : 'bg-adm-surface text-adm-muted hover:bg-adm-border hover:text-adm-text border border-adm-border'
             }`}
           >
             {opt.label}

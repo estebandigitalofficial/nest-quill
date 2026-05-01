@@ -195,20 +195,20 @@ export default function EbookReader({
             {book.title}
           </h1>
           {book.subtitle && (
-            <p className="font-serif italic text-gray-500 max-w-sm" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.25rem)' }}>
+            <p className="font-serif italic text-adm-muted max-w-sm" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.25rem)' }}>
               {book.subtitle}
             </p>
           )}
           <div className="flex flex-col items-center gap-1 mt-4">
             {(book.pen_name || book.author_name) && (
-              <p className="text-gray-400 text-xs tracking-[0.2em] uppercase">{book.pen_name || book.author_name}</p>
+              <p className="text-adm-muted text-xs tracking-[0.2em] uppercase">{book.pen_name || book.author_name}</p>
             )}
             {book.publisher_name && (
-              <p className="text-gray-400 text-[11px] tracking-wider">{book.publisher_name}</p>
+              <p className="text-adm-muted text-[11px] tracking-wider">{book.publisher_name}</p>
             )}
           </div>
           {pages.length > 1 && (
-            <p className="text-[11px] text-gray-300 mt-8">Swipe or press → to begin</p>
+            <p className="text-[11px] text-adm-muted mt-8">Swipe or press → to begin</p>
           )}
         </div>
       )
@@ -226,7 +226,7 @@ export default function EbookReader({
             </h2>
           )}
           <div className={isEpigraph || isDedication
-            ? 'flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4 italic text-gray-500 px-8'
+            ? 'flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4 italic text-adm-muted px-8'
             : 'space-y-[1.1em]'
           }>
             {(section.content ?? '').split(/\n\n+/).filter(p => p.trim()).map((para, i) => (
@@ -247,7 +247,7 @@ export default function EbookReader({
         <div>
           {firstInChapter && (
             <div className="mb-10 text-center">
-              <p className="text-[11px] text-gray-400 uppercase tracking-[0.2em] mb-3">
+              <p className="text-[11px] text-adm-muted uppercase tracking-[0.2em] mb-3">
                 Chapter {chapter.chapter_number}
               </p>
               <h2 className="font-serif text-gray-900 leading-snug" style={{ fontSize: 'clamp(1.3rem, 3vw, 1.75rem)' }}>
@@ -257,7 +257,7 @@ export default function EbookReader({
             </div>
           )}
           {!firstInChapter && (
-            <div className="text-center text-gray-300 text-xs mb-10 tracking-[0.4em]">✦ ✦ ✦</div>
+            <div className="text-center text-adm-muted text-xs mb-10 tracking-[0.4em]">✦ ✦ ✦</div>
           )}
           <div>
             {paragraphs.map((para, i) => (
@@ -280,8 +280,8 @@ export default function EbookReader({
   if (pages.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: PAGE_BG }}>
-        <p className="font-serif text-gray-400 italic">This book has no written content yet.</p>
-        <Link href="/admin/writer" className="mt-4 text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2">
+        <p className="font-serif text-adm-muted italic">This book has no written content yet.</p>
+        <Link href="/admin/writer" className="mt-4 text-xs text-adm-muted hover:text-adm-subtle underline underline-offset-2">
           ← Back to library
         </Link>
       </div>
@@ -348,19 +348,19 @@ export default function EbookReader({
         }}
       >
         <Link href="/admin/writer"
-          className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-700 transition-colors py-2 pr-3">
+          className="flex items-center gap-1.5 text-[11px] text-adm-muted hover:text-gray-700 transition-colors py-2 pr-3">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
           Library
         </Link>
 
-        <p className="font-serif text-xs text-gray-500 truncate mx-4 max-w-[180px] sm:max-w-xs text-center">
+        <p className="font-serif text-xs text-adm-muted truncate mx-4 max-w-[180px] sm:max-w-xs text-center">
           {book.title}
         </p>
 
         <button onClick={() => setTocOpen(o => !o)}
-          className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-700 transition-colors py-2 pl-3">
+          className="flex items-center gap-1.5 text-[11px] text-adm-muted hover:text-gray-700 transition-colors py-2 pl-3">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="16" y2="12"/><line x1="3" y1="18" x2="12" y2="18"/>
           </svg>
@@ -449,7 +449,7 @@ export default function EbookReader({
       >
         <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: '#e8e2d8' }}>
           <span className="font-serif text-sm text-gray-700">Contents</span>
-          <button onClick={() => setTocOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors p-1">
+          <button onClick={() => setTocOpen(false)} className="text-adm-muted hover:text-adm-subtle transition-colors p-1">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
@@ -461,7 +461,7 @@ export default function EbookReader({
             <span className="font-serif text-gray-700 text-sm block" style={{ fontWeight: current === 0 ? 600 : 400 }}>
               {book.title}
             </span>
-            <span className="text-[10px] text-gray-400 uppercase tracking-wider">Title page</span>
+            <span className="text-[10px] text-adm-muted uppercase tracking-wider">Title page</span>
           </button>
           {toc.map(entry => (
             <button key={entry.pageIndex} onClick={() => { go(entry.pageIndex); setTocOpen(false) }}
@@ -474,7 +474,7 @@ export default function EbookReader({
           ))}
         </div>
         <div className="px-5 py-4 border-t" style={{ borderColor: '#e8e2d8' }}>
-          <Link href={`/admin/writer/${book.id}`} className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors">
+          <Link href={`/admin/writer/${book.id}`} className="text-[11px] text-adm-muted hover:text-adm-subtle transition-colors">
             ✎ Edit this book
           </Link>
         </div>

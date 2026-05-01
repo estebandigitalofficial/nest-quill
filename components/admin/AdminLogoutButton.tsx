@@ -17,7 +17,7 @@ export default function AdminLogoutButton() {
     <button
       onClick={handleLogout}
       aria-label="Sign out"
-      className="text-gray-500 hover:text-gray-200 transition-colors flex items-center gap-1"
+      className="text-adm-muted hover:text-adm-text transition-colors flex items-center gap-1"
     >
       {/* Icon on mobile (space-constrained), text on sm+ */}
       <svg
