@@ -13,9 +13,10 @@ interface Props {
   initialTopic?: string
   initialGrade?: number
   initialImage?: InitialImage
+  thinkFirstEnabled?: boolean
 }
 
-export default function FlashcardGenerator({ assignmentId, initialTopic, initialGrade, initialImage }: Props) {
+export default function FlashcardGenerator({ assignmentId, initialTopic, initialGrade, initialImage, thinkFirstEnabled = true }: Props) {
   const [topic, setTopic] = useState(initialTopic ?? '')
   const [grade, setGrade] = useState<number | null>(initialGrade ?? null)
   const [imageBase64, setImageBase64] = useState<string | null>(initialImage?.base64 ?? null)
@@ -119,12 +120,14 @@ export default function FlashcardGenerator({ assignmentId, initialTopic, initial
     return (
       <div className="space-y-4">
         {/* Think First nudge */}
-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
-          <span className="text-sm font-bold text-amber-600 shrink-0 mt-0.5">!</span>
-          <p className="text-xs text-amber-800 leading-relaxed">
-            <span className="font-semibold">Think first, then flip.</span> Try to recall the answer before revealing the back of each card — it makes your memory stronger.
-          </p>
-        </div>
+        {thinkFirstEnabled && (
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+            <span className="text-sm font-bold text-amber-600 shrink-0 mt-0.5">!</span>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              <span className="font-semibold">Think first, then flip.</span> Try to recall the answer before revealing the back of each card — it makes your memory stronger.
+            </p>
+          </div>
+        )}
 
         {assignmentId && (
           <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">

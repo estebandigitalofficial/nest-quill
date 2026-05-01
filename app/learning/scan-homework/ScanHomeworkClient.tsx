@@ -26,7 +26,14 @@ const ACTIVITIES: { id: Activity; label: string; desc: string }[] = [
   { id: 'trivia', label: 'Trivia Game', desc: 'Rapid-fire questions' },
 ]
 
-export default function ScanHomeworkClient({ triviaEnabled }: { triviaEnabled: boolean }) {
+interface ScanHomeworkClientProps {
+  triviaEnabled: boolean
+  thinkFirstEnabled: boolean
+  teachBackEnabled: boolean
+  nudgesEnabled: boolean
+}
+
+export default function ScanHomeworkClient({ triviaEnabled, thinkFirstEnabled, teachBackEnabled, nudgesEnabled }: ScanHomeworkClientProps) {
   const [image, setImage] = useState<UploadedImage | null>(null)
   const [grade, setGrade] = useState<number | null>(null)
   const [activity, setActivity] = useState<Activity | null>(null)
@@ -111,16 +118,16 @@ export default function ScanHomeworkClient({ triviaEnabled }: { triviaEnabled: b
         </div>
 
         {activity === 'flashcards' && (
-          <FlashcardGenerator initialImage={image} initialGrade={grade ?? undefined} />
+          <FlashcardGenerator initialImage={image} initialGrade={grade ?? undefined} thinkFirstEnabled={thinkFirstEnabled} />
         )}
         {activity === 'explain' && (
-          <ConceptExplainer initialImage={image} initialGrade={grade ?? undefined} />
+          <ConceptExplainer initialImage={image} initialGrade={grade ?? undefined} thinkFirstEnabled={thinkFirstEnabled} teachBackEnabled={teachBackEnabled} nudgesEnabled={nudgesEnabled} />
         )}
         {activity === 'study-guide' && (
-          <StudyGuideGenerator initialImage={image} initialGrade={grade ?? undefined} />
+          <StudyGuideGenerator initialImage={image} initialGrade={grade ?? undefined} thinkFirstEnabled={thinkFirstEnabled} teachBackEnabled={teachBackEnabled} nudgesEnabled={nudgesEnabled} />
         )}
         {activity === 'spelling' && spellingWords && (
-          <SpellingPractice initialWords={spellingWords} />
+          <SpellingPractice initialWords={spellingWords} nudgesEnabled={nudgesEnabled} />
         )}
         {activity === 'trivia' && triviaEnabled && (
           <TriviaMode initialImage={image} grade={grade} onReset={resetActivity} />
@@ -196,20 +203,22 @@ export default function ScanHomeworkClient({ triviaEnabled }: { triviaEnabled: b
         <div className="space-y-3">
           <p className="text-sm font-semibold text-gray-700">What do you want to do with this?</p>
 
-          <div className="space-y-1.5">
-            <label className="block text-sm font-semibold text-gray-700">
-              Think first: What do you already know or what would you try first?
-            </label>
-            <textarea
-              value={thinkFirst}
-              onChange={e => setThinkFirst(e.target.value)}
-              placeholder="Your attempt (optional)"
-              rows={2}
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
-            />
-          </div>
+          {thinkFirstEnabled && (
+            <div className="space-y-1.5">
+              <label className="block text-sm font-semibold text-gray-700">
+                Think first: What do you already know or what would you try first?
+              </label>
+              <textarea
+                value={thinkFirst}
+                onChange={e => setThinkFirst(e.target.value)}
+                placeholder="Your attempt (optional)"
+                rows={2}
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent resize-none"
+              />
+            </div>
+          )}
 
-          <NudgePrompt />
+          {nudgesEnabled && <NudgePrompt />}
           {spellingError && <p className="text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2">{spellingError}</p>}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {ACTIVITIES.filter(a => a.id !== 'trivia' || triviaEnabled).map(act => (

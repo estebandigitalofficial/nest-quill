@@ -9,9 +9,11 @@ type Stage = 'setup' | 'practice' | 'results'
 interface Props {
   assignmentId?: string
   initialWords?: string[]
+  initialSentenceMode?: boolean
+  nudgesEnabled?: boolean
 }
 
-export default function SpellingPractice({ assignmentId, initialWords }: Props) {
+export default function SpellingPractice({ assignmentId, initialWords, initialSentenceMode = false, nudgesEnabled = true }: Props) {
   const [wordInput, setWordInput] = useState(initialWords ? initialWords.join('\n') : '')
   const [words, setWords] = useState<string[]>([])
   const [stage, setStage] = useState<Stage>('setup')
@@ -25,7 +27,7 @@ export default function SpellingPractice({ assignmentId, initialWords }: Props) 
   const inputRef = useRef<HTMLInputElement>(null)
   const photoRef = useRef<HTMLInputElement>(null)
 
-  const [sentenceMode, setSentenceMode] = useState(false)
+  const [sentenceMode, setSentenceMode] = useState(initialSentenceMode)
   const [sentence, setSentence] = useState('')
 
   const [xpEarned, setXpEarned] = useState<number | null>(null)
@@ -170,7 +172,7 @@ export default function SpellingPractice({ assignmentId, initialWords }: Props) 
             <p className="text-xs text-indigo-600 font-medium">{parsed.length} word{parsed.length !== 1 ? 's' : ''} entered</p>
           )}
         </div>
-        <NudgePrompt />
+        {nudgesEnabled && <NudgePrompt />}
         <button
           type="button"
           onClick={() => setSentenceMode(m => !m)}
