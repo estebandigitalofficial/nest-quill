@@ -6,9 +6,9 @@ import AdminForceRequeueButton from '@/components/admin/AdminForceRequeueButton'
 import AdminFilters from '@/components/admin/AdminFilters'
 import type { StoryRequest } from '@/types/database'
 import { formatAZTimeShort, formatAZTimeOnly } from '@/lib/utils/formatTime'
+import { getSetting } from '@/lib/settings/appSettings'
 
 const PROCESSING_STATUSES = ['generating_text', 'generating_images', 'assembling_pdf']
-const STUCK_THRESHOLD_MINUTES = 10
 
 const VALID_VIEWS = ['failed-stories', 'recent-stories', 'emails', 'submissions'] as const
 type AdminView = typeof VALID_VIEWS[number]
@@ -23,8 +23,9 @@ export default async function AdminPage({ searchParams }: PageProps) {
   const view = (VALID_VIEWS as readonly string[]).includes(viewRaw ?? '') ? viewRaw as AdminView : undefined
   const adminSupabase = createAdminClient()
 
-  // ── Stuck stories (processing state, not updated in >10 min) ──────────────
-  const stuckCutoff = new Date(Date.now() - STUCK_THRESHOLD_MINUTES * 60 * 1000).toISOString()
+  // ── Stuck stories (processing state, not updated in >N min) ─────────────
+  const stuckThresholdMinutes = await getSetting('stuck_story_threshold_minutes', 10)
+  const stuckCutoff = new Date(Date.now() - stuckThresholdMinutes * 60 * 1000).toISOString()
   const { data: stuckData } = await adminSupabase
     .from('story_requests')
     .select('id, child_name, story_theme, plan_tier, status, progress_pct, user_email, created_at, updated_at, last_error')
