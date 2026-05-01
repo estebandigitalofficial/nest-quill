@@ -1,10 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getSetting } from '@/lib/settings/appSettings'
 import { getPlanLimits } from './config'
 import type { PlanTier } from '@/types/database'
 
-// Guest (no account): 1 story, identified by email
+// Fallback values used when app_settings rows are missing.
+// These match the seeded defaults and keep create/page.tsx display working.
 const GUEST_LIMIT = 1
-// Free account (logged-in): 2 stories, checked via books_generated
 export const FREE_ACCOUNT_LIMIT = 2
 
 /**
@@ -28,6 +29,8 @@ export async function canCreateBook(
     if (tier !== 'free') return { allowed: true }
 
     if (userEmail) {
+      const guestLimit = await getSetting('guest_story_limit', GUEST_LIMIT)
+
       const { count, error } = await supabase
         .from('story_requests')
         .select('id', { count: 'exact', head: true })
@@ -35,7 +38,7 @@ export async function canCreateBook(
         .eq('user_email', userEmail)
         .neq('status', 'failed')
 
-      if (!error && (count ?? 0) >= GUEST_LIMIT) {
+      if (!error && (count ?? 0) >= guestLimit) {
         return {
           allowed: false,
           requiresSignup: true,
@@ -63,7 +66,8 @@ export async function canCreateBook(
   if (profile.is_admin) return { allowed: true }
 
   if (tier === 'free') {
-    if (profile.books_generated >= FREE_ACCOUNT_LIMIT) {
+    const freeLimit = await getSetting('free_user_story_limit', FREE_ACCOUNT_LIMIT)
+    if (profile.books_generated >= freeLimit) {
       return {
         allowed: false,
         reason: "You've reached your free limit. Upgrade to continue.",
