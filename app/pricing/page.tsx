@@ -5,6 +5,7 @@ import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 import { getSetting } from '@/lib/settings/appSettings'
 
+export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Pricing — Nest & Quill' }
 
 export default async function PricingPage() {
