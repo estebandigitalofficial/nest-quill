@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { href: '/admin/library', label: 'Library' },
   { href: '/admin/users', label: 'Users' },
   { href: '/admin/guests', label: 'Guests' },
+  { href: '/admin/classrooms', label: 'Classrooms' },
   { href: '/admin/images', label: 'Images' },
   { href: '/admin/email-drips', label: 'Email Drips' },
   { href: '/admin/reporting', label: 'Reporting' },

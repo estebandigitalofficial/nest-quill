@@ -1,0 +1,157 @@
+import Link from 'next/link'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getAdminContext } from '@/lib/admin/guard'
+import { formatAZTimeShort } from '@/lib/utils/formatTime'
+
+export default async function AdminClassroomsPage() {
+  const ctx = await getAdminContext()
+  if (!ctx) return null
+
+  const admin = createAdminClient()
+
+  const [
+    { data: rawClassrooms },
+    { data: allMembers },
+    { data: allAssignments },
+  ] = await Promise.all([
+    admin
+      .from('classrooms')
+      .select('id, name, grade, subject, join_code, is_active, created_at, educator_id')
+      .order('created_at', { ascending: false })
+      .limit(500),
+    admin.from('classroom_members').select('classroom_id').limit(50000),
+    admin.from('assignments').select('classroom_id').limit(50000),
+  ])
+
+  const classrooms = (rawClassrooms ?? []) as {
+    id: string; name: string; grade: number | null; subject: string | null
+    join_code: string; is_active: boolean; created_at: string; educator_id: string
+  }[]
+
+  // Batch educator profiles
+  const educatorIds = [...new Set(classrooms.map(c => c.educator_id))]
+  const { data: educators } = educatorIds.length > 0
+    ? await admin.from('profiles').select('id, email').in('id', educatorIds)
+    : { data: [] as { id: string; email: string }[] }
+  const educatorMap = new Map((educators ?? []).map((e: { id: string; email: string }) => [e.id, e]))
+
+  // Count maps
+  const memberCountMap = new Map<string, number>()
+  for (const m of (allMembers ?? []) as { classroom_id: string }[]) {
+    memberCountMap.set(m.classroom_id, (memberCountMap.get(m.classroom_id) ?? 0) + 1)
+  }
+  const assignCountMap = new Map<string, number>()
+  for (const a of (allAssignments ?? []) as { classroom_id: string }[]) {
+    assignCountMap.set(a.classroom_id, (assignCountMap.get(a.classroom_id) ?? 0) + 1)
+  }
+
+  const rows = classrooms.map(c => ({
+    ...c,
+    educator: educatorMap.get(c.educator_id) ?? null,
+    memberCount: memberCountMap.get(c.id) ?? 0,
+    assignCount: assignCountMap.get(c.id) ?? 0,
+  }))
+
+  const totalActive = rows.filter(r => r.is_active).length
+  const totalArchived = rows.filter(r => !r.is_active).length
+
+  return (
+    <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <StatCard label="Total classrooms" value={rows.length} />
+        <StatCard label="Active" value={totalActive} color="green" />
+        <StatCard label="Archived" value={totalArchived} />
+      </div>
+
+      {/* Table */}
+      <div>
+        <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest mb-4">
+          All classrooms
+        </h2>
+        <div className="bg-adm-surface rounded-2xl border border-adm-border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-adm-border text-xs text-adm-muted uppercase tracking-wider">
+                  <th className="text-left px-4 py-3">Classroom</th>
+                  <th className="text-left px-4 py-3 hidden sm:table-cell">Educator</th>
+                  <th className="text-left px-4 py-3 hidden md:table-cell">Students</th>
+                  <th className="text-left px-4 py-3 hidden md:table-cell">Assignments</th>
+                  <th className="text-left px-4 py-3 hidden lg:table-cell">Created</th>
+                  <th className="text-left px-4 py-3">Status</th>
+                  <th className="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-adm-border">
+                {rows.map(r => (
+                  <tr key={r.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3">
+                      <p className="text-white font-medium text-sm">{r.name}</p>
+                      <p className="text-[10px] text-adm-subtle mt-0.5">
+                        {[r.grade ? `Grade ${r.grade}` : null, r.subject].filter(Boolean).join(' · ') || '—'}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell">
+                      {r.educator?.email ?? <span className="text-adm-subtle italic">unknown</span>}
+                    </td>
+                    <td className="px-4 py-3 text-adm-muted text-xs font-mono hidden md:table-cell">
+                      {r.memberCount}
+                    </td>
+                    <td className="px-4 py-3 text-adm-muted text-xs font-mono hidden md:table-cell">
+                      {r.assignCount}
+                    </td>
+                    <td className="px-4 py-3 text-adm-muted text-xs hidden lg:table-cell whitespace-nowrap">
+                      {formatAZTimeShort(r.created_at)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        r.is_active
+                          ? 'bg-green-900 text-green-400'
+                          : 'bg-adm-surface text-adm-subtle border border-adm-border'
+                      }`}>
+                        {r.is_active ? 'active' : 'archived'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        href={`/admin/classrooms/${r.id}`}
+                        className="text-xs text-brand-400 hover:text-brand-300 font-medium whitespace-nowrap"
+                      >
+                        View →
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+                {rows.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-adm-subtle">
+                      No classrooms yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {rows.length === 500 && (
+            <p className="text-xs text-adm-subtle text-center py-3 border-t border-adm-border">
+              Showing first 500 classrooms
+            </p>
+          )}
+        </div>
+      </div>
+
+    </div>
+  )
+}
+
+function StatCard({ label, value, color }: { label: string; value: number; color?: 'green' | 'amber' }) {
+  const valueColor = color === 'green' ? 'text-green-400' : color === 'amber' ? 'text-amber-400' : 'text-white'
+  return (
+    <div className="bg-adm-surface rounded-2xl border border-adm-border px-5 py-4">
+      <p className="text-xs text-adm-muted mb-1">{label}</p>
+      <p className={`text-3xl font-bold ${valueColor}`}>{value}</p>
+    </div>
+  )
+}
