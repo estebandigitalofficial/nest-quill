@@ -44,14 +44,25 @@ export default async function AdminClassroomDetailPage({ params }: RouteContext)
     .eq('id', classroom.educator_id)
     .single()
 
+  const backHref = classroom.is_active
+    ? '/admin/classrooms'
+    : '/admin/classrooms?filter=archived'
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
 
-      {/* Back */}
-      <Link href="/admin/classrooms"
+      {/* Back — preserves filter context */}
+      <Link href={backHref}
         className="text-xs text-adm-muted hover:text-white transition-colors inline-block">
         ← Classrooms
       </Link>
+
+      {/* Archived notice */}
+      {!classroom.is_active && (
+        <div className="bg-amber-950/30 border border-amber-800/40 rounded-xl px-4 py-3 text-xs text-amber-400">
+          This classroom is archived. Students can no longer access it and the join code is inactive.
+        </div>
+      )}
 
       {/* Header */}
       <div className="bg-adm-surface rounded-2xl border border-adm-border px-6 py-5">
