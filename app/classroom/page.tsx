@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 import { getSetting } from '@/lib/settings/appSettings'
@@ -19,11 +20,38 @@ export default async function ClassroomPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const role = user?.user_metadata?.account_type ?? 'parent'
-  if (role === 'educator') redirect('/classroom/educator')
-  if (role === 'student') redirect('/classroom/student')
+  if (user) {
+    const role = user.user_metadata?.account_type ?? 'parent'
+    const admin = createAdminClient()
 
-  // Logged-out, OR logged-in parent with no classroom role yet
+    if (role === 'educator') {
+      // Only redirect if educator has at least one active classroom
+      const { count } = await admin
+        .from('classrooms')
+        .select('id', { count: 'exact', head: true })
+        .eq('educator_id', user.id)
+        .eq('is_active', true)
+      if ((count ?? 0) > 0) redirect('/classroom/educator')
+    } else if (role === 'student') {
+      // Only redirect if student is enrolled in at least one active classroom
+      const { data: memberships } = await admin
+        .from('classroom_members')
+        .select('classroom_id')
+        .eq('student_id', user.id)
+        .limit(200)
+      const memberIds = (memberships ?? []).map((m: { classroom_id: string }) => m.classroom_id)
+      if (memberIds.length > 0) {
+        const { count } = await admin
+          .from('classrooms')
+          .select('id', { count: 'exact', head: true })
+          .in('id', memberIds)
+          .eq('is_active', true)
+        if ((count ?? 0) > 0) redirect('/classroom/student')
+      }
+    }
+  }
+
+  // Logged-out OR has no active classrooms/enrollments — show the role chooser
   const isLoggedIn = !!user
   return (
     <div className="h-dvh bg-parchment flex flex-col">
