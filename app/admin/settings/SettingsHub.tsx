@@ -203,8 +203,8 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: 'maintenance',
-    label: 'Admin Tools & Maintenance',
-    description: 'Dashboard thresholds and database cleanup tools.',
+    label: 'Dashboard Tools',
+    description: 'System controls and cleanup tools.',
     Icon: WrenchIcon,
     live: false,
     columns: true,
