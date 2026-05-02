@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
           .select('storage_path, storage_bucket')
           .eq('request_id', requestId)
           .eq('is_latest', true)
-          .single()
+          .maybeSingle()
 
         if (exportData) {
           const exportRow = exportData as unknown as { storage_path: string; storage_bucket: string }
@@ -95,6 +95,25 @@ export async function GET(request: NextRequest) {
             .createSignedUrl(exportRow.storage_path, 60 * 60 * 24 * 7) // 7 days
 
           signedUrl = urlData?.signedUrl
+        } else if (storyRequest.plan_tier !== 'free') {
+          // No export yet — trigger PDF assembly in the background (Node.js, no CPU limit).
+          // The generate-pdf route is idempotent; concurrent polls won't double-assemble.
+          const generatePdfUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/story/${requestId}/generate-pdf`
+          const pdfSecret = process.env.EDGE_FUNCTION_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY
+          after(async () => {
+            try {
+              const res = await fetch(generatePdfUrl, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${pdfSecret}` },
+              })
+              if (!res.ok) {
+                const body = await res.text().catch(() => '')
+                console.error('[status] generate-pdf trigger failed', requestId, res.status, body)
+              }
+            } catch (err) {
+              console.error('[status] generate-pdf trigger error', requestId, err)
+            }
+          })
         }
       }
 
@@ -212,36 +231,42 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Fallback re-trigger ──────────────────────────────────────────────────
-    // If the request has been stuck in "queued" with no worker for >3 min,
-    // the original trigger (fired in after() on submit) likely failed silently.
-    // Re-fire it here — the Edge Function's idempotency check prevents double-processing.
-    if (
+    // Case 1: queued with no worker for >3 min — original after() trigger likely failed.
+    // Case 2: generating_images with no worker for >60 s — time-budget continuation
+    //   released the worker_id and is waiting for the next run to pick up.
+    // The Edge Function's idempotency check prevents double-processing in both cases.
+    const triggerBaseUrl = process.env.EDGE_FUNCTION_BASE_URL
+    const stalledQueued =
       storyRequest.status === 'queued' &&
       storyRequest.worker_id === null &&
       Date.now() - new Date(storyRequest.created_at).getTime() > 3 * 60 * 1000
-    ) {
-      const baseUrl = process.env.EDGE_FUNCTION_BASE_URL
-      if (baseUrl) {
-        console.log('[status] re-triggering stalled queued request', requestId)
-        after(async () => {
-          try {
-            const res = await fetch(`${baseUrl}/process-story`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${process.env.EDGE_FUNCTION_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-              },
-              body: JSON.stringify({ requestId }),
-            })
-            if (!res.ok) {
-              const body = await res.text().catch(() => '')
-              console.error('[status] re-trigger failed', requestId, res.status, body)
-            }
-          } catch (err) {
-            console.error('[status] re-trigger error', requestId, err)
+
+    const timeBudgetContinuation =
+      storyRequest.status === 'generating_images' &&
+      storyRequest.worker_id === null &&
+      Date.now() - new Date(storyRequest.updated_at).getTime() > 60 * 1000
+
+    if (triggerBaseUrl && (stalledQueued || timeBudgetContinuation)) {
+      const reason = stalledQueued ? 'stalled queued request' : 'time-budget continuation'
+      console.log('[status] re-triggering', reason, requestId)
+      after(async () => {
+        try {
+          const res = await fetch(`${triggerBaseUrl}/process-story`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${process.env.EDGE_FUNCTION_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+            body: JSON.stringify({ requestId }),
+          })
+          if (!res.ok) {
+            const body = await res.text().catch(() => '')
+            console.error('[status] re-trigger failed', requestId, res.status, body)
           }
-        })
-      }
+        } catch (err) {
+          console.error('[status] re-trigger error', requestId, err)
+        }
+      })
     }
 
     return NextResponse.json<StoryStatusResponse>({

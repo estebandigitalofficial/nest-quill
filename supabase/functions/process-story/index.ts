@@ -1,7 +1,6 @@
 // @ts-nocheck — this file runs in Deno (Supabase Edge Function), not Node. TS server does not know Deno globals.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { PDFDocument, StandardFonts, rgb } from 'npm:pdf-lib@1.17.1'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -13,14 +12,10 @@ const EXPECTED_TOKEN = Deno.env.get('EDGE_FUNCTION_SECRET') ?? SUPABASE_SERVICE_
 const SKIP_IMAGES = Deno.env.get('SKIP_IMAGE_GENERATION') === 'true'
 const MOCK_PIPELINE = Deno.env.get('MOCK_PIPELINE') === 'true'
 
-// PDF layout constants (8×8 inch square picture-book format)
-const PDF_SIZE = 576
-const PDF_MARGIN = 40
-const PDF_BRAND_GOLD = rgb(0.788, 0.592, 0.0)    // #C99700
-const PDF_CREAM = rgb(0.973, 0.961, 0.925)        // #F8F5EC
-const PDF_OXFORD = rgb(0.047, 0.137, 0.251)       // #0C2340
-const PDF_CHARCOAL = rgb(0.18, 0.18, 0.18)        // #2E2E2E
-const PDF_GRAY = rgb(0.471, 0.443, 0.424)         // #78716c
+// Stop 40 seconds before the 150 s Edge Function hard limit.
+// When the budget is reached the worker releases its claim (worker_id → null)
+// and returns a 200 so the status-poller can re-trigger for the next batch.
+const TIME_BUDGET_MS = 110_000
 
 // ── Fallback illustration style → DALL-E style hint map ─────────────────────
 
@@ -315,6 +310,8 @@ Deno.serve(async (req) => {
   }
 
   // ── Idempotency ───────────────────────────────────────────────────────────
+  // Allow: queued, failed, and generating_images with no active worker (time-budget release).
+  // Block: any status with an active worker_id that isn't in the retriable list.
   const retriable = ['queued', 'failed']
   if (storyRequest.worker_id !== null && !retriable.includes(storyRequest.status)) {
     return new Response(
@@ -323,6 +320,23 @@ Deno.serve(async (req) => {
     )
   }
 
+  // ── Check for existing work (checkpoint / resume detection) ───────────────
+  const { data: existingStoryCheck } = await supabase
+    .from('generated_stories')
+    .select('id')
+    .eq('request_id', requestId)
+    .maybeSingle()
+
+  const { data: existingSceneCheck } = await supabase
+    .from('story_scenes')
+    .select('id')
+    .eq('request_id', requestId)
+    .limit(1)
+
+  // Resume only when both the story text AND its scenes are already saved.
+  // If only generated_stories exists (scenes missing), regenerate both cleanly.
+  const isResume = !!existingStoryCheck?.id && (existingSceneCheck?.length ?? 0) > 0
+
   // ── Claim this request ────────────────────────────────────────────────────
   const workerId = crypto.randomUUID()
 
@@ -330,13 +344,17 @@ Deno.serve(async (req) => {
     .from('story_requests')
     .update({
       worker_id: workerId,
-      status: 'generating_text',
-      processing_started_at: new Date().toISOString(),
-      status_message: 'Writing your story…',
-      progress_pct: 10,
+      status: isResume ? 'generating_images' : 'generating_text',
+      // Only stamp processing_started_at on the very first run
+      ...(!isResume ? { processing_started_at: new Date().toISOString() } : {}),
+      status_message: isResume ? 'Resuming illustrations…' : 'Writing your story…',
+      progress_pct: isResume ? Math.max(storyRequest.progress_pct ?? 45, 45) : 10,
       last_error: null,
     })
     .eq('id', requestId)
+
+  // Worker start time — used to enforce the time budget
+  const workerStart = Date.now()
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -370,7 +388,14 @@ Deno.serve(async (req) => {
   // ── Pipeline ──────────────────────────────────────────────────────────────
 
   try {
-    await log('pipeline_start', MOCK_PIPELINE ? 'Pipeline started (MOCK MODE — no API calls)' : 'Pipeline started')
+    await log(
+      'pipeline_start',
+      isResume
+        ? 'Pipeline resumed (checkpoint — continuing from prior run)'
+        : MOCK_PIPELINE
+          ? 'Pipeline started (MOCK MODE — no API calls)'
+          : 'Pipeline started'
+    )
 
     // ── Fetch AI writer config ──────────────────────────────────────────
     const configMap: ConfigMap = {}
@@ -444,101 +469,126 @@ Deno.serve(async (req) => {
       )
     }
 
-    // ── Step 1: Generate story text ───────────────────────────────────────
-    await log('generate_text', 'Calling OpenAI GPT-4o for story text')
-    const t0 = Date.now()
+    // ── Step 1: Story text ────────────────────────────────────────────────
+    // story holds the minimal shape needed by later steps (title, pages, dedication).
+    let story: Record<string, unknown> = {}
+    let savedStory: { id: string }
 
-    const messages = buildStoryPrompt(storyRequest, configMap, language)
-    const rawContent = await callOpenAI(messages)
-    const story = JSON.parse(rawContent)
+    if (isResume) {
+      // Reuse the story that was already generated and saved — no OpenAI call.
+      const { data: gs, error: gsErr } = await supabase
+        .from('generated_stories')
+        .select('id, title, subtitle, full_text_json, dedication')
+        .eq('request_id', requestId)
+        .single()
 
-    const generationTimeMs = Date.now() - t0
+      if (gsErr || !gs) throw new Error(`Failed to fetch existing story for resume: ${gsErr?.message}`)
 
-    // Validate we got pages
-    if (!story.pages || !Array.isArray(story.pages) || story.pages.length === 0) {
-      throw new Error('OpenAI returned invalid story structure — no pages found')
-    }
+      savedStory = { id: gs.id }
+      story = { title: gs.title, subtitle: gs.subtitle, pages: gs.full_text_json, dedication: gs.dedication }
 
-    await log('generate_text', `Story generated: "${story.title}" (${story.pages.length} pages, ${generationTimeMs}ms)`, 'info', {
-      title: story.title,
-      page_count: story.pages.length,
-      generation_time_ms: generationTimeMs,
-    })
+      await log('resumed_existing_story', `Reusing existing story "${gs.title}" — skipped text generation`, 'info', {
+        story_id: gs.id,
+      })
+    } else {
+      // Fresh run — generate story text via GPT-4o.
+      await log('generate_text', 'Calling OpenAI GPT-4o for story text')
+      const t0 = Date.now()
 
-    // Save to generated_stories table — upsert so re-runs overwrite cleanly
-    const { data: savedStory, error: storyInsertError } = await supabase
-      .from('generated_stories')
-      .upsert({
-        request_id: requestId,
+      const messages = buildStoryPrompt(storyRequest, configMap, language)
+      const rawContent = await callOpenAI(messages)
+      const generatedStory = JSON.parse(rawContent)
+      const generationTimeMs = Date.now() - t0
+
+      if (!generatedStory.pages || !Array.isArray(generatedStory.pages) || generatedStory.pages.length === 0) {
+        throw new Error('OpenAI returned invalid story structure — no pages found')
+      }
+
+      story = generatedStory
+
+      await log('generate_text', `Story generated: "${story.title}" (${(story.pages as unknown[]).length} pages, ${generationTimeMs}ms)`, 'info', {
         title: story.title,
-        subtitle: story.subtitle || null,
-        author_line: storyRequest.author_name || story.author_line || 'A Nest & Quill Original',
-        dedication: story.dedication || null,
-        synopsis: story.synopsis || null,
-        full_text_json: story.pages,
-        model_used: 'gpt-4o',
+        page_count: (story.pages as unknown[]).length,
         generation_time_ms: generationTimeMs,
-      }, { onConflict: 'request_id' })
-      .select('id')
-      .single()
+      })
 
-    if (storyInsertError || !savedStory) {
-      throw new Error(`Failed to save story: ${storyInsertError?.message}`)
-    }
+      // Upsert so a re-run after a crash between text-save and scene-insert stays clean
+      const { data: gs, error: storyInsertError } = await supabase
+        .from('generated_stories')
+        .upsert({
+          request_id: requestId,
+          title: story.title,
+          subtitle: story.subtitle || null,
+          author_line: storyRequest.author_name || (story.author_line as string) || 'A Nest & Quill Original',
+          dedication: story.dedication || null,
+          synopsis: story.synopsis || null,
+          full_text_json: story.pages,
+          model_used: 'gpt-4o',
+          generation_time_ms: generationTimeMs,
+        }, { onConflict: 'request_id' })
+        .select('id')
+        .single()
 
-    // Delete any existing scenes from a prior run, then insert fresh ones
-    await supabase.from('story_scenes').delete().eq('request_id', requestId)
+      if (storyInsertError || !gs) {
+        throw new Error(`Failed to save story: ${storyInsertError?.message}`)
+      }
 
-    const sceneRows = story.pages.map((page: Record<string, unknown>) => ({
-      story_id: savedStory.id,
-      request_id: requestId,
-      page_number: page.page,
-      page_text: page.text,
-      image_prompt: page.image_description,
-      image_status: 'pending',
-    }))
+      savedStory = { id: gs.id }
 
-    const { error: scenesInsertError } = await supabase
-      .from('story_scenes')
-      .insert(sceneRows)
+      // Delete any scenes from an aborted prior run, then insert fresh ones
+      await supabase.from('story_scenes').delete().eq('request_id', requestId)
 
-    if (scenesInsertError) {
-      throw new Error(`Failed to save story scenes: ${scenesInsertError.message}`)
-    }
+      const sceneRows = (story.pages as Record<string, unknown>[]).map((page) => ({
+        story_id: savedStory.id,
+        request_id: requestId,
+        page_number: page.page,
+        page_text: page.text,
+        image_prompt: page.image_description,
+        image_status: 'pending',
+      }))
 
-    await setStatus('generating_text', 'Story written!', 40)
+      const { error: scenesInsertError } = await supabase
+        .from('story_scenes')
+        .insert(sceneRows)
 
-    // ── Step 1b: Generate quiz (learning mode only) ───────────────────────
-    if (storyRequest.learning_mode && storyRequest.learning_subject && storyRequest.learning_topic) {
-      try {
-        await log('generate_quiz', `Generating quiz for topic: ${storyRequest.learning_topic}`)
+      if (scenesInsertError) {
+        throw new Error(`Failed to save story scenes: ${scenesInsertError.message}`)
+      }
 
-        const quizQuestions = await generateQuiz(
-          story.pages,
-          storyRequest.learning_subject,
-          storyRequest.learning_grade ?? 1,
-          storyRequest.learning_topic,
-          configMap,
-        )
+      await setStatus('generating_text', 'Story written!', 40)
 
-        const { error: quizInsertError } = await supabase
-          .from('story_quizzes')
-          .insert({
-            request_id: requestId,
-            subject: storyRequest.learning_subject,
-            grade: storyRequest.learning_grade ?? null,
-            topic: storyRequest.learning_topic,
-            questions: quizQuestions,
-          })
+      // ── Step 1b: Generate quiz (learning mode only) ─────────────────────
+      if (storyRequest.learning_mode && storyRequest.learning_subject && storyRequest.learning_topic) {
+        try {
+          await log('generate_quiz', `Generating quiz for topic: ${storyRequest.learning_topic}`)
 
-        if (quizInsertError) {
-          await log('generate_quiz', `Quiz insert warning: ${quizInsertError.message}`, 'warning')
-        } else {
-          await log('generate_quiz', `Quiz generated: ${quizQuestions.length} questions`)
+          const quizQuestions = await generateQuiz(
+            story.pages as { page: number; text: string }[],
+            storyRequest.learning_subject as string,
+            (storyRequest.learning_grade as number) ?? 1,
+            storyRequest.learning_topic as string,
+            configMap,
+          )
+
+          const { error: quizInsertError } = await supabase
+            .from('story_quizzes')
+            .insert({
+              request_id: requestId,
+              subject: storyRequest.learning_subject,
+              grade: storyRequest.learning_grade ?? null,
+              topic: storyRequest.learning_topic,
+              questions: quizQuestions,
+            })
+
+          if (quizInsertError) {
+            await log('generate_quiz', `Quiz insert warning: ${quizInsertError.message}`, 'warning')
+          } else {
+            await log('generate_quiz', `Quiz generated: ${quizQuestions.length} questions`)
+          }
+        } catch (quizErr) {
+          const quizMsg = quizErr instanceof Error ? quizErr.message : String(quizErr)
+          await log('generate_quiz', `Quiz generation failed (non-fatal): ${quizMsg}`, 'warning')
         }
-      } catch (quizErr) {
-        const quizMsg = quizErr instanceof Error ? quizErr.message : String(quizErr)
-        await log('generate_quiz', `Quiz generation failed (non-fatal): ${quizMsg}`, 'warning')
       }
     }
 
@@ -548,25 +598,78 @@ Deno.serve(async (req) => {
     let imagesGenerated = 0
     let imagesFailed = 0
 
-    // imageData keeps bytes in memory so PDF generation doesn't need to re-download
-    const imageData = new Map() // page_number → Uint8Array
-
     if (SKIP_IMAGES) {
       await log('generate_images', 'Image generation skipped (SKIP_IMAGE_GENERATION=true)')
     } else {
-      const { data: scenes, error: sceneFetchError } = await supabase
+      const { data: allScenes, error: sceneFetchError } = await supabase
         .from('story_scenes')
-        .select('id, page_number, image_prompt')
+        .select('id, page_number, image_prompt, image_status, storage_path')
         .eq('request_id', requestId)
         .order('page_number', { ascending: true })
 
-      if (sceneFetchError || !scenes) {
+      if (sceneFetchError || !allScenes) {
         throw new Error(`Failed to fetch story scenes: ${sceneFetchError?.message}`)
       }
 
-      for (const scene of scenes) {
+      const totalScenes = allScenes.length
+      const completedBefore = allScenes.filter(s => s.image_status === 'complete').length
+      const pendingScenes = allScenes.filter(s => s.image_status === 'pending' || s.image_status === 'failed')
+
+      if (isResume && completedBefore > 0) {
+        await log('skipped_completed_scene', `Resuming: ${completedBefore}/${totalScenes} scenes already complete, ${pendingScenes.length} remaining`, 'info', {
+          completed_before: completedBefore,
+          pending_count: pendingScenes.length,
+          total_scenes: totalScenes,
+        })
+      }
+
+      for (const scene of pendingScenes) {
+        // ── Time budget check ─────────────────────────────────────────────
+        // Evaluated BEFORE each DALL-E call so we never start an image we
+        // cannot finish within the Edge Function wall-clock limit.
+        const elapsed = Date.now() - workerStart
+        if (elapsed >= TIME_BUDGET_MS) {
+          const completedNow = completedBefore + imagesGenerated
+          await log(
+            'time_budget_reached',
+            `Time budget (${TIME_BUDGET_MS / 1000}s) reached after ${Math.round(elapsed / 1000)}s — ${completedNow}/${totalScenes} images complete`,
+            'info',
+            {
+              elapsed_ms: elapsed,
+              images_generated_this_run: imagesGenerated,
+              total_complete: completedNow,
+              total_scenes: totalScenes,
+              next_pending_page: scene.page_number,
+            }
+          )
+
+          // Release the worker claim so the status poller can re-trigger
+          await supabase
+            .from('story_requests')
+            .update({
+              worker_id: null,
+              status: 'generating_images',
+              status_message: `Illustrating… (${completedNow} of ${totalScenes} done)`,
+              progress_pct: Math.round(45 + (completedNow / totalScenes) * 30),
+            })
+            .eq('id', requestId)
+
+          await log('continuation_scheduled', `Worker released — next run resumes from page ${scene.page_number}`)
+
+          return new Response(
+            JSON.stringify({ requestId, status: 'continuation', imagesGenerated, completedNow, totalScenes }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+
+        // ── Generate + upload one image ───────────────────────────────────
         try {
-          const imageBytes = await generateImage(scene.image_prompt, storyRequest.illustration_style, configMap, Number(storyRequest.child_age))
+          const imageBytes = await generateImage(
+            scene.image_prompt,
+            storyRequest.illustration_style,
+            configMap,
+            Number(storyRequest.child_age)
+          )
 
           const storagePath = `${requestId}/${scene.page_number}.png`
           const { error: uploadError } = await supabase.storage
@@ -582,11 +685,11 @@ Deno.serve(async (req) => {
             .update({ storage_path: storagePath, image_status: 'complete' })
             .eq('id', scene.id)
 
-          imageData.set(scene.page_number, imageBytes)
           imagesGenerated++
 
-          const progress = Math.round(45 + (imagesGenerated / scenes.length) * 30)
-          await setStatus('generating_images', `Illustrating page ${scene.page_number} of ${scenes.length}…`, progress)
+          const completedNow = completedBefore + imagesGenerated
+          const progress = Math.round(45 + (completedNow / totalScenes) * 30)
+          await setStatus('generating_images', `Illustrating page ${scene.page_number} of ${totalScenes}…`, progress)
 
           await log('generate_images', `Page ${scene.page_number} illustrated`, 'info', {
             page_number: scene.page_number,
@@ -603,218 +706,17 @@ Deno.serve(async (req) => {
         }
       }
 
-      await log('generate_images', `Illustrations complete: ${imagesGenerated} generated, ${imagesFailed} failed`, 'info', {
-        images_generated: imagesGenerated,
-        images_failed: imagesFailed,
-      })
-    }
-
-    // ── Step 3: Assemble PDF ──────────────────────────────────────────────
-    // Free plan: no PDF download allowed — skip assembly to stay within the
-    // 150s Edge Function timeout (8 DALL-E images alone take ~120s).
-    await setStatus('assembling_pdf', 'Finishing up…', 80)
-
-    let pdfStoragePath: string | null = null
-    if (storyRequest.plan_tier === 'free') {
-      await log('assemble_pdf', 'PDF assembly skipped for free plan (no download access)')
-    } else try {
-      const { data: allScenes } = await supabase
-        .from('story_scenes')
-        .select('page_number, page_text')
-        .eq('request_id', requestId)
-        .order('page_number', { ascending: true })
-
-      const { data: savedStoryForPdf } = await supabase
-        .from('generated_stories')
-        .select('title, subtitle, author_line, dedication')
-        .eq('request_id', requestId)
-        .single()
-
-      const pdfDoc = await PDFDocument.create()
-      const fontSerif = await pdfDoc.embedFont(StandardFonts.TimesRoman)
-      const fontSerifItalic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic)
-      const fontSerifBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold)
-
-      // Embed images from in-memory map
-      const embeddedImages = new Map()
-      for (const [pageNum, bytes] of imageData) {
-        try {
-          const img = await pdfDoc.embedPng(bytes)
-          embeddedImages.set(pageNum, img)
-        } catch { /* skip corrupted images */ }
-      }
-
-      const storyTitle = savedStoryForPdf?.title ?? story.title
-      const authorLine = savedStoryForPdf?.author_line ?? 'A Nest & Quill Original'
-      const dedication = savedStoryForPdf?.dedication ?? story.dedication
-
-      // Cover page
-      const cover = pdfDoc.addPage([PDF_SIZE, PDF_SIZE])
-      cover.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: PDF_SIZE, color: PDF_CREAM })
-      cover.drawRectangle({ x: 0, y: PDF_SIZE - 8, width: PDF_SIZE, height: 8, color: PDF_BRAND_GOLD })
-      cover.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: 8, color: PDF_BRAND_GOLD })
-
-      const titleSize = storyTitle.length > 24 ? 28 : 34
-      const titleLines = pdfWrapText(storyTitle, fontSerifBold, titleSize, PDF_SIZE - PDF_MARGIN * 2)
-      let coverY = PDF_SIZE * 0.62
-      for (const line of titleLines) {
-        const w = fontSerifBold.widthOfTextAtSize(line, titleSize)
-        cover.drawText(line, { x: (PDF_SIZE - w) / 2, y: coverY, size: titleSize, font: fontSerifBold, color: PDF_OXFORD })
-        coverY -= titleSize * 1.3
-      }
-
-      const authorW = fontSerif.widthOfTextAtSize(authorLine, 11)
-      cover.drawText(authorLine, { x: (PDF_SIZE - authorW) / 2, y: PDF_MARGIN + 10, size: 11, font: fontSerif, color: PDF_GRAY })
-
-      // Dedication page
-      if (dedication) {
-        const dedPage = pdfDoc.addPage([PDF_SIZE, PDF_SIZE])
-        dedPage.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: PDF_SIZE, color: PDF_CREAM })
-        const dedLines = pdfWrapText(dedication, fontSerifItalic, 14, PDF_SIZE - PDF_MARGIN * 4)
-        const dedBlockH = dedLines.length * 14 * 1.6
-        let dedY = PDF_SIZE / 2 + dedBlockH / 2
-        for (const line of dedLines) {
-          const w = fontSerifItalic.widthOfTextAtSize(line, 14)
-          dedPage.drawText(line, { x: (PDF_SIZE - w) / 2, y: dedY, size: 14, font: fontSerifItalic, color: PDF_GRAY })
-          dedY -= 14 * 1.6
+      await log(
+        'all_images_complete',
+        `Image pass complete — ${completedBefore + imagesGenerated}/${totalScenes} illustrated (${imagesGenerated} new this run, ${imagesFailed} failed)`,
+        'info',
+        {
+          images_generated_this_run: imagesGenerated,
+          images_failed: imagesFailed,
+          total_complete: completedBefore + imagesGenerated,
+          total_scenes: totalScenes,
         }
-      }
-
-      // Story pages
-      const pageScenes = allScenes ?? []
-      for (const scene of pageScenes) {
-        const pg = pdfDoc.addPage([PDF_SIZE, PDF_SIZE])
-        pg.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: PDF_SIZE, color: PDF_CREAM })
-
-        const img = embeddedImages.get(scene.page_number)
-        if (img) {
-          const imgH = Math.round(PDF_SIZE * 0.58)
-          const imgY = PDF_SIZE - imgH
-          const dims = img.scaleToFit(PDF_SIZE - PDF_MARGIN * 2, imgH - PDF_MARGIN / 2)
-          pg.drawImage(img, {
-            x: (PDF_SIZE - dims.width) / 2,
-            y: imgY + (imgH - dims.height) / 2,
-            width: dims.width,
-            height: dims.height,
-          })
-          pdfDrawPageText(pg, scene.page_text, fontSerif, imgY - 10, scene.page_number, pageScenes.length)
-        } else {
-          pdfDrawPageText(pg, scene.page_text, fontSerif, Math.round(PDF_SIZE * 0.72), scene.page_number, pageScenes.length)
-        }
-      }
-
-      // Back page
-      const back = pdfDoc.addPage([PDF_SIZE, PDF_SIZE])
-      back.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: PDF_SIZE, color: PDF_CREAM })
-      back.drawRectangle({ x: 0, y: PDF_SIZE - 8, width: PDF_SIZE, height: 8, color: PDF_BRAND_GOLD })
-      back.drawRectangle({ x: 0, y: 0, width: PDF_SIZE, height: 8, color: PDF_BRAND_GOLD })
-      const endText = '\xBB  The End  \xAB'
-      const endW = fontSerifItalic.widthOfTextAtSize(endText, 20)
-      const closingMsg = storyRequest.closing_message
-      const endY = closingMsg ? PDF_SIZE * 0.65 : PDF_SIZE / 2 + 10
-      back.drawText(endText, { x: (PDF_SIZE - endW) / 2, y: endY, size: 20, font: fontSerifItalic, color: PDF_BRAND_GOLD })
-      if (closingMsg) {
-        const msgLines = pdfWrapText(closingMsg, fontSerifItalic, 13, PDF_SIZE - PDF_MARGIN * 4)
-        let msgY = endY - 32
-        for (const line of msgLines) {
-          const w = fontSerifItalic.widthOfTextAtSize(line, 13)
-          back.drawText(line, { x: (PDF_SIZE - w) / 2, y: msgY, size: 13, font: fontSerifItalic, color: PDF_GRAY })
-          msgY -= 13 * 1.6
-        }
-      }
-      const brandW = fontSerif.widthOfTextAtSize(authorLine, 11)
-      back.drawText(authorLine, { x: (PDF_SIZE - brandW) / 2, y: PDF_MARGIN + 10, size: 11, font: fontSerif, color: PDF_GRAY })
-
-      const pdfBytes = await pdfDoc.save()
-      pdfStoragePath = `${requestId}/storybook.pdf`
-
-      const { error: pdfUploadError } = await supabase.storage
-        .from('book-exports')
-        .upload(pdfStoragePath, pdfBytes, { contentType: 'application/pdf', upsert: true })
-
-      if (pdfUploadError) throw new Error(`PDF upload failed: ${pdfUploadError.message}`)
-
-      const { error: exportInsertError } = await supabase
-        .from('book_exports')
-        .insert({
-          request_id: requestId,
-          format: 'pdf',
-          storage_path: pdfStoragePath,
-          storage_bucket: 'book-exports',
-          file_size_bytes: pdfBytes.length,
-          page_count: pdfDoc.getPageCount(),
-          is_latest: true,
-        })
-
-      if (exportInsertError) {
-        await log('assemble_pdf', `book_exports insert warning: ${exportInsertError.message}`, 'warning')
-      }
-
-      await log('assemble_pdf', `PDF assembled and uploaded (${pdfBytes.length} bytes, ${pdfDoc.getPageCount()} pages)`, 'info', {
-        storage_path: pdfStoragePath,
-        file_size_bytes: pdfBytes.length,
-        page_count: pdfDoc.getPageCount(),
-      })
-    } catch (pdfErr) {
-      const pdfMsg = pdfErr instanceof Error ? pdfErr.message : String(pdfErr)
-      await log('assemble_pdf', `PDF assembly failed: ${pdfMsg}`, 'error')
-      // Non-fatal — story is still readable in the ebook reader
-    }
-
-    // ── Step 4: Send delivery email ───────────────────────────────────────
-    await setStatus('assembling_pdf', 'Almost done…', 95)
-    try {
-      if (storyRequest.user_email) {
-        const storyUrl = `${APP_URL}/story/${requestId}`
-        const childName = storyRequest.child_name
-
-        const emailRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${RESEND_API_KEY}`,
-          },
-          body: JSON.stringify({
-            from: RESEND_FROM,
-            to: storyRequest.user_email,
-            subject: `${childName}'s story is ready! 📖`,
-            html: `
-              <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#2E2E2E">
-                <h1 style="font-size:24px;margin-bottom:8px;color:#0C2340">${childName}'s story is ready!</h1>
-                <p style="color:#78716c;margin-top:0">Your personalized storybook has been created.</p>
-                <a href="${storyUrl}" style="display:inline-block;margin:24px 0;background:#C99700;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:600;font-size:15px">
-                  Read the story →
-                </a>
-                <p style="font-size:12px;color:#a8a29e;margin-top:32px">Nest &amp; Quill · Personalized stories for curious kids</p>
-              </div>`,
-          }),
-        })
-
-        if (emailRes.ok) {
-          const emailJson = await emailRes.json()
-          await supabase.from('delivery_logs').insert({
-            request_id: requestId,
-            channel: 'email',
-            status: 'sent',
-            recipient_email: storyRequest.user_email,
-            resend_message_id: emailJson.id ?? null,
-          })
-          await log('deliver', `Delivery email sent to ${storyRequest.user_email}`)
-        } else {
-          throw new Error(`Resend error ${emailRes.status}`)
-        }
-      }
-    } catch (emailErr) {
-      const emailMsg = emailErr instanceof Error ? emailErr.message : String(emailErr)
-      await log('deliver', `Email delivery failed: ${emailMsg}`, 'warning')
-      await supabase.from('delivery_logs').insert({
-        request_id: requestId,
-        channel: 'email',
-        status: 'failed',
-        recipient_email: storyRequest.user_email,
-        failure_reason: emailMsg,
-      })
-      // Non-fatal — story is still accessible
+      )
     }
 
     // ── Complete ──────────────────────────────────────────────────────────
@@ -828,12 +730,38 @@ Deno.serve(async (req) => {
       })
       .eq('id', requestId)
 
-    // Increment the user's books_generated counter so plan limits are enforced
-    if (storyRequest.user_id) {
-      await supabase.rpc('increment_books_generated', { user_id_input: storyRequest.user_id })
+    // Increment the user's books_generated counter so plan limits are enforced.
+    // Uses the same atomic usage_counted flip as status/route.ts so whichever path
+    // fires first wins — the other silently no-ops, preventing double-counting.
+    if (storyRequest.user_id && !storyRequest.usage_counted) {
+      const { data: counted } = await supabase
+        .from('story_requests')
+        .update({ usage_counted: true })
+        .eq('id', requestId)
+        .eq('usage_counted', false)
+        .select('id')
+        .maybeSingle()
+      if (counted) {
+        await supabase.rpc('increment_books_generated', { user_id_input: storyRequest.user_id })
+      }
     }
 
-    await log('pipeline_complete', `Pipeline finished — story + ${imagesGenerated} illustrations + PDF + email`)
+    // Fire completion email via the Next.js internal route (uses sendBookReadyEmail).
+    // The route is idempotent — if the status poller already sent the email it no-ops.
+    // Fire-and-forget: we don't await or fail the pipeline on email errors.
+    if (storyRequest.user_email) {
+      const notifyUrl = `${APP_URL}/api/internal/story-completed`
+      fetch(notifyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${EXPECTED_TOKEN}`,
+        },
+        body: JSON.stringify({ requestId }),
+      }).catch((err) => console.error('[process-story] story-completed notify failed:', err))
+    }
+
+    await log('story_completed', `Story complete — ${imagesGenerated} new images this run, ${imagesFailed} failed`)
 
     return new Response(
       JSON.stringify({ requestId, status: 'complete', title: story.title }),
@@ -919,55 +847,3 @@ Deno.serve(async (req) => {
   }
 })
 
-// ── PDF helpers (inline — edge functions can't import from lib/) ──────────────
-
-// Strip characters WinAnsi (pdf-lib StandardFonts) can't encode.
-// Replaces common Unicode punctuation with ASCII equivalents first,
-// then drops anything above U+00FF.
-function sanitizePdfText(text: string): string {
-  return text
-    .replace(/[‘’]/g, "'")   // curly single quotes
-    .replace(/[“”]/g, '"')   // curly double quotes
-    .replace(/[–—]/g, '-')   // en/em dash
-    .replace(/…/g, '...')         // ellipsis
-    .replace(/[^\x00-\xFF]/g, '')      // drop everything outside Latin-1
-    .replace(/[\x81\x8D\x8F\x90\x9D]/g, '') // WinAnsi undefined bytes
-}
-
-function pdfWrapText(text, font, size, maxWidth) {
-  const words = sanitizePdfText(text).replace(/\s+/g, ' ').trim().split(' ')
-  const lines = []
-  let line = ''
-  for (const word of words) {
-    const test = line ? `${line} ${word}` : word
-    if (font.widthOfTextAtSize(test, size) <= maxWidth) {
-      line = test
-    } else {
-      if (line) lines.push(line)
-      line = word
-    }
-  }
-  if (line) lines.push(line)
-  return lines.length ? lines : ['']
-}
-
-function pdfDrawPageText(page, text, font, topY, pageNum, totalPages) {
-  const textSize = 13
-  const maxW = PDF_SIZE - PDF_MARGIN * 3
-  const lines = pdfWrapText(text, font, textSize, maxW)
-  let y = topY
-  for (const line of lines) {
-    if (y < PDF_MARGIN + 20) break
-    page.drawText(line, { x: PDF_MARGIN * 1.5, y, size: textSize, font, color: PDF_CHARCOAL })
-    y -= textSize * 1.75
-  }
-  const label = `${pageNum} / ${totalPages}`
-  const labelW = font.widthOfTextAtSize(label, 9)
-  page.drawText(label, {
-    x: (PDF_SIZE - labelW) / 2,
-    y: PDF_MARGIN / 2,
-    size: 9,
-    font,
-    color: rgb(0.7, 0.68, 0.66),
-  })
-}
