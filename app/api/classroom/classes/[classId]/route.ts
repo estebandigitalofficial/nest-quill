@@ -86,6 +86,47 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
   }
 }
 
+// PATCH — update class name/grade/subject
+export async function PATCH(req: NextRequest, { params }: RouteContext) {
+  try {
+    const { classId } = await params
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+
+    const body = await req.json().catch(() => ({}))
+    const { name, grade, subject } = body
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return NextResponse.json({ message: 'Class name is required.' }, { status: 400 })
+    }
+    if (grade !== null && grade !== undefined && (typeof grade !== 'number' || grade < 1 || grade > 12)) {
+      return NextResponse.json({ message: 'Grade must be between 1 and 12.' }, { status: 400 })
+    }
+
+    const admin = createAdminClient()
+    const { data, error } = await admin
+      .from('classrooms')
+      .update({
+        name: name.trim(),
+        grade: grade ?? null,
+        subject: subject?.trim() || null,
+      })
+      .eq('id', classId)
+      .eq('educator_id', user.id)
+      .select('id, name, grade, subject, join_code, created_at')
+      .single()
+
+    if (error) throw error
+    if (!data) return NextResponse.json({ message: 'Class not found.' }, { status: 404 })
+
+    return NextResponse.json({ classroom: data })
+  } catch (err) {
+    console.error('[classroom/classes/[classId] PATCH]', err)
+    return NextResponse.json({ message: 'Something went wrong.' }, { status: 500 })
+  }
+}
+
 // DELETE — archive (deactivate) a class
 export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   try {

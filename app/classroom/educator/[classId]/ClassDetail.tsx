@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 const TOOLS = [
   { value: 'quiz',          label: 'Quiz',                  hasScore: true },
@@ -87,6 +88,7 @@ interface ClassroomData {
 }
 
 export default function ClassDetail({ classId }: { classId: string }) {
+  const router = useRouter()
   const [classroom, setClassroom] = useState<ClassroomData | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [assignments, setAssignments] = useState<Assignment[]>([])
@@ -94,6 +96,19 @@ export default function ClassDetail({ classId }: { classId: string }) {
   const [activeTab, setActiveTab] = useState<'assignments' | 'students'>('assignments')
   const [showAssign, setShowAssign] = useState(false)
   const [codeCopied, setCodeCopied] = useState(false)
+
+  // Edit modal state
+  const [showEdit, setShowEdit] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editGrade, setEditGrade] = useState<number | ''>('')
+  const [editSubject, setEditSubject] = useState('')
+  const [editing, setEditing] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+
+  // Delete modal state
+  const [showDelete, setShowDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // Assignment form state
   const [assignMode, setAssignMode] = useState<'standard' | 'material'>('standard')
@@ -151,6 +166,44 @@ export default function ClassDetail({ classId }: { classId: string }) {
     }
   }
 
+  function openEdit() {
+    if (!classroom) return
+    setEditName(classroom.name)
+    setEditGrade(classroom.grade ?? '')
+    setEditSubject(classroom.subject ?? '')
+    setEditError(null)
+    setShowEdit(true)
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault()
+    setEditError(null)
+    setEditing(true)
+    const res = await fetch(`/api/classroom/classes/${classId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: editName, grade: editGrade || null, subject: editSubject || null }),
+    })
+    const data = await res.json()
+    if (!res.ok) { setEditError(data.message); setEditing(false); return }
+    setClassroom(data.classroom)
+    setShowEdit(false)
+    setEditing(false)
+  }
+
+  async function handleDelete() {
+    setDeleteError(null)
+    setDeleting(true)
+    const res = await fetch(`/api/classroom/classes/${classId}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const data = await res.json()
+      setDeleteError(data.message)
+      setDeleting(false)
+      return
+    }
+    router.push('/classroom/educator')
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -174,7 +227,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
             {' · '}{members.length} student{members.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap justify-end">
           <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-center">
             <p className="text-xl font-mono font-bold text-oxford tracking-widest">{classroom.join_code}</p>
             <p className="text-[10px] text-gray-400 uppercase tracking-wide">Join Code</p>
@@ -182,6 +235,14 @@ export default function ClassDetail({ classId }: { classId: string }) {
           <button onClick={copyCode}
             className={`text-sm font-semibold px-4 py-2.5 rounded-xl border transition-colors ${codeCopied ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
             {codeCopied ? '✓ Copied' : 'Copy'}
+          </button>
+          <button onClick={openEdit}
+            className="text-sm font-semibold px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors">
+            Edit
+          </button>
+          <button onClick={() => { setDeleteError(null); setShowDelete(true) }}
+            className="text-sm font-semibold px-4 py-2.5 rounded-xl border border-red-200 bg-white text-red-500 hover:bg-red-50 transition-colors">
+            Delete
           </button>
         </div>
       </div>
@@ -402,6 +463,79 @@ export default function ClassDetail({ classId }: { classId: string }) {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Edit modal ── */}
+      {showEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-oxford text-base">Edit class</p>
+              <button onClick={() => setShowEdit(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+            </div>
+            <form onSubmit={handleEdit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-600">Class name <span className="text-red-400">*</span></label>
+                <input required autoFocus
+                  value={editName} onChange={e => setEditName(e.target.value)}
+                  placeholder="e.g. Period 3 — Math"
+                  className={inputClass} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600">Grade</label>
+                  <select value={editGrade} onChange={e => setEditGrade(e.target.value ? Number(e.target.value) : '')} className={inputClass}>
+                    <option value="">No grade</option>
+                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(g => <option key={g} value={g}>Grade {g}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600">Subject</label>
+                  <input
+                    value={editSubject} onChange={e => setEditSubject(e.target.value)}
+                    placeholder="e.g. Math"
+                    className={inputClass} />
+                </div>
+              </div>
+              {editError && <p className="text-sm text-red-500">{editError}</p>}
+              <div className="flex gap-3 pt-1">
+                <button type="submit" disabled={editing || !editName.trim()}
+                  className="bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+                  {editing ? 'Saving…' : 'Save changes'}
+                </button>
+                <button type="button" onClick={() => setShowEdit(false)}
+                  className="text-sm font-semibold text-gray-500 hover:text-gray-700 px-4 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete confirmation modal ── */}
+      {showDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-5">
+            <div>
+              <p className="font-semibold text-oxford text-base">Delete class?</p>
+              <p className="text-sm text-charcoal-light mt-1">
+                <span className="font-semibold text-oxford">{classroom.name}</span> will be archived. Students will lose access and the join code will stop working.
+              </p>
+            </div>
+            {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
+            <div className="flex gap-3">
+              <button onClick={handleDelete} disabled={deleting}
+                className="bg-red-500 hover:bg-red-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+                {deleting ? 'Deleting…' : 'Delete class'}
+              </button>
+              <button onClick={() => setShowDelete(false)} disabled={deleting}
+                className="text-sm font-semibold text-gray-500 hover:text-gray-700 px-4 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
