@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import NotificationToggles from './NotificationToggles'
+import CleanupTool from '../cleanup/CleanupTool'
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,9 @@ function ShieldIcon({ className = 'w-4 h-4' }: { className?: string }) {
 }
 function GridIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>)
+}
+function WrenchIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>)
 }
 function PaletteIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>)
@@ -198,10 +202,10 @@ const SECTIONS: SectionDef[] = [
     ],
   },
   {
-    id: 'dashboard',
-    label: 'Dashboard',
-    description: 'Admin dashboard cards and thresholds.',
-    Icon: GridIcon,
+    id: 'maintenance',
+    label: 'Admin Tools & Maintenance',
+    description: 'Dashboard thresholds and database cleanup tools.',
+    Icon: WrenchIcon,
     live: false,
     columns: true,
     items: [
@@ -520,11 +524,20 @@ export default function SettingsHub({ initialSettings }: Props) {
           </div>
 
           {/* Section content */}
-          <div className="px-6 py-5">
+          <div className="px-6 py-5 space-y-6">
             {activeSec.live
               ? <NotificationToggles initialSettings={initialSettings} />
               : renderGroupedItems(activeSec.items ?? [], activeSec.columns)
             }
+            {activeSec.id === 'maintenance' && (
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest whitespace-nowrap">Data Cleanup</p>
+                  <div className="flex-1 h-px bg-adm-border" />
+                </div>
+                <CleanupTool />
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -2,13 +2,23 @@
 
 import { useState } from 'react'
 
-interface DuplicateGroup {
+// ─── API response types ─────────────────────────────────────────────────────
+
+interface DuplicateSceneGroup {
   requestId: string
   pageNumber: number
   activeId: string
   activeStatus: string
   totalRows: number
   duplicates: { id: string; status: string; storagePath: string | null }[]
+}
+
+interface DuplicateLibGroup {
+  sceneId: string
+  activeId: string
+  totalRows: number
+  skipped: boolean
+  duplicates: { id: string; storagePath: string | null; hasTags: boolean; createdAt: string }[]
 }
 
 interface OrphanRow {
@@ -18,20 +28,31 @@ interface OrphanRow {
 }
 
 interface ScanResult {
-  duplicateGroups: number
-  duplicateRows: number
+  // story_scenes
+  duplicateSceneGroups: number
+  duplicateSceneRows: number
+  groups: DuplicateSceneGroup[]
+  // image_library duplicates
+  duplicateLibGroups: number
+  duplicateLibRows: number
+  skippedLibGroups: number
+  libGroups: DuplicateLibGroup[]
+  // orphans
   orphanedLibraryRows: number
-  groups: DuplicateGroup[]
   orphanedLibrary: OrphanRow[]
 }
 
 interface ExecuteResult {
   dryRun: boolean
   wouldDeleteScenes: number
-  wouldDeleteLibrary: number
+  wouldDeleteLibDupes: number
+  wouldDeleteOrphans: number
   deletedScenes: number
-  deletedLibrary: number
+  deletedLibDupes: number
+  deletedOrphans: number
 }
+
+// ─── Component ──────────────────────────────────────────────────────────────
 
 export default function CleanupTool() {
   const [scanning, setScanning] = useState(false)
@@ -40,7 +61,8 @@ export default function CleanupTool() {
   const [executeResult, setExecuteResult] = useState<ExecuteResult | null>(null)
   const [dryRun, setDryRun] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showGroups, setShowGroups] = useState(false)
+  const [showSceneGroups, setShowSceneGroups] = useState(false)
+  const [showLibGroups, setShowLibGroups] = useState(false)
   const [showOrphans, setShowOrphans] = useState(false)
 
   async function handleScan() {
@@ -61,10 +83,16 @@ export default function CleanupTool() {
 
   async function handleExecute() {
     if (!scanResult) return
-    const totalToDelete = scanResult.duplicateRows + scanResult.orphanedLibraryRows
+    const totalToDelete =
+      scanResult.duplicateSceneRows + scanResult.duplicateLibRows + scanResult.orphanedLibraryRows
+
     if (!dryRun && totalToDelete > 0) {
       const confirmed = window.confirm(
-        `This will permanently delete ${scanResult.duplicateRows} duplicate scene row(s) and ${scanResult.orphanedLibraryRows} orphaned library row(s). Continue?`
+        `This will permanently delete:\n` +
+        `  • ${scanResult.duplicateSceneRows} duplicate scene row(s)\n` +
+        `  • ${scanResult.duplicateLibRows} duplicate library row(s)\n` +
+        `  • ${scanResult.orphanedLibraryRows} orphaned library row(s)\n\n` +
+        `No storage files will be deleted. Continue?`
       )
       if (!confirmed) return
     }
@@ -89,167 +117,187 @@ export default function CleanupTool() {
   }
 
   const totalToDelete = scanResult
-    ? scanResult.duplicateRows + scanResult.orphanedLibraryRows
+    ? scanResult.duplicateSceneRows + scanResult.duplicateLibRows + scanResult.orphanedLibraryRows
     : 0
   const clean = scanResult && totalToDelete === 0
 
   return (
-    <div className="space-y-6">
-      {/* Scan */}
-      <div className="bg-adm-card border border-adm-border rounded-xl p-6 space-y-4">
-        <div>
-          <h2 className="text-sm font-semibold text-white">Duplicate Scene Rows</h2>
-          <p className="text-xs text-adm-muted mt-0.5">
-            Groups story_scenes by (request_id, page_number, image_prompt). Keeps the complete row (or
-            latest) and flags the rest. Also finds orphaned image_library rows where the linked scene no
-            longer exists.
-          </p>
-        </div>
-
+    <div className="space-y-4">
+      {/* Header + scan button */}
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-xs text-adm-muted leading-relaxed max-w-lg">
+          Detects duplicate <code className="font-mono text-adm-text">story_scenes</code> rows
+          and duplicate/orphaned <code className="font-mono text-adm-text">image_library</code> rows.
+          Never deletes storage files — only database rows.
+        </p>
         <button
           onClick={handleScan}
           disabled={scanning}
-          className="px-4 py-2 rounded-lg bg-adm-border text-white text-xs font-medium hover:bg-adm-muted/30 disabled:opacity-50 transition-colors"
+          className="shrink-0 px-4 py-2 rounded-lg bg-adm-border text-white text-xs font-medium hover:bg-adm-muted/30 disabled:opacity-50 transition-colors"
         >
-          {scanning ? 'Scanning…' : 'Scan for duplicates'}
+          {scanning ? 'Scanning…' : 'Scan'}
         </button>
-
-        {error && (
-          <p className="text-xs text-red-400 bg-red-900/20 border border-red-800 rounded-lg px-3 py-2">
-            {error}
-          </p>
-        )}
-
-        {scanResult && (
-          <div className="space-y-4">
-            {/* Summary */}
-            <div className="grid grid-cols-3 gap-3">
-              <Stat label="Duplicate groups" value={scanResult.duplicateGroups} />
-              <Stat label="Rows to delete" value={scanResult.duplicateRows} warn={scanResult.duplicateRows > 0} />
-              <Stat label="Orphaned library" value={scanResult.orphanedLibraryRows} warn={scanResult.orphanedLibraryRows > 0} />
-            </div>
-
-            {clean && (
-              <p className="text-xs text-emerald-400 bg-emerald-900/20 border border-emerald-800 rounded-lg px-3 py-2">
-                No duplicates or orphans found — database looks clean.
-              </p>
-            )}
-
-            {/* Duplicate groups detail */}
-            {scanResult.duplicateGroups > 0 && (
-              <div>
-                <button
-                  onClick={() => setShowGroups(v => !v)}
-                  className="text-xs text-adm-muted hover:text-white transition-colors"
-                >
-                  {showGroups ? '▾' : '▸'} {scanResult.duplicateGroups} duplicate group{scanResult.duplicateGroups !== 1 ? 's' : ''}
-                </button>
-                {showGroups && (
-                  <div className="mt-2 space-y-2 max-h-80 overflow-y-auto pr-1">
-                    {scanResult.groups.map(g => (
-                      <div key={g.activeId} className="border border-adm-border rounded-lg p-3 text-xs space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-adm-muted">request</span>
-                          <span className="text-white font-mono">{g.requestId.slice(0, 8)}…</span>
-                          <span className="text-adm-muted">page</span>
-                          <span className="text-white">{g.pageNumber}</span>
-                          <span className="ml-auto text-adm-muted">{g.totalRows} rows</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-emerald-400">keep</span>
-                          <span className="font-mono text-adm-muted">{g.activeId.slice(0, 8)}…</span>
-                          <StatusBadge status={g.activeStatus} />
-                        </div>
-                        {g.duplicates.map(d => (
-                          <div key={d.id} className="flex items-center gap-2">
-                            <span className="text-red-400">delete</span>
-                            <span className="font-mono text-adm-muted">{d.id.slice(0, 8)}…</span>
-                            <StatusBadge status={d.status} />
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Orphans detail */}
-            {scanResult.orphanedLibraryRows > 0 && (
-              <div>
-                <button
-                  onClick={() => setShowOrphans(v => !v)}
-                  className="text-xs text-adm-muted hover:text-white transition-colors"
-                >
-                  {showOrphans ? '▾' : '▸'} {scanResult.orphanedLibraryRows} orphaned library row{scanResult.orphanedLibraryRows !== 1 ? 's' : ''}
-                </button>
-                {showOrphans && (
-                  <div className="mt-2 space-y-1 max-h-48 overflow-y-auto pr-1">
-                    {scanResult.orphanedLibrary.map(r => (
-                      <div key={r.id} className="flex items-center gap-2 text-xs border border-adm-border rounded px-3 py-1.5">
-                        <span className="font-mono text-adm-muted">{r.id.slice(0, 8)}…</span>
-                        <span className="text-adm-muted">scene</span>
-                        <span className="font-mono text-red-400">{r.sceneId?.slice(0, 8)}… (missing)</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Execute */}
-            {!clean && (
-              <div className="flex items-center gap-4 pt-2 border-t border-adm-border">
-                <label className="flex items-center gap-2 text-xs text-adm-muted cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={dryRun}
-                    onChange={e => setDryRun(e.target.checked)}
-                    className="accent-brand-500"
-                  />
-                  Dry run (preview only)
-                </label>
-
-                <button
-                  onClick={handleExecute}
-                  disabled={executing}
-                  className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
-                    dryRun
-                      ? 'bg-adm-border text-white hover:bg-adm-muted/30'
-                      : 'bg-red-700 text-white hover:bg-red-600'
-                  }`}
-                >
-                  {executing
-                    ? 'Running…'
-                    : dryRun
-                    ? `Preview deletion (${totalToDelete} rows)`
-                    : `Delete ${totalToDelete} rows`}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
+
+      {error && (
+        <p className="text-xs text-red-400 bg-red-900/20 border border-red-800 rounded-lg px-3 py-2">
+          {error}
+        </p>
+      )}
+
+      {scanResult && (
+        <div className="space-y-4">
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <Stat label="Scene dupes" value={scanResult.duplicateSceneRows} warn={scanResult.duplicateSceneRows > 0} />
+            <Stat label="Library dupes" value={scanResult.duplicateLibRows} warn={scanResult.duplicateLibRows > 0} sub={scanResult.skippedLibGroups > 0 ? `${scanResult.skippedLibGroups} group(s) skipped (tagged)` : undefined} />
+            <Stat label="Orphaned library" value={scanResult.orphanedLibraryRows} warn={scanResult.orphanedLibraryRows > 0} />
+          </div>
+
+          {clean && (
+            <p className="text-xs text-emerald-400 bg-emerald-900/20 border border-emerald-800 rounded-lg px-3 py-2">
+              No duplicates or orphans found — database is clean.
+            </p>
+          )}
+
+          {/* Duplicate scene groups */}
+          {scanResult.duplicateSceneGroups > 0 && (
+            <ExpandableSection
+              label={`${scanResult.duplicateSceneGroups} duplicate scene group${scanResult.duplicateSceneGroups !== 1 ? 's' : ''}`}
+              open={showSceneGroups}
+              onToggle={() => setShowSceneGroups(v => !v)}
+            >
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {scanResult.groups.map(g => (
+                  <div key={g.activeId} className="border border-adm-border rounded-lg p-3 text-xs space-y-1">
+                    <div className="flex items-center gap-2 text-adm-muted">
+                      <span className="font-mono">{g.requestId.slice(0, 8)}…</span>
+                      <span>page {g.pageNumber}</span>
+                      <span className="ml-auto">{g.totalRows} rows</span>
+                    </div>
+                    <RowLine color="emerald" label="keep" id={g.activeId}>
+                      <StatusBadge status={g.activeStatus} />
+                    </RowLine>
+                    {g.duplicates.map(d => (
+                      <RowLine key={d.id} color="red" label="delete" id={d.id}>
+                        <StatusBadge status={d.status} />
+                      </RowLine>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </ExpandableSection>
+          )}
+
+          {/* Duplicate library groups */}
+          {scanResult.duplicateLibGroups > 0 && (
+            <ExpandableSection
+              label={`${scanResult.duplicateLibGroups} duplicate library group${scanResult.duplicateLibGroups !== 1 ? 's' : ''}`}
+              open={showLibGroups}
+              onToggle={() => setShowLibGroups(v => !v)}
+            >
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {scanResult.libGroups.map(g => (
+                  <div key={g.sceneId} className="border border-adm-border rounded-lg p-3 text-xs space-y-1">
+                    <div className="flex items-center gap-2 text-adm-muted">
+                      <span>scene</span>
+                      <span className="font-mono">{g.sceneId.slice(0, 8)}…</span>
+                      <span className="ml-auto">{g.totalRows} rows</span>
+                      {g.skipped && (
+                        <span className="text-amber-400 font-medium">skipped (tagged)</span>
+                      )}
+                    </div>
+                    {!g.skipped && (
+                      <>
+                        <RowLine color="emerald" label="keep" id={g.activeId} />
+                        {g.duplicates.map(d => (
+                          <RowLine key={d.id} color="red" label="delete" id={d.id}>
+                            {d.hasTags && <span className="text-amber-400">has tags</span>}
+                          </RowLine>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </ExpandableSection>
+          )}
+
+          {/* Orphaned library rows */}
+          {scanResult.orphanedLibraryRows > 0 && (
+            <ExpandableSection
+              label={`${scanResult.orphanedLibraryRows} orphaned library row${scanResult.orphanedLibraryRows !== 1 ? 's' : ''}`}
+              open={showOrphans}
+              onToggle={() => setShowOrphans(v => !v)}
+            >
+              <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+                {scanResult.orphanedLibrary.map(r => (
+                  <div key={r.id} className="flex items-center gap-2 text-xs border border-adm-border rounded px-3 py-1.5">
+                    <span className="font-mono text-adm-muted">{r.id.slice(0, 8)}…</span>
+                    <span className="text-adm-muted">scene</span>
+                    <span className="font-mono text-red-400">{r.sceneId?.slice(0, 8)}… (missing)</span>
+                  </div>
+                ))}
+              </div>
+            </ExpandableSection>
+          )}
+
+          {/* Execute controls */}
+          {!clean && (
+            <div className="flex items-center gap-4 pt-2 border-t border-adm-border">
+              <label className="flex items-center gap-2 text-xs text-adm-muted cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={dryRun}
+                  onChange={e => setDryRun(e.target.checked)}
+                  className="accent-brand-500"
+                />
+                Dry run (preview only)
+              </label>
+
+              <button
+                onClick={handleExecute}
+                disabled={executing}
+                className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
+                  dryRun
+                    ? 'bg-adm-border text-white hover:bg-adm-muted/30'
+                    : 'bg-red-700 text-white hover:bg-red-600'
+                }`}
+              >
+                {executing
+                  ? 'Running…'
+                  : dryRun
+                  ? `Preview (${totalToDelete} rows)`
+                  : `Delete ${totalToDelete} rows`}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Execute result */}
       {executeResult && (
-        <div className="bg-adm-card border border-adm-border rounded-xl p-6 space-y-3">
-          <h2 className="text-sm font-semibold text-white">
-            {executeResult.dryRun ? 'Dry Run Result' : 'Cleanup Complete'}
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="bg-adm-bg border border-adm-border rounded-xl p-4 space-y-3">
+          <p className="text-sm font-semibold text-white">
+            {executeResult.dryRun ? 'Dry Run Preview' : 'Cleanup Complete'}
+          </p>
+          <div className="grid grid-cols-3 gap-2">
             <Stat
               label={executeResult.dryRun ? 'Would delete (scenes)' : 'Deleted scenes'}
               value={executeResult.dryRun ? executeResult.wouldDeleteScenes : executeResult.deletedScenes}
             />
             <Stat
-              label={executeResult.dryRun ? 'Would delete (library)' : 'Deleted library rows'}
-              value={executeResult.dryRun ? executeResult.wouldDeleteLibrary : executeResult.deletedLibrary}
+              label={executeResult.dryRun ? 'Would delete (lib dupes)' : 'Deleted lib dupes'}
+              value={executeResult.dryRun ? executeResult.wouldDeleteLibDupes : executeResult.deletedLibDupes}
+            />
+            <Stat
+              label={executeResult.dryRun ? 'Would delete (orphans)' : 'Deleted orphans'}
+              value={executeResult.dryRun ? executeResult.wouldDeleteOrphans : executeResult.deletedOrphans}
             />
           </div>
           {!executeResult.dryRun && (
             <p className="text-xs text-emerald-400">
-              Deleted {executeResult.deletedScenes + executeResult.deletedLibrary} rows total.
+              {executeResult.deletedScenes + executeResult.deletedLibDupes + executeResult.deletedOrphans} rows deleted. Run scan again to verify.
             </p>
           )}
         </div>
@@ -258,13 +306,16 @@ export default function CleanupTool() {
   )
 }
 
-function Stat({ label, value, warn }: { label: string; value: number; warn?: boolean }) {
+// ─── Sub-components ─────────────────────────────────────────────────────────
+
+function Stat({ label, value, warn, sub }: { label: string; value: number; warn?: boolean; sub?: string }) {
   return (
-    <div className="bg-adm-bg border border-adm-border rounded-lg px-4 py-3">
-      <div className={`text-2xl font-semibold tabular-nums ${warn && value > 0 ? 'text-amber-400' : 'text-white'}`}>
+    <div className="bg-adm-bg border border-adm-border rounded-lg px-3 py-2.5">
+      <div className={`text-xl font-semibold tabular-nums ${warn && value > 0 ? 'text-amber-400' : 'text-white'}`}>
         {value}
       </div>
-      <div className="text-xs text-adm-muted mt-0.5">{label}</div>
+      <div className="text-[11px] text-adm-muted mt-0.5">{label}</div>
+      {sub && <div className="text-[10px] text-adm-subtle mt-0.5">{sub}</div>}
     </div>
   )
 }
@@ -275,4 +326,42 @@ function StatusBadge({ status }: { status: string }) {
     status === 'failed' ? 'text-red-400' :
     'text-adm-muted'
   return <span className={`text-[10px] font-mono ${color}`}>{status}</span>
+}
+
+function RowLine({
+  color, label, id, children,
+}: {
+  color: 'emerald' | 'red'
+  label: string
+  id: string
+  children?: React.ReactNode
+}) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <span className={color === 'emerald' ? 'text-emerald-400' : 'text-red-400'}>{label}</span>
+      <span className="font-mono text-adm-muted">{id.slice(0, 8)}…</span>
+      {children}
+    </div>
+  )
+}
+
+function ExpandableSection({
+  label, open, onToggle, children,
+}: {
+  label: string
+  open: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className="text-xs text-adm-muted hover:text-white transition-colors"
+      >
+        {open ? '▾' : '▸'} {label}
+      </button>
+      {open && <div className="mt-2">{children}</div>}
+    </div>
+  )
 }
