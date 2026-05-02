@@ -3,9 +3,18 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
 import { formatAZTimeShort } from '@/lib/utils/formatTime'
 
-export default async function AdminClassroomsPage() {
+interface PageProps {
+  searchParams: Promise<{ filter?: string }>
+}
+
+type Filter = 'all' | 'active' | 'archived'
+
+export default async function AdminClassroomsPage({ searchParams }: PageProps) {
   const ctx = await getAdminContext()
   if (!ctx) return null
+
+  const { filter: raw } = await searchParams
+  const filter: Filter = raw === 'all' ? 'all' : raw === 'archived' ? 'archived' : 'active'
 
   const admin = createAdminClient()
 
@@ -45,30 +54,56 @@ export default async function AdminClassroomsPage() {
     assignCountMap.set(a.classroom_id, (assignCountMap.get(a.classroom_id) ?? 0) + 1)
   }
 
-  const rows = classrooms.map(c => ({
+  const allRows = classrooms.map(c => ({
     ...c,
     educator: educatorMap.get(c.educator_id) ?? null,
     memberCount: memberCountMap.get(c.id) ?? 0,
     assignCount: assignCountMap.get(c.id) ?? 0,
   }))
 
-  const totalActive = rows.filter(r => r.is_active).length
-  const totalArchived = rows.filter(r => !r.is_active).length
+  // Stats always from full dataset
+  const totalActive   = allRows.filter(r =>  r.is_active).length
+  const totalArchived = allRows.filter(r => !r.is_active).length
+
+  // Displayed rows filtered by current selection
+  const rows = filter === 'all'      ? allRows
+             : filter === 'archived' ? allRows.filter(r => !r.is_active)
+             :                         allRows.filter(r =>  r.is_active)
+
+  const showStatusCol = filter !== 'active'
+  const colSpan = showStatusCol ? 6 : 5
+
+  const sectionLabel = filter === 'all' ? 'All classrooms'
+                     : filter === 'archived' ? 'Archived classrooms'
+                     : 'Active classrooms'
+
+  const emptyMessage = filter === 'all' ? 'No classrooms yet.'
+                     : filter === 'archived' ? 'No archived classrooms.'
+                     : 'No active classrooms.'
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
 
-      {/* Stats */}
+      {/* ── Stat cards (clickable filters) ──────────────────────── */}
       <div className="grid grid-cols-3 gap-4">
-        <StatCard label="Total classrooms" value={rows.length} />
-        <StatCard label="Active" value={totalActive} color="green" />
-        <StatCard label="Archived" value={totalArchived} />
+        <StatCard
+          label="Total classrooms" value={allRows.length}
+          href="/admin/classrooms?filter=all" active={filter === 'all'}
+        />
+        <StatCard
+          label="Active" value={totalActive} color="green"
+          href="/admin/classrooms?filter=active" active={filter === 'active'}
+        />
+        <StatCard
+          label="Archived" value={totalArchived}
+          href="/admin/classrooms?filter=archived" active={filter === 'archived'}
+        />
       </div>
 
-      {/* Table */}
+      {/* ── Table ───────────────────────────────────────────────── */}
       <div>
         <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest mb-4">
-          All classrooms
+          {sectionLabel}
         </h2>
         <div className="bg-adm-surface rounded-2xl border border-adm-border overflow-hidden">
           <div className="overflow-x-auto">
@@ -80,61 +115,65 @@ export default async function AdminClassroomsPage() {
                   <th className="text-left px-4 py-3 hidden md:table-cell">Students</th>
                   <th className="text-left px-4 py-3 hidden md:table-cell">Assignments</th>
                   <th className="text-left px-4 py-3 hidden lg:table-cell">Created</th>
-                  <th className="text-left px-4 py-3">Status</th>
-                  <th className="px-4 py-3"></th>
+                  {showStatusCol && <th className="text-left px-4 py-3">Status</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-adm-border">
                 {rows.map(r => (
-                  <tr key={r.id} className="hover:bg-white/5 transition-colors">
+                  <tr key={r.id} className="relative hover:bg-white/5 transition-colors cursor-pointer">
+
+                    {/* First cell contains the row-wide click overlay */}
                     <td className="px-4 py-3">
-                      <p className="text-white font-medium text-sm">{r.name}</p>
-                      <p className="text-[10px] text-adm-subtle mt-0.5">
-                        {[r.grade ? `Grade ${r.grade}` : null, r.subject].filter(Boolean).join(' · ') || '—'}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell">
-                      {r.educator?.email ?? <span className="text-adm-subtle italic">unknown</span>}
-                    </td>
-                    <td className="px-4 py-3 text-adm-muted text-xs font-mono hidden md:table-cell">
-                      {r.memberCount}
-                    </td>
-                    <td className="px-4 py-3 text-adm-muted text-xs font-mono hidden md:table-cell">
-                      {r.assignCount}
-                    </td>
-                    <td className="px-4 py-3 text-adm-muted text-xs hidden lg:table-cell whitespace-nowrap">
-                      {formatAZTimeShort(r.created_at)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                        r.is_active
-                          ? 'bg-green-900 text-green-400'
-                          : 'bg-adm-surface text-adm-subtle border border-adm-border'
-                      }`}>
-                        {r.is_active ? 'active' : 'archived'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
                       <Link
                         href={`/admin/classrooms/${r.id}`}
-                        className="text-xs text-brand-400 hover:text-brand-300 font-medium whitespace-nowrap"
+                        className="after:absolute after:inset-0"
                       >
-                        View →
+                        <p className="text-white font-medium text-sm">{r.name}</p>
+                        <p className="text-[10px] text-adm-subtle mt-0.5">
+                          {[r.grade ? `Grade ${r.grade}` : null, r.subject].filter(Boolean).join(' · ') || '—'}
+                        </p>
                       </Link>
                     </td>
+
+                    <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell relative z-10">
+                      {r.educator?.email ?? <span className="text-adm-subtle italic">unknown</span>}
+                    </td>
+                    <td className="px-4 py-3 text-adm-muted text-xs font-mono hidden md:table-cell relative z-10">
+                      {r.memberCount}
+                    </td>
+                    <td className="px-4 py-3 text-adm-muted text-xs font-mono hidden md:table-cell relative z-10">
+                      {r.assignCount}
+                    </td>
+                    <td className="px-4 py-3 text-adm-muted text-xs hidden lg:table-cell whitespace-nowrap relative z-10">
+                      {formatAZTimeShort(r.created_at)}
+                    </td>
+
+                    {showStatusCol && (
+                      <td className="px-4 py-3 relative z-10">
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          r.is_active
+                            ? 'bg-green-900 text-green-400'
+                            : 'bg-adm-surface text-adm-subtle border border-adm-border'
+                        }`}>
+                          {r.is_active ? 'active' : 'archived'}
+                        </span>
+                      </td>
+                    )}
                   </tr>
                 ))}
+
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-adm-subtle">
-                      No classrooms yet.
+                    <td colSpan={colSpan} className="px-4 py-8 text-center text-adm-subtle">
+                      {emptyMessage}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-          {rows.length === 500 && (
+
+          {allRows.length === 500 && (
             <p className="text-xs text-adm-subtle text-center py-3 border-t border-adm-border">
               Showing first 500 classrooms
             </p>
@@ -146,12 +185,21 @@ export default async function AdminClassroomsPage() {
   )
 }
 
-function StatCard({ label, value, color }: { label: string; value: number; color?: 'green' | 'amber' }) {
+// ── Stat card (clickable filter) ──────────────────────────────────────────────
+
+function StatCard({ label, value, href, active, color }: {
+  label: string; value: number; href: string; active: boolean; color?: 'green' | 'amber'
+}) {
   const valueColor = color === 'green' ? 'text-green-400' : color === 'amber' ? 'text-amber-400' : 'text-white'
   return (
-    <div className="bg-adm-surface rounded-2xl border border-adm-border px-5 py-4">
+    <Link
+      href={href}
+      className={`block bg-adm-surface rounded-2xl px-5 py-4 transition-colors hover:bg-white/5 ${
+        active ? 'border-2 border-brand-500' : 'border-2 border-adm-border'
+      }`}
+    >
       <p className="text-xs text-adm-muted mb-1">{label}</p>
       <p className={`text-3xl font-bold ${valueColor}`}>{value}</p>
-    </div>
+    </Link>
   )
 }
