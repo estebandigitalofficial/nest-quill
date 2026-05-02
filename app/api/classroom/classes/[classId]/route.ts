@@ -143,7 +143,19 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
       .eq('educator_id', user.id)
 
     if (error) throw error
-    return NextResponse.json({ success: true })
+
+    const { count } = await admin
+      .from('classrooms')
+      .select('id', { count: 'exact', head: true })
+      .eq('educator_id', user.id)
+      .eq('is_active', true)
+
+    const remaining = count ?? 0
+    return NextResponse.json({
+      success: true,
+      remainingActiveClassrooms: remaining,
+      redirectTo: remaining > 0 ? '/classroom/educator' : '/classroom',
+    })
   } catch (err) {
     console.error('[classroom/classes/[classId] DELETE]', err)
     return NextResponse.json({ message: 'Something went wrong.' }, { status: 500 })

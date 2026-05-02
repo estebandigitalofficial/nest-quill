@@ -195,13 +195,13 @@ export default function ClassDetail({ classId }: { classId: string }) {
     setDeleteError(null)
     setDeleting(true)
     const res = await fetch(`/api/classroom/classes/${classId}`, { method: 'DELETE' })
+    const data = await res.json()
     if (!res.ok) {
-      const data = await res.json()
       setDeleteError(data.message)
       setDeleting(false)
       return
     }
-    router.push('/classroom/educator')
+    router.push(data.redirectTo ?? '/classroom/educator')
   }
 
   if (loading) {
