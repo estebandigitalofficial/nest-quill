@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { href: '/admin/reporting', label: 'Reporting' },
   { href: '/admin/settings', label: 'Settings' },
   { href: '/admin/writer-config', label: 'Writer' },
+  { href: '/admin/cleanup', label: 'Cleanup' },
 ]
 
 export default function AdminNavLinks() {
