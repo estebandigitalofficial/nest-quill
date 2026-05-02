@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
 import { formatAZTimeShort } from '@/lib/utils/formatTime'
 import ClassroomDetailTabs from './ClassroomDetailTabs'
+import ClassroomAdminActions from './ClassroomAdminActions'
 
 type RouteContext = { params: Promise<{ classId: string }> }
 
@@ -96,6 +97,14 @@ export default async function AdminClassroomDetailPage({ params }: RouteContext)
               Created {formatAZTimeShort(classroom.created_at)}
             </p>
           </div>
+        </div>
+        <div className="mt-4 pt-4 border-t border-adm-border flex justify-end">
+          <ClassroomAdminActions
+            classroomId={classroom.id}
+            classroomName={classroom.name}
+            educatorEmail={educator?.email ?? classroom.educator_id}
+            initialIsActive={classroom.is_active}
+          />
         </div>
       </div>
 
