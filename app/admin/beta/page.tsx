@@ -18,6 +18,20 @@ export default async function AdminBetaPage() {
         </p>
       </div>
 
+      {/* Active warning */}
+      {betaModeEnabled && (
+        <div className="bg-amber-950/40 border border-amber-500/40 rounded-2xl px-5 py-4 space-y-2">
+          <p className="text-sm font-semibold text-amber-400">Beta Mode is currently ON</p>
+          <ul className="space-y-1 text-xs text-amber-300/80">
+            <li>• This affects all users globally — not just your account.</li>
+            <li>• All story creation limits are bypassed (guest, free, and paid).</li>
+            <li>• Image and PDF generation is simulated — no DALL-E or PDF costs.</li>
+            <li>• A beta banner is visible to all users on the create and story pages.</li>
+            <li>• Turn it off when you&apos;re done testing.</li>
+          </ul>
+        </div>
+      )}
+
       {/* Toggle card */}
       <div className="bg-adm-surface rounded-2xl border border-adm-border px-6 py-5">
         <BetaModeToggle initialEnabled={betaModeEnabled as boolean} />
