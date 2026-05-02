@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getAdminContext } from '@/lib/admin/guard'
 import AdminLogoutButton from '@/components/admin/AdminLogoutButton'
-import AdminNavLinks from '@/components/admin/AdminNavLinks'
+import AdminSidebar from '@/components/admin/AdminSidebar'
 import AdminBottomNav from '@/components/admin/AdminBottomNav'
 import AdminHeaderToggles from '@/components/admin/AdminHeaderToggles'
 
@@ -17,6 +17,8 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen bg-adm-bg text-adm-text">
+
+      {/* ── Header ─────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b border-adm-border bg-adm-bg px-4 sm:px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-4">
           <Link href="/admin" className="flex items-center">
@@ -33,22 +35,34 @@ export default async function AdminLayout({
             Admin
           </span>
         </div>
-        <div className="flex items-center gap-3 sm:gap-6">
-          <div className="hidden sm:flex items-center gap-6 overflow-x-auto">
-            <AdminNavLinks />
-          </div>
-          <div className="hidden sm:flex items-center gap-4 border-l border-gray-800 pl-4">
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-4 border-r border-gray-800 pr-4">
             <AdminHeaderToggles />
           </div>
           <AdminLogoutButton />
         </div>
       </header>
 
-      <div className="pb-16 sm:pb-0">
-        {children}
+      {/* ── Body: sidebar + content ─────────────────────────────── */}
+      <div className="flex">
+
+        {/* Left sidebar — desktop only */}
+        <aside className="hidden sm:block w-48 shrink-0 border-r border-adm-border">
+          <div className="sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
+            <AdminSidebar />
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <main className="flex-1 min-w-0 pb-16 sm:pb-0">
+          {children}
+        </main>
+
       </div>
 
+      {/* Mobile bottom nav */}
       <AdminBottomNav />
+
     </div>
   )
 }
