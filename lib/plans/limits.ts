@@ -28,6 +28,9 @@ export async function canCreateBook(
     // Non-free tier as guest is impossible in the current flow, but fail open.
     if (tier !== 'free') return { allowed: true }
 
+    const betaModeGuest = await getSetting('beta_mode_enabled', false)
+    if (betaModeGuest) return { allowed: true }
+
     if (userEmail) {
       const guestLimit = await getSetting('guest_story_limit', GUEST_LIMIT)
 
@@ -64,6 +67,10 @@ export async function canCreateBook(
 
   // Admins bypass all limits.
   if (profile.is_admin) return { allowed: true }
+
+  // Beta mode bypasses guest/free limits for cost-safe testing.
+  const betaMode = await getSetting('beta_mode_enabled', false)
+  if (betaMode) return { allowed: true }
 
   if (tier === 'free') {
     const freeLimit = await getSetting('free_user_story_limit', FREE_ACCOUNT_LIMIT)

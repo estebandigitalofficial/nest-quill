@@ -10,7 +10,7 @@ const TERMINAL_STATUSES = ['complete', 'failed']
 const POLL_INTERVAL_MS = 3000
 const TRANSITION_MS = 280
 
-export default function StoryStatusPage({ requestId, isAdmin }: { requestId: string; isAdmin?: boolean }) {
+export default function StoryStatusPage({ requestId, isAdmin, betaMode }: { requestId: string; isAdmin?: boolean; betaMode?: boolean }) {
   const [status, setStatus] = useState<StoryStatusResponse | null>(null)
   const [story, setStory] = useState<StoryContentResponse | null>(null)
   const [quiz, setQuiz] = useState<StoryQuizResponse | null>(null)
@@ -122,6 +122,11 @@ export default function StoryStatusPage({ requestId, isAdmin }: { requestId: str
   if (status.status !== 'complete' || !story) {
     return (
       <PageShell>
+        {betaMode && (
+          <div className="mb-4 text-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+            Beta Mode active — testing features may be simulated.
+          </div>
+        )}
         <ProcessingView status={status} />
       </PageShell>
     )

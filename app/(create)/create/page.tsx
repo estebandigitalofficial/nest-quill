@@ -19,11 +19,12 @@ export default async function CreatePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Fetch live limits and user profile in parallel
-  const [[guestLimit, freeLimit], profileResult] = await Promise.all([
+  // Fetch live limits, user profile, and beta mode in parallel
+  const [[guestLimit, freeLimit, betaMode], profileResult] = await Promise.all([
     Promise.all([
       getSetting('guest_story_limit', 1),
       getSetting('free_user_story_limit', 2),
+      getSetting('beta_mode_enabled', false),
     ]),
     user
       ? createAdminClient()
@@ -93,6 +94,13 @@ export default async function CreatePage() {
                 </Link>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Beta mode notice */}
+        {betaMode && (
+          <div className="mb-6 text-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+            Beta Mode active — some features may be simulated.
           </div>
         )}
 

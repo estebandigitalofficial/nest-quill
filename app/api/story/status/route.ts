@@ -78,9 +78,12 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      const pdfDownloadEnabled = await getSetting('pdf_download_enabled', false)
+      const [pdfDownloadEnabled, betaMode] = await Promise.all([
+        getSetting('pdf_download_enabled', false),
+        getSetting('beta_mode_enabled', false),
+      ])
 
-      if (pdfDownloadEnabled) {
+      if (pdfDownloadEnabled && !betaMode) {
         const { data: exportData } = await adminSupabase
           .from('book_exports')
           .select('storage_path, storage_bucket')

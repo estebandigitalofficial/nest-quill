@@ -595,11 +595,25 @@ Deno.serve(async (req) => {
     // ── Step 2: Generate illustrations via DALL-E 3 ───────────────────────
     await setStatus('generating_images', 'Creating illustrations…', 45)
 
+    // Read beta mode from app_settings at runtime (DB-driven, no redeploy needed)
+    let betaMode = false
+    try {
+      const { data: betaRow } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'beta_mode_enabled')
+        .single()
+      betaMode = betaRow?.value === true
+    } catch { /* fail open — proceed with real images */ }
+
     let imagesGenerated = 0
     let imagesFailed = 0
 
-    if (SKIP_IMAGES) {
-      await log('generate_images', 'Image generation skipped (SKIP_IMAGE_GENERATION=true)')
+    if (SKIP_IMAGES || betaMode) {
+      await log('generate_images', betaMode
+        ? 'Image generation skipped (beta_mode_enabled=true)'
+        : 'Image generation skipped (SKIP_IMAGE_GENERATION=true)'
+      )
     } else {
       const { data: allScenes, error: sceneFetchError } = await supabase
         .from('story_scenes')
