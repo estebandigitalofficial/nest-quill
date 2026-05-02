@@ -274,6 +274,7 @@ export interface ImageLibraryItem {
   prompt_used: string | null
   revised_prompt: string | null
   created_at: string
+  updated_at: string
 }
 
 // ─── Supabase Database shape (used by createClient<Database>) ───────────────
