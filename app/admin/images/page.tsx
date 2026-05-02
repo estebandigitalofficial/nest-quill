@@ -24,32 +24,64 @@ export default async function AdminImagesPage({ searchParams }: PageProps) {
 
   const db = createAdminClient()
 
-  let query = db
-    .from('image_library')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1)
+  // ── Resolve active scene IDs ──────────────────────────────────────────────
+  // story_scenes can have multiple rows per (request_id, page_number) when
+  // generation retried. Only the active scene per page should show in the
+  // library — keep the complete + newest row, ignore the rest.
+  const { data: completeScenes } = await db
+    .from('story_scenes')
+    .select('id, request_id, page_number, image_status, updated_at')
+    .eq('image_status', 'complete')
+    .limit(50000)
 
-  if (params.style) query = query.eq('illustration_style', params.style)
-  if (params.theme) query = query.ilike('theme', `%${params.theme}%`)
-  if (params.tags) query = query.contains('tags', [params.tags])
-  if (params.from) query = query.gte('created_at', params.from)
-  if (params.to) query = query.lte('created_at', params.to)
+  // One active scene per (request_id, page_number) — newest updated_at wins
+  const activeByPage = new Map<string, { id: string; updated_at: string }>()
+  for (const s of completeScenes ?? []) {
+    const key = `${s.request_id}|${s.page_number}`
+    const prev = activeByPage.get(key)
+    if (!prev || s.updated_at > prev.updated_at) {
+      activeByPage.set(key, { id: s.id, updated_at: s.updated_at })
+    }
+  }
+  const activeSceneIds = Array.from(activeByPage.values()).map(v => v.id)
 
-  const { data, count } = await query
-  const images = (data ?? []) as unknown as ImageLibraryItem[]
+  // ── Image library query — filtered to active scenes only ─────────────────
+  // Excludes: orphaned rows (scene_id null), stale rows (non-active scene per page)
+  let images: ImageLibraryItem[] = []
+  let count: number | null = 0
+
+  if (activeSceneIds.length > 0) {
+    let query = db
+      .from('image_library')
+      .select('*', { count: 'exact' })
+      .in('scene_id', activeSceneIds)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (params.style) query = query.eq('illustration_style', params.style)
+    if (params.theme) query = query.ilike('theme', `%${params.theme}%`)
+    if (params.tags) query = query.contains('tags', [params.tags])
+    if (params.from) query = query.gte('created_at', params.from)
+    if (params.to) query = query.lte('created_at', params.to)
+
+    const { data, count: total } = await query
+    images = (data ?? []) as unknown as ImageLibraryItem[]
+    count = total
+  }
+
   const totalPages = Math.ceil((count ?? 0) / limit)
 
-  // Get available styles for filter dropdown
+  // ── Styles for filter dropdown ────────────────────────────────────────────
   const { data: styleRows } = await db
     .from('image_library')
     .select('illustration_style')
+    .in('scene_id', activeSceneIds.length > 0 ? activeSceneIds : ['none'])
     .not('illustration_style', 'is', null)
     .limit(500)
 
   const styles = [...new Set((styleRows ?? []).map((r: { illustration_style: string }) => r.illustration_style))]
 
-  // Generate signed URLs for images
+  // ── Signed URLs ───────────────────────────────────────────────────────────
   const paths = images.filter(i => i.storage_path).map(i => i.storage_path as string)
   const signedUrls: Record<string, string> = {}
   if (paths.length > 0) {
@@ -77,7 +109,7 @@ export default async function AdminImagesPage({ searchParams }: PageProps) {
       <div>
         <h1 className="text-xl font-semibold text-white">Image Library</h1>
         <p className="text-sm text-adm-muted mt-1">
-          {count ?? 0} images total
+          {count ?? 0} active images
           {page > 1 && ` — page ${page}`}
         </p>
       </div>
@@ -88,7 +120,6 @@ export default async function AdminImagesPage({ searchParams }: PageProps) {
 
       <ImageGrid images={images} signedUrls={signedUrls} />
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-4">
           {page > 1 && (

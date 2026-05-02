@@ -17,9 +17,33 @@ export async function GET(req: NextRequest) {
   const offset = (page - 1) * limit
 
   const db = createAdminClient()
+
+  // ── Resolve active scene IDs (same logic as the page) ─────────────────────
+  const { data: completeScenes } = await db
+    .from('story_scenes')
+    .select('id, request_id, page_number, updated_at')
+    .eq('image_status', 'complete')
+    .limit(50000)
+
+  const activeByPage = new Map<string, { id: string; updated_at: string }>()
+  for (const s of completeScenes ?? []) {
+    const key = `${(s as { request_id: string }).request_id}|${(s as { page_number: number }).page_number}`
+    const prev = activeByPage.get(key)
+    const updatedAt = (s as { updated_at: string }).updated_at
+    if (!prev || updatedAt > prev.updated_at) {
+      activeByPage.set(key, { id: (s as { id: string }).id, updated_at: updatedAt })
+    }
+  }
+  const activeSceneIds = Array.from(activeByPage.values()).map(v => v.id)
+
+  if (activeSceneIds.length === 0) {
+    return NextResponse.json({ images: [], total: 0, page, limit })
+  }
+
   let query = db
     .from('image_library')
     .select('*', { count: 'exact' })
+    .in('scene_id', activeSceneIds)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 

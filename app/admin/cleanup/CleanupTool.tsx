@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-// ─── API response types ─────────────────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 interface DuplicateSceneGroup {
   requestId: string
@@ -21,6 +21,13 @@ interface DuplicateLibGroup {
   duplicates: { id: string; storagePath: string | null; hasTags: boolean; createdAt: string }[]
 }
 
+interface StaleLibRow {
+  id: string
+  sceneId: string
+  storagePath: string | null
+  hasTags: boolean
+}
+
 interface OrphanRow {
   id: string
   sceneId: string | null
@@ -32,11 +39,16 @@ interface ScanResult {
   duplicateSceneGroups: number
   duplicateSceneRows: number
   groups: DuplicateSceneGroup[]
-  // image_library duplicates
+  // image_library same-scene dupes (sanity check)
   duplicateLibGroups: number
   duplicateLibRows: number
   skippedLibGroups: number
   libGroups: DuplicateLibGroup[]
+  // stale lib rows (valid scene but not active for its page)
+  staleLibRows: number
+  staleLibSafeToDelete: number
+  staleLibNeedsReview: number
+  staleLib: StaleLibRow[]
   // orphans
   orphanedLibraryRows: number
   orphanedLibrary: OrphanRow[]
@@ -46,9 +58,11 @@ interface ExecuteResult {
   dryRun: boolean
   wouldDeleteScenes: number
   wouldDeleteLibDupes: number
+  wouldDeleteStaleLib: number
   wouldDeleteOrphans: number
   deletedScenes: number
   deletedLibDupes: number
+  deletedStaleLib: number
   deletedOrphans: number
 }
 
@@ -62,6 +76,7 @@ export default function CleanupTool() {
   const [dryRun, setDryRun] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showSceneGroups, setShowSceneGroups] = useState(false)
+  const [showStaleLib, setShowStaleLib] = useState(false)
   const [showLibGroups, setShowLibGroups] = useState(false)
   const [showOrphans, setShowOrphans] = useState(false)
 
@@ -83,16 +98,21 @@ export default function CleanupTool() {
 
   async function handleExecute() {
     if (!scanResult) return
-    const totalToDelete =
-      scanResult.duplicateSceneRows + scanResult.duplicateLibRows + scanResult.orphanedLibraryRows
+    const totalSafe =
+      scanResult.duplicateSceneRows +
+      scanResult.duplicateLibRows +
+      scanResult.staleLibSafeToDelete +
+      scanResult.orphanedLibraryRows
 
-    if (!dryRun && totalToDelete > 0) {
+    if (!dryRun && totalSafe > 0) {
+      const lines = []
+      if (scanResult.duplicateSceneRows > 0)   lines.push(`  • ${scanResult.duplicateSceneRows} duplicate scene row(s)`)
+      if (scanResult.duplicateLibRows > 0)      lines.push(`  • ${scanResult.duplicateLibRows} same-scene library dupe(s)`)
+      if (scanResult.staleLibSafeToDelete > 0)  lines.push(`  • ${scanResult.staleLibSafeToDelete} stale library row(s) [no tags]`)
+      if (scanResult.orphanedLibraryRows > 0)   lines.push(`  • ${scanResult.orphanedLibraryRows} orphaned library row(s)`)
+      if (scanResult.staleLibNeedsReview > 0)   lines.push(`  (${scanResult.staleLibNeedsReview} tagged stale row(s) skipped — review manually)`)
       const confirmed = window.confirm(
-        `This will permanently delete:\n` +
-        `  • ${scanResult.duplicateSceneRows} duplicate scene row(s)\n` +
-        `  • ${scanResult.duplicateLibRows} duplicate library row(s)\n` +
-        `  • ${scanResult.orphanedLibraryRows} orphaned library row(s)\n\n` +
-        `No storage files will be deleted. Continue?`
+        `This will permanently delete:\n${lines.join('\n')}\n\nNo storage files will be deleted. Continue?`
       )
       if (!confirmed) return
     }
@@ -116,19 +136,19 @@ export default function CleanupTool() {
     }
   }
 
-  const totalToDelete = scanResult
-    ? scanResult.duplicateSceneRows + scanResult.duplicateLibRows + scanResult.orphanedLibraryRows
+  const totalSafe = scanResult
+    ? scanResult.duplicateSceneRows + scanResult.duplicateLibRows + scanResult.staleLibSafeToDelete + scanResult.orphanedLibraryRows
     : 0
-  const clean = scanResult && totalToDelete === 0
+  const clean = scanResult && totalSafe === 0 && scanResult.staleLibNeedsReview === 0
 
   return (
     <div className="space-y-4">
-      {/* Header + scan button */}
+      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <p className="text-xs text-adm-muted leading-relaxed max-w-lg">
-          Detects duplicate <code className="font-mono text-adm-text">story_scenes</code> rows
-          and duplicate/orphaned <code className="font-mono text-adm-text">image_library</code> rows.
-          Never deletes storage files — only database rows.
+          Detects duplicate/stale <code className="font-mono text-adm-text">story_scenes</code> and{' '}
+          <code className="font-mono text-adm-text">image_library</code> rows.
+          Never deletes storage files.
         </p>
         <button
           onClick={handleScan}
@@ -147,17 +167,45 @@ export default function CleanupTool() {
 
       {scanResult && (
         <div className="space-y-4">
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {/* Stats grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <Stat label="Scene dupes" value={scanResult.duplicateSceneRows} warn={scanResult.duplicateSceneRows > 0} />
-            <Stat label="Library dupes" value={scanResult.duplicateLibRows} warn={scanResult.duplicateLibRows > 0} sub={scanResult.skippedLibGroups > 0 ? `${scanResult.skippedLibGroups} group(s) skipped (tagged)` : undefined} />
-            <Stat label="Orphaned library" value={scanResult.orphanedLibraryRows} warn={scanResult.orphanedLibraryRows > 0} />
+            <Stat
+              label="Stale lib rows"
+              value={scanResult.staleLibRows}
+              warn={scanResult.staleLibRows > 0}
+              sub={scanResult.staleLibNeedsReview > 0 ? `${scanResult.staleLibNeedsReview} need review` : undefined}
+            />
+            <Stat label="Lib dupes" value={scanResult.duplicateLibRows} warn={scanResult.duplicateLibRows > 0} />
+            <Stat label="Orphaned lib" value={scanResult.orphanedLibraryRows} warn={scanResult.orphanedLibraryRows > 0} />
           </div>
 
           {clean && (
             <p className="text-xs text-emerald-400 bg-emerald-900/20 border border-emerald-800 rounded-lg px-3 py-2">
-              No duplicates or orphans found — database is clean.
+              No duplicates, stale rows, or orphans found — database is clean.
             </p>
+          )}
+
+          {/* Stale lib rows — the main visual-duplicate culprit */}
+          {scanResult.staleLibRows > 0 && (
+            <ExpandableSection
+              label={`${scanResult.staleLibRows} stale library row${scanResult.staleLibRows !== 1 ? 's' : ''} (non-active scenes)`}
+              open={showStaleLib}
+              onToggle={() => setShowStaleLib(v => !v)}
+            >
+              <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
+                {scanResult.staleLib.map(r => (
+                  <div key={r.id} className="flex items-center gap-2 text-xs border border-adm-border rounded px-3 py-1.5">
+                    <span className={r.hasTags ? 'text-amber-400' : 'text-red-400'}>
+                      {r.hasTags ? 'review' : 'delete'}
+                    </span>
+                    <span className="font-mono text-adm-muted">{r.id.slice(0, 8)}…</span>
+                    <span className="text-adm-subtle">scene {r.sceneId.slice(0, 8)}…</span>
+                    {r.hasTags && <span className="ml-auto text-amber-400 text-[10px]">has tags — skipped</span>}
+                  </div>
+                ))}
+              </div>
+            </ExpandableSection>
           )}
 
           {/* Duplicate scene groups */}
@@ -167,7 +215,7 @@ export default function CleanupTool() {
               open={showSceneGroups}
               onToggle={() => setShowSceneGroups(v => !v)}
             >
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                 {scanResult.groups.map(g => (
                   <div key={g.activeId} className="border border-adm-border rounded-lg p-3 text-xs space-y-1">
                     <div className="flex items-center gap-2 text-adm-muted">
@@ -189,23 +237,20 @@ export default function CleanupTool() {
             </ExpandableSection>
           )}
 
-          {/* Duplicate library groups */}
+          {/* Same-scene lib dupes (sanity check) */}
           {scanResult.duplicateLibGroups > 0 && (
             <ExpandableSection
-              label={`${scanResult.duplicateLibGroups} duplicate library group${scanResult.duplicateLibGroups !== 1 ? 's' : ''}`}
+              label={`${scanResult.duplicateLibGroups} same-scene library dupe${scanResult.duplicateLibGroups !== 1 ? 's' : ''}`}
               open={showLibGroups}
               onToggle={() => setShowLibGroups(v => !v)}
             >
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                 {scanResult.libGroups.map(g => (
                   <div key={g.sceneId} className="border border-adm-border rounded-lg p-3 text-xs space-y-1">
                     <div className="flex items-center gap-2 text-adm-muted">
-                      <span>scene</span>
-                      <span className="font-mono">{g.sceneId.slice(0, 8)}…</span>
+                      <span>scene {g.sceneId.slice(0, 8)}…</span>
                       <span className="ml-auto">{g.totalRows} rows</span>
-                      {g.skipped && (
-                        <span className="text-amber-400 font-medium">skipped (tagged)</span>
-                      )}
+                      {g.skipped && <span className="text-amber-400">skipped (tagged)</span>}
                     </div>
                     {!g.skipped && (
                       <>
@@ -223,7 +268,7 @@ export default function CleanupTool() {
             </ExpandableSection>
           )}
 
-          {/* Orphaned library rows */}
+          {/* Orphans */}
           {scanResult.orphanedLibraryRows > 0 && (
             <ExpandableSection
               label={`${scanResult.orphanedLibraryRows} orphaned library row${scanResult.orphanedLibraryRows !== 1 ? 's' : ''}`}
@@ -233,9 +278,9 @@ export default function CleanupTool() {
               <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
                 {scanResult.orphanedLibrary.map(r => (
                   <div key={r.id} className="flex items-center gap-2 text-xs border border-adm-border rounded px-3 py-1.5">
+                    <span className="text-red-400">delete</span>
                     <span className="font-mono text-adm-muted">{r.id.slice(0, 8)}…</span>
-                    <span className="text-adm-muted">scene</span>
-                    <span className="font-mono text-red-400">{r.sceneId?.slice(0, 8)}… (missing)</span>
+                    <span className="text-adm-subtle">scene {r.sceneId?.slice(0, 8)}… (missing)</span>
                   </div>
                 ))}
               </div>
@@ -243,7 +288,7 @@ export default function CleanupTool() {
           )}
 
           {/* Execute controls */}
-          {!clean && (
+          {(totalSafe > 0 || scanResult.staleLibNeedsReview > 0) && (
             <div className="flex items-center gap-4 pt-2 border-t border-adm-border">
               <label className="flex items-center gap-2 text-xs text-adm-muted cursor-pointer select-none">
                 <input
@@ -254,22 +299,23 @@ export default function CleanupTool() {
                 />
                 Dry run (preview only)
               </label>
-
-              <button
-                onClick={handleExecute}
-                disabled={executing}
-                className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
-                  dryRun
-                    ? 'bg-adm-border text-white hover:bg-adm-muted/30'
-                    : 'bg-red-700 text-white hover:bg-red-600'
-                }`}
-              >
-                {executing
-                  ? 'Running…'
-                  : dryRun
-                  ? `Preview (${totalToDelete} rows)`
-                  : `Delete ${totalToDelete} rows`}
-              </button>
+              {totalSafe > 0 && (
+                <button
+                  onClick={handleExecute}
+                  disabled={executing}
+                  className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
+                    dryRun
+                      ? 'bg-adm-border text-white hover:bg-adm-muted/30'
+                      : 'bg-red-700 text-white hover:bg-red-600'
+                  }`}
+                >
+                  {executing
+                    ? 'Running…'
+                    : dryRun
+                    ? `Preview (${totalSafe} rows)`
+                    : `Delete ${totalSafe} rows`}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -281,10 +327,14 @@ export default function CleanupTool() {
           <p className="text-sm font-semibold text-white">
             {executeResult.dryRun ? 'Dry Run Preview' : 'Cleanup Complete'}
           </p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <Stat
               label={executeResult.dryRun ? 'Would delete (scenes)' : 'Deleted scenes'}
               value={executeResult.dryRun ? executeResult.wouldDeleteScenes : executeResult.deletedScenes}
+            />
+            <Stat
+              label={executeResult.dryRun ? 'Would delete (stale lib)' : 'Deleted stale lib'}
+              value={executeResult.dryRun ? executeResult.wouldDeleteStaleLib : executeResult.deletedStaleLib}
             />
             <Stat
               label={executeResult.dryRun ? 'Would delete (lib dupes)' : 'Deleted lib dupes'}
@@ -297,7 +347,8 @@ export default function CleanupTool() {
           </div>
           {!executeResult.dryRun && (
             <p className="text-xs text-emerald-400">
-              {executeResult.deletedScenes + executeResult.deletedLibDupes + executeResult.deletedOrphans} rows deleted. Run scan again to verify.
+              {executeResult.deletedScenes + executeResult.deletedLibDupes + executeResult.deletedStaleLib + executeResult.deletedOrphans} rows deleted.
+              Run scan again to verify.
             </p>
           )}
         </div>
@@ -315,26 +366,18 @@ function Stat({ label, value, warn, sub }: { label: string; value: number; warn?
         {value}
       </div>
       <div className="text-[11px] text-adm-muted mt-0.5">{label}</div>
-      {sub && <div className="text-[10px] text-adm-subtle mt-0.5">{sub}</div>}
+      {sub && <div className="text-[10px] text-amber-400 mt-0.5">{sub}</div>}
     </div>
   )
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const color =
-    status === 'complete' ? 'text-emerald-400' :
-    status === 'failed' ? 'text-red-400' :
-    'text-adm-muted'
+  const color = status === 'complete' ? 'text-emerald-400' : status === 'failed' ? 'text-red-400' : 'text-adm-muted'
   return <span className={`text-[10px] font-mono ${color}`}>{status}</span>
 }
 
-function RowLine({
-  color, label, id, children,
-}: {
-  color: 'emerald' | 'red'
-  label: string
-  id: string
-  children?: React.ReactNode
+function RowLine({ color, label, id, children }: {
+  color: 'emerald' | 'red'; label: string; id: string; children?: React.ReactNode
 }) {
   return (
     <div className="flex items-center gap-2 text-xs">
@@ -345,20 +388,12 @@ function RowLine({
   )
 }
 
-function ExpandableSection({
-  label, open, onToggle, children,
-}: {
-  label: string
-  open: boolean
-  onToggle: () => void
-  children: React.ReactNode
+function ExpandableSection({ label, open, onToggle, children }: {
+  label: string; open: boolean; onToggle: () => void; children: React.ReactNode
 }) {
   return (
     <div>
-      <button
-        onClick={onToggle}
-        className="text-xs text-adm-muted hover:text-white transition-colors"
-      >
+      <button onClick={onToggle} className="text-xs text-adm-muted hover:text-white transition-colors">
         {open ? '▾' : '▸'} {label}
       </button>
       {open && <div className="mt-2">{children}</div>}
