@@ -4,9 +4,11 @@ import { useFormContext } from 'react-hook-form'
 import type { StoryFormValues } from '@/lib/validators/story-form'
 import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
 import { cn } from '@/lib/utils/cn'
+import { useWizardConfig } from '../WizardContext'
 
 export default function PlanStep() {
   const { watch, setValue } = useFormContext<StoryFormValues>()
+  const { betaMode } = useWizardConfig()
   const selected = watch('planTier')
 
   return (
@@ -14,7 +16,9 @@ export default function PlanStep() {
       <div>
         <h2 className="text-xl font-serif text-gray-900">Choose your plan</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Start free — payments are coming soon, all plans are free during beta.
+          {betaMode
+            ? 'Start free — payments are coming soon, all plans are free during beta.'
+            : 'Select a plan to get started.'}
         </p>
       </div>
 

@@ -9,6 +9,7 @@ import { storyFormSchema, type StoryFormValues } from '@/lib/validators/story-fo
 import { cn } from '@/lib/utils/cn'
 import { useLanguage } from '@/lib/i18n/context'
 import WizardProgress from './WizardProgress'
+import { WizardConfigContext } from './WizardContext'
 import PlanStep from './steps/PlanStep'
 import ChildStep from './steps/ChildStep'
 import StoryStep from './steps/StoryStep'
@@ -37,7 +38,7 @@ const LEARNING_FIELDS: (keyof StoryFormValues)[][] = [
   ['userEmail'],
 ]
 
-export default function StoryWizard() {
+export default function StoryWizard({ betaMode = false }: { betaMode?: boolean }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { lang, t } = useLanguage()
@@ -114,6 +115,7 @@ export default function StoryWizard() {
   }
 
   return (
+    <WizardConfigContext.Provider value={{ betaMode }}>
     <FormProvider {...methods}>
       {/* Mode toggle — shown only on step 0 */}
       {step === 0 && (
@@ -232,5 +234,6 @@ export default function StoryWizard() {
         )}
       </form>
     </FormProvider>
+    </WizardConfigContext.Provider>
   )
 }

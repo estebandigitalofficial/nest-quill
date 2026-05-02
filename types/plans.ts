@@ -24,4 +24,5 @@ export interface PlanConfig {
   features: string[]
   isPopular?: boolean
   cta: string
+  ctaBeta?: string
 }

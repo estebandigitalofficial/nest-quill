@@ -105,7 +105,7 @@ export default async function CreatePage() {
         )}
 
         <Suspense>
-          <StoryWizard />
+          <StoryWizard betaMode={betaMode as boolean} />
         </Suspense>
       </div>
     </div>

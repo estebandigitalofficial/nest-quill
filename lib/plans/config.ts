@@ -37,7 +37,8 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
     displayName: 'Single Story',
     pricingType: 'one_time',
     priceMonthly: 7.99,
-    cta: 'Try free during beta',
+    cta: 'Get started',
+    ctaBeta: 'Try free during beta',
     limits: {
       booksPerMonth: 1,
       maxPagesPerBook: 24,
@@ -63,7 +64,8 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
     pricingType: 'subscription',
     priceMonthly: 9.99,
     priceYearly: 99,
-    cta: 'Try free during beta',
+    cta: 'Get started',
+    ctaBeta: 'Try free during beta',
     limits: {
       booksPerMonth: 3,
       maxPagesPerBook: 24,
@@ -89,7 +91,8 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
     pricingType: 'subscription',
     priceMonthly: 24.99,
     priceYearly: 249,
-    cta: 'Try free during beta',
+    cta: 'Get started',
+    ctaBeta: 'Try free during beta',
     isPopular: true,
     limits: {
       booksPerMonth: 10,

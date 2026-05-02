@@ -8,6 +8,7 @@ import LogoutButton from '@/components/auth/LogoutButton'
 import SiteFooter from '@/components/layout/SiteFooter'
 import SiteHeader from '@/components/layout/SiteHeader'
 import { getAdminContext } from '@/lib/admin/guard'
+import { getSetting } from '@/lib/settings/appSettings'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -17,6 +18,8 @@ export default async function HomePage() {
     const adminCtx = await getAdminContext()
     if (adminCtx) redirect('/admin')
   }
+
+  const betaMode = (await getSetting('beta_mode_enabled', false)) as boolean
 
   return (
     <div className="h-dvh bg-parchment font-sans flex flex-col">
@@ -43,12 +46,12 @@ export default async function HomePage() {
         </>
       } />
       <div className="flex-1 overflow-y-auto">
-        <Hero />
+        <Hero betaMode={betaMode} />
         <LearningStoriesSection />
         <HowItWorks />
         <SamplePreview />
         <EducatorBanner />
-        <Pricing />
+        <Pricing betaMode={betaMode} />
         <BottomCTA />
       </div>
       <SiteFooter />
@@ -58,13 +61,15 @@ export default async function HomePage() {
 
 // ── Hero ──────────────────────────────────────────────────────────────────────
 
-function Hero() {
+function Hero({ betaMode }: { betaMode: boolean }) {
   return (
     <section className="bg-brand-50 pt-20 pb-24 px-6 text-center">
       <div className="max-w-3xl mx-auto space-y-7">
-        <div className="inline-block bg-brand-100 text-brand-700 text-xs font-semibold px-3 py-1 rounded-full tracking-wide uppercase">
-          Free during beta
-        </div>
+        {betaMode && (
+          <div className="inline-block bg-brand-100 text-brand-700 text-xs font-semibold px-3 py-1 rounded-full tracking-wide uppercase">
+            Free during beta
+          </div>
+        )}
 
         <div className="flex items-center justify-center gap-6">
           <h1 className="font-serif text-5xl sm:text-6xl text-oxford leading-tight text-balance">
@@ -277,7 +282,7 @@ const PREVIEW_FEATURES = [
 
 // ── Pricing ───────────────────────────────────────────────────────────────────
 
-function Pricing() {
+function Pricing({ betaMode }: { betaMode: boolean }) {
   return (
     <section id="pricing" className="py-24 px-6">
       <div className="max-w-5xl mx-auto">
@@ -285,9 +290,11 @@ function Pricing() {
           <h2 className="font-serif text-3xl sm:text-4xl text-oxford mb-3">
             Simple, honest pricing
           </h2>
-          <p className="text-charcoal-light max-w-md mx-auto">
-            All plans are free during beta. Payments coming soon.
-          </p>
+          {betaMode && (
+            <p className="text-charcoal-light max-w-md mx-auto">
+              All plans are free during beta. Payments coming soon.
+            </p>
+          )}
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -340,7 +347,7 @@ function Pricing() {
                       : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
                   )}
                 >
-                  {plan.cta}
+                  {betaMode && plan.ctaBeta ? plan.ctaBeta : plan.cta}
                 </Link>
               </div>
             )

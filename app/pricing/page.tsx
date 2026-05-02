@@ -3,10 +3,13 @@ import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
 import { cn } from '@/lib/utils/cn'
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
+import { getSetting } from '@/lib/settings/appSettings'
 
 export const metadata = { title: 'Pricing — Nest & Quill' }
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const betaMode = (await getSetting('beta_mode_enabled', false)) as boolean
+
   return (
     <div className="h-dvh bg-parchment flex flex-col">
       <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Back</Link>} />
@@ -15,9 +18,11 @@ export default function PricingPage() {
       <main className="max-w-5xl mx-auto px-6 py-16 space-y-14 w-full">
         <div className="text-center space-y-3">
           <h1 className="font-serif text-4xl sm:text-5xl text-oxford">Simple, honest pricing</h1>
-          <p className="text-charcoal-light max-w-md mx-auto">
-            All plans are free during beta. Payments coming soon.
-          </p>
+          {betaMode && (
+            <p className="text-charcoal-light max-w-md mx-auto">
+              All plans are free during beta. Payments coming soon.
+            </p>
+          )}
         </div>
 
         {/* Plan cards */}
@@ -76,7 +81,7 @@ export default function PricingPage() {
                       : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
                   )}
                 >
-                  {plan.cta}
+                  {betaMode && plan.ctaBeta ? plan.ctaBeta : plan.cta}
                 </Link>
               </div>
             )
