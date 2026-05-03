@@ -31,12 +31,30 @@ export type ExportFormat = 'pdf' | 'print_ready_pdf'
 
 // ─── Table row types ────────────────────────────────────────────────────────
 
+// Stripe subscription statuses we expect to see. NULL = no subscription.
+export type SubscriptionStatus =
+  | 'trialing'
+  | 'active'
+  | 'incomplete'
+  | 'incomplete_expired'
+  | 'past_due'
+  | 'canceled'
+  | 'unpaid'
+  | 'paused'
+
+export type BillingInterval = 'month' | 'year' | 'one_time'
+
 export interface Profile {
   id: string
   email: string
   display_name: string | null
   avatar_url: string | null
   stripe_customer_id: string | null
+  stripe_subscription_id: string | null
+  subscription_status: SubscriptionStatus | null
+  current_period_end: string | null
+  cancel_at: string | null
+  billing_interval: BillingInterval | null
   plan_tier: PlanTier
   books_generated: number
   books_limit: number
