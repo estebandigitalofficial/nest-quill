@@ -33,8 +33,9 @@ export default async function HomePage() {
             </Link>
           )}
           <Link href="/create"
-            className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors">
-            Create a story →
+            className="bg-brand-500 hover:bg-brand-600 text-white text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full transition-colors whitespace-nowrap">
+            <span className="sm:hidden">Create</span>
+            <span className="hidden sm:inline">Create a story →</span>
           </Link>
         </>
       } />
