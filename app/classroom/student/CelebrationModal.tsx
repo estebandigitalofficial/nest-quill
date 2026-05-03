@@ -14,7 +14,7 @@ interface Props {
 }
 
 const BADGE_INFO: Record<string, { name: string }> = {
-  first_quest:   { name: 'First Quest' },
+  first_quest:   { name: 'First Assignment' },
   quiz_master:   { name: 'Quiz Master' },
   high_scorer:   { name: 'High Scorer' },
   streak_3:      { name: '3-Day Streak' },
@@ -23,7 +23,7 @@ const BADGE_INFO: Record<string, { name: string }> = {
   speed_reader:  { name: 'Speed Reader' },
   math_whiz:     { name: 'Math Whiz' },
   wordsmith:     { name: 'Wordsmith' },
-  ten_quests:    { name: '10 Quests Done' },
+  ten_quests:    { name: '10 Assignments Done' },
 }
 
 export default function CelebrationModal({ xpEarned, newXP, newLevel, leveledUp, newStreak, newBadges, onClose }: Props) {
@@ -56,9 +56,9 @@ export default function CelebrationModal({ xpEarned, newXP, newLevel, leveledUp,
           </>
         ) : (
           <>
-            <p className="text-2xl font-bold text-indigo-500">Quest Complete!</p>
+            <p className="text-2xl font-bold text-indigo-500">Assignment Complete!</p>
             <div>
-              <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-1">Quest Complete!</p>
+              <p className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-1">Assignment Complete!</p>
               <p className="font-serif text-3xl text-oxford">+{xpEarned} XP</p>
             </div>
           </>

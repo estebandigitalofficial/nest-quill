@@ -191,7 +191,7 @@ function CompletionBanner({ xpEarned }: { xpEarned: number | null | 'pending' })
   return (
     <div className="bg-indigo-600 rounded-2xl px-5 py-4 flex items-center justify-between gap-4">
       <div>
-        <p className="text-white font-semibold text-sm">Quest Complete!</p>
+        <p className="text-white font-semibold text-sm">Assignment Complete!</p>
         <p className="text-indigo-200 text-xs">{xpEarned ? `+${xpEarned} XP earned` : 'Progress saved'}</p>
       </div>
       <Link href="/classroom/student" className="bg-white text-indigo-600 text-xs font-bold px-4 py-2 rounded-xl whitespace-nowrap hover:bg-indigo-50 transition-colors shrink-0">
@@ -464,7 +464,7 @@ function ExplainRunner({ assignmentId, content, alreadyComplete }: { assignmentI
       ) : (
         <button onClick={complete}
           className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-colors">
-          Complete Quest →
+          Mark as Complete →
         </button>
       )}
     </div>
@@ -551,7 +551,7 @@ function StudyGuideRunner({ assignmentId, content, alreadyComplete }: { assignme
       ) : (
         <button onClick={complete}
           className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-colors">
-          Complete Quest →
+          Mark as Complete →
         </button>
       )}
     </div>

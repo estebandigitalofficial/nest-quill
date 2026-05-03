@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import AvatarSetup from './AvatarSetup'
+import ProfileEditor, { getInitials, type ProfileFields } from './ProfileEditor'
 import CelebrationModal from './CelebrationModal'
 import { levelProgress } from '@/lib/utils/xp'
 
@@ -30,6 +30,7 @@ interface StudentProfile {
   display_name: string
   avatar_emoji: string
   avatar_color: string
+  avatar_url: string | null
   xp: number
   level: number
   coins: number
@@ -158,10 +159,10 @@ export default function StudentDashboard() {
     setJoinCode(''); setJoining(false); fetchData()
   }
 
-  function handleAvatarComplete(p: { display_name: string; avatar_emoji: string; avatar_color: string }) {
+  function handleProfileSaved(p: ProfileFields) {
     setProfile(prev => prev
-      ? { ...prev, ...p }
-      : { ...p, xp: 0, level: 1, coins: 0, streak_days: 0 })
+      ? { ...prev, display_name: p.display_name, avatar_color: p.avatar_color, avatar_url: p.avatar_url }
+      : { display_name: p.display_name, avatar_emoji: '🦊', avatar_color: p.avatar_color, avatar_url: p.avatar_url, xp: 0, level: 1, coins: 0, streak_days: 0 })
     setShowCustomize(false)
   }
 
@@ -179,6 +180,7 @@ export default function StudentDashboard() {
     display_name: 'Explorer',
     avatar_emoji: '🦊',
     avatar_color: 'indigo',
+    avatar_url: null,
     xp: 0, level: 1, coins: 0, streak_days: 0,
   }
 
@@ -187,7 +189,15 @@ export default function StudentDashboard() {
       <div className="space-y-4">
         <button onClick={() => setShowCustomize(false)}
           className="text-sm font-semibold text-gray-500 hover:text-oxford">← Back to dashboard</button>
-        <AvatarSetup onComplete={handleAvatarComplete} />
+        <ProfileEditor
+          initial={{
+            display_name: safeProfile.display_name,
+            avatar_color: safeProfile.avatar_color,
+            avatar_url: safeProfile.avatar_url,
+          }}
+          onSaved={handleProfileSaved}
+          onCancel={() => setShowCustomize(false)}
+        />
       </div>
     )
   }
@@ -208,11 +218,21 @@ export default function StudentDashboard() {
       {/* ── Hero card ── (avatar is decorative; customization is opt-in via the
           explicit "Customize" button — never gates onboarding) */}
       <div className="bg-oxford rounded-2xl px-6 py-5 flex items-center gap-5">
-        <div
-          aria-hidden="true"
-          className={`w-16 h-16 ${colorBg} rounded-2xl flex items-center justify-center text-4xl shrink-0 shadow-lg`}>
-          {safeProfile.avatar_emoji}
-        </div>
+        {safeProfile.avatar_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            aria-hidden="true"
+            src={safeProfile.avatar_url}
+            alt=""
+            className="w-16 h-16 rounded-2xl object-cover shrink-0 shadow-lg bg-gray-200"
+          />
+        ) : (
+          <div
+            aria-hidden="true"
+            className={`w-16 h-16 ${colorBg} rounded-2xl flex items-center justify-center text-white text-2xl font-bold shrink-0 shadow-lg`}>
+            {getInitials(safeProfile.display_name)}
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <p className="font-serif text-lg text-white leading-none">{safeProfile.display_name}</p>
@@ -272,7 +292,7 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      {/* ── Quest board ── */}
+      {/* ── Assignments board ── */}
       {dataLoading ? (
         <div className="flex justify-center py-10">
           <div className="w-6 h-6 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
@@ -287,15 +307,15 @@ export default function StudentDashboard() {
         /* All caught up */
         <div className="bg-green-50 border border-green-200 rounded-2xl px-6 py-5 text-center space-y-1">
           <p className="font-semibold text-green-800">All caught up!</p>
-          <p className="text-sm text-green-600">You&apos;ve completed every quest. Check back when your teacher assigns more.</p>
+          <p className="text-sm text-green-600">You&apos;ve completed every assignment. Check back when your teacher assigns more.</p>
         </div>
       ) : (
         <div className="space-y-3">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-            Active Quests ({pending.length})
+            Assignments ({pending.length})
           </p>
 
-          {/* Featured next quest */}
+          {/* Featured next assignment */}
           {heroQuest && (() => {
             const typeLabel = TYPE_LABELS[heroQuest.tool] ?? heroQuest.tool
             const due   = dueLabel(heroQuest.due_at)
@@ -308,7 +328,7 @@ export default function StudentDashboard() {
                     {typeLabel.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-0.5">Up next</p>
+                    <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-0.5">Up next assignment</p>
                     <p className="font-semibold text-white text-base truncate">{heroQuest.title}</p>
                     <p className="text-xs text-indigo-200 mt-0.5 truncate">
                       {questSubtitle(heroQuest)}
@@ -327,7 +347,7 @@ export default function StudentDashboard() {
             )
           })()}
 
-          {/* Remaining pending quests */}
+          {/* Remaining pending assignments */}
           {restQuests.map(a => {
             const typeLabel = TYPE_LABELS[a.tool] ?? a.tool
             const due  = dueLabel(a.due_at)
@@ -375,7 +395,7 @@ export default function StudentDashboard() {
                   {s.title ?? `${safeProfile.display_name}'s Story`}
                 </p>
                 <p className="text-xs text-charcoal-light mt-0.5">
-                  Milestone reward · {s.milestone} quest{s.milestone !== 1 ? 's' : ''} completed
+                  Milestone reward · {s.milestone} assignment{s.milestone !== 1 ? 's' : ''} completed
                 </p>
               </div>
               {s.status === 'complete' ? (
@@ -391,7 +411,7 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      {/* ── Completed quests (collapsed by default) ── */}
+      {/* ── Completed assignments (collapsed by default) ── */}
       {completed.length > 0 && (
         <div>
           <button
