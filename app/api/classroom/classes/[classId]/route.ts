@@ -35,7 +35,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       admin
         .from('assignments')
         .select(`
-          id, title, tool, config, due_at, created_at,
+          id, title, tool, config, content, due_at, created_at,
           assignment_submissions(student_id, status, score, total, completed_at)
         `)
         .eq('classroom_id', classId)

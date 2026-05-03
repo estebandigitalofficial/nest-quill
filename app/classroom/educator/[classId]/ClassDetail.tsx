@@ -711,80 +711,206 @@ export default function ClassDetail({ classId }: { classId: string }) {
         <div className="space-y-3">
           {members.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 px-8 py-12 text-center space-y-3">
-              <p className="text-lg font-bold text-gray-400">No students</p>
               <p className="font-semibold text-oxford">No students yet</p>
               <p className="text-sm text-charcoal-light">
-                Share the join code <span className="font-mono font-bold text-oxford">{classroom.join_code}</span> with your students.
+                Share the join code <span className="font-mono font-bold text-oxford">{classroom.join_code}</span> with your students so they can join this class.
               </p>
+              <button onClick={copyCode}
+                className="text-sm font-semibold text-brand-600 hover:text-brand-700 px-4 py-2 rounded-xl border border-brand-200 hover:bg-brand-50 transition-colors">
+                {codeCopied ? '✓ Copied' : 'Copy join code'}
+              </button>
             </div>
           ) : (
-            members.map(m => {
-              const authName = m.profiles?.display_name || m.profiles?.email || 'Student'
-              const sp = m.student_profile
-              const heroName = sp?.display_name ?? authName
-              const done = assignments.filter(a =>
-                a.assignment_submissions.some(s => s.student_id === m.student_id && s.status === 'complete')
-              ).length
-              const quizSubs = assignments.flatMap(a =>
-                a.assignment_submissions.filter(s => s.student_id === m.student_id && s.status === 'complete' && s.score != null && s.total)
-              )
-              const avgPct = quizSubs.length
-                ? Math.round(quizSubs.reduce((acc, s) => acc + (s.score! / s.total!), 0) / quizSubs.length * 100)
-                : null
-              const avatarBg = sp ? (COLOR_BG[sp.avatar_color] ?? 'bg-indigo-500') : 'bg-gray-200'
-
-              return (
-                <div key={m.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4 space-y-3">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-11 h-11 ${avatarBg} rounded-xl flex items-center justify-center text-2xl shrink-0`}>
-                      {sp?.avatar_emoji ?? ''}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-oxford">{heroName}</p>
-                        {sp && sp.streak_days >= 3 && <span className="text-xs font-bold text-amber-500">Streak</span>}
-                      </div>
-                      <p className="text-xs text-charcoal-light">
-                        {sp ? `Level ${sp.level} · ${sp.xp} XP` : 'No avatar set yet'}
-                        {m.profiles?.email && sp ? ` · ${m.profiles.email}` : ''}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4 shrink-0 text-right">
-                      <div>
-                        <p className="text-sm font-bold text-oxford">{done}/{assignments.length}</p>
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Done</p>
-                      </div>
-                      {avgPct !== null && (
-                        <div>
-                          <p className="text-sm font-bold text-oxford">{avgPct}%</p>
-                          <p className="text-[10px] text-gray-400 uppercase tracking-wide">Avg</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {sp && (
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-indigo-400 to-violet-400 rounded-full"
-                        style={{ width: `${Math.min(100, (sp.xp % 500) / 5)}%` }} />
-                    </div>
-                  )}
-
-                  {m.student_badges.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {m.student_badges.map(b => (
-                        <span key={b.slug} title={b.name}
-                          className="text-sm bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5 flex items-center gap-1">
-                          {b.emoji}
-                          <span className="text-[10px] text-gray-500 font-medium">{b.name}</span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )
-            })
+            members.map(m => (
+              <StudentCard
+                key={m.id}
+                member={m}
+                assignments={assignments}
+              />
+            ))
           )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Student card with expandable detail ────────────────────────────────────────
+
+function StudentCard({ member: m, assignments }: { member: Member; assignments: Assignment[] }) {
+  const [expanded, setExpanded] = useState(false)
+
+  const authName = m.profiles?.display_name || m.profiles?.email || 'Student'
+  const sp = m.student_profile
+  const heroName = sp?.display_name ?? authName
+  const email = m.profiles?.email ?? null
+  const avatarBg = sp ? (COLOR_BG[sp.avatar_color] ?? 'bg-indigo-500') : 'bg-gray-200'
+
+  // Compute stats
+  const completedAssignments = assignments.filter(a =>
+    a.assignment_submissions.some(s => s.student_id === m.student_id && s.status === 'complete')
+  )
+  const done = completedAssignments.length
+  const total = assignments.length
+  const donePct = total > 0 ? Math.round((done / total) * 100) : 0
+
+  const quizSubs = assignments.flatMap(a =>
+    a.assignment_submissions.filter(s => s.student_id === m.student_id && s.status === 'complete' && s.score != null && s.total)
+  )
+  const avgPct = quizSubs.length
+    ? Math.round(quizSubs.reduce((acc, s) => acc + (s.score! / s.total!), 0) / quizSubs.length * 100)
+    : null
+
+  const joinedDate = new Date(m.joined_at).toLocaleDateString()
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      {/* Header row — clickable to expand */}
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full px-5 py-4 flex items-center gap-4 text-left hover:bg-gray-50/50 transition-colors"
+      >
+        <div className={`w-12 h-12 ${avatarBg} rounded-xl flex items-center justify-center text-2xl shrink-0`}>
+          {sp?.avatar_emoji ?? ''}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-semibold text-oxford">{heroName}</p>
+            {sp && sp.streak_days >= 3 && (
+              <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                {sp.streak_days}-day streak
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-charcoal-light mt-0.5">
+            {email ?? 'No email'}
+            {sp ? ` · Level ${sp.level} · ${sp.xp} XP` : ''}
+            {` · Joined ${joinedDate}`}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-4 shrink-0">
+          <div className="text-center">
+            <p className={`text-base font-bold ${done === total && total > 0 ? 'text-green-600' : 'text-oxford'}`}>
+              {done}/{total}
+            </p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Done</p>
+          </div>
+          {avgPct !== null && (
+            <div className="text-center">
+              <p className="text-base font-bold text-oxford">{avgPct}%</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Avg</p>
+            </div>
+          )}
+          <span className={`text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}>
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>
+          </span>
+        </div>
+      </button>
+
+      {/* Expanded detail */}
+      {expanded && (
+        <div className="px-5 pb-5 space-y-4 border-t border-gray-100 pt-4">
+          {/* Stats row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-gray-50 rounded-xl px-4 py-3 text-center">
+              <p className="text-lg font-bold text-oxford">{sp?.level ?? 0}</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Level</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl px-4 py-3 text-center">
+              <p className="text-lg font-bold text-oxford">{sp?.xp ?? 0}</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Total XP</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl px-4 py-3 text-center">
+              <p className="text-lg font-bold text-oxford">{sp?.streak_days ?? 0}</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Streak Days</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl px-4 py-3 text-center">
+              <p className="text-lg font-bold text-oxford">{donePct}%</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide">Completion</p>
+            </div>
+          </div>
+
+          {/* XP progress bar */}
+          {sp && (
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[10px] text-gray-400 uppercase tracking-wide">XP to next level</p>
+                <p className="text-[10px] text-gray-400">{sp.xp % 500}/500</p>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-indigo-400 to-violet-400 rounded-full transition-all"
+                  style={{ width: `${Math.min(100, (sp.xp % 500) / 5)}%` }} />
+              </div>
+            </div>
+          )}
+
+          {/* Badges */}
+          {m.student_badges.length > 0 && (
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Badges</p>
+              <div className="flex flex-wrap gap-2">
+                {m.student_badges.map(b => (
+                  <span key={b.slug} title={b.name}
+                    className="text-sm bg-gray-50 border border-gray-100 rounded-full px-2.5 py-1 flex items-center gap-1.5">
+                    <span className="text-base">{b.emoji}</span>
+                    <span className="text-xs text-gray-600 font-medium">{b.name}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Per-assignment breakdown */}
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Assignment Progress</p>
+            {assignments.length === 0 ? (
+              <p className="text-xs text-gray-400 italic">No assignments created yet.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {assignments.map(a => {
+                  const sub = a.assignment_submissions.find(s => s.student_id === m.student_id)
+                  const isComplete = sub?.status === 'complete'
+                  const isStarted = sub?.status === 'in_progress'
+                  const typeLabel = TYPE_LABELS[a.tool] ?? a.tool
+                  const scored = SCORED_TYPES.has(a.tool) && sub?.score != null && sub?.total
+                  const scorePct = scored ? Math.round((sub!.score! / sub!.total!) * 100) : null
+                  const completedDate = sub?.completed_at ? new Date(sub.completed_at).toLocaleDateString() : null
+
+                  return (
+                    <div key={a.id} className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-2.5">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${
+                        isComplete ? 'bg-green-400' : isStarted ? 'bg-amber-400' : 'bg-gray-300'
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-oxford truncate">{a.title}</p>
+                        <p className="text-[10px] text-gray-400">{typeLabel}{a.config?.topic ? ` · ${a.config.topic}` : ''}</p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        {isComplete ? (
+                          <div>
+                            {scorePct !== null ? (
+                              <p className={`text-xs font-bold ${scorePct >= 80 ? 'text-green-600' : scorePct >= 60 ? 'text-amber-600' : 'text-red-500'}`}>
+                                {scorePct}%
+                              </p>
+                            ) : (
+                              <p className="text-xs font-bold text-green-600">Done</p>
+                            )}
+                            {completedDate && <p className="text-[10px] text-gray-400">{completedDate}</p>}
+                          </div>
+                        ) : isStarted ? (
+                          <p className="text-[10px] font-semibold text-amber-500 uppercase">In progress</p>
+                        ) : (
+                          <p className="text-[10px] font-semibold text-gray-400 uppercase">Not started</p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
