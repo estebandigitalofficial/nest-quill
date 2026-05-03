@@ -6,7 +6,7 @@ import SiteFooter from '@/components/layout/SiteFooter'
 export const metadata: Metadata = {
   title: 'Homeschool Curriculum — Nest & Quill',
   description:
-    'A complete K–8 homeschool curriculum powered by AI. Quizzes, flashcards, study guides, and full courses for every subject — structured, standards-aligned, and free during beta.',
+    'A complete K–12 homeschool curriculum powered by AI. Quizzes, flashcards, study guides, and full courses for every subject — structured, standards-aligned, and free during beta.',
 }
 
 export default function HomeschoolPage() {
@@ -41,7 +41,7 @@ export default function HomeschoolPage() {
             </h1>
 
             <p className="text-lg max-w-xl mx-auto leading-relaxed" style={{ color: '#94a3b8' }}>
-              Structured courses for grades 1–8 across every core subject.
+              Structured courses for grades 1–12 across every core subject.
               AI-generated lessons, quizzes, and study materials — organized by
               week, unit, and standard. No textbooks required.
             </p>
@@ -84,7 +84,7 @@ export default function HomeschoolPage() {
               {[
                 {
                   title: 'Structured courses',
-                  desc: 'Full-year courses organized into units and weekly lessons for grades 1–8.',
+                  desc: 'Full-year courses organized into units and weekly lessons for grades 1–12.',
                   color: 'bg-emerald-50 border-emerald-100',
                 },
                 {
@@ -159,6 +159,16 @@ export default function HomeschoolPage() {
                   grade: 'Grades 7–8',
                   subjects: 'Math, English Language Arts, Science, Social Studies, History',
                   sample: 'Linear equations, literary analysis, genetics, Civil War, persuasive writing',
+                },
+                {
+                  grade: 'Grades 9–10',
+                  subjects: 'Algebra, Geometry, Biology, Chemistry, English, World History',
+                  sample: 'Polynomials, proofs, cell biology, chemical reactions, rhetoric, ancient civilizations',
+                },
+                {
+                  grade: 'Grades 11–12',
+                  subjects: 'Algebra II, Pre-Calculus, Physics, Environmental Science, US History, Government',
+                  sample: 'Logarithms, trigonometry, forces and energy, ecosystems, Constitutional law, economics',
                 },
               ].map((row) => (
                 <div key={row.grade} className="bg-white rounded-2xl border border-gray-100 px-6 py-5 space-y-2">
@@ -303,7 +313,7 @@ export default function HomeschoolPage() {
               {[
                 {
                   q: 'Is this a full curriculum or supplemental?',
-                  a: 'It is designed to be a complete curriculum for grades 1–8 covering all core subjects. You can also use individual tools as supplemental practice alongside another program.',
+                  a: 'It is designed to be a complete curriculum for grades 1–12 covering all core subjects. You can also use individual tools as supplemental practice alongside another program.',
                 },
                 {
                   q: 'Is the content standards-aligned?',

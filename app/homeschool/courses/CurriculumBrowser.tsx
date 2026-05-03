@@ -23,7 +23,7 @@ interface Course {
   curriculum_units?: Unit[]
 }
 
-const GRADES = [1, 2, 3, 4, 5, 6, 7, 8]
+const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
 const SUBJECT_COLORS: Record<string, string> = {
   Math: 'bg-blue-50 border-blue-200 text-blue-700',

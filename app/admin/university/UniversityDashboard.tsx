@@ -81,6 +81,35 @@ export default function UniversityDashboard() {
   // View modal
   const [viewItem, setViewItem] = useState<ContentItem | null>(null)
 
+  // Batch generation
+  const [generating, setGenerating] = useState(false)
+  const [genResult, setGenResult] = useState<{ generated: number; total: number; errors?: string[] } | null>(null)
+
+  async function handleBatchGenerate(toolType?: string) {
+    setGenerating(true)
+    setGenResult(null)
+    const res = await fetch('/api/admin/university/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ toolType, limit: 10 }),
+    })
+    const data = await res.json()
+    setGenResult(data)
+    setGenerating(false)
+    fetchData()
+  }
+
+  async function handleGenerateOne(id: string) {
+    setGenerating(true)
+    await fetch('/api/admin/university/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    setGenerating(false)
+    fetchData()
+  }
+
   const fetchData = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams()
@@ -182,6 +211,42 @@ export default function UniversityDashboard() {
           ))}
         </div>
       )}
+
+      {/* Batch generation controls */}
+      <div className="bg-adm-card border border-adm-border rounded-xl px-4 py-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm text-white font-medium">Generate Content:</p>
+          <button onClick={() => handleBatchGenerate('quiz')} disabled={generating}
+            className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 px-3 py-1.5 rounded-lg border border-adm-border hover:bg-white/5 transition-colors disabled:opacity-50">
+            {generating ? 'Generating...' : 'Quizzes (10)'}
+          </button>
+          <button onClick={() => handleBatchGenerate('flashcards')} disabled={generating}
+            className="text-xs font-semibold text-violet-400 hover:text-violet-300 px-3 py-1.5 rounded-lg border border-adm-border hover:bg-white/5 transition-colors disabled:opacity-50">
+            Flashcards (10)
+          </button>
+          <button onClick={() => handleBatchGenerate('study-guide')} disabled={generating}
+            className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 px-3 py-1.5 rounded-lg border border-adm-border hover:bg-white/5 transition-colors disabled:opacity-50">
+            Study Guides (10)
+          </button>
+          <button onClick={() => handleBatchGenerate()} disabled={generating}
+            className="text-xs font-semibold text-brand-400 hover:text-brand-300 px-3 py-1.5 rounded-lg border border-brand-400/30 bg-brand-500/10 hover:bg-brand-500/20 transition-colors disabled:opacity-50">
+            All Types (10)
+          </button>
+          {generating && (
+            <div className="w-4 h-4 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
+          )}
+        </div>
+        {genResult && (
+          <div className="mt-3 text-xs">
+            <p className={genResult.generated > 0 ? 'text-green-400' : 'text-adm-muted'}>
+              Generated {genResult.generated} of {genResult.total} items
+            </p>
+            {genResult.errors?.map((e, i) => (
+              <p key={i} className="text-red-400 mt-1">{e}</p>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Filters */}
       <div className="bg-adm-card border border-adm-border rounded-xl px-4 py-4 space-y-3">
@@ -287,10 +352,17 @@ export default function UniversityDashboard() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1">
-                          <button onClick={() => setViewItem(item)}
-                            className="text-xs text-brand-400 hover:text-brand-300 font-medium px-2 py-1 rounded transition-colors">
-                            View
-                          </button>
+                          {JSON.stringify(item.content) === '{}' ? (
+                            <button onClick={() => handleGenerateOne(item.id)} disabled={generating}
+                              className="text-xs text-amber-400 hover:text-amber-300 font-medium px-2 py-1 rounded transition-colors disabled:opacity-50">
+                              {generating ? '...' : 'Generate'}
+                            </button>
+                          ) : (
+                            <button onClick={() => setViewItem(item)}
+                              className="text-xs text-brand-400 hover:text-brand-300 font-medium px-2 py-1 rounded transition-colors">
+                              View
+                            </button>
+                          )}
                           <button onClick={() => openEdit(item)}
                             className="text-xs text-white/50 hover:text-white font-medium px-2 py-1 rounded transition-colors">
                             Edit
