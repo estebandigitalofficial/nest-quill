@@ -35,6 +35,7 @@ export default async function SiteFooter() {
         <div className="flex items-center justify-center gap-3 md:gap-3 whitespace-nowrap">
           <Link href="/create" className="hover:text-white/90 transition-colors">Create</Link>
           <Link href="/learning" className="hover:text-white/90 transition-colors">Learning</Link>
+          <Link href="/homeschool" className="hover:text-white/90 transition-colors">Homeschool</Link>
           {classroomEnabled && <Link href="/classroom" className="hover:text-white/90 transition-colors">Classroom</Link>}
           <Link href="/pricing" className="hover:text-white/90 transition-colors">Pricing</Link>
           <Link href="/contact" className="hover:text-white/90 transition-colors">Contact</Link>

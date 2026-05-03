@@ -4,8 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 
 const BASE_LINKS = [
-  { href: '/create',    label: 'Create a story',  flag: null },
+  { href: '/create',     label: 'Create a story',  flag: null },
   { href: '/learning',  label: 'Learning',         flag: null },
+  { href: '/homeschool', label: 'Homeschool',      flag: null },
   { href: '/classroom', label: 'Classroom',        flag: 'classroom' },
   { href: '/pricing',   label: 'Pricing',          flag: null },
 ]

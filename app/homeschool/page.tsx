@@ -48,10 +48,10 @@ export default function HomeschoolPage() {
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
               <Link
-                href="#curriculum"
+                href="/homeschool/courses"
                 className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-7 py-3.5 rounded-full text-base transition-all active:scale-[0.98] shadow-lg shadow-emerald-900/30"
               >
-                Explore the curriculum →
+                Browse course catalog →
               </Link>
               <Link
                 href="/learning"

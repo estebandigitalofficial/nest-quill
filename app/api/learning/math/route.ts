@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { getActiveGuardrails } from '@/lib/utils/learningGuardrails'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getOrNull, storeContent, recordUsage } from '@/lib/services/contentLibrary'
 
 export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'math')
@@ -14,6 +16,15 @@ export async function POST(request: NextRequest) {
     }
 
     const gradeLabel = grade ? `grade ${grade}` : 'elementary school'
+
+    // ── Cache-first ─────────────────────────────────────────────────────
+    const admin = createAdminClient()
+    const cached = await getOrNull(admin, { toolType: 'math', topic: topic.trim(), grade: grade ?? null, subject: 'Math' })
+    if (cached?.content?.problems) {
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
+      await recordUsage(admin, cached.id, { toolType: 'math', ip })
+      return NextResponse.json({ problems: cached.content.problems, fromLibrary: true })
+    }
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -60,6 +71,19 @@ Rules:
 
     const json = await res.json()
     const parsed = JSON.parse(json.choices[0].message.content)
+
+    // Store in library
+    if (topic?.trim() && parsed.problems?.length) {
+      storeContent(admin, {
+        toolType: 'math',
+        topic: topic.trim(),
+        title: `Math: ${topic.trim()}`,
+        content: { problems: parsed.problems },
+        grade: grade ?? null,
+        subject: 'Math',
+        source: 'ai',
+      })
+    }
 
     return NextResponse.json({ problems: parsed.problems })
   } catch (err) {
