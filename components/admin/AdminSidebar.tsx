@@ -24,7 +24,7 @@ const NAV_GROUPS = [
     label: 'Writer',
     items: [
       { href: '/admin/writer', label: 'Books' },
-      { href: '/admin/writer-config', label: 'Config' },
+      { href: '/admin/writer-config', label: 'AI Writer Config' },
       { href: '/admin/email-drips', label: 'Email Drips' },
     ],
   },
