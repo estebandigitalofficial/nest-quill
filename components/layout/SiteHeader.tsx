@@ -21,7 +21,7 @@ export default async function SiteHeader({ right }: Props) {
   ])
 
   return (
-    <header className="bg-parchment/95 dark:bg-parchment/95 backdrop-blur border-b border-parchment-dark dark:border-white/10 shrink-0 relative z-40">
+    <header className="sticky top-0 bg-parchment/95 dark:bg-parchment/95 backdrop-blur border-b border-parchment-dark dark:border-white/10 shrink-0 z-40">
       <div className="max-w-5xl mx-auto px-6 h-[58px] md:h-[60px] flex items-center justify-between gap-4">
         <Link href="/" className="shrink-0 flex items-center">
           <Image
