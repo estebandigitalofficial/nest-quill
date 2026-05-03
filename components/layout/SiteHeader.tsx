@@ -3,6 +3,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import LearningDropdown from './LearningDropdown'
 import MobileMenu from './MobileMenu'
+import UserControls from './UserControls'
 import { getSetting } from '@/lib/settings/appSettings'
 
 interface Props {
@@ -10,6 +11,10 @@ interface Props {
 }
 
 export default async function SiteHeader({ right }: Props) {
+  // Note: we deliberately don't fetch the auth user here. SiteHeader is
+  // imported into both server and client pages (e.g. /contact is a client
+  // page) and pulling next/headers via the cookie-bound supabase server
+  // client breaks those builds. UserControls fetches the user itself.
   const [classroomEnabled, headerLogoUrl] = await Promise.all([
     getSetting('classroom_enabled', true),
     getSetting('branding_header_logo_url', 'https://nestandquill.b-cdn.net/Nest%20and%20Quill%20Full%20Color.webp'),
@@ -38,8 +43,9 @@ export default async function SiteHeader({ right }: Props) {
           <Link href="/pricing" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford transition-colors">Pricing</Link>
         </nav>
 
-        <div className="flex items-center gap-3">
-          {right && <div className="flex items-center gap-4">{right}</div>}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {right && <div className="flex items-center gap-3 sm:gap-4">{right}</div>}
+          <UserControls />
           <MobileMenu classroomEnabled={classroomEnabled} />
         </div>
       </div>

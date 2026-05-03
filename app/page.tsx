@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server'
 import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
 import { cn } from '@/lib/utils/cn'
 import AnimatedQuill from '@/components/AnimatedQuill'
-import LogoutButton from '@/components/auth/LogoutButton'
 import SiteFooter from '@/components/layout/SiteFooter'
 import SiteHeader from '@/components/layout/SiteHeader'
 import { getAdminContext } from '@/lib/admin/guard'
@@ -23,17 +22,11 @@ export default async function HomePage() {
 
   return (
     <div className="h-dvh bg-parchment font-sans flex flex-col">
+      {/* Logged-in users get account/sign-out from the global UserControls in
+          SiteHeader; the home header keeps Sign in (logged-out) and Create CTA. */}
       <SiteHeader right={
         <>
-          {user ? (
-            <>
-              <Link href="/account"
-                className="text-sm text-charcoal hover:text-oxford font-medium transition-colors hidden sm:block">
-                My stories
-              </Link>
-              <LogoutButton />
-            </>
-          ) : (
+          {!user && (
             <Link href="/login"
               className="text-sm text-charcoal hover:text-oxford font-medium transition-colors">
               Sign in
