@@ -9,11 +9,22 @@ export async function GET() {
     if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
 
     const admin = createAdminClient()
-    const { data: profile } = await admin
+    let { data: profile } = await admin
       .from('student_profiles')
       .select('*')
       .eq('student_id', user.id)
-      .single()
+      .maybeSingle()
+
+    // Auto-create with defaults so the dashboard is never gated on profile
+    // setup. Avatar/name customization is a separate, optional step.
+    if (!profile) {
+      const { data: created } = await admin
+        .from('student_profiles')
+        .insert({ student_id: user.id })
+        .select('*')
+        .single()
+      profile = created
+    }
 
     const { data: badges } = await admin
       .from('student_badges')

@@ -3,27 +3,23 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-const TOOLS = [
-  { value: 'quiz',          label: 'Quiz',                  hasScore: true },
-  { value: 'flashcards',    label: 'Flashcards',            hasScore: false },
-  { value: 'explain',       label: 'Concept Explainer',     hasScore: false },
-  { value: 'study-guide',   label: 'Study Guide',           hasScore: false },
-  { value: 'math',          label: 'Math Practice',         hasScore: false },
-  { value: 'reading',       label: 'Reading',               hasScore: false },
-  { value: 'spelling',      label: 'Spelling',              hasScore: false },
-  { value: 'study-helper',  label: 'Study Helper',          hasScore: true },
-]
+// Assignment types the educator can author. Each one has saved content
+// (questions, cards, passage, etc.) generated at creation time — students
+// only complete what's stored, they cannot generate their own.
+const ASSIGNMENT_TYPES = [
+  { value: 'quiz',        label: 'Quiz',         desc: '5 multiple-choice questions',  hasScore: true  },
+  { value: 'reading',     label: 'Reading',      desc: 'Passage + comprehension Qs',   hasScore: true  },
+  { value: 'flashcards',  label: 'Flashcards',   desc: 'Term/definition cards',        hasScore: false },
+  { value: 'study-guide', label: 'Study Guide',  desc: 'Terms, concepts, practice',    hasScore: false },
+  { value: 'explain',     label: 'Explain It',   desc: 'Plain-language breakdown',     hasScore: false },
+] as const
 
-const MAT_MODES = [
-  { value: 'quiz',        label: 'Quiz Me' },
-  { value: 'flashcards',  label: 'Flashcards' },
-  { value: 'explain',     label: 'Explain It' },
-  { value: 'study-guide', label: 'Study Guide' },
-]
+type AssignmentTypeValue = typeof ASSIGNMENT_TYPES[number]['value']
 
-const MAT_MODE_LABELS: Record<string, string> = {
-  quiz: 'Quiz', flashcards: 'Flashcards', explain: 'Explain It', 'study-guide': 'Study Guide',
-}
+const TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  ASSIGNMENT_TYPES.map(t => [t.value, t.label])
+)
+const SCORED_TYPES = new Set<string>(ASSIGNMENT_TYPES.filter(t => t.hasScore).map(t => t.value))
 
 const COLOR_BG: Record<string, string> = {
   indigo:  'bg-indigo-500',
@@ -72,7 +68,8 @@ interface Assignment {
   id: string
   title: string
   tool: string
-  config: { topic?: string; subject?: string; grade?: number; mode?: string }
+  config: { topic?: string; subject?: string; grade?: number; source?: string; material?: string }
+  content?: Record<string, unknown>
   due_at: string | null
   created_at: string
   assignment_submissions: Submission[]
@@ -111,18 +108,22 @@ export default function ClassDetail({ classId }: { classId: string }) {
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // Assignment form state
-  const [assignMode, setAssignMode] = useState<'standard' | 'material'>('standard')
   const [aTitle, setATitle] = useState('')
-  const [aTool, setATool] = useState('quiz')
+  const [aType, setAType] = useState<AssignmentTypeValue>('quiz')
+  const [aSource, setASource] = useState<'topic' | 'material'>('topic')
   const [aTopic, setATopic] = useState('')
+  const [aMaterial, setAMaterial] = useState('')
   const [aGrade, setAGrade] = useState<number | ''>('')
   const [aDue, setADue] = useState('')
   const [showMoreOpts, setShowMoreOpts] = useState(false)
-  // From Material state
-  const [aMaterial, setAMaterial] = useState('')
-  const [aMatMode, setAMatMode] = useState('')
   const [assigning, setAssigning] = useState(false)
   const [assignError, setAssignError] = useState<string | null>(null)
+
+  function resetAssignForm() {
+    setATitle(''); setAType('quiz'); setASource('topic')
+    setATopic(''); setAMaterial(''); setAGrade(''); setADue('')
+    setShowMoreOpts(false); setAssignError(null)
+  }
 
   useEffect(() => { fetchData() }, [classId])
 
@@ -142,9 +143,15 @@ export default function ClassDetail({ classId }: { classId: string }) {
     e.preventDefault()
     setAssignError(null)
     setAssigning(true)
-    const body = assignMode === 'material'
-      ? { title: aTitle, tool: 'study-helper', config: { material: aMaterial, mode: aMatMode, grade: aGrade || undefined }, dueAt: aDue || undefined }
-      : { title: aTitle, tool: aTool, config: { topic: aTopic || undefined, grade: aGrade || undefined }, dueAt: aDue || undefined }
+    const body = {
+      title: aTitle.trim(),
+      type: aType,
+      source: aSource,
+      topic: aSource === 'topic' ? aTopic.trim() : undefined,
+      material: aSource === 'material' ? aMaterial.trim() : undefined,
+      grade: aGrade || undefined,
+      dueAt: aDue || undefined,
+    }
     const res = await fetch(`/api/classroom/classes/${classId}/assignments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -153,9 +160,9 @@ export default function ClassDetail({ classId }: { classId: string }) {
     const data = await res.json()
     if (!res.ok) { setAssignError(data.message); setAssigning(false); return }
     setAssignments(prev => [{ ...data.assignment, assignment_submissions: [] }, ...prev])
-    setATitle(''); setATool('quiz'); setATopic(''); setAGrade(''); setADue('')
-    setAMaterial(''); setAMatMode(''); setAssignMode('standard')
-    setShowMoreOpts(false); setShowAssign(false); setAssigning(false)
+    resetAssignForm()
+    setShowAssign(false)
+    setAssigning(false)
   }
 
   function copyCode() {
@@ -261,12 +268,12 @@ export default function ClassDetail({ classId }: { classId: string }) {
       {activeTab === 'assignments' && (
         <div className="space-y-4">
 
-          {/* New assignment form */}
+          {/* New assignment form — generates and stores content at create time */}
           {showAssign ? (
             <form onSubmit={handleAssign} className="bg-white rounded-2xl border-2 border-brand-200 px-6 py-5 space-y-4">
               <div className="flex items-center justify-between">
                 <p className="font-semibold text-oxford">New assignment</p>
-                <button type="button" onClick={() => { setShowAssign(false); setShowMoreOpts(false); setAssignMode('standard'); setAMaterial(''); setAMatMode('') }}
+                <button type="button" onClick={() => { resetAssignForm(); setShowAssign(false) }}
                   className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
               </div>
 
@@ -275,77 +282,57 @@ export default function ClassDetail({ classId }: { classId: string }) {
                 value={aTitle} onChange={e => setATitle(e.target.value)}
                 className={inputClass} />
 
-              {/* Assignment mode toggle */}
-              <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
-                {(['standard', 'material'] as const).map(m => (
-                  <button key={m} type="button" onClick={() => setAssignMode(m)}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${assignMode === m ? 'bg-white text-oxford shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                    {m === 'standard' ? 'Standard' : 'From Material'}
-                  </button>
-                ))}
+              {/* Type picker */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-600">Type</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {ASSIGNMENT_TYPES.map(t => (
+                    <button key={t.value} type="button" onClick={() => setAType(t.value)}
+                      className={`flex flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl border text-left transition-all ${
+                        aType === t.value
+                          ? 'border-brand-400 bg-brand-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}>
+                      <span className={`text-xs font-semibold ${aType === t.value ? 'text-brand-700' : 'text-gray-700'}`}>{t.label}</span>
+                      <span className="text-[10px] text-gray-400 leading-tight">{t.desc}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {assignMode === 'standard' ? (
-                <>
-                  {/* Tool picker */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-600">Learning tool</label>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                      {TOOLS.filter(t => t.value !== 'study-helper').map(t => (
-                        <button key={t.value} type="button" onClick={() => setATool(t.value)}
-                          className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border text-center transition-all ${
-                            aTool === t.value
-                              ? 'border-brand-400 bg-brand-50 text-brand-700'
-                              : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                          }`}>
-                          <span className="text-xs font-bold text-gray-500">{t.label.charAt(0)}</span>
-                          <span className="text-[10px] font-semibold leading-tight">{t.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+              {/* Source picker */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-600">Content source</label>
+                <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
+                  {(['topic', 'material'] as const).map(s => (
+                    <button key={s} type="button" onClick={() => setASource(s)}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${aSource === s ? 'bg-white text-oxford shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+                      {s === 'topic' ? 'Generate from topic' : 'Paste material'}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                  <input placeholder="Topic (e.g. Adding fractions with unlike denominators)"
-                    value={aTopic} onChange={e => setATopic(e.target.value)}
-                    className={inputClass} />
-                </>
+              {aSource === 'topic' ? (
+                <input required placeholder="Topic — e.g. Adding fractions with unlike denominators"
+                  value={aTopic} onChange={e => setATopic(e.target.value)}
+                  className={inputClass} />
               ) : (
-                <>
-                  {/* Material textarea */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-semibold text-gray-600">Study material</label>
-                      <span className={`text-[10px] font-medium ${aMaterial.length > 4000 ? 'text-amber-500' : 'text-gray-400'}`}>
-                        {aMaterial.length}/5000
-                      </span>
-                    </div>
-                    <textarea required rows={5} maxLength={5000}
-                      placeholder="Paste chapter notes, a passage, vocabulary list, or any text students should study…"
-                      value={aMaterial} onChange={e => setAMaterial(e.target.value)}
-                      className={`${inputClass} resize-none`} />
-                    {aMaterial.trim().length > 0 && aMaterial.trim().length < 50 && (
-                      <p className="text-xs text-red-500">At least 50 characters required.</p>
-                    )}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-gray-600">Material to study</label>
+                    <span className={`text-[10px] font-medium ${aMaterial.length > 4000 ? 'text-amber-500' : 'text-gray-400'}`}>
+                      {aMaterial.length}/5000
+                    </span>
                   </div>
-
-                  {/* Activity mode picker */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-600">Activity type</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {MAT_MODES.map(m => (
-                        <button key={m.value} type="button" onClick={() => setAMatMode(m.value)}
-                          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left transition-all ${
-                            aMatMode === m.value
-                              ? 'border-brand-400 bg-brand-50 text-brand-700'
-                              : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                          }`}>
-                          <span className="text-xs font-bold text-gray-500 shrink-0">{m.label.charAt(0)}</span>
-                          <span className="text-xs font-semibold">{m.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
+                  <textarea required rows={5} maxLength={5000}
+                    placeholder="Paste a chapter, passage, vocabulary list, or any text students should study…"
+                    value={aMaterial} onChange={e => setAMaterial(e.target.value)}
+                    className={`${inputClass} resize-none`} />
+                  {aMaterial.trim().length > 0 && aMaterial.trim().length < 50 && (
+                    <p className="text-xs text-red-500">At least 50 characters required.</p>
+                  )}
+                </div>
               )}
 
               {/* More options toggle */}
@@ -374,15 +361,22 @@ export default function ClassDetail({ classId }: { classId: string }) {
 
               <div className="flex gap-3 pt-1">
                 <button type="submit"
-                  disabled={assigning || !aTitle.trim() || (assignMode === 'material' && (aMaterial.trim().length < 50 || !aMatMode))}
+                  disabled={
+                    assigning || !aTitle.trim() ||
+                    (aSource === 'topic' && aTopic.trim().length < 3) ||
+                    (aSource === 'material' && aMaterial.trim().length < 50)
+                  }
                   className="bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
-                  {assigning ? 'Assigning…' : 'Assign to Class'}
+                  {assigning ? 'Generating…' : 'Generate & Assign'}
                 </button>
-                <button type="button" onClick={() => { setShowAssign(false); setShowMoreOpts(false); setAssignMode('standard'); setAMaterial(''); setAMatMode('') }}
+                <button type="button" onClick={() => { resetAssignForm(); setShowAssign(false) }}
                   className="text-sm font-semibold text-gray-500 hover:text-gray-700 px-4 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
                   Cancel
                 </button>
               </div>
+              <p className="text-[11px] text-gray-400">
+                Content is generated now and saved to the assignment. Students complete the same activity you authored — they cannot create their own.
+              </p>
             </form>
           ) : (
             <button onClick={() => setShowAssign(true)}
@@ -404,8 +398,9 @@ export default function ClassDetail({ classId }: { classId: string }) {
                 const completedCount = a.assignment_submissions.filter(s => s.status === 'complete').length
                 const total = members.length
                 const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0
-                const tool = TOOLS.find(t => t.value === a.tool)
-                const scoredSubs = tool?.hasScore
+                const typeLabel = TYPE_LABELS[a.tool] ?? a.tool
+                const scored = SCORED_TYPES.has(a.tool)
+                const scoredSubs = scored
                   ? a.assignment_submissions.filter(s => s.score !== null && s.total)
                   : []
                 const avg = scoredSubs.length
@@ -418,14 +413,12 @@ export default function ClassDetail({ classId }: { classId: string }) {
                   <div key={a.id} className="bg-white rounded-2xl border border-gray-100 px-6 py-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-sm font-bold text-gray-500 shrink-0">{tool?.label?.charAt(0) ?? 'A'}</span>
+                        <span className="text-sm font-bold text-gray-500 shrink-0">{typeLabel.charAt(0)}</span>
                         <div className="min-w-0">
                           <p className="font-semibold text-oxford text-sm truncate">{a.title}</p>
                           <p className="text-xs text-charcoal-light mt-0.5 truncate">
-                            {tool?.label}
-                            {a.tool === 'study-helper' && a.config?.mode
-                              ? ` · ${MAT_MODE_LABELS[a.config.mode] ?? a.config.mode}`
-                              : a.config?.topic ? ` · ${a.config.topic}` : ''}
+                            {typeLabel}
+                            {a.config?.topic ? ` · ${a.config.topic}` : a.config?.source === 'material' ? ' · From material' : ''}
                             {a.due_at && (
                               <span className={isOverdue ? ' · text-red-500 font-medium' : ' · text-gray-400'}>
                                 {' '}· Due {new Date(a.due_at).toLocaleDateString()}

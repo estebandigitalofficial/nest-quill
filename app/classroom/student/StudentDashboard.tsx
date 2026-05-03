@@ -5,19 +5,19 @@ import AvatarSetup from './AvatarSetup'
 import CelebrationModal from './CelebrationModal'
 import { levelProgress } from '@/lib/utils/xp'
 
-const TOOL_META: Record<string, { label: string; path: string }> = {
-  quiz:            { label: 'Quiz',                  path: '/learning/quiz' },
-  flashcards:      { label: 'Flashcards',            path: '/learning/flashcards' },
-  explain:         { label: 'Concept Explainer',     path: '/learning/explain' },
-  'study-guide':   { label: 'Study Guide',           path: '/learning/study-guide' },
-  math:            { label: 'Math Practice',         path: '/learning/math' },
-  reading:         { label: 'Reading Comprehension', path: '/learning/reading' },
-  spelling:        { label: 'Spelling Practice',     path: '/learning/spelling' },
-  'study-helper':  { label: 'Study Helper',          path: '/learning/study-helper' },
-}
-
-const MAT_MODE_LABELS: Record<string, string> = {
-  quiz: 'Quiz', flashcards: 'Flashcards', explain: 'Explain It', 'study-guide': 'Study Guide',
+// Display labels for each assignment type. The student no longer routes into
+// the standalone learning tool — every assignment opens at
+// /classroom/assignment/[id] and renders the educator-stored content.
+const TYPE_LABELS: Record<string, string> = {
+  quiz:           'Quiz',
+  flashcards:     'Flashcards',
+  explain:        'Explain It',
+  'study-guide':  'Study Guide',
+  reading:        'Reading',
+  // Legacy assignments still map sensibly until educators recreate them.
+  math:           'Math Practice',
+  spelling:       'Spelling Practice',
+  'study-helper': 'Study Helper',
 }
 
 const COLOR_BG: Record<string, string> = {
@@ -60,25 +60,18 @@ interface StoryReward {
 }
 
 function buildQuestHref(a: Assignment): string {
-  const tool = TOOL_META[a.tool]
-  if (!tool) return '#'
-  const params = new URLSearchParams()
-  // study-helper material assignments: material/mode are fetched server-side — only pass assignmentId
-  if (a.tool !== 'study-helper') {
-    if (a.config?.topic)   params.set('topic', a.config.topic)
-    if (a.config?.grade)   params.set('grade', String(a.config.grade))
-    if (a.config?.subject) params.set('subject', a.config.subject)
-  }
-  params.set('assignmentId', a.id)
-  return `${tool.path}?${params.toString()}`
+  return `/classroom/assignment/${a.id}`
 }
 
 function questSubtitle(a: Assignment): string {
-  if (a.tool === 'study-helper') {
-    const modeLabel = a.config?.mode ? (MAT_MODE_LABELS[a.config.mode] ?? a.config.mode) : null
-    return modeLabel ? `${a.className} · ${modeLabel}` : a.className
-  }
-  return a.config?.topic ? `${a.className} · ${a.config.topic}` : a.className
+  const typeLabel = TYPE_LABELS[a.tool] ?? a.tool
+  const detail = a.config?.topic ?? (a.config?.mode ? (MAT_MODE_LABELS[a.config.mode] ?? a.config.mode) : null)
+  const parts = [a.className, typeLabel, detail].filter(Boolean) as string[]
+  return parts.join(' · ')
+}
+
+const MAT_MODE_LABELS: Record<string, string> = {
+  quiz: 'Quiz', flashcards: 'Flashcards', explain: 'Explain It', 'study-guide': 'Study Guide',
 }
 
 function dueLabel(due_at: string | null): { text: string; overdue: boolean } | null {
@@ -104,6 +97,7 @@ export default function StudentDashboard() {
   const [joinError, setJoinError] = useState<string | null>(null)
   const [joinSuccess, setJoinSuccess] = useState<string | null>(null)
   const [celebration, setCelebration] = useState<CelebrationData | null>(null)
+  const [showCustomize, setShowCustomize] = useState(false)
 
   useEffect(() => {
     fetchProfile()
@@ -165,7 +159,10 @@ export default function StudentDashboard() {
   }
 
   function handleAvatarComplete(p: { display_name: string; avatar_emoji: string; avatar_color: string }) {
-    setProfile({ ...p, xp: 0, level: 1, coins: 0, streak_days: 0 })
+    setProfile(prev => prev
+      ? { ...prev, ...p }
+      : { ...p, xp: 0, level: 1, coins: 0, streak_days: 0 })
+    setShowCustomize(false)
   }
 
   if (profileLoading) {
@@ -176,12 +173,29 @@ export default function StudentDashboard() {
     )
   }
 
-  if (!profile) return <AvatarSetup onComplete={handleAvatarComplete} />
+  // Profile auto-creates server-side; fall back to defaults defensively so
+  // joining a class is never blocked on profile setup.
+  const safeProfile: StudentProfile = profile ?? {
+    display_name: 'Explorer',
+    avatar_emoji: '🦊',
+    avatar_color: 'indigo',
+    xp: 0, level: 1, coins: 0, streak_days: 0,
+  }
 
-  const prog = levelProgress(profile.xp)
+  if (showCustomize) {
+    return (
+      <div className="space-y-4">
+        <button onClick={() => setShowCustomize(false)}
+          className="text-sm font-semibold text-gray-500 hover:text-oxford">← Back to dashboard</button>
+        <AvatarSetup onComplete={handleAvatarComplete} />
+      </div>
+    )
+  }
+
+  const prog = levelProgress(safeProfile.xp)
   const pending   = assignments.filter(a => a.assignment_submissions[0]?.status !== 'complete')
   const completed = assignments.filter(a => a.assignment_submissions[0]?.status === 'complete')
-  const colorBg   = COLOR_BG[profile.avatar_color] ?? 'bg-indigo-500'
+  const colorBg   = COLOR_BG[safeProfile.avatar_color] ?? 'bg-indigo-500'
   const [heroQuest, ...restQuests] = pending
 
   return (
@@ -193,17 +207,24 @@ export default function StudentDashboard() {
 
       {/* ── Hero card ── */}
       <div className="bg-oxford rounded-2xl px-6 py-5 flex items-center gap-5">
-        <div className={`w-16 h-16 ${colorBg} rounded-2xl flex items-center justify-center text-4xl shrink-0 shadow-lg`}>
-          {profile.avatar_emoji}
-        </div>
+        <button
+          type="button"
+          onClick={() => setShowCustomize(true)}
+          title="Customize avatar"
+          className={`w-16 h-16 ${colorBg} rounded-2xl flex items-center justify-center text-4xl shrink-0 shadow-lg hover:opacity-90 transition-opacity`}>
+          {safeProfile.avatar_emoji}
+        </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <p className="font-serif text-lg text-white leading-none">{profile.display_name}</p>
-            {profile.streak_days >= 3 && (
-              <span className="text-xs font-bold text-amber-500" title={`${profile.streak_days}-day streak`}>Streak</span>
+            <p className="font-serif text-lg text-white leading-none">{safeProfile.display_name}</p>
+            {safeProfile.streak_days >= 3 && (
+              <span className="text-xs font-bold text-amber-500" title={`${safeProfile.streak_days}-day streak`}>Streak</span>
             )}
           </div>
-          <p className="text-xs text-white/50 mb-2">Level {prog.level} · {prog.title}</p>
+          <p className="text-xs text-white/50 mb-2">
+            Level {prog.level} · {prog.title}
+            <button onClick={() => setShowCustomize(true)} className="ml-2 underline hover:text-white/80">Customize</button>
+          </p>
           <div className="space-y-1">
             <div className="flex justify-between text-[10px] text-white/40">
               <span>{prog.current} XP</span>
@@ -216,7 +237,7 @@ export default function StudentDashboard() {
           </div>
         </div>
         <div className="text-center shrink-0">
-          <p className="text-xl font-bold text-amber-400">{profile.coins}</p>
+          <p className="text-xl font-bold text-amber-400">{safeProfile.coins}</p>
           <p className="text-[10px] text-white/40 uppercase tracking-wide">Coins</p>
         </div>
       </div>
@@ -247,7 +268,7 @@ export default function StudentDashboard() {
 
           {/* Featured next quest */}
           {heroQuest && (() => {
-            const tool  = TOOL_META[heroQuest.tool]
+            const typeLabel = TYPE_LABELS[heroQuest.tool] ?? heroQuest.tool
             const due   = dueLabel(heroQuest.due_at)
             const href  = buildQuestHref(heroQuest)
             return (
@@ -255,7 +276,7 @@ export default function StudentDashboard() {
                 className="block bg-indigo-600 hover:bg-indigo-500 rounded-2xl px-6 py-5 transition-colors group">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-white/15 rounded-xl flex items-center justify-center text-3xl shrink-0">
-                    {tool?.label?.charAt(0) ?? 'Q'}
+                    {typeLabel.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-0.5">Up next</p>
@@ -279,7 +300,7 @@ export default function StudentDashboard() {
 
           {/* Remaining pending quests */}
           {restQuests.map(a => {
-            const tool = TOOL_META[a.tool]
+            const typeLabel = TYPE_LABELS[a.tool] ?? a.tool
             const due  = dueLabel(a.due_at)
             const href = buildQuestHref(a)
             return (
@@ -287,7 +308,7 @@ export default function StudentDashboard() {
                 className="block bg-white rounded-2xl border-2 border-gray-100 hover:border-indigo-200 hover:shadow-sm transition-all px-5 py-4">
                 <div className="flex items-center gap-4">
                   <div className="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center text-xl shrink-0">
-                    {tool?.label?.charAt(0) ?? 'Q'}
+                    {typeLabel.charAt(0)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-oxford text-sm truncate">{a.title}</p>
@@ -322,7 +343,7 @@ export default function StudentDashboard() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-oxford text-sm truncate">
-                  {s.title ?? `${profile.display_name}'s Story`}
+                  {s.title ?? `${safeProfile.display_name}'s Story`}
                 </p>
                 <p className="text-xs text-charcoal-light mt-0.5">
                   Milestone reward · {s.milestone} quest{s.milestone !== 1 ? 's' : ''} completed
@@ -355,14 +376,14 @@ export default function StudentDashboard() {
           {showCompleted && (
             <div className="mt-3 space-y-2">
               {completed.map(a => {
-                const tool = TOOL_META[a.tool]
+                const typeLabel = TYPE_LABELS[a.tool] ?? a.tool
                 const sub  = a.assignment_submissions[0]
                 const pct  = sub?.score != null && sub?.total ? Math.round((sub.score / sub.total) * 100) : null
                 return (
                   <div key={a.id}
                     className="bg-white rounded-2xl border border-gray-100 px-5 py-3.5 flex items-center gap-4 opacity-60">
                     <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-lg shrink-0">
-                      {tool?.label?.charAt(0) ?? 'Q'}
+                      {typeLabel.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-oxford text-sm truncate">{a.title}</p>
