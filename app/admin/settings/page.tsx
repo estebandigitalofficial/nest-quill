@@ -2,6 +2,24 @@ import { getAdminContext } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import SettingsHub from './SettingsHub'
 import type { AdminNotificationType } from '@/lib/services/adminNotifications'
+import type { StripeEnv } from './StripeStatusPanel'
+
+// Secret values stay on the server; only booleans + the public flag are
+// passed to the client component.
+function readStripeEnv(): StripeEnv {
+  const secret = process.env.STRIPE_SECRET_KEY ?? ''
+  const detectedMode: StripeEnv['detectedMode'] =
+    secret.startsWith('sk_test_') ? 'test'
+    : secret.startsWith('sk_live_') ? 'live'
+    : null
+  return {
+    hasSecretKey: secret.length > 0,
+    hasWebhookSecret: (process.env.STRIPE_WEBHOOK_SECRET ?? '').length > 0,
+    hasPublishableKey: (process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '').length > 0,
+    paymentsEnabledFlag: process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true',
+    detectedMode,
+  }
+}
 
 const VALID_TYPES: AdminNotificationType[] = [
   'story_completed',
@@ -38,7 +56,7 @@ export default async function AdminSettingsPage() {
         <h1 className="text-xl font-semibold text-adm-text">Settings</h1>
         <p className="text-sm text-adm-muted mt-1">Manage admin preferences and configure product behavior.</p>
       </div>
-      <SettingsHub initialSettings={initialSettings} />
+      <SettingsHub initialSettings={initialSettings} stripeEnv={readStripeEnv()} />
     </div>
   )
 }

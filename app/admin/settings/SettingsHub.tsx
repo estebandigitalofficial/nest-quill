@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import NotificationToggles from './NotificationToggles'
+import StripeStatusPanel, { type StripeEnv } from './StripeStatusPanel'
 import CleanupTool from '../cleanup/CleanupTool'
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -40,6 +41,9 @@ function GridIcon({ className = 'w-4 h-4' }: { className?: string }) {
 }
 function WrenchIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>)
+}
+function CreditCardIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>)
 }
 function PaletteIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>)
@@ -214,6 +218,13 @@ const SECTIONS: SectionDef[] = [
       { label: 'Alert thresholds',        hint: 'Error rate / queue depth alerts' },
     ],
   },
+  {
+    id: 'payments',
+    label: 'Payments & Stripe',
+    description: 'Stripe wiring status, environment readiness, and rollout checklist. Read-only for now.',
+    Icon: CreditCardIcon,
+    live: true,
+  },
 ]
 
 // ─── Save-state indicator ─────────────────────────────────────────────────────
@@ -355,9 +366,12 @@ function SkeletonRow() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-interface Props { initialSettings: Record<string, boolean> }
+interface Props {
+  initialSettings: Record<string, boolean>
+  stripeEnv: StripeEnv
+}
 
-export default function SettingsHub({ initialSettings }: Props) {
+export default function SettingsHub({ initialSettings, stripeEnv }: Props) {
   const [activeId, setActiveId] = useState(SECTIONS[0].id)
   const [appSettings, setAppSettings] = useState<Record<string, unknown>>({})
   const [isLoading, setIsLoading] = useState(true)
@@ -526,7 +540,9 @@ export default function SettingsHub({ initialSettings }: Props) {
           {/* Section content */}
           <div className="px-6 py-5 space-y-6">
             {activeSec.live
-              ? <NotificationToggles initialSettings={initialSettings} />
+              ? activeSec.id === 'payments'
+                ? <StripeStatusPanel env={stripeEnv} />
+                : <NotificationToggles initialSettings={initialSettings} />
               : renderGroupedItems(activeSec.items ?? [], activeSec.columns)
             }
             {activeSec.id === 'maintenance' && (
