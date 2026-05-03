@@ -5,6 +5,12 @@ import { usePathname } from 'next/navigation'
 
 const NAV_GROUPS = [
   {
+    label: 'University',
+    items: [
+      { href: '/admin/university', label: 'Bright Tale University' },
+    ],
+  },
+  {
     label: 'Content',
     items: [
       { href: '/admin', label: 'Stories', exact: true },
