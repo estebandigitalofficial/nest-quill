@@ -10,87 +10,95 @@ export const metadata: Metadata = {
     'AI-powered learning tools for kids in grades 1–8. Quizzes, flashcards, study guides, spelling practice, math problems, and reading comprehension — all free.',
 }
 
-const ALL_TOOLS = [
-  {
-    href: '/learning/scan-homework',
-    title: 'Scan Homework',
-    desc: 'Snap a photo of any worksheet or textbook page — instantly get flashcards, explanations, study guides, spelling practice, or trivia.',
-    tag: 'New',
-    color: 'rose',
-    flag: 'scan_homework',
-  },
+const LEARNING_TOOLS = [
   {
     href: '/learning/quiz',
     title: 'Quiz Generator',
-    desc: 'Type any topic or snap a photo of homework — get a 5-question quiz instantly.',
+    desc: 'Type any topic — get a 5-question quiz with instant grading.',
+    icon: '?',
+    gradient: 'from-indigo-500 to-blue-500',
+    bg: 'bg-indigo-500/10',
+    border: 'border-indigo-200 hover:border-indigo-400',
+    iconBg: 'bg-indigo-500',
     tag: 'Photo upload',
-    color: 'indigo',
-    flag: null,
+    tagColor: 'bg-indigo-100 text-indigo-700',
   },
   {
     href: '/learning/flashcards',
     title: 'Flashcards',
-    desc: 'Any topic or photo → 10 study cards. Tap to flip. Mark what you know.',
+    desc: 'Any topic → 10 study cards. Tap to flip. Track what you know.',
+    icon: 'F',
+    gradient: 'from-violet-500 to-purple-500',
+    bg: 'bg-violet-500/10',
+    border: 'border-violet-200 hover:border-violet-400',
+    iconBg: 'bg-violet-500',
     tag: 'Photo upload',
-    color: 'violet',
-    flag: null,
+    tagColor: 'bg-violet-100 text-violet-700',
   },
   {
     href: '/learning/explain',
     title: 'Concept Explainer',
-    desc: 'Ask about anything or upload a photo. Get a simple explanation, a real-world analogy, and something to try at home.',
+    desc: 'Get a simple explanation, real-world analogy, and something to try.',
+    icon: '!',
+    gradient: 'from-amber-500 to-orange-500',
+    bg: 'bg-amber-500/10',
+    border: 'border-amber-200 hover:border-amber-400',
+    iconBg: 'bg-amber-500',
     tag: 'Photo upload',
-    color: 'amber',
-    flag: null,
+    tagColor: 'bg-amber-100 text-amber-700',
   },
   {
     href: '/learning/study-guide',
     title: 'Study Guide',
-    desc: 'Key terms, main concepts, memory tips, and practice questions — from any topic or photo.',
+    desc: 'Key terms, concepts, memory tips, and practice questions.',
+    icon: 'S',
+    gradient: 'from-emerald-500 to-green-500',
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-200 hover:border-emerald-400',
+    iconBg: 'bg-emerald-500',
     tag: 'Photo upload',
-    color: 'emerald',
-    flag: null,
+    tagColor: 'bg-emerald-100 text-emerald-700',
   },
   {
     href: '/learning/spelling',
     title: 'Spelling Practice',
-    desc: 'Paste your word list from school. Practice one at a time, track your score.',
-    tag: 'No AI needed',
-    color: 'pink',
-    flag: null,
+    desc: 'Paste your word list. Practice one at a time, track your score.',
+    icon: 'A',
+    gradient: 'from-pink-500 to-rose-500',
+    bg: 'bg-pink-500/10',
+    border: 'border-pink-200 hover:border-pink-400',
+    iconBg: 'bg-pink-500',
+    tag: null,
+    tagColor: '',
   },
   {
     href: '/learning/math',
     title: 'Math Practice',
-    desc: 'Pick a topic and grade — get 8 problems with step-by-step solutions.',
+    desc: 'Pick a topic and grade — get 8 problems with step-by-step answers.',
+    icon: '+',
+    gradient: 'from-blue-500 to-cyan-500',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-200 hover:border-blue-400',
+    iconBg: 'bg-blue-500',
     tag: null,
-    color: 'blue',
-    flag: null,
+    tagColor: '',
   },
   {
     href: '/learning/reading',
     title: 'Reading Comprehension',
     desc: 'Paste any passage and get 5 questions — literal and inferential.',
+    icon: 'R',
+    gradient: 'from-teal-500 to-emerald-500',
+    bg: 'bg-teal-500/10',
+    border: 'border-teal-200 hover:border-teal-400',
+    iconBg: 'bg-teal-500',
     tag: null,
-    color: 'teal',
-    flag: null,
+    tagColor: '',
   },
 ]
 
-const COLOR_MAP: Record<string, { border: string; bg: string; tag: string }> = {
-  rose: { border: 'hover:border-rose-300', bg: 'bg-rose-50', tag: 'bg-rose-100 text-rose-700' },
-  indigo: { border: 'hover:border-indigo-300', bg: 'bg-indigo-50', tag: 'bg-indigo-100 text-indigo-700' },
-  violet: { border: 'hover:border-violet-300', bg: 'bg-violet-50', tag: 'bg-violet-100 text-violet-700' },
-  amber: { border: 'hover:border-amber-300', bg: 'bg-amber-50', tag: 'bg-amber-100 text-amber-700' },
-  emerald: { border: 'hover:border-emerald-300', bg: 'bg-emerald-50', tag: 'bg-emerald-100 text-emerald-700' },
-  pink: { border: 'hover:border-pink-300', bg: 'bg-pink-50', tag: 'bg-pink-100 text-pink-700' },
-  blue: { border: 'hover:border-blue-300', bg: 'bg-blue-50', tag: 'bg-blue-100 text-blue-700' },
-  teal: { border: 'hover:border-teal-300', bg: 'bg-teal-50', tag: 'bg-teal-100 text-teal-700' },
-}
-
 export default async function LearningPage() {
   const scanEnabled = await getSetting('scan_homework_enabled', true)
-  const TOOLS = ALL_TOOLS.filter((t) => t.flag !== 'scan_homework' || scanEnabled)
 
   return (
     <div className="min-h-dvh bg-parchment flex flex-col">
@@ -106,7 +114,8 @@ export default async function LearningPage() {
         {/* Hero */}
         <section className="bg-oxford py-20 px-6 text-center relative overflow-hidden">
           <div className="absolute -top-24 -right-24 w-80 h-80 bg-indigo-900/30 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-brand-900/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-violet-900/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-800/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="max-w-3xl mx-auto relative space-y-5">
             <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold px-3 py-1.5 rounded-full tracking-wide uppercase">
@@ -115,19 +124,22 @@ export default async function LearningPage() {
             </div>
 
             <h1 className="font-serif text-4xl sm:text-5xl text-white leading-tight text-balance">
-              Help your child practice and{' '}
-              <span className="text-indigo-300 italic">learn better.</span>
+              Learn, play, and{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-violet-300 italic">
+                level up.
+              </span>
             </h1>
 
             <p className="text-lg max-w-xl mx-auto leading-relaxed" style={{ color: '#94a3b8' }}>
-              8 free AI-powered learning tools. Quizzes, flashcards, study guides,
-              math practice, and more — ready in seconds. No account required.
+              8 free learning tools that make studying feel like a game.
+              Earn XP, collect badges, and build streaks — all while mastering
+              any subject.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
               <Link
-                href="#tools"
-                className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-7 py-3.5 rounded-full text-base transition-all active:scale-[0.98] shadow-md shadow-indigo-900/30"
+                href="#scan"
+                className="bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-400 hover:to-violet-400 text-white font-semibold px-7 py-3.5 rounded-full text-base transition-all active:scale-[0.98] shadow-lg shadow-indigo-900/40"
               >
                 Start learning free →
               </Link>
@@ -140,99 +152,192 @@ export default async function LearningPage() {
               </Link>
             </div>
 
-            <p className="text-xs pt-1" style={{ color: '#475569' }}>
-              No account required · Works on any device
-            </p>
+            {/* Floating reward tags */}
+            <div className="flex justify-center gap-3 pt-4 flex-wrap">
+              {['Earn XP', 'Collect badges', 'Build streaks', 'Unlock rewards'].map((tag) => (
+                <span key={tag} className="bg-white/8 border border-white/15 text-white/60 text-xs font-medium px-3 py-1.5 rounded-full">
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
         </section>
 
-        {/* Who it helps */}
-        <section className="py-20 px-6 bg-white">
+        {/* ── SCAN HOMEWORK — Hero Feature ── */}
+        {scanEnabled && (
+          <section id="scan" className="relative overflow-hidden">
+            {/* Gradient background */}
+            <div className="bg-gradient-to-br from-rose-500 via-pink-500 to-violet-600 py-20 px-6 relative">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent_70%)]" />
+              <div className="absolute -top-20 -right-20 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
+              <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-violet-400/10 rounded-full blur-3xl" />
+
+              <div className="max-w-5xl mx-auto relative">
+                <div className="grid md:grid-cols-2 gap-10 items-center">
+                  <div className="space-y-6">
+                    <div className="inline-flex items-center gap-2 bg-white/15 border border-white/25 text-white text-xs font-bold px-3 py-1.5 rounded-full tracking-wide uppercase">
+                      <span className="w-2 h-2 rounded-full bg-white animate-pulse inline-block" />
+                      Only on Nest &amp; Quill
+                    </div>
+
+                    <h2 className="font-serif text-4xl sm:text-5xl text-white leading-tight">
+                      Scan any homework.{' '}
+                      <span className="text-rose-200 italic">Instantly learn from it.</span>
+                    </h2>
+
+                    <p className="text-lg text-white/80 leading-relaxed max-w-md">
+                      Snap a photo of any worksheet, textbook page, or handwritten notes —
+                      and choose how you want to study it. No other platform does this.
+                    </p>
+
+                    <Link
+                      href="/learning/scan-homework"
+                      className="inline-flex items-center gap-2 bg-white hover:bg-rose-50 text-rose-600 font-bold px-8 py-4 rounded-full text-base transition-all active:scale-[0.98] shadow-xl shadow-rose-900/30"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5">
+                        <path d="M3 9V6a3 3 0 013-3h3M21 9V6a3 3 0 00-3-3h-3M3 15v3a3 3 0 003 3h3M21 15v3a3 3 0 01-3 3h-3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      Scan Homework Now
+                    </Link>
+                  </div>
+
+                  {/* Feature cards */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { title: 'Flashcards', desc: 'Auto-generate study cards from the page', color: 'bg-violet-500/30' },
+                      { title: 'Trivia Game', desc: 'Rapid-fire questions with a timer', color: 'bg-pink-500/30' },
+                      { title: 'Study Guide', desc: 'Key terms, concepts, and practice Qs', color: 'bg-rose-500/30' },
+                      { title: 'Explain It', desc: 'Plain-language breakdown of the content', color: 'bg-fuchsia-500/30' },
+                      { title: 'Spelling', desc: 'Extract words and practice spelling', color: 'bg-amber-500/30' },
+                      { title: 'Quiz', desc: 'Full 5-question auto-graded quiz', color: 'bg-indigo-500/30' },
+                    ].map((card) => (
+                      <div key={card.title} className={`${card.color} backdrop-blur-sm border border-white/20 rounded-2xl px-4 py-3.5 space-y-1`}>
+                        <p className="text-sm font-bold text-white">{card.title}</p>
+                        <p className="text-xs text-white/70 leading-relaxed">{card.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bottom tagline */}
+                <div className="mt-10 text-center">
+                  <p className="text-sm text-white/50">
+                    Works with worksheets, textbooks, handwritten notes, and printed materials
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── Gamification callout ── */}
+        <section className="py-16 px-6 bg-white">
           <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
+            <div className="text-center mb-10">
               <h2 className="font-serif text-3xl sm:text-4xl text-oxford mb-3">
-                Built for the way kids actually learn
+                Learning that feels like a game
               </h2>
               <p className="text-charcoal-light max-w-lg mx-auto">
-                Whether it&apos;s homework help, test prep, or daily practice — these
-                tools meet your child where they are.
+                Every quiz, flashcard set, and practice session earns rewards.
+                The more you learn, the more you unlock.
               </p>
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-4 gap-4">
               {[
                 {
-                  title: 'Parents',
-                  desc: 'Give your child extra practice on any topic without searching for worksheets or buying workbooks.',
+                  label: 'Earn XP',
+                  desc: 'Every activity earns experience points that level you up.',
+                  color: 'from-indigo-500 to-blue-500',
+                  iconBg: 'bg-indigo-100',
+                  icon: 'XP',
                 },
                 {
-                  title: 'Homeschool families',
-                  desc: 'Generate quizzes, flashcards, and study materials for any subject in seconds.',
+                  label: 'Collect Badges',
+                  desc: 'Complete challenges to unlock unique badges for your profile.',
+                  color: 'from-amber-500 to-orange-500',
+                  iconBg: 'bg-amber-100',
+                  icon: 'B',
                 },
                 {
-                  title: 'Students',
-                  desc: 'Study smarter with auto-generated tools that adapt to your grade level and topic.',
+                  label: 'Build Streaks',
+                  desc: 'Practice daily to build your streak and earn bonus rewards.',
+                  color: 'from-rose-500 to-pink-500',
+                  iconBg: 'bg-rose-100',
+                  icon: 'S',
+                },
+                {
+                  label: 'Level Up',
+                  desc: 'Climb the ranks and show off your progress to classmates.',
+                  color: 'from-emerald-500 to-green-500',
+                  iconBg: 'bg-emerald-100',
+                  icon: 'L',
                 },
               ].map((item) => (
-                <div
-                  key={item.title}
-                  className="bg-parchment rounded-2xl border border-gray-100 px-6 py-6 space-y-3"
-                >
-                  <h3 className="font-semibold text-oxford">{item.title}</h3>
-                  <p className="text-sm text-charcoal-light leading-relaxed">
-                    {item.desc}
-                  </p>
+                <div key={item.label} className="text-center space-y-3">
+                  <div className={`w-14 h-14 ${item.iconBg} rounded-2xl flex items-center justify-center mx-auto`}>
+                    <span className={`text-lg font-black bg-gradient-to-r ${item.color} text-transparent bg-clip-text`}>
+                      {item.icon}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-oxford text-sm">{item.label}</h3>
+                  <p className="text-xs text-charcoal-light leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Tools grid */}
+        {/* ── Tools grid — colorful and animated ── */}
         <section id="tools" className="py-20 px-6">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="font-serif text-3xl sm:text-4xl text-oxford mb-3">
-                Every tool your child needs
+                Pick your tool, start practicing
               </h2>
               <p className="text-charcoal-light max-w-md mx-auto">
-                Pick a tool, enter a topic, and get instant learning material.
+                Every tool earns XP. Complete them all to unlock special badges.
               </p>
             </div>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {TOOLS.map((tool) => {
-                const c = COLOR_MAP[tool.color]
-                return (
-                  <Link
-                    key={tool.href}
-                    href={tool.href}
-                    className={`bg-white rounded-2xl border-2 border-gray-100 ${c.border} px-5 py-5 flex flex-col gap-3 transition-all hover:shadow-md group`}
-                  >
-                    <div className={`w-12 h-12 ${c.bg} rounded-2xl flex items-center justify-center`} />
+              {LEARNING_TOOLS.map((tool) => (
+                <Link
+                  key={tool.href}
+                  href={tool.href}
+                  className={`relative bg-white rounded-2xl border-2 ${tool.border} px-5 py-5 flex flex-col gap-3 transition-all hover:shadow-lg hover:-translate-y-0.5 group overflow-hidden`}
+                >
+                  {/* Gradient accent on hover */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${tool.gradient} opacity-0 group-hover:opacity-[0.03] transition-opacity`} />
 
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <p className="font-semibold text-oxford text-sm">
-                          {tool.title}
-                        </p>
+                  <div className="flex items-center gap-3 relative">
+                    <div className={`w-11 h-11 ${tool.iconBg} rounded-xl flex items-center justify-center text-white text-lg font-black shrink-0 shadow-sm`}>
+                      {tool.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-oxford text-sm">{tool.title}</p>
                         {tool.tag && (
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${c.tag}`}>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${tool.tagColor}`}>
                             {tool.tag}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-charcoal-light leading-relaxed">
-                        {tool.desc}
-                      </p>
                     </div>
+                  </div>
 
-                    <span className="text-xs font-semibold text-gray-400 group-hover:text-gray-600 transition-colors">
+                  <p className="text-xs text-charcoal-light leading-relaxed relative">
+                    {tool.desc}
+                  </p>
+
+                  <div className="flex items-center justify-between relative">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">+50 XP</span>
+                    <span className="text-xs font-bold text-gray-400 group-hover:text-gray-600 transition-colors group-hover:translate-x-0.5 transform">
                       Open →
                     </span>
-                  </Link>
-                )
-              })}
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         </section>
@@ -252,20 +357,23 @@ export default async function LearningPage() {
                   n: '1',
                   title: 'Pick a tool',
                   desc: 'Choose from quizzes, flashcards, study guides, math practice, spelling, or reading comprehension.',
+                  color: 'from-indigo-500 to-violet-500',
                 },
                 {
                   n: '2',
                   title: 'Enter a topic',
                   desc: 'Type any subject or snap a photo of homework. Set the grade level and go.',
+                  color: 'from-violet-500 to-pink-500',
                 },
                 {
                   n: '3',
-                  title: 'Practice instantly',
-                  desc: 'Get auto-generated, auto-graded learning material in seconds. Track what you know.',
+                  title: 'Practice and earn',
+                  desc: 'Complete activities to earn XP, collect badges, and build your streak. Track your progress.',
+                  color: 'from-pink-500 to-rose-500',
                 },
               ].map((step) => (
                 <div key={step.n} className="text-center space-y-3">
-                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-2xl mx-auto font-bold text-indigo-500">
+                  <div className={`w-12 h-12 bg-gradient-to-br ${step.color} rounded-2xl flex items-center justify-center text-xl mx-auto font-bold text-white shadow-sm`}>
                     {step.n}
                   </div>
                   <h3 className="font-serif text-lg text-oxford">{step.title}</h3>
@@ -342,24 +450,24 @@ export default async function LearningPage() {
 
             <div className="flex flex-wrap justify-center gap-3">
               {[
-                'Math',
-                'Science',
-                'History',
-                'English',
-                'Reading',
-                'Spelling',
-                'Geography',
-                'Social Studies',
-                'Vocabulary',
-                'Grammar',
-                'Writing',
-                'Art History',
+                { name: 'Math', color: 'bg-blue-50 text-blue-700 border-blue-100' },
+                { name: 'Science', color: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+                { name: 'History', color: 'bg-amber-50 text-amber-700 border-amber-100' },
+                { name: 'English', color: 'bg-violet-50 text-violet-700 border-violet-100' },
+                { name: 'Reading', color: 'bg-teal-50 text-teal-700 border-teal-100' },
+                { name: 'Spelling', color: 'bg-pink-50 text-pink-700 border-pink-100' },
+                { name: 'Geography', color: 'bg-cyan-50 text-cyan-700 border-cyan-100' },
+                { name: 'Social Studies', color: 'bg-orange-50 text-orange-700 border-orange-100' },
+                { name: 'Vocabulary', color: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
+                { name: 'Grammar', color: 'bg-rose-50 text-rose-700 border-rose-100' },
+                { name: 'Writing', color: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100' },
+                { name: 'Art History', color: 'bg-yellow-50 text-yellow-700 border-yellow-100' },
               ].map((subject) => (
                 <span
-                  key={subject}
-                  className="bg-indigo-50 text-indigo-700 text-sm font-medium px-4 py-2 rounded-full border border-indigo-100"
+                  key={subject.name}
+                  className={`${subject.color} text-sm font-medium px-4 py-2 rounded-full border`}
                 >
-                  {subject}
+                  {subject.name}
                 </span>
               ))}
             </div>
@@ -385,15 +493,15 @@ export default async function LearningPage() {
                 },
                 {
                   q: 'Do I need to create an account?',
-                  a: 'No. You can use any tool immediately without signing up. An account is only needed for classroom features.',
+                  a: 'No. You can use any tool immediately without signing up. An account is only needed for classroom features and progress tracking.',
                 },
                 {
-                  q: 'Can I use this for homeschool?',
-                  a: 'Absolutely. Many homeschool families use these tools to generate quizzes, flashcards, and practice material for any topic.',
+                  q: 'How does the XP and badge system work?',
+                  a: 'Every activity you complete earns XP. As you accumulate XP, you level up and unlock badges. Practice daily to build your streak and earn bonus rewards.',
                 },
                 {
-                  q: 'How is content generated?',
-                  a: 'Our AI creates age-appropriate, grade-level content based on the topic you provide. Every quiz, flashcard set, and study guide is unique.',
+                  q: 'What makes Scan Homework special?',
+                  a: 'No other platform lets you photograph homework and instantly turn it into 6 different learning activities. One photo becomes flashcards, trivia, study guides, explanations, spelling practice, or a full quiz.',
                 },
               ].map((item) => (
                 <div key={item.q} className="border-b border-gray-100 pb-6">
@@ -433,14 +541,14 @@ export default async function LearningPage() {
         </section>
 
         {/* Bottom CTA */}
-        <section className="bg-indigo-600 py-20 px-6 text-center">
-          <div className="max-w-2xl mx-auto space-y-5">
+        <section className="bg-gradient-to-r from-indigo-600 to-violet-600 py-20 px-6 text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.05),transparent_70%)]" />
+          <div className="max-w-2xl mx-auto space-y-5 relative">
             <h2 className="font-serif text-3xl sm:text-4xl text-white leading-tight">
-              Learning should be simple.
+              Ready to start earning XP?
             </h2>
             <p className="text-indigo-100 text-base">
-              Pick a tool, enter a topic, and let your child start practicing —
-              free, no sign-up needed.
+              Pick a tool, enter a topic, and start leveling up — free, no sign-up needed.
             </p>
             <Link
               href="#tools"

@@ -18,12 +18,12 @@ interface UploadedImage {
 
 type Activity = 'flashcards' | 'explain' | 'study-guide' | 'spelling' | 'trivia'
 
-const ACTIVITIES: { id: Activity; label: string; desc: string }[] = [
-  { id: 'flashcards', label: 'Flashcards', desc: '10 study cards' },
-  { id: 'explain', label: 'Explain It', desc: 'Simple explanation' },
-  { id: 'study-guide', label: 'Study Guide', desc: 'Key terms & concepts' },
-  { id: 'spelling', label: 'Spelling', desc: 'Extract & practice words' },
-  { id: 'trivia', label: 'Trivia Game', desc: 'Rapid-fire questions' },
+const ACTIVITIES: { id: Activity; label: string; desc: string; icon: string; color: string; iconBg: string }[] = [
+  { id: 'flashcards', label: 'Flashcards', desc: '10 study cards', icon: 'F', color: 'border-violet-300 hover:border-violet-400 hover:bg-violet-50/50', iconBg: 'bg-violet-500' },
+  { id: 'explain', label: 'Explain It', desc: 'Simple explanation', icon: '!', color: 'border-amber-300 hover:border-amber-400 hover:bg-amber-50/50', iconBg: 'bg-amber-500' },
+  { id: 'study-guide', label: 'Study Guide', desc: 'Key terms & concepts', icon: 'S', color: 'border-emerald-300 hover:border-emerald-400 hover:bg-emerald-50/50', iconBg: 'bg-emerald-500' },
+  { id: 'spelling', label: 'Spelling', desc: 'Extract & practice words', icon: 'A', color: 'border-pink-300 hover:border-pink-400 hover:bg-pink-50/50', iconBg: 'bg-pink-500' },
+  { id: 'trivia', label: 'Trivia Game', desc: 'Rapid-fire questions', icon: '?', color: 'border-rose-300 hover:border-rose-400 hover:bg-rose-50/50', iconBg: 'bg-rose-500' },
 ]
 
 interface ScanHomeworkClientProps {
@@ -166,17 +166,21 @@ export default function ScanHomeworkClient({ triviaEnabled, thinkFirstEnabled, t
           <button
             type="button"
             onClick={() => { setFileSizeError(false); fileRef.current?.click() }}
-            className={`w-full border-2 border-dashed rounded-2xl py-12 text-center transition-colors group ${fileSizeError ? 'border-red-300 bg-red-50/30' : 'border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/30'}`}
+            className={`w-full border-2 border-dashed rounded-2xl py-12 text-center transition-all group ${fileSizeError ? 'border-red-300 bg-red-50/30' : 'border-rose-300 hover:border-rose-400 bg-gradient-to-br from-rose-50/50 to-violet-50/50 hover:from-rose-50 hover:to-violet-50'}`}
           >
-            <div className="text-base font-semibold text-gray-400 mb-3">Upload</div>
-            <p className="text-base font-semibold text-gray-600 group-hover:text-indigo-700 transition-colors">
-              Tap to snap or upload a homework photo
+            <div className="w-16 h-16 bg-gradient-to-br from-rose-500 to-violet-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-rose-200/50 group-hover:scale-105 transition-transform">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} className="w-7 h-7">
+                <path d="M3 9V6a3 3 0 013-3h3M21 9V6a3 3 0 00-3-3h-3M3 15v3a3 3 0 003 3h3M21 15v3a3 3 0 01-3 3h-3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <p className="text-base font-bold text-gray-700 group-hover:text-rose-700 transition-colors">
+              Tap to scan your homework
             </p>
             {fileSizeError ? (
               <p className="text-sm text-red-500 font-medium mt-1">Image too large — please use a photo under {maxImageMb} MB</p>
             ) : (
               <>
-                <p className="text-sm text-gray-400 mt-1">Works with worksheets, textbooks, notes</p>
+                <p className="text-sm text-gray-400 mt-1">Worksheets, textbooks, handwritten notes</p>
                 <p className="text-xs text-gray-300 mt-2">JPG, PNG up to {maxImageMb} MB</p>
               </>
             )}
@@ -227,12 +231,14 @@ export default function ScanHomeworkClient({ triviaEnabled, thinkFirstEnabled, t
                 key={act.id}
                 onClick={() => handleActivitySelect(act.id)}
                 disabled={extractingSpelling}
-                className="flex flex-col items-start gap-2 bg-white border-2 border-gray-100 hover:border-indigo-300 hover:bg-indigo-50/30 rounded-2xl px-4 py-4 text-left transition-all group disabled:opacity-50"
+                className={`flex flex-col items-start gap-3 bg-white border-2 ${act.color} rounded-2xl px-4 py-4 text-left transition-all group disabled:opacity-50 hover:shadow-md hover:-translate-y-0.5`}
               >
-                <span className="text-sm font-bold text-indigo-400">{act.label.charAt(0)}</span>
+                <div className={`w-9 h-9 ${act.iconBg} rounded-xl flex items-center justify-center text-white text-sm font-black shadow-sm`}>
+                  {act.icon}
+                </div>
                 <div>
-                  <p className="text-sm font-semibold text-oxford group-hover:text-indigo-700 transition-colors">
-                    {act.id === 'spelling' && extractingSpelling ? 'Extracting…' : act.label}
+                  <p className="text-sm font-bold text-oxford transition-colors">
+                    {act.id === 'spelling' && extractingSpelling ? 'Extracting...' : act.label}
                   </p>
                   <p className="text-xs text-gray-400">{act.desc}</p>
                 </div>

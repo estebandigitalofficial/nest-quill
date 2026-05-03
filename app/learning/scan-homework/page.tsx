@@ -7,7 +7,7 @@ import { getSetting } from '@/lib/settings/appSettings'
 
 export const metadata: Metadata = {
   title: 'Scan Homework — Nest & Quill',
-  description: 'Take a photo of any homework or worksheet and instantly get flashcards, explanations, study guides, spelling practice, or trivia.',
+  description: 'Take a photo of any homework or worksheet and instantly get flashcards, explanations, study guides, spelling practice, trivia, and more.',
 }
 
 export default async function ScanHomeworkPage() {
@@ -22,11 +22,10 @@ export default async function ScanHomeworkPage() {
 
   if (!enabled) {
     return (
-      <div className="h-dvh bg-parchment flex flex-col">
+      <div className="min-h-dvh bg-parchment flex flex-col">
         <SiteHeader right={<Link href="/learning" className="text-sm text-charcoal-light hover:text-oxford">← Learning</Link>} />
         <div className="flex-1 flex items-center justify-center px-6">
           <div className="max-w-sm text-center space-y-4">
-            <p className="text-4xl">📚</p>
             <h1 className="font-serif text-2xl text-oxford">Scan Homework is unavailable</h1>
             <p className="text-sm text-charcoal-light leading-relaxed">
               This tool is temporarily disabled. Check back soon, or try one of the other learning tools.
@@ -45,25 +44,57 @@ export default async function ScanHomeworkPage() {
   }
 
   return (
-    <div className="h-dvh bg-parchment flex flex-col">
+    <div className="min-h-dvh bg-parchment flex flex-col">
       <SiteHeader right={<Link href="/learning" className="text-sm text-charcoal-light hover:text-oxford">← Learning</Link>} />
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-lg mx-auto px-4 py-8 space-y-6">
-
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h1 className="font-serif text-2xl text-oxford">Scan Homework</h1>
+      <main className="flex-1 overflow-y-auto">
+        {/* Hero banner */}
+        <section className="bg-gradient-to-br from-rose-500 via-pink-500 to-violet-600 py-10 px-6 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent_70%)]" />
+          <div className="max-w-lg mx-auto relative text-center space-y-3">
+            <div className="inline-flex items-center gap-2 bg-white/15 border border-white/25 text-white text-xs font-bold px-3 py-1.5 rounded-full tracking-wide uppercase">
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse inline-block" />
+              Only on Nest &amp; Quill
             </div>
-            <p className="text-sm text-charcoal-light">
-              Take a photo of any worksheet, textbook page, or notes — then pick how to study it.
+
+            <h1 className="font-serif text-3xl sm:text-4xl text-white leading-tight">
+              Scan it. Study it. <span className="text-rose-200 italic">Master it.</span>
+            </h1>
+
+            <p className="text-sm text-white/80 leading-relaxed max-w-md mx-auto">
+              Snap a photo of any worksheet, textbook, or notes — then choose
+              from 6 different ways to study it. No other tool does this.
             </p>
           </div>
+        </section>
 
+        {/* Scanner tool */}
+        <div className="max-w-lg mx-auto px-4 py-8 space-y-6">
           <ScanHomeworkClient triviaEnabled={triviaEnabled} thinkFirstEnabled={thinkFirstEnabled} teachBackEnabled={teachBackEnabled} nudgesEnabled={nudgesEnabled} maxImageMb={maxImageMb} />
-
         </div>
-      </div>
+
+        {/* What you can do */}
+        <section className="px-6 pb-10">
+          <div className="max-w-lg mx-auto">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">One photo becomes</p>
+            <div className="grid grid-cols-2 gap-2.5">
+              {[
+                { title: 'Flashcards', desc: 'Auto-generated study cards', color: 'bg-violet-50 border-violet-200 text-violet-700' },
+                { title: 'Trivia Game', desc: 'Timed rapid-fire questions', color: 'bg-pink-50 border-pink-200 text-pink-700' },
+                { title: 'Study Guide', desc: 'Terms, concepts, practice', color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+                { title: 'Explain It', desc: 'Simple breakdowns', color: 'bg-amber-50 border-amber-200 text-amber-700' },
+                { title: 'Spelling', desc: 'Extract and practice words', color: 'bg-rose-50 border-rose-200 text-rose-700' },
+                { title: 'Full Quiz', desc: '5-question auto-graded', color: 'bg-indigo-50 border-indigo-200 text-indigo-700' },
+              ].map((item) => (
+                <div key={item.title} className={`${item.color} border rounded-xl px-3.5 py-3 space-y-0.5`}>
+                  <p className="text-xs font-bold">{item.title}</p>
+                  <p className="text-[10px] opacity-70">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
 
       <SiteFooter />
     </div>
