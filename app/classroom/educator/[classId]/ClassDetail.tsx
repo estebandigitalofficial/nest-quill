@@ -107,6 +107,17 @@ export default function ClassDetail({ classId }: { classId: string }) {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
+  // Assignment action state
+  const [viewAssignment, setViewAssignment] = useState<Assignment | null>(null)
+  const [editAssignment, setEditAssignment] = useState<Assignment | null>(null)
+  const [editATitle, setEditATitle] = useState('')
+  const [editADue, setEditADue] = useState('')
+  const [editingAssignment, setEditingAssignment] = useState(false)
+  const [editAssignError, setEditAssignError] = useState<string | null>(null)
+  const [deleteAssignment, setDeleteAssignment] = useState<Assignment | null>(null)
+  const [deletingAssignment, setDeletingAssignment] = useState(false)
+  const [deleteAssignError, setDeleteAssignError] = useState<string | null>(null)
+
   // Assignment form state
   const [aTitle, setATitle] = useState('')
   const [aType, setAType] = useState<AssignmentTypeValue>('quiz')
@@ -123,6 +134,50 @@ export default function ClassDetail({ classId }: { classId: string }) {
     setATitle(''); setAType('quiz'); setASource('topic')
     setATopic(''); setAMaterial(''); setAGrade(''); setADue('')
     setShowMoreOpts(false); setAssignError(null)
+  }
+
+  function openEditAssignment(a: Assignment) {
+    setEditATitle(a.title)
+    setEditADue(a.due_at ? a.due_at.slice(0, 16) : '')
+    setEditAssignError(null)
+    setEditAssignment(a)
+  }
+
+  async function handleEditAssignment(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editAssignment) return
+    setEditAssignError(null)
+    setEditingAssignment(true)
+    const res = await fetch(`/api/classroom/assignments/${editAssignment.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: editATitle.trim(), dueAt: editADue || null }),
+    })
+    const data = await res.json()
+    if (!res.ok) { setEditAssignError(data.message); setEditingAssignment(false); return }
+    setAssignments(prev => prev.map(a => a.id === editAssignment.id
+      ? { ...a, title: data.assignment.title, due_at: data.assignment.due_at }
+      : a
+    ))
+    setEditAssignment(null)
+    setEditingAssignment(false)
+  }
+
+  async function handleDeleteAssignment() {
+    if (!deleteAssignment) return
+    setDeleteAssignError(null)
+    setDeletingAssignment(true)
+    const res = await fetch(`/api/classroom/assignments/${deleteAssignment.id}`, { method: 'DELETE' })
+    const data = await res.json()
+    if (!res.ok) { setDeleteAssignError(data.message); setDeletingAssignment(false); return }
+    setAssignments(prev => prev.filter(a => a.id !== deleteAssignment.id))
+    setDeleteAssignment(null)
+    setDeletingAssignment(false)
+  }
+
+  function printAssignment(a: Assignment) {
+    setViewAssignment(a)
+    setTimeout(() => window.print(), 300)
   }
 
   useEffect(() => { fetchData() }, [classId])
@@ -427,7 +482,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-5 shrink-0">
+                      <div className="flex items-center gap-3 sm:gap-5 shrink-0">
                         <div className="text-center">
                           <p className={`text-base font-bold ${allDone ? 'text-green-600' : 'text-oxford'}`}>
                             {completedCount}/{total}
@@ -442,6 +497,27 @@ export default function ClassDetail({ classId }: { classId: string }) {
                         )}
                       </div>
                     </div>
+
+                    {/* Action buttons */}
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
+                      <button onClick={() => setViewAssignment(a)}
+                        className="text-xs font-semibold text-brand-600 hover:text-brand-700 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-brand-50 transition-colors">
+                        View
+                      </button>
+                      <button onClick={() => openEditAssignment(a)}
+                        className="text-xs font-semibold text-gray-600 hover:text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                        Edit
+                      </button>
+                      <button onClick={() => printAssignment(a)}
+                        className="text-xs font-semibold text-gray-600 hover:text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                        Print
+                      </button>
+                      <button onClick={() => { setDeleteAssignError(null); setDeleteAssignment(a) }}
+                        className="text-xs font-semibold text-red-500 hover:text-red-600 px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 transition-colors">
+                        Delete
+                      </button>
+                    </div>
+
                     {/* Completion progress bar */}
                     {total > 0 && (
                       <div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -456,6 +532,104 @@ export default function ClassDetail({ classId }: { classId: string }) {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── View assignment modal ── */}
+      {viewAssignment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 print:bg-white print:static print:p-0">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 space-y-5 print:shadow-none print:rounded-none print:max-h-none print:max-w-none">
+            <div className="flex items-center justify-between print:hidden">
+              <div>
+                <p className="font-semibold text-oxford text-base">{viewAssignment.title}</p>
+                <p className="text-xs text-charcoal-light mt-0.5">
+                  {TYPE_LABELS[viewAssignment.tool] ?? viewAssignment.tool}
+                  {viewAssignment.config?.topic ? ` · ${viewAssignment.config.topic}` : ''}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => window.print()}
+                  className="text-xs font-semibold text-gray-600 hover:text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                  Print
+                </button>
+                <button onClick={() => setViewAssignment(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+              </div>
+            </div>
+
+            {/* Print header — only visible when printing */}
+            <div className="hidden print:block mb-6">
+              <h1 className="text-2xl font-bold text-black">{viewAssignment.title}</h1>
+              <p className="text-sm text-gray-600 mt-1">
+                {TYPE_LABELS[viewAssignment.tool] ?? viewAssignment.tool}
+                {viewAssignment.config?.topic ? ` — ${viewAssignment.config.topic}` : ''}
+                {viewAssignment.due_at ? ` — Due: ${new Date(viewAssignment.due_at).toLocaleDateString()}` : ''}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Name: _______________________  Date: ______________</p>
+              <hr className="mt-4 border-gray-300" />
+            </div>
+
+            <AssignmentContentView content={viewAssignment.content} tool={viewAssignment.tool} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit assignment modal ── */}
+      {editAssignment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-oxford text-base">Edit assignment</p>
+              <button onClick={() => setEditAssignment(null)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">✕</button>
+            </div>
+            <form onSubmit={handleEditAssignment} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-600">Title <span className="text-red-400">*</span></label>
+                <input required autoFocus
+                  value={editATitle} onChange={e => setEditATitle(e.target.value)}
+                  className={inputClass} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-600">Due date</label>
+                <input type="datetime-local" value={editADue} onChange={e => setEditADue(e.target.value)} className={inputClass} />
+              </div>
+              {editAssignError && <p className="text-sm text-red-500">{editAssignError}</p>}
+              <div className="flex gap-3 pt-1">
+                <button type="submit" disabled={editingAssignment || !editATitle.trim()}
+                  className="bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+                  {editingAssignment ? 'Saving...' : 'Save changes'}
+                </button>
+                <button type="button" onClick={() => setEditAssignment(null)}
+                  className="text-sm font-semibold text-gray-500 hover:text-gray-700 px-4 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete assignment confirmation ── */}
+      {deleteAssignment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-5">
+            <div>
+              <p className="font-semibold text-oxford text-base">Delete assignment?</p>
+              <p className="text-sm text-charcoal-light mt-1">
+                <span className="font-semibold text-oxford">{deleteAssignment.title}</span> will be permanently removed along with all student submissions.
+              </p>
+            </div>
+            {deleteAssignError && <p className="text-sm text-red-500">{deleteAssignError}</p>}
+            <div className="flex gap-3">
+              <button onClick={handleDeleteAssignment} disabled={deletingAssignment}
+                className="bg-red-500 hover:bg-red-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+                {deletingAssignment ? 'Deleting...' : 'Delete assignment'}
+              </button>
+              <button onClick={() => setDeleteAssignment(null)} disabled={deletingAssignment}
+                className="text-sm font-semibold text-gray-500 hover:text-gray-700 px-4 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -614,6 +788,151 @@ export default function ClassDetail({ classId }: { classId: string }) {
         </div>
       )}
     </div>
+  )
+}
+
+// ── Assignment content renderer ───────────────────────────────────────────────
+
+function AssignmentContentView({ content, tool }: { content?: Record<string, unknown>; tool: string }) {
+  if (!content) {
+    return <p className="text-sm text-gray-400 italic">No content available for this assignment.</p>
+  }
+
+  const c = content as Record<string, unknown>
+
+  if (tool === 'quiz' || tool === 'reading') {
+    const questions = (c.questions ?? []) as { question: string; options: string[] }[]
+    const passage = c.passage as string | undefined
+    return (
+      <div className="space-y-5">
+        {passage && (
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Reading Passage</p>
+            <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{passage}</p>
+          </div>
+        )}
+        {questions.map((q, i) => (
+          <div key={i} className="space-y-2">
+            <p className="text-sm font-semibold text-oxford">
+              {i + 1}. {q.question}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-4">
+              {q.options.map((opt, j) => (
+                <p key={j} className="text-sm text-charcoal-light">
+                  <span className="font-medium text-gray-500 mr-2">{String.fromCharCode(65 + j)}.</span>
+                  {opt}
+                </p>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (tool === 'flashcards') {
+    const cards = (c.cards ?? []) as { front: string; back: string }[]
+    return (
+      <div className="space-y-3">
+        {cards.map((card, i) => (
+          <div key={i} className="bg-gray-50 rounded-xl border border-gray-100 px-5 py-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Card {i + 1}</p>
+            <p className="text-sm font-semibold text-oxford">{card.front}</p>
+            <p className="text-sm text-charcoal-light mt-1">{card.back}</p>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (tool === 'study-guide') {
+    const overview = c.overview as string | undefined
+    const keyTerms = (c.key_terms ?? []) as { term: string; definition: string }[]
+    const concepts = (c.main_concepts ?? []) as { heading: string; content: string }[]
+    const remember = (c.remember ?? []) as string[]
+    const practice = (c.practice_questions ?? []) as { question: string; answer: string }[]
+    return (
+      <div className="space-y-5">
+        {overview && (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Overview</p>
+            <p className="text-sm text-charcoal leading-relaxed">{overview}</p>
+          </div>
+        )}
+        {keyTerms.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Key Terms</p>
+            <div className="space-y-2">
+              {keyTerms.map((t, i) => (
+                <div key={i} className="flex gap-2">
+                  <p className="text-sm"><span className="font-semibold text-oxford">{t.term}:</span> <span className="text-charcoal-light">{t.definition}</span></p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {concepts.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Main Concepts</p>
+            {concepts.map((sec, i) => (
+              <div key={i} className="mb-3">
+                <p className="text-sm font-semibold text-oxford">{sec.heading}</p>
+                <p className="text-sm text-charcoal-light mt-1">{sec.content}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {remember.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Remember</p>
+            <ul className="space-y-1 pl-4">
+              {remember.map((r, i) => (
+                <li key={i} className="text-sm text-charcoal-light list-disc">{r}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {practice.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Practice Questions</p>
+            {practice.map((p, i) => (
+              <div key={i} className="mb-3">
+                <p className="text-sm font-semibold text-oxford">{i + 1}. {p.question}</p>
+                <p className="text-sm text-charcoal-light mt-1 pl-4">Answer: {p.answer}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (tool === 'explain') {
+    const sections = (c.sections ?? []) as { heading: string; content: string }[]
+    const summary = c.summary as string | undefined
+    return (
+      <div className="space-y-4">
+        {sections.map((sec, i) => (
+          <div key={i}>
+            <p className="text-sm font-semibold text-oxford">{sec.heading}</p>
+            <p className="text-sm text-charcoal-light mt-1 leading-relaxed">{sec.content}</p>
+          </div>
+        ))}
+        {summary && (
+          <div className="bg-brand-50 rounded-xl p-4 border border-brand-100">
+            <p className="text-xs font-semibold text-brand-600 uppercase tracking-wide mb-1">Summary</p>
+            <p className="text-sm text-charcoal leading-relaxed">{summary}</p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Fallback: render JSON
+  return (
+    <pre className="text-xs text-gray-600 bg-gray-50 rounded-xl p-4 overflow-x-auto border border-gray-100">
+      {JSON.stringify(content, null, 2)}
+    </pre>
   )
 }
 
