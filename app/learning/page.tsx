@@ -126,7 +126,7 @@ export default async function LearningPage() {
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
               <Link
-                href="/learning/quiz"
+                href="#tools"
                 className="bg-indigo-500 hover:bg-indigo-400 text-white font-semibold px-7 py-3.5 rounded-full text-base transition-all active:scale-[0.98] shadow-md shadow-indigo-900/30"
               >
                 Start learning free →
@@ -443,7 +443,7 @@ export default async function LearningPage() {
               free, no sign-up needed.
             </p>
             <Link
-              href="/learning/quiz"
+              href="#tools"
               className="inline-block bg-white text-indigo-700 font-semibold px-8 py-3.5 rounded-full text-base hover:bg-indigo-50 transition-colors shadow-lg"
             >
               Start learning free →
