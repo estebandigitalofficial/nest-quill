@@ -84,19 +84,60 @@ export default function UniversityDashboard() {
   // Batch generation
   const [generating, setGenerating] = useState(false)
   const [genResult, setGenResult] = useState<{ generated: number; total: number; errors?: string[] } | null>(null)
+  const [genProgress, setGenProgress] = useState<{ filled: number; empty: number; total: number } | null>(null)
+  const [autoRunning, setAutoRunning] = useState(false)
+  const [autoTotal, setAutoTotal] = useState(0)
 
-  async function handleBatchGenerate(toolType?: string) {
+  async function fetchGenProgress() {
+    const res = await fetch('/api/admin/university/generate')
+    if (res.ok) {
+      const data = await res.json()
+      setGenProgress(data)
+    }
+  }
+
+  async function handleBatchGenerate(toolType?: string, grade?: number) {
     setGenerating(true)
     setGenResult(null)
     const res = await fetch('/api/admin/university/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ toolType, limit: 10 }),
+      body: JSON.stringify({ toolType, grade, limit: 10 }),
     })
     const data = await res.json()
     setGenResult(data)
     setGenerating(false)
     fetchData()
+    fetchGenProgress()
+  }
+
+  async function handleGenerateAll() {
+    setAutoRunning(true)
+    setAutoTotal(0)
+    let totalGenerated = 0
+
+    // Run batches of 10 until nothing is left
+    for (let i = 0; i < 100; i++) {
+      const res = await fetch('/api/admin/university/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ limit: 10 }),
+      })
+      const data = await res.json()
+      totalGenerated += data.generated ?? 0
+      setAutoTotal(totalGenerated)
+
+      if (!data.generated || data.generated === 0) break
+
+      // Brief pause between batches
+      await new Promise(r => setTimeout(r, 500))
+      fetchGenProgress()
+    }
+
+    setAutoRunning(false)
+    setGenResult({ generated: totalGenerated, total: totalGenerated })
+    fetchData()
+    fetchGenProgress()
   }
 
   async function handleGenerateOne(id: string) {
@@ -108,7 +149,11 @@ export default function UniversityDashboard() {
     })
     setGenerating(false)
     fetchData()
+    fetchGenProgress()
   }
+
+  // Fetch generation progress on mount
+  useEffect(() => { fetchGenProgress() }, [])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -213,33 +258,60 @@ export default function UniversityDashboard() {
       )}
 
       {/* Batch generation controls */}
-      <div className="bg-adm-card border border-adm-border rounded-xl px-4 py-4">
+      <div className="bg-adm-card border border-adm-border rounded-xl px-4 py-4 space-y-4">
+        {/* Progress bar */}
+        {genProgress && genProgress.total > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-adm-muted">
+                Library: {genProgress.filled} filled / {genProgress.empty} empty / {genProgress.total} total
+              </p>
+              <p className="text-xs font-bold text-white">
+                {genProgress.total > 0 ? Math.round((genProgress.filled / genProgress.total) * 100) : 0}% complete
+              </p>
+            </div>
+            <div className="h-2 bg-adm-bg rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 to-green-400 rounded-full transition-all duration-500"
+                style={{ width: `${genProgress.total > 0 ? (genProgress.filled / genProgress.total) * 100 : 0}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm text-white font-medium">Generate Content:</p>
-          <button onClick={() => handleBatchGenerate('quiz')} disabled={generating}
-            className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 px-3 py-1.5 rounded-lg border border-adm-border hover:bg-white/5 transition-colors disabled:opacity-50">
-            {generating ? 'Generating...' : 'Quizzes (10)'}
+          <p className="text-sm text-white font-medium">Generate:</p>
+
+          {/* Generate All button */}
+          <button onClick={handleGenerateAll} disabled={generating || autoRunning}
+            className="text-xs font-bold text-white px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition-colors disabled:opacity-50 shadow-sm">
+            {autoRunning ? `Generating... (${autoTotal} done)` : 'Generate All Content'}
           </button>
-          <button onClick={() => handleBatchGenerate('flashcards')} disabled={generating}
+
+          <span className="text-adm-muted text-xs">or batch:</span>
+
+          <button onClick={() => handleBatchGenerate('quiz')} disabled={generating || autoRunning}
+            className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 px-3 py-1.5 rounded-lg border border-adm-border hover:bg-white/5 transition-colors disabled:opacity-50">
+            Quizzes (10)
+          </button>
+          <button onClick={() => handleBatchGenerate('flashcards')} disabled={generating || autoRunning}
             className="text-xs font-semibold text-violet-400 hover:text-violet-300 px-3 py-1.5 rounded-lg border border-adm-border hover:bg-white/5 transition-colors disabled:opacity-50">
             Flashcards (10)
           </button>
-          <button onClick={() => handleBatchGenerate('study-guide')} disabled={generating}
+          <button onClick={() => handleBatchGenerate('study-guide')} disabled={generating || autoRunning}
             className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 px-3 py-1.5 rounded-lg border border-adm-border hover:bg-white/5 transition-colors disabled:opacity-50">
             Study Guides (10)
           </button>
-          <button onClick={() => handleBatchGenerate()} disabled={generating}
-            className="text-xs font-semibold text-brand-400 hover:text-brand-300 px-3 py-1.5 rounded-lg border border-brand-400/30 bg-brand-500/10 hover:bg-brand-500/20 transition-colors disabled:opacity-50">
-            All Types (10)
-          </button>
-          {generating && (
+
+          {(generating || autoRunning) && (
             <div className="w-4 h-4 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
           )}
         </div>
-        {genResult && (
-          <div className="mt-3 text-xs">
+
+        {genResult && !autoRunning && (
+          <div className="text-xs">
             <p className={genResult.generated > 0 ? 'text-green-400' : 'text-adm-muted'}>
-              Generated {genResult.generated} of {genResult.total} items
+              Generated {genResult.generated} items
             </p>
             {genResult.errors?.map((e, i) => (
               <p key={i} className="text-red-400 mt-1">{e}</p>
