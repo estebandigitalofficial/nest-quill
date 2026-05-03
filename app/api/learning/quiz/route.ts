@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, getActiveGuardrails } from '@/lib/utils/learningGuardrails'
+import { getOrNull, storeContent, recordUsage } from '@/lib/services/contentLibrary'
 
 const SYSTEM_PROMPT = (gradeLabel: string, neutralityRule: string) => `You are an educational quiz writer for students in ${gradeLabel}. Create 5 multiple-choice questions.
 
@@ -69,6 +70,43 @@ export async function POST(request: NextRequest) {
       }
 
       userContent = `Topic: ${subjectLabel}${topic.trim()}\n\nGenerate 5 quiz questions for a ${gradeLabel} student on this topic.`
+
+      // ── Cache-first: check content library ──────────────────────────────
+      const adminSupabase = createAdminClient()
+      const cached = await getOrNull(adminSupabase, {
+        toolType: 'quiz',
+        topic: topic.trim(),
+        grade: grade ?? null,
+        subject: subject ?? null,
+      })
+
+      if (cached?.content?.questions) {
+        // Re-shuffle options for this session
+        type CachedQ = { question: string; options: string[]; correct_index: number; explanation: string }
+        const cachedQs = cached.content.questions as CachedQ[]
+        const reshuffled = cachedQs.map((q: CachedQ) => {
+          const indices = [0, 1, 2, 3].sort(() => Math.random() - 0.5)
+          return {
+            question: q.question,
+            options: indices.map(i => q.options[i]),
+            correct_index: indices.indexOf(q.correct_index),
+            explanation: q.explanation,
+          }
+        })
+
+        const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
+        const { data: session } = await adminSupabase
+          .from('quiz_sessions')
+          .insert({ questions: reshuffled, subject: subject ?? null, grade: grade ?? null, topic: topic.trim(), source: 'library', ip_address: ip })
+          .select('id')
+          .single()
+
+        if (session) {
+          await recordUsage(adminSupabase, cached.id, { toolType: 'quiz', ip })
+          const clientQuestions = reshuffled.map(q => ({ question: q.question, options: q.options }))
+          return NextResponse.json({ sessionId: session.id, questions: clientQuestions, fromLibrary: true })
+        }
+      }
     }
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -128,6 +166,19 @@ export async function POST(request: NextRequest) {
     if (sessionError || !session) {
       console.error('[learning/quiz] session insert error:', sessionError)
       return NextResponse.json({ message: 'Failed to create quiz session.' }, { status: 500 })
+    }
+
+    // Store in content library for future cache hits (text-based only)
+    if (!imageBase64 && topic?.trim()) {
+      storeContent(adminSupabase, {
+        toolType: 'quiz',
+        topic: topic.trim(),
+        title: `Quiz: ${topic.trim()}`,
+        content: { questions: shuffled },
+        grade: grade ?? null,
+        subject: subject ?? null,
+        source: 'ai',
+      })
     }
 
     // Strip correct_index + explanation before sending to client

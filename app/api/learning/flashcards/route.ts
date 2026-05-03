@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, getActiveGuardrails } from '@/lib/utils/learningGuardrails'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getOrNull, storeContent, recordUsage } from '@/lib/services/contentLibrary'
 
 export async function POST(request: NextRequest) {
   const limited = await checkLearningRateLimit(request, 'flashcards')
@@ -39,6 +41,20 @@ export async function POST(request: NextRequest) {
       }
 
       userContent = `Create 10 flashcards on: ${topic.trim()} (${gradeLabel})`
+
+      // ── Cache-first: check content library ──────────────────────────────
+      const admin = createAdminClient()
+      const cached = await getOrNull(admin, {
+        toolType: 'flashcards',
+        topic: topic.trim(),
+        grade: grade ?? null,
+      })
+
+      if (cached?.content?.cards) {
+        const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
+        await recordUsage(admin, cached.id, { toolType: 'flashcards', ip })
+        return NextResponse.json({ cards: cached.content.cards, fromLibrary: true })
+      }
     }
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -82,6 +98,19 @@ Output valid JSON:
 
     const json = await res.json()
     const parsed = JSON.parse(json.choices[0].message.content)
+
+    // Store in content library (text-based only)
+    if (!imageBase64 && topic?.trim() && parsed.cards?.length) {
+      const admin = createAdminClient()
+      storeContent(admin, {
+        toolType: 'flashcards',
+        topic: topic.trim(),
+        title: `Flashcards: ${topic.trim()}`,
+        content: { cards: parsed.cards },
+        grade: grade ?? null,
+        source: 'ai',
+      })
+    }
 
     return NextResponse.json({ cards: parsed.cards })
   } catch (err) {
