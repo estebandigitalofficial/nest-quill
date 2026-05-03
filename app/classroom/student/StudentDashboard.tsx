@@ -205,15 +205,14 @@ export default function StudentDashboard() {
         <CelebrationModal {...celebration} onClose={() => setCelebration(null)} />
       )}
 
-      {/* ── Hero card ── */}
+      {/* ── Hero card ── (avatar is decorative; customization is opt-in via the
+          explicit "Customize" button — never gates onboarding) */}
       <div className="bg-oxford rounded-2xl px-6 py-5 flex items-center gap-5">
-        <button
-          type="button"
-          onClick={() => setShowCustomize(true)}
-          title="Customize avatar"
-          className={`w-16 h-16 ${colorBg} rounded-2xl flex items-center justify-center text-4xl shrink-0 shadow-lg hover:opacity-90 transition-opacity`}>
+        <div
+          aria-hidden="true"
+          className={`w-16 h-16 ${colorBg} rounded-2xl flex items-center justify-center text-4xl shrink-0 shadow-lg`}>
           {safeProfile.avatar_emoji}
-        </button>
+        </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <p className="font-serif text-lg text-white leading-none">{safeProfile.display_name}</p>
@@ -221,10 +220,7 @@ export default function StudentDashboard() {
               <span className="text-xs font-bold text-amber-500" title={`${safeProfile.streak_days}-day streak`}>Streak</span>
             )}
           </div>
-          <p className="text-xs text-white/50 mb-2">
-            Level {prog.level} · {prog.title}
-            <button onClick={() => setShowCustomize(true)} className="ml-2 underline hover:text-white/80">Customize</button>
-          </p>
+          <p className="text-xs text-white/50 mb-2">Level {prog.level} · {prog.title}</p>
           <div className="space-y-1">
             <div className="flex justify-between text-[10px] text-white/40">
               <span>{prog.current} XP</span>
@@ -236,11 +232,45 @@ export default function StudentDashboard() {
             </div>
           </div>
         </div>
-        <div className="text-center shrink-0">
-          <p className="text-xl font-bold text-amber-400">{safeProfile.coins}</p>
-          <p className="text-[10px] text-white/40 uppercase tracking-wide">Coins</p>
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <div className="text-center">
+            <p className="text-xl font-bold text-amber-400">{safeProfile.coins}</p>
+            <p className="text-[10px] text-white/40 uppercase tracking-wide">Coins</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowCustomize(true)}
+            className="text-[10px] font-semibold text-white/60 hover:text-white border border-white/20 hover:border-white/40 rounded-lg px-2 py-1 transition-colors">
+            Customize
+          </button>
         </div>
       </div>
+
+      {/* ── Join code (promoted when not enrolled) ── */}
+      {!dataLoading && pending.length === 0 && completed.length === 0 && (
+        <div className="bg-white rounded-2xl border-2 border-indigo-200 px-6 py-5 space-y-3">
+          <div>
+            <p className="font-semibold text-oxford">Join your class</p>
+            <p className="text-xs text-charcoal-light mt-0.5">Enter the 6-character code your teacher gave you.</p>
+          </div>
+          <form onSubmit={handleJoin} className="flex gap-3 items-end">
+            <input
+              autoFocus
+              placeholder="ABC123"
+              value={joinCode}
+              onChange={e => setJoinCode(e.target.value.toUpperCase())}
+              maxLength={6}
+              className="flex-1 rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm font-mono tracking-widest text-oxford placeholder:text-gray-300 placeholder:font-sans placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+            />
+            <button type="submit" disabled={joining || joinCode.length < 6}
+              className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap">
+              {joining ? 'Joining…' : 'Join'}
+            </button>
+          </form>
+          {joinError   && <p className="text-sm text-red-500">{joinError}</p>}
+          {joinSuccess && <p className="text-sm text-green-600 font-medium">{joinSuccess}</p>}
+        </div>
+      )}
 
       {/* ── Quest board ── */}
       {dataLoading ? (
@@ -249,10 +279,9 @@ export default function StudentDashboard() {
         </div>
       ) : pending.length === 0 && completed.length === 0 ? (
         /* Empty state — no classes yet */
-        <div className="bg-white rounded-2xl border border-gray-100 px-8 py-14 text-center space-y-3">
-          <p className="text-xl font-bold text-gray-400">No quests</p>
-          <p className="font-semibold text-oxford">No quests yet</p>
-          <p className="text-sm text-charcoal-light">Enter the join code from your teacher below to get started.</p>
+        <div className="bg-white rounded-2xl border border-gray-100 px-8 py-12 text-center space-y-2">
+          <p className="font-semibold text-oxford">No assignments yet</p>
+          <p className="text-sm text-charcoal-light">They&apos;ll show up here once you join a class above.</p>
         </div>
       ) : pending.length === 0 ? (
         /* All caught up */
@@ -422,25 +451,27 @@ export default function StudentDashboard() {
         </a>
       </div>
 
-      {/* ── Join a class (secondary action, bottom) ── */}
-      <div className="pt-2">
-        <p className="text-xs font-bold text-gray-300 uppercase tracking-widest mb-3">Join a class</p>
-        <form onSubmit={handleJoin} className="flex gap-3 items-end">
-          <input
-            placeholder="Enter join code"
-            value={joinCode}
-            onChange={e => setJoinCode(e.target.value.toUpperCase())}
-            maxLength={6}
-            className="flex-1 rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm font-mono tracking-widest text-oxford placeholder:text-gray-300 placeholder:font-sans placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-          />
-          <button type="submit" disabled={joining || joinCode.length < 6}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors whitespace-nowrap">
-            {joining ? 'Joining…' : 'Join'}
-          </button>
-        </form>
-        {joinError   && <p className="text-sm text-red-500 mt-2">{joinError}</p>}
-        {joinSuccess && <p className="text-sm text-green-600 mt-2 font-medium">{joinSuccess}</p>}
-      </div>
+      {/* ── Join another class (secondary, only when already enrolled) ── */}
+      {(pending.length > 0 || completed.length > 0) && (
+        <div className="pt-2">
+          <p className="text-xs font-bold text-gray-300 uppercase tracking-widest mb-3">Join another class</p>
+          <form onSubmit={handleJoin} className="flex gap-3 items-end">
+            <input
+              placeholder="Enter join code"
+              value={joinCode}
+              onChange={e => setJoinCode(e.target.value.toUpperCase())}
+              maxLength={6}
+              className="flex-1 rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm font-mono tracking-widest text-oxford placeholder:text-gray-300 placeholder:font-sans placeholder:tracking-normal focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+            />
+            <button type="submit" disabled={joining || joinCode.length < 6}
+              className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors whitespace-nowrap">
+              {joining ? 'Joining…' : 'Join'}
+            </button>
+          </form>
+          {joinError   && <p className="text-sm text-red-500 mt-2">{joinError}</p>}
+          {joinSuccess && <p className="text-sm text-green-600 mt-2 font-medium">{joinSuccess}</p>}
+        </div>
+      )}
 
     </div>
   )
