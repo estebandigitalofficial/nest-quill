@@ -383,7 +383,7 @@ function SecondaryProducts() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-5">
+        <div className="grid md:grid-cols-3 gap-5">
           <div className="bg-white/8 border border-white/15 rounded-2xl p-7 flex flex-col">
             <div className="mb-5">
               <div className="inline-block bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-4">
@@ -457,6 +457,44 @@ function SecondaryProducts() {
               className="inline-flex justify-center bg-white hover:bg-slate-100 text-oxford font-semibold px-6 py-3 rounded-full text-sm transition-colors"
             >
               Try Classroom free →
+            </Link>
+          </div>
+
+          <div className="bg-white/8 border border-white/15 rounded-2xl p-7 flex flex-col">
+            <div className="mb-5">
+              <div className="inline-block bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-4">
+                Homeschool
+              </div>
+
+              <h3 className="font-serif text-2xl text-white mb-3">
+                A complete K–8 curriculum for homeschool families.
+              </h3>
+
+              <p className="text-sm text-slate-400 leading-relaxed">
+                Structured courses, weekly lesson plans, and AI-powered
+                learning tools for every core subject.
+              </p>
+            </div>
+
+            <ul className="space-y-2 mb-7 flex-1">
+              {[
+                'Full-year courses',
+                'Every core subject',
+                'Weekly pacing guides',
+                'Auto-graded and tracked',
+              ].map((item) => (
+                <li key={item} className="text-sm text-white/75 flex gap-2">
+                  <span className="text-emerald-300">✓</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              href="/homeschool"
+              className="inline-flex justify-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-full text-sm transition-colors"
+            >
+              Explore Homeschool →
             </Link>
           </div>
         </div>

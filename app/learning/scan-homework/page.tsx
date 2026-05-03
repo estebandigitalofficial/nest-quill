@@ -94,6 +94,30 @@ export default async function ScanHomeworkPage() {
             </div>
           </div>
         </section>
+        {/* Upsell — custom course */}
+        <section className="px-6 pb-10">
+          <div className="max-w-lg mx-auto">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-6 py-5 space-y-3">
+              <div className="inline-block bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">
+                Coming soon
+              </div>
+              <h3 className="font-serif text-lg text-oxford">
+                Want a full month of coursework from this?
+              </h3>
+              <p className="text-xs text-charcoal-light leading-relaxed">
+                Turn your scanned homework into a complete custom course — a
+                month of structured quizzes, flashcards, study guides, and
+                practice problems built around exactly what your child is learning.
+              </p>
+              <Link
+                href="/homeschool"
+                className="inline-block bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors"
+              >
+                Learn about homeschool curriculum →
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
 
       <SiteFooter />
