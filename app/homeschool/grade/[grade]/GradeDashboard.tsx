@@ -454,9 +454,9 @@ export default function GradeDashboard({ grade }: { grade: number }) {
                                     <p className="text-xs text-indigo-800 mb-3">Use these AI-powered tools for this unit&apos;s topic:</p>
                                     <div className="flex flex-wrap gap-2">
                                       {[
-                                        { label: 'Take Quiz', href: `/learning/quiz?topic=${encodeURIComponent(unit.title)}&grade=${grade}&subject=${encodeURIComponent(course.subject)}` },
-                                        { label: 'Flashcards', href: `/learning/flashcards?topic=${encodeURIComponent(unit.title)}&grade=${grade}&subject=${encodeURIComponent(course.subject)}` },
-                                        { label: 'Study Guide', href: `/learning/study-guide?topic=${encodeURIComponent(unit.title)}&grade=${grade}&subject=${encodeURIComponent(course.subject)}` },
+                                        { label: 'Take Quiz', href: `/learning/quiz?topic=${encodeURIComponent(unit.title)}&grade=${grade}&subject=${encodeURIComponent(course.subject)}&auto=1` },
+                                        { label: 'Flashcards', href: `/learning/flashcards?topic=${encodeURIComponent(unit.title)}&grade=${grade}&subject=${encodeURIComponent(course.subject)}&auto=1` },
+                                        { label: 'Study Guide', href: `/learning/study-guide?topic=${encodeURIComponent(unit.title)}&grade=${grade}&subject=${encodeURIComponent(course.subject)}&auto=1` },
                                       ].map(tool => (
                                         <Link
                                           key={tool.label}

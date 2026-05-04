@@ -64,10 +64,12 @@ export default function FlashcardGenerator({ assignmentId, initialTopic, initial
     }
   }, [cards, assignmentId])
 
-  // Auto-generate from assignment or initial image
+  // Auto-generate from assignment, initial image, or preview link
   useEffect(() => {
     if (assignmentId && initialTopic && !cards && !loading) {
       generateCards({ topic: initialTopic.trim(), grade: initialGrade ?? undefined })
+    } else if (initialTopic && initialGrade && !assignmentId && !cards && !loading && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('auto') === '1') {
+      generateCards({ topic: initialTopic.trim(), grade: initialGrade })
     } else if (initialImage && !cards && !loading) {
       generateCards({ imageBase64: initialImage.base64, mimeType: initialImage.mimeType, grade: initialGrade ?? undefined })
     }

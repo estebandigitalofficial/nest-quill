@@ -646,7 +646,7 @@ export default function UniversityDashboard() {
                               {unitContent.map(item => {
                                 const isFilled = JSON.stringify(item.content) !== '{}'
                                 const toolPath = item.tool_type === 'study-guide' ? 'study-guide' : item.tool_type
-                                const previewUrl = `/learning/${toolPath}?topic=${encodeURIComponent(unit.title)}&grade=${selectedGrade}&subject=${encodeURIComponent(course.subject)}`
+                                const previewUrl = `/learning/${toolPath}?topic=${encodeURIComponent(unit.title)}&grade=${selectedGrade}&subject=${encodeURIComponent(course.subject)}&auto=1`
                                 return (
                                   <span key={item.id} className="inline-flex items-center gap-1">
                                     <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-l-lg border transition-colors ${

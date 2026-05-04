@@ -78,10 +78,12 @@ export default function StudyGuideGenerator({ assignmentId, initialTopic, initia
     }
   }, [guide, assignmentId])
 
-  // Auto-generate from assignment or initial image
+  // Auto-generate from assignment, initial image, or preview link
   useEffect(() => {
     if (assignmentId && initialTopic && !guide && !loading) {
       generateGuide({ topic: initialTopic.trim(), subject: initialSubject, grade: initialGrade ?? undefined })
+    } else if (initialTopic && initialGrade && !assignmentId && !guide && !loading && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('auto') === '1') {
+      generateGuide({ topic: initialTopic.trim(), subject: initialSubject, grade: initialGrade })
     } else if (initialImage && !guide && !loading) {
       generateGuide({ imageBase64: initialImage.base64, mimeType: initialImage.mimeType, grade: initialGrade ?? undefined })
     }

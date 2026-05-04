@@ -75,9 +75,11 @@ export default function QuizGenerator({ assignmentId, initialTopic, initialGrade
     }
   }, [stage])
 
-  // Auto-generate if coming from an assignment with a pre-filled topic
+  // Auto-generate if coming from an assignment or preview link with a pre-filled topic
   useEffect(() => {
     if (assignmentId && initialTopic && stage === 'form') {
+      handleGenerate()
+    } else if (initialTopic && initialGrade && !assignmentId && stage === 'form' && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('auto') === '1') {
       handleGenerate()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
