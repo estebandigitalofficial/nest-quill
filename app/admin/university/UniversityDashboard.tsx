@@ -645,17 +645,25 @@ export default function UniversityDashboard() {
                             <div className="flex flex-wrap gap-1.5 ml-8">
                               {unitContent.map(item => {
                                 const isFilled = JSON.stringify(item.content) !== '{}'
+                                const toolPath = item.tool_type === 'study-guide' ? 'study-guide' : item.tool_type
+                                const previewUrl = `/learning/${toolPath}?topic=${encodeURIComponent(unit.title)}&grade=${selectedGrade}&subject=${encodeURIComponent(course.subject)}`
                                 return (
-                                  <button key={item.id}
-                                    onClick={() => isFilled ? setViewItem(item) : undefined}
-                                    className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
+                                  <span key={item.id} className="inline-flex items-center gap-1">
+                                    <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-l-lg border transition-colors ${
                                       isFilled
-                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 cursor-pointer'
-                                        : 'border-adm-border bg-adm-bg text-adm-muted cursor-default'
+                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                                        : 'border-adm-border bg-adm-bg text-adm-muted'
                                     }`}>
-                                    {TOOL_LABELS[item.tool_type] ?? item.tool_type}
-                                    {isFilled ? ' ✓' : ' ○'}
-                                  </button>
+                                      {TOOL_LABELS[item.tool_type] ?? item.tool_type}
+                                      {isFilled ? ' ✓' : ' ○'}
+                                    </span>
+                                    {isFilled && (
+                                      <a href={previewUrl} target="_blank" rel="noopener noreferrer"
+                                        className="text-[10px] font-semibold px-2 py-1 rounded-r-lg border border-l-0 border-brand-500/30 bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 transition-colors">
+                                        Preview ↗
+                                      </a>
+                                    )}
+                                  </span>
                                 )
                               })}
                               {unitContent.length === 0 && (
