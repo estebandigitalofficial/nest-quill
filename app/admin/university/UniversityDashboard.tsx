@@ -190,22 +190,56 @@ export default function UniversityDashboard() {
 
   // ── Generation handlers ──────────────────────────────────────────────────
 
+  const [genCount, setGenCount] = useState(0)
+
   async function handleGenerateForGrade(grade: number) {
     setGenerating(true)
+    setGenCount(0)
     let total = 0
     for (let i = 0; i < 50; i++) {
       const res = await fetch('/api/admin/university/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grade, limit: 10 }),
+        body: JSON.stringify({ grade, limit: 5 }),
       })
       const data = await res.json()
       total += data.generated ?? 0
+      setGenCount(total)
       if (!data.generated || data.generated === 0) break
-      await new Promise(r => setTimeout(r, 300))
+      await new Promise(r => setTimeout(r, 200))
     }
     setGenerating(false)
+    setGenCount(0)
     fetchGrades()
+    fetchGenProgress()
+    if (selectedGrade === grade) fetchGradeDetail(grade)
+  }
+
+  async function handleGenerateForSubject(grade: number, subject: string) {
+    setGenerating(true)
+    setGenCount(0)
+    let total = 0
+    // Get items for this specific subject
+    const res0 = await fetch(`/api/admin/university?grade=${grade}&subject=${encodeURIComponent(subject)}&limit=100`)
+    if (!res0.ok) { setGenerating(false); return }
+    const { items: subjectItems } = await res0.json()
+    const emptyIds = (subjectItems as ContentItem[])
+      .filter(i => JSON.stringify(i.content) === '{}')
+      .map(i => i.id)
+
+    for (const id of emptyIds) {
+      const res = await fetch('/api/admin/university/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      const data = await res.json()
+      total += data.generated ?? 0
+      setGenCount(total)
+      await new Promise(r => setTimeout(r, 100))
+    }
+    setGenerating(false)
+    setGenCount(0)
     fetchGenProgress()
     if (selectedGrade === grade) fetchGradeDetail(grade)
   }
@@ -420,8 +454,9 @@ export default function UniversityDashboard() {
                     <div className="w-8 h-8 bg-adm-card border border-adm-border rounded-lg flex items-center justify-center text-adm-muted text-lg mx-auto mb-3 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-colors">
                       +
                     </div>
+                    {generating && <div className="w-4 h-4 border-2 border-emerald-300/30 border-t-emerald-400 rounded-full animate-spin mx-auto mb-1" />}
                     <p className="text-xs font-semibold text-adm-muted group-hover:text-emerald-400 transition-colors">
-                      {generating ? 'Generating...' : 'Generate Content'}
+                      {generating ? `Generating... (${genCount})` : 'Generate Content'}
                     </p>
                     <p className="text-[10px] text-adm-muted mt-0.5">Fill empty quizzes, cards, guides</p>
                   </button>
@@ -575,10 +610,18 @@ export default function UniversityDashboard() {
               {/* ── STUDENT TAB ── */}
               {selectedSubject && gradeTab === 'student' && (
                 <div className="space-y-3">
-                  <div className="bg-adm-card border border-adm-border rounded-xl px-4 py-3">
+                  <div className="bg-adm-card border border-adm-border rounded-xl px-4 py-3 flex items-center justify-between gap-3">
                     <p className="text-xs text-adm-muted">
                       Auto-graded quizzes, flashcards, study guides, and practice materials for students.
                     </p>
+                    <button
+                      onClick={() => handleGenerateForSubject(selectedGrade!, selectedSubject)}
+                      disabled={generating}
+                      className="text-xs font-bold text-white px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition-colors disabled:opacity-50 shrink-0 flex items-center gap-2"
+                    >
+                      {generating && <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                      {generating ? `Generating... (${genCount})` : `Generate ${selectedSubject} Content`}
+                    </button>
                   </div>
 
                   {filteredCourses.map(course => (
