@@ -152,7 +152,7 @@ export default function UniversityDashboard() {
       setCourses(data.courses)
     }
     // Also fetch content items for this grade
-    const cRes = await fetch(`/api/admin/university?grade=${grade}&limit=100`)
+    const cRes = await fetch(`/api/admin/university?grade=${grade}&limit=500`)
     if (cRes.ok) {
       const cData = await cRes.json()
       setContentItems(cData.items)
