@@ -1,7 +1,63 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import Link from 'next/link'
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface GradeSummary {
+  grade: number
+  subjects: string[]
+  courseCount: number
+  unitCount: number
+  guideCount: number
+  bookCount: number
+  contentTotal: number
+  contentFilled: number
+  contentEmpty: number
+}
+
+interface TeachingGuide {
+  id: string
+  title: string
+  objectives: string[]
+  materials: string[]
+  instruction_plan: Record<string, unknown>
+  assessment_ideas: string[]
+  standards: string[]
+  duration_minutes: number
+}
+
+interface Unit {
+  id: string
+  title: string
+  description: string | null
+  week_start: number | null
+  week_end: number | null
+  sort_order: number
+  curriculum_teaching_guides?: TeachingGuide[]
+}
+
+interface Book {
+  id: string
+  title: string
+  author: string
+  isbn: string | null
+  publisher: string | null
+  purchase_url: string | null
+  book_type: string
+  is_required: boolean
+  description: string | null
+}
+
+interface Course {
+  id: string
+  grade: number
+  subject: string
+  title: string
+  description: string | null
+  curriculum_units?: Unit[]
+  curriculum_books?: Book[]
+}
 
 interface ContentItem {
   id: string
@@ -14,110 +70,151 @@ interface ContentItem {
   tags: string[]
   source: string
   quality: string
-  difficulty: string | null
   use_count: number
   avg_score: number | null
-  total_attempts: number
   is_active: boolean
-  created_at: string
-  updated_at: string
 }
 
-interface Stats {
-  totalContent: number
-  quizzes: number
-  flashcards: number
-  studyGuides: number
-  courses: number
-  units: number
-  lessons: number
+// ── Constants ────────────────────────────────────────────────────────────────
+
+const GRADE_LABELS: Record<number, string> = {
+  1: '1st', 2: '2nd', 3: '3rd', 4: '4th', 5: '5th', 6: '6th',
+  7: '7th', 8: '8th', 9: '9th', 10: '10th', 11: '11th', 12: '12th',
 }
 
-const TOOL_TYPES = ['quiz', 'flashcards', 'study-guide', 'explain', 'reading', 'spelling', 'math']
-const GRADES = [1, 2, 3, 4, 5, 6, 7, 8]
-const SUBJECTS = ['Math', 'Science', 'English', 'History', 'Social Studies', 'Reading', 'Spelling', 'Geography', 'Vocabulary', 'Grammar']
-const QUALITY_LEVELS = ['auto', 'reviewed', 'approved', 'featured']
+const SUBJECT_COLORS: Record<string, { bg: string; text: string; border: string; accent: string }> = {
+  Math:              { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30', accent: 'bg-blue-500' },
+  English:           { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/30', accent: 'bg-violet-500' },
+  Science:           { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30', accent: 'bg-emerald-500' },
+  'Social Studies':  { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30', accent: 'bg-amber-500' },
+  History:           { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/30', accent: 'bg-rose-500' },
+}
 
 const TOOL_LABELS: Record<string, string> = {
-  quiz: 'Quiz',
-  flashcards: 'Flashcards',
-  'study-guide': 'Study Guide',
-  explain: 'Explainer',
-  reading: 'Reading',
-  spelling: 'Spelling',
-  math: 'Math',
+  quiz: 'Quiz', flashcards: 'Flashcards', 'study-guide': 'Study Guide',
+  explain: 'Explainer', reading: 'Reading', spelling: 'Spelling', math: 'Math',
 }
 
-const QUALITY_COLORS: Record<string, string> = {
-  auto: 'bg-gray-100 text-gray-600',
-  reviewed: 'bg-blue-100 text-blue-700',
-  approved: 'bg-green-100 text-green-700',
-  featured: 'bg-amber-100 text-amber-700',
+const BOOK_TYPE_LABELS: Record<string, string> = {
+  textbook: 'Textbook', workbook: 'Workbook', teacher_guide: 'Teacher Guide',
+  supplemental: 'Supplemental', read_aloud: 'Read Aloud', reference: 'Reference',
 }
+
+type View = 'grades' | 'grade-detail' | 'library'
+
+// ── Component ────────────────────────────────────────────────────────────────
 
 export default function UniversityDashboard() {
-  const [items, setItems] = useState<ContentItem[]>([])
-  const [stats, setStats] = useState<Stats | null>(null)
+  // Navigation
+  const [view, setView] = useState<View>('grades')
+  const [selectedGrade, setSelectedGrade] = useState<number | null>(null)
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null)
+  const [gradeTab, setGradeTab] = useState<'educator' | 'student' | 'materials'>('educator')
+  const [expandedUnit, setExpandedUnit] = useState<string | null>(null)
+
+  // Data
+  const [grades, setGrades] = useState<GradeSummary[]>([])
+  const [courses, setCourses] = useState<Course[]>([])
+  const [contentItems, setContentItems] = useState<ContentItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
+  const [detailLoading, setDetailLoading] = useState(false)
 
-  // Filters
-  const [filterTool, setFilterTool] = useState('')
-  const [filterGrade, setFilterGrade] = useState('')
-  const [filterSubject, setFilterSubject] = useState('')
-  const [filterQuality, setFilterQuality] = useState('')
-  const [search, setSearch] = useState('')
-  const [searchInput, setSearchInput] = useState('')
-
-  // Edit modal
-  const [editItem, setEditItem] = useState<ContentItem | null>(null)
-  const [editTitle, setEditTitle] = useState('')
-  const [editQuality, setEditQuality] = useState('')
-  const [editGrade, setEditGrade] = useState<number | ''>('')
-  const [editSubject, setEditSubject] = useState('')
-  const [saving, setSaving] = useState(false)
-
-  // View modal
-  const [viewItem, setViewItem] = useState<ContentItem | null>(null)
-
-  // Batch generation
+  // Generation
   const [generating, setGenerating] = useState(false)
-  const [genResult, setGenResult] = useState<{ generated: number; total: number; errors?: string[] } | null>(null)
   const [genProgress, setGenProgress] = useState<{ filled: number; empty: number; total: number } | null>(null)
   const [autoRunning, setAutoRunning] = useState(false)
   const [autoTotal, setAutoTotal] = useState(0)
 
-  async function fetchGenProgress() {
-    const res = await fetch('/api/admin/university/generate')
+  // Content library (for the library tab)
+  const [libItems, setLibItems] = useState<ContentItem[]>([])
+  const [libTotal, setLibTotal] = useState(0)
+  const [libPage, setLibPage] = useState(1)
+  const [libLoading, setLibLoading] = useState(false)
+  const [viewItem, setViewItem] = useState<ContentItem | null>(null)
+
+  // ── Data fetching ────────────────────────────────────────────────────────
+
+  async function fetchGrades() {
+    setLoading(true)
+    const res = await fetch('/api/admin/university/grades')
     if (res.ok) {
       const data = await res.json()
-      setGenProgress(data)
+      setGrades(data.grades)
     }
+    setLoading(false)
   }
 
-  async function handleBatchGenerate(toolType?: string, grade?: number) {
+  async function fetchGradeDetail(grade: number) {
+    setDetailLoading(true)
+    const res = await fetch(`/api/homeschool/grade/${grade}`)
+    if (res.ok) {
+      const data = await res.json()
+      setCourses(data.courses)
+    }
+    // Also fetch content items for this grade
+    const cRes = await fetch(`/api/admin/university?grade=${grade}&limit=100`)
+    if (cRes.ok) {
+      const cData = await cRes.json()
+      setContentItems(cData.items)
+    }
+    setDetailLoading(false)
+  }
+
+  async function fetchGenProgress() {
+    const res = await fetch('/api/admin/university/generate')
+    if (res.ok) setGenProgress(await res.json())
+  }
+
+  async function fetchLibrary() {
+    setLibLoading(true)
+    const params = new URLSearchParams({ page: String(libPage), limit: '50' })
+    if (selectedGrade) params.set('grade', String(selectedGrade))
+    const res = await fetch(`/api/admin/university?${params}`)
+    if (res.ok) {
+      const data = await res.json()
+      setLibItems(data.items)
+      setLibTotal(data.total)
+    }
+    setLibLoading(false)
+  }
+
+  useEffect(() => { fetchGrades(); fetchGenProgress() }, [])
+
+  useEffect(() => {
+    if (selectedGrade) fetchGradeDetail(selectedGrade)
+  }, [selectedGrade])
+
+  useEffect(() => {
+    if (view === 'library') fetchLibrary()
+  }, [view, libPage, selectedGrade]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Generation handlers ──────────────────────────────────────────────────
+
+  async function handleGenerateForGrade(grade: number) {
     setGenerating(true)
-    setGenResult(null)
-    const res = await fetch('/api/admin/university/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ toolType, grade, limit: 10 }),
-    })
-    const data = await res.json()
-    setGenResult(data)
+    let total = 0
+    for (let i = 0; i < 50; i++) {
+      const res = await fetch('/api/admin/university/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grade, limit: 10 }),
+      })
+      const data = await res.json()
+      total += data.generated ?? 0
+      if (!data.generated || data.generated === 0) break
+      await new Promise(r => setTimeout(r, 300))
+    }
     setGenerating(false)
-    fetchData()
+    fetchGrades()
     fetchGenProgress()
+    if (selectedGrade === grade) fetchGradeDetail(grade)
   }
 
   async function handleGenerateAll() {
     setAutoRunning(true)
     setAutoTotal(0)
     let totalGenerated = 0
-
-    // Run batches of 10 until nothing is left
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 200; i++) {
       const res = await fetch('/api/admin/university/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -126,448 +223,648 @@ export default function UniversityDashboard() {
       const data = await res.json()
       totalGenerated += data.generated ?? 0
       setAutoTotal(totalGenerated)
-
       if (!data.generated || data.generated === 0) break
-
-      // Brief pause between batches
-      await new Promise(r => setTimeout(r, 500))
-      fetchGenProgress()
+      await new Promise(r => setTimeout(r, 300))
+      if (totalGenerated % 50 === 0) fetchGenProgress()
     }
-
     setAutoRunning(false)
-    setGenResult({ generated: totalGenerated, total: totalGenerated })
-    fetchData()
+    fetchGrades()
     fetchGenProgress()
   }
 
-  async function handleGenerateOne(id: string) {
-    setGenerating(true)
-    await fetch('/api/admin/university/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    })
-    setGenerating(false)
-    fetchData()
-    fetchGenProgress()
+  // ── Navigation helpers ───────────────────────────────────────────────────
+
+  function openGrade(grade: number) {
+    setSelectedGrade(grade)
+    setSelectedSubject(null)
+    setGradeTab('educator')
+    setExpandedUnit(null)
+    setView('grade-detail')
   }
 
-  // Fetch generation progress on mount
-  useEffect(() => { fetchGenProgress() }, [])
-
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    const params = new URLSearchParams()
-    params.set('page', String(page))
-    if (filterTool) params.set('tool_type', filterTool)
-    if (filterGrade) params.set('grade', filterGrade)
-    if (filterSubject) params.set('subject', filterSubject)
-    if (filterQuality) params.set('quality', filterQuality)
-    if (search) params.set('search', search)
-
-    const res = await fetch(`/api/admin/university?${params}`)
-    if (res.ok) {
-      const data = await res.json()
-      setItems(data.items)
-      setTotal(data.total)
-      setStats(data.stats)
-    }
-    setLoading(false)
-  }, [page, filterTool, filterGrade, filterSubject, filterQuality, search])
-
-  useEffect(() => { fetchData() }, [fetchData])
-
-  function openEdit(item: ContentItem) {
-    setEditItem(item)
-    setEditTitle(item.title)
-    setEditQuality(item.quality)
-    setEditGrade(item.grade ?? '')
-    setEditSubject(item.subject ?? '')
-  }
-
-  async function handleSave() {
-    if (!editItem) return
-    setSaving(true)
-    const res = await fetch('/api/admin/university', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: editItem.id,
-        title: editTitle,
-        quality: editQuality,
-        grade: editGrade || null,
-        subject: editSubject || null,
-      }),
-    })
-    if (res.ok) {
-      const data = await res.json()
-      setItems(prev => prev.map(i => i.id === editItem.id ? data.item : i))
-      setEditItem(null)
-    }
-    setSaving(false)
-  }
-
-  async function handleDelete(id: string) {
-    const res = await fetch('/api/admin/university', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    })
-    if (res.ok) {
-      setItems(prev => prev.filter(i => i.id !== id))
-      setTotal(prev => prev - 1)
+  function goBack() {
+    if (selectedSubject) {
+      setSelectedSubject(null)
+    } else {
+      setView('grades')
+      setSelectedGrade(null)
     }
   }
 
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault()
-    setSearch(searchInput)
-    setPage(1)
+  // ── Derived data ─────────────────────────────────────────────────────────
+
+  const filteredCourses = selectedSubject
+    ? courses.filter(c => c.subject === selectedSubject)
+    : courses
+
+  // Aggregate materials for this grade
+  const allMaterials = new Set<string>()
+  const allBooks: Book[] = []
+  for (const course of courses) {
+    for (const unit of (course.curriculum_units ?? [])) {
+      for (const guide of (unit.curriculum_teaching_guides ?? [])) {
+        for (const mat of guide.materials) allMaterials.add(mat)
+      }
+    }
+    for (const book of (course.curriculum_books ?? [])) {
+      allBooks.push(book)
+    }
   }
 
-  const totalPages = Math.ceil(total / 50)
+  // Split content by type: educator (teaching guides) vs student (quizzes, flashcards, etc.)
+  const educatorContent = contentItems.filter(i => ['study-guide', 'explain'].includes(i.tool_type))
+  const studentContent = contentItems.filter(i => ['quiz', 'flashcards', 'reading', 'spelling', 'math'].includes(i.tool_type))
+
+  // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
+
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-white">Bright Tale University</h1>
-        <p className="text-sm text-adm-muted mt-1">
-          Content library, curriculum, and learning analytics
-        </p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-white">Bright Tale University</h1>
+          <p className="text-sm text-adm-muted mt-1">
+            {view === 'grades' ? 'Curriculum, content library, and educator materials for all grades' :
+             view === 'grade-detail' ? `Grade ${selectedGrade} — ${selectedSubject ?? 'All Subjects'}` :
+             'Content Library'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {view !== 'grades' && (
+            <button onClick={goBack}
+              className="text-xs font-semibold text-adm-muted hover:text-white px-3 py-1.5 rounded-lg border border-adm-border transition-colors">
+              ← Back
+            </button>
+          )}
+          <button
+            onClick={() => { setView(view === 'library' ? 'grades' : 'library'); setLibPage(1) }}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+              view === 'library' ? 'border-brand-500 bg-brand-500/20 text-brand-400' : 'border-adm-border text-adm-muted hover:text-white'
+            }`}
+          >
+            {view === 'library' ? 'Grade View' : 'Content Library'}
+          </button>
+        </div>
       </div>
 
-      {/* Stats cards */}
-      {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-          {[
-            { label: 'Total Content', value: stats.totalContent, color: 'text-white' },
-            { label: 'Quizzes', value: stats.quizzes, color: 'text-indigo-400' },
-            { label: 'Flashcards', value: stats.flashcards, color: 'text-violet-400' },
-            { label: 'Study Guides', value: stats.studyGuides, color: 'text-emerald-400' },
-            { label: 'Courses', value: stats.courses, color: 'text-amber-400' },
-            { label: 'Units', value: stats.units, color: 'text-blue-400' },
-            { label: 'Lessons', value: stats.lessons, color: 'text-pink-400' },
-          ].map(s => (
-            <div key={s.label} className="bg-adm-card border border-adm-border rounded-xl px-4 py-3 text-center">
-              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-[10px] text-adm-muted uppercase tracking-wide">{s.label}</p>
+      {/* Global generation progress */}
+      {genProgress && genProgress.total > 0 && (
+        <div className="bg-adm-card border border-adm-border rounded-xl px-4 py-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-adm-muted">
+              Content Library: {genProgress.filled} filled / {genProgress.empty} empty / {genProgress.total} total
+            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-xs font-bold text-white">
+                {Math.round((genProgress.filled / genProgress.total) * 100)}%
+              </p>
+              <button onClick={handleGenerateAll} disabled={generating || autoRunning}
+                className="text-xs font-bold text-white px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition-colors disabled:opacity-50">
+                {autoRunning ? `Generating... (${autoTotal})` : 'Generate All'}
+              </button>
             </div>
-          ))}
+          </div>
+          <div className="h-1.5 bg-adm-bg rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-emerald-500 to-green-400 rounded-full transition-all duration-500"
+              style={{ width: `${(genProgress.filled / genProgress.total) * 100}%` }} />
+          </div>
         </div>
       )}
 
-      {/* Batch generation controls */}
-      <div className="bg-adm-card border border-adm-border rounded-xl px-4 py-4 space-y-4">
-        {/* Progress bar */}
-        {genProgress && genProgress.total > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-adm-muted">
-                Library: {genProgress.filled} filled / {genProgress.empty} empty / {genProgress.total} total
-              </p>
-              <p className="text-xs font-bold text-white">
-                {genProgress.total > 0 ? Math.round((genProgress.filled / genProgress.total) * 100) : 0}% complete
-              </p>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          GRADES VIEW — Grade cards grid
+          ═══════════════════════════════════════════════════════════════════════ */}
+      {view === 'grades' && (
+        <>
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-8 h-8 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
             </div>
-            <div className="h-2 bg-adm-bg rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-emerald-500 to-green-400 rounded-full transition-all duration-500"
-                style={{ width: `${genProgress.total > 0 ? (genProgress.filled / genProgress.total) * 100 : 0}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm text-white font-medium">Generate:</p>
-
-          {/* Generate All button */}
-          <button onClick={handleGenerateAll} disabled={generating || autoRunning}
-            className="text-xs font-bold text-white px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition-colors disabled:opacity-50 shadow-sm">
-            {autoRunning ? `Generating... (${autoTotal} done)` : 'Generate All Content'}
-          </button>
-
-          <span className="text-adm-muted text-xs">or batch:</span>
-
-          <button onClick={() => handleBatchGenerate('quiz')} disabled={generating || autoRunning}
-            className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 px-3 py-1.5 rounded-lg border border-adm-border hover:bg-white/5 transition-colors disabled:opacity-50">
-            Quizzes (10)
-          </button>
-          <button onClick={() => handleBatchGenerate('flashcards')} disabled={generating || autoRunning}
-            className="text-xs font-semibold text-violet-400 hover:text-violet-300 px-3 py-1.5 rounded-lg border border-adm-border hover:bg-white/5 transition-colors disabled:opacity-50">
-            Flashcards (10)
-          </button>
-          <button onClick={() => handleBatchGenerate('study-guide')} disabled={generating || autoRunning}
-            className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 px-3 py-1.5 rounded-lg border border-adm-border hover:bg-white/5 transition-colors disabled:opacity-50">
-            Study Guides (10)
-          </button>
-
-          {(generating || autoRunning) && (
-            <div className="w-4 h-4 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
-          )}
-        </div>
-
-        {genResult && !autoRunning && (
-          <div className="text-xs">
-            <p className={genResult.generated > 0 ? 'text-green-400' : 'text-adm-muted'}>
-              Generated {genResult.generated} items
-            </p>
-            {genResult.errors?.map((e, i) => (
-              <p key={i} className="text-red-400 mt-1">{e}</p>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Filters */}
-      <div className="bg-adm-card border border-adm-border rounded-xl px-4 py-4 space-y-3">
-        <div className="flex flex-wrap gap-3">
-          <select value={filterTool} onChange={e => { setFilterTool(e.target.value); setPage(1) }}
-            className="bg-adm-bg border border-adm-border text-white text-sm rounded-lg px-3 py-2">
-            <option value="">All tools</option>
-            {TOOL_TYPES.map(t => <option key={t} value={t}>{TOOL_LABELS[t]}</option>)}
-          </select>
-
-          <select value={filterGrade} onChange={e => { setFilterGrade(e.target.value); setPage(1) }}
-            className="bg-adm-bg border border-adm-border text-white text-sm rounded-lg px-3 py-2">
-            <option value="">All grades</option>
-            {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
-          </select>
-
-          <select value={filterSubject} onChange={e => { setFilterSubject(e.target.value); setPage(1) }}
-            className="bg-adm-bg border border-adm-border text-white text-sm rounded-lg px-3 py-2">
-            <option value="">All subjects</option>
-            {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-
-          <select value={filterQuality} onChange={e => { setFilterQuality(e.target.value); setPage(1) }}
-            className="bg-adm-bg border border-adm-border text-white text-sm rounded-lg px-3 py-2">
-            <option value="">All quality</option>
-            {QUALITY_LEVELS.map(q => <option key={q} value={q}>{q.charAt(0).toUpperCase() + q.slice(1)}</option>)}
-          </select>
-
-          <form onSubmit={handleSearch} className="flex gap-2 flex-1 min-w-[200px]">
-            <input
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              placeholder="Search topics..."
-              className="bg-adm-bg border border-adm-border text-white text-sm rounded-lg px-3 py-2 flex-1 placeholder:text-adm-muted"
-            />
-            <button type="submit" className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-              Search
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {/* Content table */}
-      <div className="bg-adm-card border border-adm-border rounded-xl overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
-          </div>
-        ) : items.length === 0 ? (
-          <div className="text-center py-20 space-y-3">
-            <p className="text-adm-muted">No content found</p>
-            <p className="text-sm text-adm-muted">
-              Content is automatically added when students use learning tools.
-              Run the migration to create the content_library table first.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead>
-                  <tr className="border-b border-adm-border text-adm-muted text-xs uppercase tracking-wider">
-                    <th className="px-4 py-3">Title / Topic</th>
-                    <th className="px-4 py-3">Type</th>
-                    <th className="px-4 py-3">Grade</th>
-                    <th className="px-4 py-3">Subject</th>
-                    <th className="px-4 py-3">Quality</th>
-                    <th className="px-4 py-3 text-right">Uses</th>
-                    <th className="px-4 py-3 text-right">Avg Score</th>
-                    <th className="px-4 py-3">Source</th>
-                    <th className="px-4 py-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map(item => (
-                    <tr key={item.id} className="border-b border-adm-border/50 hover:bg-adm-bg/50 transition-colors">
-                      <td className="px-4 py-3">
-                        <p className="text-white font-medium text-sm truncate max-w-[200px]">{item.title}</p>
-                        <p className="text-adm-muted text-xs truncate max-w-[200px]">{item.topic}</p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-xs font-semibold text-white/70">{TOOL_LABELS[item.tool_type] ?? item.tool_type}</span>
-                      </td>
-                      <td className="px-4 py-3 text-white/70">{item.grade ?? '—'}</td>
-                      <td className="px-4 py-3 text-white/70 text-xs">{item.subject ?? '—'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${QUALITY_COLORS[item.quality] ?? 'bg-gray-100 text-gray-600'}`}>
-                          {item.quality}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right text-white/70">{item.use_count}</td>
-                      <td className="px-4 py-3 text-right">
-                        {item.avg_score != null ? (
-                          <span className={`font-semibold ${item.avg_score >= 80 ? 'text-green-400' : item.avg_score >= 60 ? 'text-amber-400' : 'text-red-400'}`}>
-                            {Math.round(item.avg_score)}%
-                          </span>
-                        ) : (
-                          <span className="text-adm-muted">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-xs text-adm-muted capitalize">{item.source}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1">
-                          {JSON.stringify(item.content) === '{}' ? (
-                            <button onClick={() => handleGenerateOne(item.id)} disabled={generating}
-                              className="text-xs text-amber-400 hover:text-amber-300 font-medium px-2 py-1 rounded transition-colors disabled:opacity-50">
-                              {generating ? '...' : 'Generate'}
-                            </button>
-                          ) : (
-                            <button onClick={() => setViewItem(item)}
-                              className="text-xs text-brand-400 hover:text-brand-300 font-medium px-2 py-1 rounded transition-colors">
-                              View
-                            </button>
-                          )}
-                          <button onClick={() => openEdit(item)}
-                            className="text-xs text-white/50 hover:text-white font-medium px-2 py-1 rounded transition-colors">
-                            Edit
-                          </button>
-                          <button onClick={() => { if (confirm('Remove this content?')) handleDelete(item.id) }}
-                            className="text-xs text-red-400 hover:text-red-300 font-medium px-2 py-1 rounded transition-colors">
-                            Remove
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+          ) : (
+            <>
+              {/* Elementary */}
+              <div>
+                <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">Elementary (K-5)</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {grades.filter(g => g.grade <= 5).map(g => (
+                    <GradeCard key={g.grade} grade={g} onClick={() => openGrade(g.grade)} />
                   ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-adm-border">
-                <p className="text-xs text-adm-muted">
-                  {total} items · Page {page} of {totalPages}
-                </p>
-                <div className="flex gap-2">
-                  <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-                    className="text-xs text-white/60 hover:text-white px-3 py-1.5 rounded-lg border border-adm-border disabled:opacity-30 transition-colors">
-                    ← Prev
-                  </button>
-                  <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
-                    className="text-xs text-white/60 hover:text-white px-3 py-1.5 rounded-lg border border-adm-border disabled:opacity-30 transition-colors">
-                    Next →
-                  </button>
                 </div>
               </div>
-            )}
-          </>
-        )}
-      </div>
 
-      {/* View modal */}
+              {/* Middle School */}
+              <div>
+                <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">Middle School (6-8)</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
+                  {grades.filter(g => g.grade >= 6 && g.grade <= 8).map(g => (
+                    <GradeCard key={g.grade} grade={g} onClick={() => openGrade(g.grade)} />
+                  ))}
+                </div>
+              </div>
+
+              {/* High School */}
+              <div>
+                <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">High School (9-12)</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {grades.filter(g => g.grade >= 9).map(g => (
+                    <GradeCard key={g.grade} grade={g} onClick={() => openGrade(g.grade)} />
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          GRADE DETAIL VIEW
+          ═══════════════════════════════════════════════════════════════════════ */}
+      {view === 'grade-detail' && selectedGrade && (
+        <>
+          {detailLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-8 h-8 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
+            </div>
+          ) : (
+            <>
+              {/* Subject cards (if no subject selected) */}
+              {!selectedSubject && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {courses.map(course => {
+                    const colors = SUBJECT_COLORS[course.subject] ?? SUBJECT_COLORS.Math
+                    const units = course.curriculum_units ?? []
+                    const guides = units.reduce((n, u) => n + (u.curriculum_teaching_guides?.length ?? 0), 0)
+                    const books = course.curriculum_books?.length ?? 0
+
+                    return (
+                      <button key={course.id} onClick={() => setSelectedSubject(course.subject)}
+                        className={`${colors.bg} border ${colors.border} rounded-xl px-4 py-4 text-left hover:brightness-110 transition-all`}>
+                        <div className={`w-8 h-8 ${colors.accent} rounded-lg flex items-center justify-center text-white text-xs font-bold mb-3`}>
+                          {course.subject.charAt(0)}
+                        </div>
+                        <p className={`font-semibold text-sm ${colors.text}`}>{course.subject}</p>
+                        <p className="text-[10px] text-adm-muted mt-0.5 truncate">{course.title}</p>
+                        <div className="flex gap-3 mt-3 text-[10px] text-adm-muted">
+                          <span>{units.length} units</span>
+                          <span>{guides} guides</span>
+                          <span>{books} books</span>
+                        </div>
+                      </button>
+                    )
+                  })}
+
+                  {/* Generate for grade button */}
+                  <button onClick={() => handleGenerateForGrade(selectedGrade)} disabled={generating}
+                    className="border border-dashed border-adm-border rounded-xl px-4 py-4 text-center hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all disabled:opacity-50 group">
+                    <div className="w-8 h-8 bg-adm-card border border-adm-border rounded-lg flex items-center justify-center text-adm-muted text-lg mx-auto mb-3 group-hover:text-emerald-400 group-hover:border-emerald-500/30 transition-colors">
+                      +
+                    </div>
+                    <p className="text-xs font-semibold text-adm-muted group-hover:text-emerald-400 transition-colors">
+                      {generating ? 'Generating...' : 'Generate Content'}
+                    </p>
+                    <p className="text-[10px] text-adm-muted mt-0.5">Fill empty quizzes, cards, guides</p>
+                  </button>
+                </div>
+              )}
+
+              {/* Tab navigation (when subject selected) */}
+              {selectedSubject && (
+                <div className="flex gap-1 bg-adm-card border border-adm-border rounded-xl p-1">
+                  {([
+                    { id: 'educator' as const, label: 'Educator Materials', icon: '📋' },
+                    { id: 'student' as const, label: 'Student Materials', icon: '📝' },
+                    { id: 'materials' as const, label: 'Supplies & Books', icon: '📦' },
+                  ]).map(tab => (
+                    <button key={tab.id} onClick={() => setGradeTab(tab.id)}
+                      className={`flex-1 text-xs font-semibold py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                        gradeTab === tab.id ? 'bg-white/10 text-white' : 'text-adm-muted hover:text-white'
+                      }`}>
+                      <span>{tab.icon}</span> {tab.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* ── EDUCATOR TAB ── */}
+              {selectedSubject && gradeTab === 'educator' && (
+                <div className="space-y-3">
+                  <div className="bg-adm-card border border-adm-border rounded-xl px-4 py-3">
+                    <p className="text-xs text-adm-muted">
+                      Teaching guides, lesson plans, objectives, assessment ideas, and differentiation strategies for educators.
+                    </p>
+                  </div>
+
+                  {filteredCourses.map(course => (
+                    <div key={course.id} className="space-y-2">
+                      {(course.curriculum_units ?? []).map((unit, i) => {
+                        const guide = unit.curriculum_teaching_guides?.[0]
+                        const isExpanded = expandedUnit === unit.id
+                        const plan = guide?.instruction_plan as { daily_lessons?: unknown[]; hands_on_activities?: unknown[]; science_experiments?: unknown[]; parent_tips?: string[] } | undefined
+
+                        return (
+                          <div key={unit.id} className="bg-adm-card border border-adm-border rounded-xl overflow-hidden">
+                            <button onClick={() => setExpandedUnit(isExpanded ? null : unit.id)}
+                              className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-white/5 transition-colors">
+                              <span className="w-6 h-6 bg-adm-bg rounded-md flex items-center justify-center text-[10px] font-bold text-adm-muted shrink-0">
+                                {i + 1}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-white truncate">{unit.title}</p>
+                                {unit.description && <p className="text-[10px] text-adm-muted truncate">{unit.description}</p>}
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {unit.week_start && unit.week_end && (
+                                  <span className="text-[10px] text-adm-muted">Wk {unit.week_start}-{unit.week_end}</span>
+                                )}
+                                {guide ? (
+                                  <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">Ready</span>
+                                ) : (
+                                  <span className="text-[10px] font-semibold text-adm-muted bg-adm-bg px-2 py-0.5 rounded-full">Pending</span>
+                                )}
+                              </div>
+                            </button>
+
+                            {isExpanded && guide && (
+                              <div className="border-t border-adm-border px-4 py-4 space-y-4">
+                                {/* Objectives */}
+                                <div>
+                                  <p className="text-[10px] font-bold text-adm-muted uppercase tracking-widest mb-1.5">Learning Objectives</p>
+                                  <ul className="space-y-1">
+                                    {guide.objectives.map((obj, j) => (
+                                      <li key={j} className="text-xs text-white/80 flex gap-2">
+                                        <span className="text-emerald-400 shrink-0">-</span>{obj}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+
+                                {/* Daily lessons */}
+                                {plan?.daily_lessons && (
+                                  <div>
+                                    <p className="text-[10px] font-bold text-adm-muted uppercase tracking-widest mb-1.5">
+                                      Daily Lesson Plan ({(plan.daily_lessons as { title: string }[]).length} days)
+                                    </p>
+                                    <div className="space-y-1.5">
+                                      {(plan.daily_lessons as { day: number; title: string; duration: number; description: string }[]).map((lesson, j) => (
+                                        <div key={j} className="bg-adm-bg rounded-lg px-3 py-2">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-bold text-brand-400">Day {lesson.day}</span>
+                                            <span className="text-xs font-medium text-white">{lesson.title}</span>
+                                            <span className="text-[10px] text-adm-muted ml-auto">{lesson.duration}m</span>
+                                          </div>
+                                          <p className="text-[11px] text-adm-muted mt-0.5 leading-relaxed">{lesson.description}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Assessment */}
+                                <div>
+                                  <p className="text-[10px] font-bold text-adm-muted uppercase tracking-widest mb-1.5">Assessment Ideas</p>
+                                  <ul className="space-y-1">
+                                    {guide.assessment_ideas.map((idea, j) => (
+                                      <li key={j} className="text-xs text-white/70 flex gap-2">
+                                        <span className="text-adm-muted shrink-0">☐</span>{idea}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+
+                                {/* Parent tips */}
+                                {plan?.parent_tips && (plan.parent_tips as string[]).length > 0 && (
+                                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+                                    <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-1">Parent / Educator Tips</p>
+                                    <ul className="space-y-0.5">
+                                      {(plan.parent_tips as string[]).map((tip, j) => (
+                                        <li key={j} className="text-[11px] text-amber-200/80">- {tip}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+
+                                {/* Standards */}
+                                {guide.standards.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {guide.standards.map((s, j) => (
+                                      <span key={j} className="text-[9px] font-mono bg-adm-bg text-adm-muted px-1.5 py-0.5 rounded border border-adm-border">{s}</span>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Materials for this unit */}
+                                <div>
+                                  <p className="text-[10px] font-bold text-adm-muted uppercase tracking-widest mb-1.5">Materials Needed</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {guide.materials.map((m, j) => (
+                                      <span key={j} className="text-[10px] bg-adm-bg border border-adm-border text-adm-muted px-2 py-0.5 rounded-full">{m}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ── STUDENT TAB ── */}
+              {selectedSubject && gradeTab === 'student' && (
+                <div className="space-y-3">
+                  <div className="bg-adm-card border border-adm-border rounded-xl px-4 py-3">
+                    <p className="text-xs text-adm-muted">
+                      Auto-graded quizzes, flashcards, study guides, and practice materials for students.
+                    </p>
+                  </div>
+
+                  {filteredCourses.map(course => (
+                    <div key={course.id}>
+                      {(course.curriculum_units ?? []).map((unit, i) => {
+                        // Find matching content for this unit topic
+                        const unitContent = contentItems.filter(item =>
+                          item.subject?.toLowerCase() === course.subject.toLowerCase() &&
+                          item.topic?.toLowerCase() === unit.title.toLowerCase()
+                        )
+                        const filled = unitContent.filter(c => JSON.stringify(c.content) !== '{}')
+                        const empty = unitContent.filter(c => JSON.stringify(c.content) === '{}')
+
+                        return (
+                          <div key={unit.id} className="bg-adm-card border border-adm-border rounded-xl px-4 py-3 mb-2">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="text-[10px] font-bold text-adm-muted w-5">{i + 1}</span>
+                              <p className="text-sm font-medium text-white flex-1">{unit.title}</p>
+                              <span className="text-[10px] text-adm-muted">{filled.length} ready / {empty.length} empty</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 ml-8">
+                              {unitContent.map(item => {
+                                const isFilled = JSON.stringify(item.content) !== '{}'
+                                return (
+                                  <button key={item.id}
+                                    onClick={() => isFilled ? setViewItem(item) : undefined}
+                                    className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
+                                      isFilled
+                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 cursor-pointer'
+                                        : 'border-adm-border bg-adm-bg text-adm-muted cursor-default'
+                                    }`}>
+                                    {TOOL_LABELS[item.tool_type] ?? item.tool_type}
+                                    {isFilled ? ' ✓' : ' ○'}
+                                  </button>
+                                )
+                              })}
+                              {unitContent.length === 0 && (
+                                <span className="text-[10px] text-adm-muted italic">No content entries yet</span>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ── MATERIALS & BOOKS TAB ── */}
+              {selectedSubject && gradeTab === 'materials' && (
+                <div className="space-y-4">
+                  {/* Books */}
+                  {filteredCourses.map(course => {
+                    const books = course.curriculum_books ?? []
+                    if (books.length === 0) return null
+                    const colors = SUBJECT_COLORS[course.subject] ?? SUBJECT_COLORS.Math
+
+                    return (
+                      <div key={course.id} className="bg-adm-card border border-adm-border rounded-xl overflow-hidden">
+                        <div className={`${colors.bg} px-4 py-3 border-b ${colors.border}`}>
+                          <p className={`text-sm font-semibold ${colors.text}`}>Books & Resources</p>
+                        </div>
+                        <div className="divide-y divide-adm-border/50">
+                          {books.map(book => (
+                            <div key={book.id} className="px-4 py-3 flex items-start gap-3">
+                              <div className={`w-8 h-10 ${colors.bg} rounded-md flex items-center justify-center shrink-0`}>
+                                <span className={`text-sm ${colors.text}`}>📖</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="text-sm font-medium text-white">{book.title}</p>
+                                  {book.is_required && <span className="text-[9px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded">Required</span>}
+                                  <span className="text-[9px] text-adm-muted bg-adm-bg px-1.5 py-0.5 rounded border border-adm-border">
+                                    {BOOK_TYPE_LABELS[book.book_type] ?? book.book_type}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-adm-muted mt-0.5">
+                                  {book.author}{book.publisher ? ` · ${book.publisher}` : ''}{book.isbn ? ` · ISBN: ${book.isbn}` : ''}
+                                </p>
+                                {book.description && <p className="text-[11px] text-adm-muted/70 mt-0.5">{book.description}</p>}
+                                {book.purchase_url && (
+                                  <a href={book.purchase_url} target="_blank" rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-400 hover:text-brand-300 mt-1">
+                                    View on Amazon ↗
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+
+                  {/* Materials list for this subject */}
+                  <div className="bg-adm-card border border-adm-border rounded-xl px-4 py-4">
+                    <p className="text-xs font-bold text-adm-muted uppercase tracking-widest mb-3">
+                      Supply List — {selectedSubject} ({[...allMaterials].length} items total for all subjects)
+                    </p>
+                    {filteredCourses.map(course => {
+                      const courseMats = new Set<string>()
+                      for (const unit of (course.curriculum_units ?? [])) {
+                        for (const guide of (unit.curriculum_teaching_guides ?? [])) {
+                          for (const mat of guide.materials) courseMats.add(mat)
+                        }
+                      }
+                      if (courseMats.size === 0) return null
+                      return (
+                        <div key={course.id} className="mb-3">
+                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-1">
+                            {[...courseMats].sort().map((mat, i) => (
+                              <label key={i} className="flex items-center gap-2 text-xs text-white/70 cursor-pointer hover:bg-white/5 px-2 py-1 rounded transition-colors">
+                                <input type="checkbox" className="rounded border-adm-border bg-adm-bg text-brand-500 focus:ring-brand-500 w-3.5 h-3.5" />
+                                {mat}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Subject not selected — show full supply list for the grade */}
+              {!selectedSubject && (
+                <div className="bg-adm-card border border-adm-border rounded-xl px-4 py-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-bold text-adm-muted uppercase tracking-widest">
+                      Grade {selectedGrade} Master Supply List
+                    </p>
+                    <span className="text-[10px] text-adm-muted">{allMaterials.size} items · {allBooks.length} books</span>
+                  </div>
+                  {allMaterials.size > 0 ? (
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-1">
+                      {[...allMaterials].sort().map((mat, i) => (
+                        <label key={i} className="flex items-center gap-2 text-xs text-white/70 cursor-pointer hover:bg-white/5 px-2 py-1 rounded transition-colors">
+                          <input type="checkbox" className="rounded border-adm-border bg-adm-bg text-brand-500 focus:ring-brand-500 w-3.5 h-3.5" />
+                          {mat}
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-adm-muted text-center py-4">No materials data yet. Add teaching guides to populate.</p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          CONTENT LIBRARY VIEW (flat table)
+          ═══════════════════════════════════════════════════════════════════════ */}
+      {view === 'library' && (
+        <div className="bg-adm-card border border-adm-border rounded-xl overflow-hidden">
+          {libLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="w-8 h-8 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
+            </div>
+          ) : libItems.length === 0 ? (
+            <p className="text-sm text-adm-muted text-center py-20">No content found</p>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead>
+                    <tr className="border-b border-adm-border text-adm-muted text-xs uppercase tracking-wider">
+                      <th className="px-4 py-3">Title</th>
+                      <th className="px-4 py-3">Type</th>
+                      <th className="px-4 py-3">Grade</th>
+                      <th className="px-4 py-3">Subject</th>
+                      <th className="px-4 py-3 text-right">Uses</th>
+                      <th className="px-4 py-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {libItems.map(item => (
+                      <tr key={item.id} className="border-b border-adm-border/50 hover:bg-adm-bg/50 transition-colors">
+                        <td className="px-4 py-3">
+                          <p className="text-white font-medium text-sm truncate max-w-[250px]">{item.title}</p>
+                          <p className="text-adm-muted text-xs truncate max-w-[250px]">{item.topic}</p>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-white/70">{TOOL_LABELS[item.tool_type] ?? item.tool_type}</td>
+                        <td className="px-4 py-3 text-white/70">{item.grade ?? '—'}</td>
+                        <td className="px-4 py-3 text-white/70 text-xs">{item.subject ?? '—'}</td>
+                        <td className="px-4 py-3 text-right text-white/70">{item.use_count}</td>
+                        <td className="px-4 py-3">
+                          {JSON.stringify(item.content) !== '{}' ? (
+                            <button onClick={() => setViewItem(item)} className="text-xs text-brand-400 hover:text-brand-300 font-medium">View</button>
+                          ) : (
+                            <span className="text-xs text-adm-muted">Empty</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {Math.ceil(libTotal / 50) > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-adm-border">
+                  <p className="text-xs text-adm-muted">{libTotal} items · Page {libPage}</p>
+                  <div className="flex gap-2">
+                    <button disabled={libPage <= 1} onClick={() => setLibPage(p => p - 1)}
+                      className="text-xs text-white/60 px-3 py-1.5 rounded-lg border border-adm-border disabled:opacity-30">← Prev</button>
+                    <button disabled={libPage >= Math.ceil(libTotal / 50)} onClick={() => setLibPage(p => p + 1)}
+                      className="text-xs text-white/60 px-3 py-1.5 rounded-lg border border-adm-border disabled:opacity-30">Next →</button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── View content modal ── */}
       {viewItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-          <div className="bg-adm-card border border-adm-border rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setViewItem(null)}>
+          <div className="bg-adm-card border border-adm-border rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-semibold text-white">{viewItem.title}</p>
                 <p className="text-xs text-adm-muted mt-0.5">
                   {TOOL_LABELS[viewItem.tool_type]} · Grade {viewItem.grade ?? 'Any'} · {viewItem.subject ?? 'General'}
-                  · {viewItem.use_count} uses · Source: {viewItem.source}
                 </p>
               </div>
               <button onClick={() => setViewItem(null)} className="text-adm-muted hover:text-white text-lg">✕</button>
             </div>
-
-            {viewItem.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {viewItem.tags.map(t => (
-                  <span key={t} className="text-[10px] bg-adm-bg border border-adm-border text-adm-muted px-2 py-0.5 rounded-full">{t}</span>
-                ))}
-              </div>
-            )}
-
             <pre className="text-xs text-white/70 bg-adm-bg rounded-xl p-4 overflow-x-auto border border-adm-border max-h-[400px] overflow-y-auto">
               {JSON.stringify(viewItem.content, null, 2)}
             </pre>
           </div>
         </div>
       )}
-
-      {/* Edit modal */}
-      {editItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-          <div className="bg-adm-card border border-adm-border rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="font-semibold text-white">Edit Content</p>
-              <button onClick={() => setEditItem(null)} className="text-adm-muted hover:text-white text-lg">✕</button>
-            </div>
-
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-adm-muted">Title</label>
-                <input value={editTitle} onChange={e => setEditTitle(e.target.value)}
-                  className="w-full bg-adm-bg border border-adm-border text-white text-sm rounded-lg px-3 py-2" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-adm-muted">Grade</label>
-                  <select value={editGrade} onChange={e => setEditGrade(e.target.value ? Number(e.target.value) : '')}
-                    className="w-full bg-adm-bg border border-adm-border text-white text-sm rounded-lg px-3 py-2">
-                    <option value="">Any</option>
-                    {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-adm-muted">Subject</label>
-                  <select value={editSubject} onChange={e => setEditSubject(e.target.value)}
-                    className="w-full bg-adm-bg border border-adm-border text-white text-sm rounded-lg px-3 py-2">
-                    <option value="">General</option>
-                    {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-adm-muted">Quality</label>
-                <div className="flex gap-2">
-                  {QUALITY_LEVELS.map(q => (
-                    <button key={q} onClick={() => setEditQuality(q)}
-                      className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
-                        editQuality === q
-                          ? 'border-brand-400 bg-brand-500/20 text-brand-400'
-                          : 'border-adm-border text-adm-muted hover:text-white'
-                      }`}>
-                      {q.charAt(0).toUpperCase() + q.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button onClick={handleSave} disabled={saving}
-                className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
-                {saving ? 'Saving...' : 'Save'}
-              </button>
-              <button onClick={() => setEditItem(null)}
-                className="text-sm text-adm-muted hover:text-white px-4 py-2.5 rounded-xl border border-adm-border transition-colors">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
+  )
+}
+
+// ── Grade Card Component ─────────────────────────────────────────────────────
+
+function GradeCard({ grade, onClick }: { grade: GradeSummary; onClick: () => void }) {
+  const completion = grade.contentTotal > 0 ? Math.round((grade.contentFilled / grade.contentTotal) * 100) : 0
+  const hasGuides = grade.guideCount > 0
+
+  return (
+    <button onClick={onClick}
+      className="bg-adm-card border border-adm-border rounded-xl px-4 py-4 text-left hover:border-brand-500/50 hover:bg-brand-500/5 transition-all group">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-2xl font-bold text-white group-hover:text-brand-400 transition-colors">
+          {GRADE_LABELS[grade.grade]}
+        </span>
+        {hasGuides && (
+          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">
+            Guides
+          </span>
+        )}
+      </div>
+
+      <p className="text-[10px] text-adm-muted mb-2">
+        {grade.subjects.join(' · ')}
+      </p>
+
+      <div className="grid grid-cols-3 gap-1 text-center mb-2">
+        <div>
+          <p className="text-xs font-bold text-white">{grade.unitCount}</p>
+          <p className="text-[9px] text-adm-muted">Units</p>
+        </div>
+        <div>
+          <p className="text-xs font-bold text-white">{grade.guideCount}</p>
+          <p className="text-[9px] text-adm-muted">Guides</p>
+        </div>
+        <div>
+          <p className="text-xs font-bold text-white">{grade.bookCount}</p>
+          <p className="text-[9px] text-adm-muted">Books</p>
+        </div>
+      </div>
+
+      {/* Content completion bar */}
+      <div className="space-y-1">
+        <div className="h-1 bg-adm-bg rounded-full overflow-hidden">
+          <div className={`h-full rounded-full transition-all ${completion === 100 ? 'bg-emerald-400' : completion > 0 ? 'bg-brand-400' : 'bg-adm-border'}`}
+            style={{ width: `${Math.max(completion, 2)}%` }} />
+        </div>
+        <p className="text-[9px] text-adm-muted text-right">{completion}% content</p>
+      </div>
+    </button>
   )
 }

@@ -30,7 +30,15 @@ export async function GET(
     const storyReq = storyReqData as unknown as Pick<StoryRequest, 'id' | 'user_id' | 'guest_token' | 'status'>
 
     const adminEmails = (process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? '').split(',').map(e => e.trim()).filter(Boolean)
-    const isAdmin = !!user?.email && adminEmails.includes(user.email)
+    let isAdmin = !!user?.email && adminEmails.includes(user.email)
+    if (!isAdmin && user) {
+      const { data: profile } = await adminSupabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single()
+      if (profile?.is_admin === true) isAdmin = true
+    }
     const isOwner =
       isAdmin ||
       storyReq.status === 'complete' ||

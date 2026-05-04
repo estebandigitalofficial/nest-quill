@@ -130,11 +130,11 @@ export default function HomeschoolPage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="font-serif text-3xl sm:text-4xl text-oxford mb-3">
-                Grades 1–8, every subject
+                Grades 1–12, every subject
               </h2>
               <p className="text-charcoal-light max-w-lg mx-auto">
-                Each grade has full-year courses with units, lessons, and activities.
-                Here is what is covered.
+                Each grade has full-year courses with units, lesson plans, activities, and books.
+                Click any grade to see the complete dashboard.
               </p>
             </div>
 
@@ -142,31 +142,37 @@ export default function HomeschoolPage() {
               {[
                 {
                   grade: 'Grades 1–2',
+                  links: [1, 2],
                   subjects: 'Math, English Language Arts, Science, Social Studies',
                   sample: 'Counting, phonics, sight words, weather, seasons, community helpers',
                 },
                 {
                   grade: 'Grades 3–4',
+                  links: [3, 4],
                   subjects: 'Math, English Language Arts, Science, Social Studies, History',
                   sample: 'Multiplication, fractions, reading comprehension, ecosystems, early American history',
                 },
                 {
                   grade: 'Grades 5–6',
+                  links: [5, 6],
                   subjects: 'Math, English Language Arts, Science, Social Studies, History',
                   sample: 'Decimals, essay writing, solar system, ancient civilizations, ratios',
                 },
                 {
                   grade: 'Grades 7–8',
+                  links: [7, 8],
                   subjects: 'Math, English Language Arts, Science, Social Studies, History',
                   sample: 'Linear equations, literary analysis, genetics, Civil War, persuasive writing',
                 },
                 {
                   grade: 'Grades 9–10',
+                  links: [9, 10],
                   subjects: 'Algebra, Geometry, Biology, Chemistry, English, World History',
                   sample: 'Polynomials, proofs, cell biology, chemical reactions, rhetoric, ancient civilizations',
                 },
                 {
                   grade: 'Grades 11–12',
+                  links: [11, 12],
                   subjects: 'Algebra II, Pre-Calculus, Physics, Environmental Science, US History, Government',
                   sample: 'Logarithms, trigonometry, forces and energy, ecosystems, Constitutional law, economics',
                 },
@@ -174,8 +180,15 @@ export default function HomeschoolPage() {
                 <div key={row.grade} className="bg-white rounded-2xl border border-gray-100 px-6 py-5 space-y-2">
                   <div className="flex items-center justify-between gap-4">
                     <h3 className="font-bold text-oxford">{row.grade}</h3>
-                    <span className="text-xs text-charcoal-light shrink-0">{row.subjects}</span>
+                    <div className="flex gap-2 shrink-0">
+                      {row.links.map(g => (
+                        <Link key={g} href={`/homeschool/grade/${g}`} className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full transition-colors">
+                          Grade {g} →
+                        </Link>
+                      ))}
+                    </div>
                   </div>
+                  <p className="text-xs text-charcoal-light leading-relaxed">{row.subjects}</p>
                   <p className="text-xs text-charcoal-light leading-relaxed">
                     Sample topics: {row.sample}
                   </p>
