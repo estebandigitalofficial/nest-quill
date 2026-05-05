@@ -309,11 +309,12 @@ Deno.serve(async (req) => {
     return new Response('Story request not found', { status: 404 })
   }
 
-  // ── Idempotency ───────────────────────────────────────────────────────────
-  // Allow: queued, failed, and generating_images with no active worker (time-budget release).
-  // Block: any status with an active worker_id that isn't in the retriable list.
-  const retriable = ['queued', 'failed']
-  if (storyRequest.worker_id !== null && !retriable.includes(storyRequest.status)) {
+  // ── Fast-path skip ────────────────────────────────────────────────────────
+  // Cheap pre-check before we attempt the atomic claim: if another worker is
+  // visibly mid-pipeline, return immediately. The atomic UPDATE below is the
+  // real source of truth — this just saves an extra round trip.
+  const claimableStatuses = ['queued', 'failed', 'generating_images']
+  if (storyRequest.worker_id !== null && !claimableStatuses.includes(storyRequest.status)) {
     return new Response(
       JSON.stringify({ requestId, skipped: true, reason: 'Already processing' }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -337,21 +338,36 @@ Deno.serve(async (req) => {
   // If only generated_stories exists (scenes missing), regenerate both cleanly.
   const isResume = !!existingStoryCheck?.id && (existingSceneCheck?.length ?? 0) > 0
 
-  // ── Claim this request ────────────────────────────────────────────────────
+  // ── Atomic claim ──────────────────────────────────────────────────────────
+  // A single conditional UPDATE wins or loses. When two workers race, only
+  // the first sees a returned row; the second sees `null` (no row matched
+  // the predicate because worker_id is no longer NULL) and exits. This is
+  // the only place the worker grabs the lock — the row is the lock.
   const workerId = crypto.randomUUID()
 
-  await supabase
+  const { data: claim } = await supabase
     .from('story_requests')
     .update({
       worker_id: workerId,
       status: isResume ? 'generating_images' : 'generating_text',
-      // Only stamp processing_started_at on the very first run
       ...(!isResume ? { processing_started_at: new Date().toISOString() } : {}),
       status_message: isResume ? 'Resuming illustrations…' : 'Writing your story…',
       progress_pct: isResume ? Math.max(storyRequest.progress_pct ?? 45, 45) : 10,
       last_error: null,
     })
     .eq('id', requestId)
+    .is('worker_id', null)
+    .in('status', claimableStatuses)
+    .select('id')
+    .maybeSingle()
+
+  if (!claim) {
+    console.log('[process-story] claim lost — another worker holds the lock', requestId)
+    return new Response(
+      JSON.stringify({ requestId, skipped: true, reason: 'Claim lost (concurrent worker)' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
 
   // Worker start time — used to enforce the time budget
   const workerStart = Date.now()

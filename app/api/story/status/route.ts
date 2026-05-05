@@ -241,11 +241,46 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ── Stuck-job auto-fail ──────────────────────────────────────────────────
+    // Per-stage upper bounds. If a request has been in a processing stage
+    // longer than its threshold, flip to failed so the user can retry instead
+    // of staring at an indefinite spinner. Conservative defaults — generation
+    // is bursty but rarely takes minutes per stage in practice.
+    const STUCK_MS: Record<string, number> = {
+      generating_text:   5 * 60 * 1000,
+      generating_images: 10 * 60 * 1000,
+      assembling_pdf:    3 * 60 * 1000,
+    }
+    const stuckMs = STUCK_MS[storyRequest.status]
+    if (stuckMs) {
+      const referenceTs = storyRequest.processing_started_at ?? storyRequest.updated_at
+      const ageMs = Date.now() - new Date(referenceTs).getTime()
+      if (ageMs > stuckMs) {
+        console.warn('[status] auto-failing stuck request', requestId, storyRequest.status, `${Math.round(ageMs / 1000)}s`)
+        const reason = `Stuck in ${storyRequest.status} for ${Math.round(ageMs / 60000)} minutes — auto-failed.`
+        await adminSupabase
+          .from('story_requests')
+          .update({
+            status: 'failed',
+            worker_id: null,
+            last_error: reason,
+            status_message: 'Generation took too long. Please retry.',
+          })
+          .eq('id', requestId)
+          // Only flip if still in the same stuck status — avoids racing a
+          // worker that just completed.
+          .eq('status', storyRequest.status)
+        // Reflect the change in the response so the UI shows the failed state immediately.
+        storyRequest.status = 'failed'
+        storyRequest.status_message = 'Generation took too long. Please retry.'
+      }
+    }
+
     // ── Fallback re-trigger ──────────────────────────────────────────────────
     // Case 1: queued with no worker for >3 min — original after() trigger likely failed.
     // Case 2: generating_images with no worker for >60 s — time-budget continuation
     //   released the worker_id and is waiting for the next run to pick up.
-    // The Edge Function's idempotency check prevents double-processing in both cases.
+    // The Edge Function's atomic claim prevents double-processing in both cases.
     const triggerBaseUrl = process.env.EDGE_FUNCTION_BASE_URL
     const stalledQueued =
       storyRequest.status === 'queued' &&
