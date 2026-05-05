@@ -242,22 +242,34 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Stuck-job auto-fail ──────────────────────────────────────────────────
-    // Per-stage upper bounds. If a request has been in a processing stage
-    // longer than its threshold, flip to failed so the user can retry instead
-    // of staring at an indefinite spinner. Conservative defaults — generation
-    // is bursty but rarely takes minutes per stage in practice.
+    // "Stuck" = no progress within a stage-specific window, NOT total stage
+    // duration. The reference is `updated_at`, which the worker bumps on every
+    // image completion via setStatus() (an UPDATE on story_requests fires the
+    // updated_at trigger). A 16-image run that's making real progress will
+    // touch updated_at every few seconds and never trip these thresholds.
+    //
+    // Thresholds are deliberately generous during beta — rather miss a real
+    // stuck job for a few extra minutes than false-positive a slow-but-progressing
+    // generation. Admins can still force-requeue from the dashboard.
     const STUCK_MS: Record<string, number> = {
-      generating_text:   5 * 60 * 1000,
-      generating_images: 10 * 60 * 1000,
-      assembling_pdf:    3 * 60 * 1000,
+      generating_text:    5 * 60 * 1000, // single OpenAI call; updated_at moves only at claim, so this is effectively total stage time
+      generating_images: 20 * 60 * 1000, // no-progress window — every successful image bumps updated_at via setStatus()
+      assembling_pdf:     3 * 60 * 1000, // single render+upload op
     }
     const stuckMs = STUCK_MS[storyRequest.status]
     if (stuckMs) {
-      const referenceTs = storyRequest.processing_started_at ?? storyRequest.updated_at
-      const ageMs = Date.now() - new Date(referenceTs).getTime()
+      // updated_at is the canonical "last activity" stamp:
+      //   - generating_text: bumped at claim, then again only when stage flips
+      //   - generating_images: bumped per-image via setStatus()
+      //   - assembling_pdf: bumped when stage flipped
+      // Continuation handoff (worker releases worker_id mid-run) also bumps
+      // updated_at, so a continuation pending re-trigger is not mistaken for stuck.
+      const lastActivityTs = storyRequest.updated_at
+      const ageMs = Date.now() - new Date(lastActivityTs).getTime()
       if (ageMs > stuckMs) {
-        console.warn('[status] auto-failing stuck request', requestId, storyRequest.status, `${Math.round(ageMs / 1000)}s`)
-        const reason = `Stuck in ${storyRequest.status} for ${Math.round(ageMs / 60000)} minutes — auto-failed.`
+        console.warn('[status] auto-failing stuck request', requestId, storyRequest.status, `no progress for ${Math.round(ageMs / 1000)}s`)
+        const minutesIdle = Math.round(ageMs / 60000)
+        const reason = `No progress in ${storyRequest.status} for ${minutesIdle} minutes — auto-failed.`
         await adminSupabase
           .from('story_requests')
           .update({
@@ -267,9 +279,11 @@ export async function GET(request: NextRequest) {
             status_message: 'Generation took too long. Please retry.',
           })
           .eq('id', requestId)
-          // Only flip if still in the same stuck status — avoids racing a
-          // worker that just completed.
+          // Only flip if still in the same stuck status with the same
+          // last_activity stamp — avoids racing a worker that just completed
+          // an image (which would have bumped updated_at).
           .eq('status', storyRequest.status)
+          .eq('updated_at', lastActivityTs)
         // Reflect the change in the response so the UI shows the failed state immediately.
         storyRequest.status = 'failed'
         storyRequest.status_message = 'Generation took too long. Please retry.'
