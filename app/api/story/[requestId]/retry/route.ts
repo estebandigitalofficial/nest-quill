@@ -55,6 +55,12 @@ export async function POST(
       )
     }
 
+    // Clear lock + lifecycle stamps in addition to status. The Edge Function
+    // claims a new worker_id on entry, so leaving a stale one here is mostly
+    // benign today, but explicitly resetting matches admin force-requeue and
+    // keeps stuck-story dashboards (filter on processing_started_at) honest.
+    // We deliberately do NOT touch the saved request inputs (child_*, story_*,
+    // etc.) — the whole point of retry is to reuse them.
     await adminSupabase
       .from('story_requests')
       .update({
@@ -62,6 +68,9 @@ export async function POST(
         progress_pct: 0,
         status_message: 'Retrying your story…',
         last_error: null,
+        worker_id: null,
+        processing_started_at: null,
+        completed_at: null,
         retry_count: storyRequest.retry_count + 1,
       })
       .eq('id', requestId)
