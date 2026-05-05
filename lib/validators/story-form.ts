@@ -110,7 +110,7 @@ export const storyFormSchema = z.object({
 
   learningSubject: z.string().max(60).trim().optional(),
 
-  learningGrade: z.number().int().min(1).max(8).optional(),
+  learningGrade: z.number().int().min(1).max(12).optional(),
 
   learningTopic: z
     .string()

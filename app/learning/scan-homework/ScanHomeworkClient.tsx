@@ -193,7 +193,7 @@ export default function ScanHomeworkClient({ triviaEnabled, thinkFirstEnabled, t
         <div className="space-y-2">
           <p className="text-sm font-semibold text-gray-700">Grade <span className="text-gray-400 font-normal">(optional)</span></p>
           <div className="flex flex-wrap gap-2">
-            {[1,2,3,4,5,6,7,8].map(g => (
+            {[1,2,3,4,5,6,7,8,9,10,11,12].map(g => (
               <button key={g} type="button" onClick={() => setGrade(grade === g ? null : g)}
                 className={`w-10 h-10 rounded-xl border-2 text-sm font-semibold transition-all ${grade === g ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}>
                 {g}

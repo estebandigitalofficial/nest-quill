@@ -27,6 +27,12 @@ const NAV_GROUPS = [
     ],
   },
   {
+    label: 'Partners',
+    items: [
+      { href: '/admin/sponsors', label: 'Sponsors' },
+    ],
+  },
+  {
     label: 'Writer',
     items: [
       { href: '/admin/writer', label: 'Books' },
