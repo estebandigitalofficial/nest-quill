@@ -6,6 +6,14 @@ import { ILLUSTRATION_STYLES } from '@/types/story'
 import { PLAN_CONFIG } from '@/lib/plans/config'
 import { cn } from '@/lib/utils/cn'
 import { useLanguage } from '@/lib/i18n/context'
+import {
+  AGE_TIER_META,
+  TRAIT_LABELS,
+  SETTING_META,
+  CONFLICT_META,
+  GOAL_META,
+} from '../cards'
+import type { AgeTier, Trait, Setting, Conflict, Goal } from '@/lib/validators/story-form'
 
 export default function ReviewStep() {
   const { t } = useLanguage()
@@ -32,17 +40,30 @@ export default function ReviewStep() {
       {/* Summary card */}
       <div className="bg-gray-50 rounded-2xl border border-gray-100 divide-y divide-gray-100 text-sm">
         <Row label={r.labels.plan} value={plan.displayName} />
+        <Row label="Audience" value={values.ageTier ? AGE_TIER_META[values.ageTier as AgeTier].label : (values.childAge && values.childAge >= 18 ? 'Adult (18+)' : 'Child')} />
         <Row label={values.childAge && values.childAge >= 18 ? 'Name' : r.labels.child} value={values.childName ?? '—'} />
         <Row label={r.labels.age} value={values.childAge ? (values.childAge >= 18 ? 'Adult (18+)' : `~${values.childAge} ${t.common.years}`) : '—'} />
+        {values.traits && values.traits.length > 0 && (
+          <Row label="Traits" value={values.traits.map(tr => TRAIT_LABELS[tr as Trait] ?? tr).join(', ')} />
+        )}
+        {values.setting && (
+          <Row label="Setting" value={SETTING_META[values.setting as Setting].label} />
+        )}
+        {values.conflict && (
+          <Row label="Conflict" value={CONFLICT_META[values.conflict as Conflict].label} />
+        )}
+        {values.goal && (
+          <Row label="Goal" value={GOAL_META[values.goal as Goal].label} />
+        )}
         {values.childDescription && (
           <Row label={r.labels.description} value={values.childDescription} />
         )}
-        <Row label={r.labels.theme} value={values.storyTheme ? truncate(values.storyTheme, 60) : '—'} />
+        <Row label={r.labels.theme} value={values.storyTheme ? truncate(values.storyTheme, 80) : '—'} />
         <Row
           label={r.labels.tone}
           value={
             values.storyTone?.length
-              ? values.storyTone.map((t) => t.charAt(0).toUpperCase() + t.slice(1)).join(', ')
+              ? values.storyTone.map(tone => tone.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')).join(', ')
               : '—'
           }
         />
@@ -54,6 +75,9 @@ export default function ReviewStep() {
         )}
         {values.supportingCharacters && (
           <Row label={r.labels.characters} value={truncate(values.supportingCharacters, 60)} />
+        )}
+        {values.customNotes && (
+          <Row label="Custom note" value={truncate(values.customNotes, 80)} />
         )}
       </div>
 

@@ -9,6 +9,7 @@ import { PlanLimitError, toApiError } from '@/lib/utils/errors'
 import { sendSubmissionConfirmationEmail } from '@/lib/services/email'
 import { sendAdminNotification, buildGuestStoryEmail } from '@/lib/services/adminNotifications'
 import { classifyGenre } from '@/lib/services/genre'
+import { synthesizeTheme, synthesizeTraitsLine, mergeIntoCustomNotes } from '@/lib/services/storyFormSynthesis'
 import type { SubmitStoryResponse } from '@/types/story'
 
 export async function POST(request: NextRequest) {
@@ -83,6 +84,21 @@ export async function POST(request: NextRequest) {
     const geoCountry = request.headers.get('x-vercel-ip-country') ?? null
     const geoRegion = request.headers.get('x-vercel-ip-country-region') ?? null
 
+    // Synthesize the new structured selections (traits/setting/conflict/goal)
+    // into the existing string fields so the worker prompt sees them. This
+    // keeps the DB schema unchanged and is a no-op when the new fields are
+    // absent (legacy clients).
+    const synthesizedTheme = synthesizeTheme({
+      setting: formData.setting,
+      conflict: formData.conflict,
+      goal: formData.goal,
+    })
+    const finalStoryTheme = formData.storyTheme && formData.storyTheme.trim().length > 0
+      ? formData.storyTheme
+      : synthesizedTheme ?? formData.storyTheme
+    const traitsLine = synthesizeTraitsLine(formData.traits)
+    const finalCustomNotes = mergeIntoCustomNotes(formData.customNotes, [traitsLine]) ?? null
+
     const { data: storyRequest, error: insertError } = await adminSupabase
       .from('story_requests')
       .insert({
@@ -92,7 +108,7 @@ export async function POST(request: NextRequest) {
         child_name: formData.childName,
         child_age: formData.childAge,
         child_description: formData.childDescription ?? null,
-        story_theme: formData.storyTheme,
+        story_theme: finalStoryTheme,
         story_tone: formData.storyTone,
         story_moral: formData.storyMoral ?? null,
         story_length: resolvedPageCount,
@@ -101,7 +117,7 @@ export async function POST(request: NextRequest) {
         supporting_characters: formData.supportingCharacters ?? null,
         author_name: formData.authorName ?? null,
         closing_message: formData.closingMessage ?? null,
-        custom_notes: formData.customNotes ?? null,
+        custom_notes: finalCustomNotes,
         user_email: formData.userEmail,
         learning_mode: formData.learningMode ?? false,
         learning_subject: formData.learningSubject ?? null,
@@ -111,7 +127,7 @@ export async function POST(request: NextRequest) {
         geo_city: geoCity,
         geo_country: geoCountry,
         geo_region: geoRegion,
-        genre: classifyGenre(formData.storyTheme, formData.storyTone),
+        genre: classifyGenre(finalStoryTheme, formData.storyTone),
         status: 'queued',
         progress_pct: 0,
         status_message: 'Your story is in the queue...',

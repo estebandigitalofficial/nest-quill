@@ -1,36 +1,52 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import type { StoryFormValues } from '@/lib/validators/story-form'
-import { STORY_TONES, type StoryTone } from '@/lib/validators/story-form'
+import {
+  CHILD_TONES,
+  TEEN_TONES,
+  ADULT_TONES,
+  ADULT_ONLY_TONES,
+  TRAITS,
+  SETTINGS,
+  CONFLICTS,
+  GOALS,
+  type AgeTier,
+  type Trait,
+  type Setting,
+  type Conflict,
+  type Goal,
+} from '@/lib/validators/story-form'
 import { cn } from '@/lib/utils/cn'
 import { useLanguage } from '@/lib/i18n/context'
+import {
+  TraitChip,
+  SettingCard,
+  SETTING_META,
+  ConflictCard,
+  GoalCard,
+} from '../cards'
+import { synthesizeTheme } from '@/lib/services/storyFormSynthesis'
 
-const THEME_PRESET_KEYS = ['space', 'forest', 'ocean', 'dinosaur', 'superhero', 'farm', 'friends', 'rainy'] as const
-const THEME_VALUES_EN = [
-  'A brave astronaut exploring the galaxy',
-  'Discovering a magical forest full of talking animals',
-  'An underwater expedition to find a hidden treasure',
-  'A journey back in time to meet friendly dinosaurs',
-  'Discovering a special superpower and using it to help others',
-  'A fun day helping animals on a busy farm',
-  'Learning how to make a new friend at school',
-  'Finding out that a rainy day holds wonderful surprises',
-]
-const THEME_VALUES_ES = [
-  'Un valiente astronauta explorando la galaxia',
-  'Descubriendo un bosque mágico lleno de animales que hablan',
-  'Una expedición submarina para encontrar un tesoro escondido',
-  'Un viaje al pasado para conocer a dinosaurios amistosos',
-  'Descubriendo un superpoder especial y usándolo para ayudar a otros',
-  'Un día divertido ayudando a los animales en una granja ocupada',
-  'Aprendiendo cómo hacer un nuevo amigo en la escuela',
-  'Descubriendo que un día lluvioso tiene maravillosas sorpresas',
-]
+const ADULT_ONLY = new Set<string>(ADULT_ONLY_TONES)
+
+function tonesForTier(tier: AgeTier | undefined, learningMode: boolean): readonly string[] {
+  if (learningMode) return CHILD_TONES
+  if (tier === 'adult') return Array.from(new Set([...CHILD_TONES, ...TEEN_TONES, ...ADULT_TONES]))
+  if (tier === 'teen') return Array.from(new Set([...CHILD_TONES, ...TEEN_TONES]))
+  return CHILD_TONES
+}
+
+function prettifyTone(tone: string): string {
+  return tone
+    .split('_')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+}
 
 export default function StoryStep() {
-  const { lang, t } = useLanguage()
+  const { t } = useLanguage()
   const s = t.wizard.story
   const {
     register,
@@ -39,78 +55,100 @@ export default function StoryStep() {
     formState: { errors },
   } = useFormContext<StoryFormValues>()
 
-  const [showCustom, setShowCustom] = useState(false)
-  const selectedTheme = watch('storyTheme') ?? ''
-  const selectedTones = watch('storyTone') ?? []
+  const ageTier = watch('ageTier') as AgeTier | undefined
+  const adultConsent = watch('adultConsent')
+  const learningMode = !!watch('learningMode')
+  const selectedTones = (watch('storyTone') as string[] | undefined) ?? []
+  const selectedTraits = (watch('traits') as Trait[] | undefined) ?? []
+  const selectedSetting = watch('setting') as Setting | undefined
+  const selectedConflict = watch('conflict') as Conflict | undefined
+  const selectedGoal = watch('goal') as Goal | undefined
+  const customTheme = watch('storyTheme') as string | undefined
 
-  const themeValues = lang === 'es' ? THEME_VALUES_ES : THEME_VALUES_EN
+  const [showCustomTheme, setShowCustomTheme] = useState(false)
 
-  function selectPreset(value: string) {
-    setValue('storyTheme', value, { shouldValidate: true })
-    setShowCustom(false)
-  }
+  const tones = tonesForTier(ageTier, learningMode)
+  const adultGated = ageTier === 'adult' && adultConsent === true && !learningMode
 
-  function toggleTone(tone: StoryTone) {
+  // Keep storyTheme in sync with the synthesized phrase whenever the user
+  // hasn't typed a custom one. This preserves the existing >=3-char min on
+  // storyTheme without forcing typing.
+  useEffect(() => {
+    if (showCustomTheme) return
+    const synth = synthesizeTheme({
+      setting: selectedSetting,
+      conflict: selectedConflict,
+      goal: selectedGoal,
+    })
+    if (synth) setValue('storyTheme', synth, { shouldValidate: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSetting, selectedConflict, selectedGoal, showCustomTheme])
+
+  function toggleTone(tone: string) {
+    if (ADULT_ONLY.has(tone) && !adultGated) return // visually disabled, but defensive
     const next = selectedTones.includes(tone)
-      ? selectedTones.filter((t) => t !== tone)
+      ? selectedTones.filter(t => t !== tone)
       : selectedTones.length < 3
       ? [...selectedTones, tone]
       : selectedTones
     setValue('storyTone', next, { shouldValidate: true })
   }
 
+  function toggleTrait(tr: Trait) {
+    const next = selectedTraits.includes(tr)
+      ? selectedTraits.filter(t => t !== tr)
+      : selectedTraits.length < 3
+      ? [...selectedTraits, tr]
+      : selectedTraits
+    setValue('traits', next, { shouldValidate: true })
+  }
+
+  function selectSetting(set: Setting) {
+    setValue('setting', set, { shouldValidate: true })
+    setShowCustomTheme(false)
+  }
+
+  function selectConflict(cf: Conflict) {
+    setValue('conflict', selectedConflict === cf ? undefined : cf, { shouldValidate: true })
+  }
+
+  function selectGoal(g: Goal) {
+    setValue('goal', selectedGoal === g ? undefined : g, { shouldValidate: true })
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <div>
         <h2 className="text-xl font-serif text-gray-900">{s.heading}</h2>
-        <p className="text-sm text-gray-500 mt-1">{s.themeSub}</p>
+        <p className="text-sm text-gray-500 mt-1">Pick a setting, then add details. Almost no typing.</p>
       </div>
 
-      {/* Theme */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
-          {s.themeLabel} <span className="text-brand-500">*</span>
-        </label>
-
-        <div className="grid grid-cols-2 gap-2">
-          {THEME_PRESET_KEYS.map((key, i) => {
-            const value = themeValues[i]
-            const active = selectedTheme === value
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => selectPreset(value)}
-                className={cn(
-                  'text-left text-sm px-3.5 py-2.5 rounded-xl border-2 transition-all',
-                  active
-                    ? 'border-brand-500 bg-brand-50 text-brand-700 font-medium'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                )}
-              >
-                {s.themes[key]}
-              </button>
-            )
-          })}
-
-          <button
-            type="button"
-            onClick={() => {
-              setShowCustom(true)
-              setValue('storyTheme', '', { shouldValidate: false })
-            }}
-            className={cn(
-              'text-left text-sm px-3.5 py-2.5 rounded-xl border-2 transition-all col-span-2',
-              showCustom
-                ? 'border-brand-500 bg-brand-50 text-brand-700 font-medium'
-                : 'border-dashed border-gray-300 bg-white text-gray-400 hover:border-gray-400'
-            )}
-          >
-            + {s.themeCustom}
-          </button>
+      {/* Setting cards */}
+      <Section label="Setting" required hint="Choose where the story takes place.">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {SETTINGS.map(set => (
+            <SettingCard
+              key={set}
+              setting={set}
+              active={selectedSetting === set}
+              onClick={() => selectSetting(set)}
+            />
+          ))}
         </div>
-
-        {showCustom && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowCustomTheme(true)
+            setValue('setting', undefined)
+            setValue('storyTheme', '', { shouldValidate: false })
+          }}
+          className={cn(
+            'mt-3 text-xs font-semibold transition-colors',
+            showCustomTheme ? 'text-brand-600' : 'text-gray-500 hover:text-gray-700'
+          )}>
+          + Or describe a custom theme
+        </button>
+        {showCustomTheme && (
           <input
             type="text"
             autoFocus
@@ -119,71 +157,104 @@ export default function StoryStep() {
             className={inputClass(!!errors.storyTheme)}
           />
         )}
-
-        {!showCustom && selectedTheme && (
-          <p className="text-xs text-gray-400 px-1 italic">&ldquo;{selectedTheme}&rdquo;</p>
+        {!showCustomTheme && selectedSetting && (
+          <p className="text-[11px] text-gray-400 italic">
+            {SETTING_META[selectedSetting].description}
+          </p>
         )}
-
         {errors.storyTheme && (
           <p className="text-xs text-red-500">{errors.storyTheme.message}</p>
         )}
-      </div>
+      </Section>
+
+      {/* Traits */}
+      <Section label="Character traits" hint="Pick up to 3.">
+        <div className="flex flex-wrap gap-2">
+          {TRAITS.map(tr => {
+            const active = selectedTraits.includes(tr)
+            const maxed = selectedTraits.length >= 3 && !active
+            return (
+              <TraitChip key={tr} trait={tr} active={active} disabled={maxed} onClick={() => toggleTrait(tr)} />
+            )
+          })}
+        </div>
+      </Section>
+
+      {/* Conflict */}
+      <Section label="What happens?" hint="The challenge that drives the story.">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {CONFLICTS.map(cf => (
+            <ConflictCard key={cf} conflict={cf} active={selectedConflict === cf} onClick={() => selectConflict(cf)} />
+          ))}
+        </div>
+      </Section>
+
+      {/* Goal */}
+      <Section label="What's the goal?" hint="How the journey ends.">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {GOALS.map(g => (
+            <GoalCard key={g} goal={g} active={selectedGoal === g} onClick={() => selectGoal(g)} />
+          ))}
+        </div>
+      </Section>
 
       {/* Tone */}
-      <div className="space-y-2">
-        <div className="flex items-baseline justify-between">
-          <label className="block text-sm font-medium text-gray-700">
-            {s.toneLabel} <span className="text-brand-500">*</span>
-          </label>
-          <span className="text-xs text-gray-400">{s.toneHint}</span>
-        </div>
-
+      <Section
+        label={s.toneLabel}
+        required
+        hint={s.toneHint}
+      >
         <div className="flex flex-wrap gap-2">
-          {STORY_TONES.map((tone) => {
+          {tones.map(tone => {
             const active = selectedTones.includes(tone)
             const maxed = selectedTones.length >= 3 && !active
+            const adultLocked = ADULT_ONLY.has(tone) && !adultGated
+            const disabled = maxed || adultLocked
             return (
               <button
                 key={tone}
                 type="button"
-                disabled={maxed}
+                disabled={disabled}
                 onClick={() => toggleTone(tone)}
                 className={cn(
                   'px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all',
                   active
                     ? 'border-brand-500 bg-brand-500 text-white'
-                    : maxed
+                    : disabled
                     ? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
                     : 'border-gray-200 bg-white text-gray-600 hover:border-brand-300'
                 )}
-              >
-                {s.tones[tone as keyof typeof s.tones]}
+                title={adultLocked ? 'Adult tier required' : undefined}>
+                {/* Use i18n label when present, else prettify */}
+                {(s.tones as Record<string, string>)[tone] ?? prettifyTone(tone)}
+                {ADULT_ONLY.has(tone) && (
+                  <span className="ml-1 text-[10px] uppercase opacity-70">18+</span>
+                )}
               </button>
             )
           })}
         </div>
-
         {errors.storyTone && (
           <p className="text-xs text-red-500">{errors.storyTone.message}</p>
         )}
-      </div>
-
-      {/* Moral */}
-      <div className="space-y-1.5">
-        <label className="block text-sm font-medium text-gray-700">
-          {s.moralLabel}
-        </label>
-        <input
-          type="text"
-          placeholder={s.moralPlaceholder}
-          {...register('storyMoral')}
-          className={inputClass(!!errors.storyMoral)}
-        />
-        {s.moralHint && <p className="text-xs text-gray-400">{s.moralHint}</p>}
-        {errors.storyMoral && (
-          <p className="text-xs text-red-500">{errors.storyMoral.message}</p>
+        {!adultGated && ageTier === 'adult' && !learningMode && (
+          <p className="text-[11px] text-amber-600">Confirm 18+ consent in the previous step to unlock adult-only tones.</p>
         )}
+      </Section>
+    </div>
+  )
+}
+
+function Section({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <label className="block text-sm font-medium text-gray-700">
+          {label}{required && <span className="text-brand-500 ml-0.5">*</span>}
+        </label>
+        {hint && <span className="text-xs text-gray-400">{hint}</span>}
       </div>
+      {children}
     </div>
   )
 }
@@ -191,7 +262,7 @@ export default function StoryStep() {
 function inputClass(hasError: boolean) {
   return cn(
     'w-full rounded-lg border px-3.5 py-2.5 text-sm text-gray-900 bg-white',
-    'placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors',
+    'placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors',
     hasError ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:border-gray-300'
   )
 }

@@ -11,16 +11,62 @@ const ILLUSTRATION_STYLES = [
 const PLAN_TIERS = ['free', 'single', 'story_pack', 'story_pro', 'educator'] as const
 const STORY_LENGTHS = [8, 16, 24, 32] as const
 
-export const STORY_TONES = [
+// ── Tier-aware tones ──────────────────────────────────────────
+// Existing tones stay in CHILD so legacy clients keep working.
+// TEEN extends CHILD; ADULT adds darker / mature options that are
+// only selectable when ageTier === 'adult' && adultConsent === true.
+export const CHILD_TONES = [
   'adventurous',
   'magical',
   'funny',
   'heartwarming',
   'educational',
   'brave',
+  'calm',
+  'inspiring',
+  'silly',
+  'emotional',
 ] as const
 
+export const TEEN_TONES = [
+  'adventurous',
+  'inspiring',
+  'funny',
+  'emotional',
+  'dramatic',
+  'suspenseful',
+  'romantic',
+] as const
+
+export const ADULT_TONES = [
+  'dark',
+  'romantic',
+  'suspenseful',
+  'dramatic',
+  'psychological',
+  'mature_humor',
+] as const
+
+export const ADULT_ONLY_TONES = ['dark', 'psychological', 'mature_humor'] as const
+
+export const STORY_TONES = Array.from(
+  new Set([...CHILD_TONES, ...TEEN_TONES, ...ADULT_TONES])
+) as readonly string[]
+
 export type StoryTone = (typeof STORY_TONES)[number]
+
+// ── Structured story selections ───────────────────────────────
+export const AGE_TIERS = ['child', 'teen', 'adult'] as const
+export const TRAITS = ['brave', 'curious', 'funny', 'shy', 'leader', 'adventurous'] as const
+export const SETTINGS = ['jungle', 'space', 'ocean', 'school', 'fantasy_kingdom', 'city'] as const
+export const CONFLICTS = ['lost_something', 'save_someone', 'solve_mystery', 'overcome_fear', 'win_challenge'] as const
+export const GOALS = ['learn_lesson', 'complete_mission', 'help_others', 'discover_something'] as const
+
+export type AgeTier = (typeof AGE_TIERS)[number]
+export type Trait = (typeof TRAITS)[number]
+export type Setting = (typeof SETTINGS)[number]
+export type Conflict = (typeof CONFLICTS)[number]
+export type Goal = (typeof GOALS)[number]
 
 export const storyFormSchema = z.object({
   // ── Plan ──────────────────────────────────────────────────────────────────
@@ -53,9 +99,13 @@ export const storyFormSchema = z.object({
     .trim(),
 
   storyTone: z
-    .array(z.enum(STORY_TONES))
+    .array(z.string())
     .min(1, 'Please choose at least one tone')
-    .max(3, 'Choose up to 3 tones'),
+    .max(3, 'Choose up to 3 tones')
+    .refine(
+      (tones) => tones.every(t => (STORY_TONES as readonly string[]).includes(t)),
+      { message: 'Unknown tone selected' }
+    ),
 
   storyLength: z
     .number()
@@ -118,6 +168,13 @@ export const storyFormSchema = z.object({
     .trim()
     .optional(),
 
+  // ── Structured selections (all optional — derived for the prompt) ────────
+  ageTier: z.enum(AGE_TIERS).optional(),
+  traits: z.array(z.enum(TRAITS)).max(3, 'Pick up to 3 traits').optional(),
+  setting: z.enum(SETTINGS).optional(),
+  conflict: z.enum(CONFLICTS).optional(),
+  goal: z.enum(GOALS).optional(),
+
   // ── Adult consent ────────────────────────────────────────────────────────
   adultConsent: z.boolean().optional(),
 
@@ -127,6 +184,27 @@ export const storyFormSchema = z.object({
     .email('Please enter a valid email address')
     .toLowerCase()
     .trim(),
+}).superRefine((data, ctx) => {
+  // Adult-only tones require adult tier + explicit consent. Learning
+  // mode never gets adult tones.
+  const adultOnly = ADULT_ONLY_TONES as readonly string[]
+  const usesAdultTone = data.storyTone.some(t => adultOnly.includes(t))
+  if (usesAdultTone) {
+    if (data.learningMode) {
+      ctx.addIssue({
+        path: ['storyTone'],
+        code: z.ZodIssueCode.custom,
+        message: 'Adult tones are not available for learning stories.',
+      })
+    }
+    if (data.ageTier !== 'adult' || data.adultConsent !== true) {
+      ctx.addIssue({
+        path: ['storyTone'],
+        code: z.ZodIssueCode.custom,
+        message: 'Adult-only tones require the Adult (18+) tier and consent.',
+      })
+    }
+  }
 })
 
 export type StoryFormValues = z.infer<typeof storyFormSchema>

@@ -85,3 +85,31 @@
   animation: none;
   transform: scale(1.07);
 }
+
+/* Story wizard — themed card animations.
+   All idle, GPU-friendly, no JS or libraries. */
+@keyframes nq-drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%       { transform: translate3d(0, -6%, 0); }
+}
+@keyframes nq-wave {
+  0%, 100% { transform: translate3d(0, 0, 0) scaleY(1); }
+  50%       { transform: translate3d(0, 2%, 0) scaleY(1.06); }
+}
+@keyframes nq-glow {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%       { opacity: 0.95; transform: scale(1.04); }
+}
+@keyframes nq-twinkle {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.95; }
+}
+
+.nq-drift   { animation: nq-drift   6s ease-in-out infinite; }
+.nq-wave    { animation: nq-wave    5s ease-in-out infinite; }
+.nq-glow    { animation: nq-glow    4s ease-in-out infinite; }
+.nq-twinkle { animation: nq-twinkle 2.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nq-drift, .nq-wave, .nq-glow, .nq-twinkle { animation: none; }
+}
