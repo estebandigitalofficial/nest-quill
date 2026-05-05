@@ -143,11 +143,21 @@ export async function POST(request: NextRequest) {
         details: insertError?.details,
         hint: insertError?.hint,
       })
-      throw new Error(
-        insertError?.message
-          ? `Database error: ${insertError.message}`
-          : 'Failed to save your story request. Please try again.'
-      )
+
+      // Translate common Postgres errors into user-friendly messages so
+      // raw "violates check constraint" text doesn't reach the wizard.
+      const raw = insertError?.message ?? ''
+      let friendly = 'Failed to save your story request. Please try again.'
+      if (raw.includes('child_age')) {
+        friendly = "That age isn't supported yet. Please pick a different audience or contact support."
+      } else if (insertError?.code === '23505') {
+        friendly = 'A duplicate submission was detected. Refresh and try again.'
+      } else if (insertError?.code === '23514') {
+        friendly = 'One of your selections is outside the allowed range. Please review and try again.'
+      } else if (raw) {
+        friendly = `Could not save your story (${insertError?.code ?? 'db'}). Please try again.`
+      }
+      throw new Error(friendly)
     }
 
     const requestId = storyRequest.id
