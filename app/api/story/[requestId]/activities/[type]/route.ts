@@ -9,14 +9,14 @@ import {
 
 type RouteContext = { params: Promise<{ requestId: string; type: string }> }
 
-const VALID: ActivityType[] = ['trivia', 'matching', 'fill_in_the_blank', 'puzzle']
+const VALID: ActivityType[] = ['trivia', 'matching', 'fill_in_the_blank', 'puzzle', 'flashcards']
 
 // GET /api/story/[requestId]/activities/[type]
 // Generates an activity payload on demand from the completed story content.
 // Quiz isn't served here — it lives in story_quizzes and uses the existing
-// /api/story/[requestId]/quiz route. Flashcards aren't surfaced here either
-// (covered by the standalone Study Helper flow). The four supported types
-// match VALID above.
+// /api/story/[requestId]/quiz route. Flashcards are also generated here
+// (separate from the standalone Study Helper flow which uses pasted text).
+// Five supported types are listed in VALID above.
 //
 // Ownership: completed-story UUIDs are unguessable and act as capability
 // tokens (same model as the existing /quiz GET). We still gate on status

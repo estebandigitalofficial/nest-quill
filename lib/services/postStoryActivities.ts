@@ -89,12 +89,17 @@ export interface PuzzlePayload {
   clues: string[]
   answer: string
 }
+export interface FlashcardsPayload {
+  type: 'flashcards'
+  cards: { front: string; back: string }[]
+}
 
 export type ActivityPayload =
   | TriviaPayload
   | MatchingPayload
   | FillInBlankPayload
   | PuzzlePayload
+  | FlashcardsPayload
 
 // ── Prompt builders ───────────────────────────────────────────────────────────
 
@@ -186,6 +191,26 @@ Rules:
     }
   }
 
+  if (type === 'flashcards') {
+    return {
+      system: `You are creating flashcards for ${gradeLabel} students based ONLY on the story. ${rules} ${NEUTRALITY}
+
+Output strict JSON:
+{
+  "type": "flashcards",
+  "cards": [
+    {"front": "term, name, or short question", "back": "definition or 1-sentence answer"}
+  ]
+}
+Rules:
+- 5-8 cards.
+- "front" should be 1-4 words for grades 1-2; up to a short question for older grades.
+- "back" must be one short sentence the front leads to.
+- Each card stands alone — do not require the reader to remember other cards.`,
+      user: `${userBase}\n\nCreate flashcards for ${gradeLabel} students.`,
+    }
+  }
+
   if (type === 'puzzle') {
     return {
       system: `You are designing a guess-the-answer puzzle for ${gradeLabel} students based on the story. ${NEUTRALITY}
@@ -259,6 +284,16 @@ export function validateActivityPayload(type: ActivityType, raw: unknown): Activ
     if (!Array.isArray(clues) || clues.length === 0) return null
     if (!clues.every(c => typeof c === 'string')) return null
     return { type: 'puzzle', prompt: obj.prompt, clues: clues as string[], answer: obj.answer }
+  }
+
+  if (type === 'flashcards') {
+    const cards = obj.cards
+    if (!Array.isArray(cards) || cards.length < 3) return null
+    const ok = cards.every(c => {
+      const r = c as Record<string, unknown>
+      return typeof r.front === 'string' && typeof r.back === 'string'
+    })
+    return ok ? { type: 'flashcards', cards: cards as FlashcardsPayload['cards'] } : null
   }
 
   return null

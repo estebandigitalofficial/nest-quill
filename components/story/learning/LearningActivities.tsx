@@ -19,6 +19,7 @@ import {
   type MatchingPayload,
   type FillInBlankPayload,
   type PuzzlePayload,
+  type FlashcardsPayload,
 } from '@/lib/services/postStoryActivities'
 
 interface Props {
@@ -31,7 +32,7 @@ interface Props {
   renderQuiz: () => React.ReactNode
 }
 
-const NON_QUIZ_FETCHABLE: ActivityType[] = ['trivia', 'matching', 'fill_in_the_blank', 'puzzle']
+const NON_QUIZ_FETCHABLE: ActivityType[] = ['trivia', 'matching', 'fill_in_the_blank', 'puzzle', 'flashcards']
 
 export default function LearningActivities({ requestId, grade, subject, storyText, quiz, renderQuiz }: Props) {
   // Decide which activity tabs to offer based on grade band + content length.
@@ -140,6 +141,7 @@ function ActivityFetcher({ requestId, type }: { requestId: string; type: Activit
   if (payload.type === 'matching') return <MatchingRunner payload={payload} />
   if (payload.type === 'fill_in_the_blank') return <FillInBlankRunner payload={payload} />
   if (payload.type === 'puzzle') return <PuzzleRunner payload={payload} />
+  if (payload.type === 'flashcards') return <FlashcardsRunner payload={payload} />
   return null
 }
 
@@ -459,6 +461,121 @@ function PuzzleRunner({ payload }: { payload: PuzzlePayload }) {
           <p style={{ fontSize: 13, color: '#0C2340' }}>The answer was <strong>{payload.answer}</strong>.</p>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Flashcards ───────────────────────────────────────────────────────────────
+
+function FlashcardsRunner({ payload }: { payload: FlashcardsPayload }) {
+  const [index, setIndex] = useState(0)
+  const [flipped, setFlipped] = useState(false)
+  const [known, setKnown] = useState<boolean[]>(() => Array(payload.cards.length).fill(false))
+  const [done, setDone] = useState(false)
+
+  const total = payload.cards.length
+  const card = payload.cards[index]
+
+  function mark(didKnow: boolean) {
+    const next = known.slice()
+    next[index] = didKnow
+    setKnown(next)
+    if (index < total - 1) {
+      setIndex(index + 1)
+      setFlipped(false)
+    } else {
+      setDone(true)
+    }
+  }
+
+  function reset() {
+    setIndex(0)
+    setFlipped(false)
+    setKnown(Array(total).fill(false))
+    setDone(false)
+  }
+
+  if (done) {
+    const knownCount = known.filter(Boolean).length
+    return (
+      <div style={{ textAlign: 'center', padding: '20px 8px' }}>
+        <p style={{ fontSize: 14, fontWeight: 700, color: '#0C2340', marginBottom: 4 }}>
+          {knownCount === total ? 'Perfect!' : 'Nice job!'}
+        </p>
+        <p style={{ fontSize: 13, color: '#78716c', marginBottom: 14 }}>
+          {knownCount} / {total} cards marked as known
+        </p>
+        <button onClick={reset} style={primaryBtn(false)}>Study again</button>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ width: '100%' }}>
+      <p style={{ fontSize: 11, color: '#78716c', textAlign: 'center', marginBottom: 8 }}>
+        Card {index + 1} of {total} · Tap to flip
+      </p>
+      <button
+        onClick={() => setFlipped(f => !f)}
+        style={{
+          width: '100%',
+          minHeight: 160,
+          background: flipped ? '#f0fdf4' : 'white',
+          border: `1.5px solid ${flipped ? '#86efac' : '#ede8e1'}`,
+          borderRadius: 14,
+          padding: '24px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          cursor: 'pointer',
+          transition: 'background 0.2s, border-color 0.2s',
+        }}>
+        <span style={{ fontSize: 9, fontWeight: 700, color: flipped ? '#15803d' : '#4f46e5', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+          {flipped ? 'Answer' : 'Term'}
+        </span>
+        <p style={{ fontFamily: flipped ? 'inherit' : 'Georgia,"Times New Roman",serif', fontSize: flipped ? 13 : 18, color: '#0C2340', textAlign: 'center', lineHeight: 1.4, margin: 0 }}>
+          {flipped ? card.back : card.front}
+        </p>
+        {!flipped && (
+          <span style={{ fontSize: 10, color: '#a8a29e', marginTop: 6 }}>Tap to reveal →</span>
+        )}
+      </button>
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <button
+          onClick={() => mark(false)}
+          disabled={!flipped}
+          style={{
+            flex: 1,
+            fontSize: 12,
+            fontWeight: 600,
+            padding: '10px 12px',
+            borderRadius: 10,
+            border: '1.5px solid #fca5a5',
+            background: flipped ? '#fff7f7' : '#fafafa',
+            color: flipped ? '#dc2626' : '#d6d3d1',
+            cursor: flipped ? 'pointer' : 'not-allowed',
+          }}>
+          Still learning
+        </button>
+        <button
+          onClick={() => mark(true)}
+          disabled={!flipped}
+          style={{
+            flex: 1,
+            fontSize: 12,
+            fontWeight: 600,
+            padding: '10px 12px',
+            borderRadius: 10,
+            border: '1.5px solid #86efac',
+            background: flipped ? '#f0fdf4' : '#fafafa',
+            color: flipped ? '#15803d' : '#d6d3d1',
+            cursor: flipped ? 'pointer' : 'not-allowed',
+          }}>
+          Got it ✓
+        </button>
+      </div>
     </div>
   )
 }
