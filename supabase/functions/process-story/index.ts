@@ -351,21 +351,134 @@ Deno.serve(async (req) => {
   // ── Parse body ────────────────────────────────────────────────────────────
   let requestId: string
   let language = 'en'
+  let mode: string | undefined
   try {
     const body = await req.json()
     requestId = body.requestId
     language = body.language === 'es' ? 'es' : 'en'
+    mode = typeof body.mode === 'string' ? body.mode : undefined
     if (!requestId) throw new Error('Missing requestId')
   } catch {
     return new Response('Bad request', { status: 400 })
   }
 
-  console.log('[process-story] requestId=', requestId)
+  console.log('[process-story] requestId=', requestId, 'mode=', mode ?? 'standard')
 
   // ── Supabase admin client ─────────────────────────────────────────────────
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
+
+  // ── Images-only backfill (admin-triggered) ────────────────────────────────
+  // Generates illustrations for an already-complete story whose scenes were
+  // skipped (beta mode / SKIP_IMAGE_GENERATION). Reuses generateImage() and
+  // the storage path conventions but does NOT touch generated_stories text,
+  // does NOT regenerate scene prompts, and keeps story_requests.status as
+  // 'complete' throughout. Concurrency is gated by a worker_id atomic claim.
+  if (mode === 'images_only') {
+    const { data: storyReq, error: reqErr } = await supabase
+      .from('story_requests')
+      .select('id, status, illustration_style, child_age, worker_id')
+      .eq('id', requestId)
+      .single()
+    if (reqErr || !storyReq) {
+      return new Response(JSON.stringify({ message: 'Story request not found.' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
+    }
+    if (storyReq.status !== 'complete') {
+      return new Response(JSON.stringify({ message: 'Story is not complete; standard generation flow handles images.' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+    }
+
+    // Atomic claim — accept only when no worker holds the lock. Status stays
+    // 'complete' so the reader and ownership checks are unaffected.
+    const lockId = crypto.randomUUID()
+    const { data: claim } = await supabase
+      .from('story_requests')
+      .update({ worker_id: lockId, status_message: 'Generating illustrations…' })
+      .eq('id', requestId)
+      .is('worker_id', null)
+      .select('id')
+      .maybeSingle()
+    if (!claim) {
+      return new Response(JSON.stringify({ message: 'Another image backfill is already running for this story.' }), { status: 409, headers: { 'Content-Type': 'application/json' } })
+    }
+
+    await supabase.from('processing_logs').insert({
+      request_id: requestId, level: 'info', stage: 'admin_image_backfill_start',
+      message: 'admin image backfill started', metadata: { worker_id: lockId },
+    })
+
+    // Fetch missing scenes
+    const { data: scenes } = await supabase
+      .from('story_scenes')
+      .select('id, page_number, image_prompt, image_status, storage_path')
+      .eq('request_id', requestId)
+      .order('page_number', { ascending: true })
+
+    const missing = (scenes ?? []).filter(s => s.image_status !== 'complete' || !s.storage_path)
+    const totalScenes = (scenes ?? []).length
+    const completedBefore = totalScenes - missing.length
+
+    // Fetch ai_writer_config for image style hints
+    const cfgMap: ConfigMap = {}
+    try {
+      const { data: cfgRows } = await supabase.from('ai_writer_config').select('key, value')
+      for (const row of cfgRows ?? []) cfgMap[row.key] = row.value
+    } catch (_) { /* fail open */ }
+
+    let generated = 0
+    let failed = 0
+    for (const scene of missing) {
+      try {
+        const bytes = await generateImage(
+          scene.image_prompt as string,
+          storyReq.illustration_style as string,
+          cfgMap,
+          Number(storyReq.child_age),
+        )
+        const path = `${requestId}/${scene.page_number}.png`
+        const { error: upErr } = await supabase.storage
+          .from('story-images')
+          .upload(path, bytes, { contentType: 'image/png', upsert: true })
+        if (upErr) throw new Error(`Upload failed: ${upErr.message}`)
+        await supabase.from('story_scenes')
+          .update({ storage_path: path, image_status: 'complete' })
+          .eq('id', scene.id)
+        generated++
+        await supabase.from('story_requests').update({
+          status_message: `Generating illustrations… (${completedBefore + generated} of ${totalScenes})`,
+        }).eq('id', requestId)
+      } catch (e) {
+        failed++
+        const msg = e instanceof Error ? e.message : String(e)
+        await supabase.from('story_scenes').update({ image_status: 'failed' }).eq('id', scene.id)
+        await supabase.from('processing_logs').insert({
+          request_id: requestId, level: 'warning', stage: 'admin_image_backfill_failed_scene',
+          message: `Page ${scene.page_number}: ${msg}`, metadata: { worker_id: lockId, page_number: scene.page_number },
+        })
+      }
+    }
+
+    // Release lock; restore the friendly complete message
+    await supabase.from('story_requests')
+      .update({ worker_id: null, status_message: 'Your story is ready!' })
+      .eq('id', requestId)
+
+    await supabase.from('processing_logs').insert({
+      request_id: requestId, level: 'info', stage: 'admin_image_backfill_complete',
+      message: `admin image backfill complete — generated ${generated}/${missing.length}, failed ${failed}`,
+      metadata: { worker_id: lockId, generated, failed, total_scenes: totalScenes },
+    })
+
+    return new Response(JSON.stringify({
+      requestId,
+      mode: 'images_only',
+      generated,
+      failed,
+      missingBefore: missing.length,
+      totalScenes,
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+  }
+  // ── End images-only backfill ──────────────────────────────────────────────
 
   // ── Fetch the full story request ──────────────────────────────────────────
   const { data: storyRequest, error: fetchError } = await supabase

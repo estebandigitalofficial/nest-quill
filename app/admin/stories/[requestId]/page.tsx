@@ -44,6 +44,13 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
     ? Math.round((Date.now() - new Date(req.updated_at).getTime()) / 60000)
     : null
 
+  // Image completion summary — drives the "Generate illustrations" admin
+  // backfill button and the badge shown in the header. A scene counts as
+  // "with image" only when image_status='complete' AND storage_path is set.
+  const totalScenes = scenes.length
+  const imagesComplete = scenes.filter(s => s.image_status === 'complete' && s.storage_path).length
+  const missingImages = totalScenes - imagesComplete
+
   return (
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
 
@@ -64,7 +71,26 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
               {stuckMin !== null && stuckMin > 10 && (
                 <span className="text-xs text-red-400 font-mono">stuck {stuckMin}m</span>
               )}
-              <AdminStoryActions requestId={req.id} status={req.status} />
+              {totalScenes > 0 && (
+                <span
+                  className={`text-xs font-mono px-2 py-0.5 rounded border ${
+                    missingImages === 0
+                      ? 'bg-green-500/10 text-green-400 border-green-500/30'
+                      : imagesComplete === 0
+                      ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                      : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                  }`}
+                  title="Scenes with image_status='complete' AND storage_path set"
+                >
+                  Images: {imagesComplete}/{totalScenes}
+                </span>
+              )}
+              <AdminStoryActions
+                requestId={req.id}
+                status={req.status}
+                totalScenes={totalScenes}
+                missingImages={missingImages}
+              />
             </div>
           </div>
         </div>
