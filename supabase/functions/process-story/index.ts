@@ -122,7 +122,57 @@ function buildStoryPrompt(request: Record<string, unknown>, config: ConfigMap = 
   const toneList = Array.isArray(story_tone) ? story_tone.join(', ') : story_tone
   const pageCount = Number(story_length) || 16
   const isLearning = learning_mode === true
-  const isAdult = Number(child_age) >= 18
+  const ageNum = Number(child_age)
+  const isAdult = ageNum >= 18
+
+  // Age bands for non-adult readers. The legacy "child" path applied a single
+  // "2-4 sentences" rule to every reader from 1 through 17, which produced
+  // babyish output for 8-11 and especially for 12+. These bands give the
+  // model band-specific length and complexity guidance while keeping young
+  // readers' pages short and repetitive.
+  type AgeBand = 'young' | 'middle' | 'teen' | 'adult'
+  const ageBand: AgeBand =
+    isAdult ? 'adult' :
+    ageNum >= 12 ? 'teen' :
+    ageNum >= 8  ? 'middle' :
+                   'young'
+
+  const AGE_BAND_RULES: Record<Exclude<AgeBand, 'adult'>, { length: string; complexity: string; pacing: string }> = {
+    young: {
+      length: 'Each page should be 2-3 short sentences.',
+      complexity: 'Use very simple, concrete vocabulary that a child can read aloud or hear comfortably. Repeat key phrases and ideas across pages so the lesson sinks in.',
+      pacing: 'Move slowly and reinforce. Show clear cause and effect. Make the moral or lesson direct and obvious.',
+    },
+    middle: {
+      length: 'Each page should be 4-6 sentences with descriptive scene-setting.',
+      complexity: 'Use age-appropriate vocabulary with the occasional richer word in context. Develop the character\'s feelings and motivations beyond the surface action.',
+      pacing: 'Build the conflict deliberately. Show the character making choices that drive the resolution. Give the ending room to breathe.',
+    },
+    teen: {
+      length: 'Each page should be 5-8 sentences. Avoid one-or-two-sentence pages — they feel babyish. Use more chapter-like pacing.',
+      complexity: 'Use mature sentence structures, varied rhythm, and richer vocabulary. Show internal conflict, nuanced choices, and consequences. Keep everything age-appropriate for 13-17 — no explicit content — but do not write down to the reader.',
+      pacing: 'Develop emotional stakes. Let scenes have texture, sensory detail, and quieter beats between action. End with resonance rather than a tidy moral.',
+    },
+  }
+
+  // Learning-mode explanation depth, scaled by grade band. Independent of the
+  // age band above since some learning stories run for younger or older
+  // readers than the grade level alone would suggest.
+  type GradeBand = 'g1_2' | 'g3_5' | 'g6_8' | 'g9_12' | 'unknown'
+  const gradeNum = Number(learning_grade)
+  const gradeBand: GradeBand =
+    !isLearning || !Number.isFinite(gradeNum) ? 'unknown' :
+    gradeNum <= 2  ? 'g1_2' :
+    gradeNum <= 5  ? 'g3_5' :
+    gradeNum <= 8  ? 'g6_8' :
+                     'g9_12'
+
+  const GRADE_BAND_RULES: Record<Exclude<GradeBand, 'unknown'>, string> = {
+    g1_2:  'Keep the explanation extremely simple. Show one concrete example of the concept. Repeat the key idea more than once across the story.',
+    g3_5:  'Explain the concept clearly with two or three concrete examples woven into the action. Connect it to something the character already knows.',
+    g6_8:  'Explain the concept with reasoning and "why" — show how the character figures it out, not just what it is. Include one nuance or common misconception worth addressing.',
+    g9_12: 'Explore the concept in depth: causes, effects, vocabulary, and at least one connection to a broader idea. Avoid talking down to the reader. Treat them as capable of synthesis.',
+  }
 
   // Helper to replace placeholders in config values
   function r(template: string): string {
@@ -141,7 +191,11 @@ This story must naturally weave in educational content about "{learning_topic}" 
 - Introduce the concept early and reinforce it across multiple pages
 - Use age-appropriate vocabulary for a grade {learning_grade} student
 - Show the character applying or discovering the concept — don't just state facts
-- The learning should feel like part of the story, not a lesson bolted on`)}` : ''
+- The learning should feel like part of the story, not a lesson bolted on`)}${
+  gradeBand !== 'unknown'
+    ? `\n- Grade-band depth: ${GRADE_BAND_RULES[gradeBand]}`
+    : ''
+}` : ''
 
   const role = isAdult
     ? (config['adult_story_role'] ?? 'You are a professional fiction author. You write engaging, well-crafted stories for adult readers. Your writing is sophisticated, nuanced, and tailored to mature audiences.')
@@ -156,11 +210,17 @@ This story must naturally weave in educational content about "{learning_topic}" 
   "pages": [
     {
       "page": 1,
-      "text": "string — the story text for this page (2-4 sentences, age-appropriate)",
+      "text": "string — the story text for this page (length follows the age-band rule below)",
       "image_description": "string — a detailed visual description for an illustrator (what to draw on this page)"
     }
   ]
 }`
+
+  // For non-adult readers, prefer band-specific length/complexity rules over
+  // the legacy single-line config defaults. Admin overrides for the legacy
+  // keys still come through; we append the band-specific rule afterwards so
+  // the more specific guidance wins.
+  const bandRules = !isAdult ? AGE_BAND_RULES[ageBand as Exclude<AgeBand, 'adult'>] : null
 
   const rules = [
     r(config['story_page_rules'] ?? 'Write exactly {page_count} story pages'),
@@ -169,7 +229,16 @@ This story must naturally weave in educational content about "{learning_topic}" 
       : (config['story_language_rules'] ?? 'Keep language simple and age-appropriate for a {child_age}-year-old')),
     r(isAdult
       ? (config['adult_story_sentence_rules'] ?? 'Each page should have 3-6 sentences with rich descriptive prose')
-      : (config['story_sentence_rules'] ?? 'Each page should have 2-4 sentences maximum')),
+      : (config['story_sentence_rules'] ?? 'Each page should have an age-appropriate number of sentences (see age-band rule below)')),
+    // Band-specific rules — only for non-adult readers; the adult path already
+    // has rich-prose guidance baked in.
+    ...(bandRules
+      ? [
+          `Age-band length rule: ${bandRules.length}`,
+          `Age-band complexity rule: ${bandRules.complexity}`,
+          `Age-band pacing rule: ${bandRules.pacing}`,
+        ]
+      : []),
     r(config['story_image_desc_rules'] ?? 'Image descriptions should be vivid, specific, and describe a single scene'),
     r(config['story_illustration_style_rule'] ?? 'The illustration style is {illustration_style} — reflect this in image description language'),
     r(isAdult

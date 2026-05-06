@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { StoryStatusResponse, StoryContentResponse, StoryContentPage, StoryQuizResponse } from '@/types/story'
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
+import LearningActivities from './learning/LearningActivities'
 
 const TERMINAL_STATUSES = ['complete', 'failed']
 const POLL_INTERVAL_MS = 3000
@@ -209,18 +210,25 @@ type ReaderPage =
   | { kind: 'cover' }
   | { kind: 'story'; page: StoryContentPage }
   | { kind: 'end' }
-  | { kind: 'quiz' }
+  // Renamed from 'quiz' — this slot now hosts the activity picker for
+  // learning stories (quiz tab + 1-3 generated-on-demand activity tabs).
+  | { kind: 'activities' }
 
 function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin, quiz }: { story: StoryContentResponse; requestId: string; pdfUrl?: string; planTier?: string; isAdmin?: boolean; quiz?: StoryQuizResponse | null }) {
   const canDownload = planTier !== 'free'
   const backHref = isAdmin ? '/admin' : '/account'
   const backLabel = isAdmin ? 'Admin dashboard' : 'My stories'
+  // Show the activity picker on any learning story whose quiz has loaded —
+  // even if some non-quiz activity types fail to generate, the picker handles
+  // its own per-tab fallback. Non-learning stories skip this slot entirely.
+  const showActivities = !!quiz
   const readerPages: ReaderPage[] = [
     { kind: 'cover' },
     ...story.pages.map(p => ({ kind: 'story' as const, page: p })),
     { kind: 'end' },
-    ...(quiz ? [{ kind: 'quiz' as const }] : []),
+    ...(showActivities ? [{ kind: 'activities' as const }] : []),
   ]
+  const activitiesText = story.pages.map(p => p.text).filter(Boolean).join('\n\n')
 
   const storageKey = `story-pos-${requestId}`
   const navRef = useRef({ next: () => {}, prev: () => {} })
@@ -395,8 +403,17 @@ function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin, quiz }:
         <div style={{ width: '100%', maxWidth: 480, padding: '0 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
           {page.kind === 'cover' && <CoverPage story={story} hasMore={readerPages.length > 1} />}
           {page.kind === 'story' && <StoryPageContent page={page.page} storyIndex={current} total={story.pages.length} />}
-          {page.kind === 'end' && <EndPage pdfUrl={pdfUrl} canDownload={canDownload} backHref={backHref} hasQuiz={!!quiz} onTakeQuiz={() => go(readerPages.length - 1)} />}
-          {page.kind === 'quiz' && quiz && <QuizPage quiz={quiz} requestId={requestId} />}
+          {page.kind === 'end' && <EndPage pdfUrl={pdfUrl} canDownload={canDownload} backHref={backHref} hasQuiz={showActivities} onTakeQuiz={() => go(readerPages.length - 1)} />}
+          {page.kind === 'activities' && (
+            <LearningActivities
+              requestId={requestId}
+              grade={quiz?.grade ?? null}
+              subject={quiz?.subject ?? null}
+              storyText={activitiesText}
+              quiz={quiz ?? null}
+              renderQuiz={() => quiz ? <QuizPage quiz={quiz} requestId={requestId} /> : null}
+            />
+          )}
         </div>
       </div>
 
@@ -508,7 +525,7 @@ function EndPage({ pdfUrl, canDownload, backHref, hasQuiz, onTakeQuiz }: { pdfUr
             onClick={onTakeQuiz}
             style={{ fontSize: 13, fontWeight: 600, color: 'white', background: '#4f46e5', padding: '10px 24px', borderRadius: 12, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
-            Take the quiz →
+            Practice activities →
           </button>
         )}
         {pdfUrl && canDownload && (
