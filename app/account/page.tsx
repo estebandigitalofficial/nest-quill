@@ -7,8 +7,9 @@ import { PLAN_CONFIG } from '@/lib/plans/config'
 import type { StoryRequest, PlanTier } from '@/types/database'
 import LogoutButton from '@/components/auth/LogoutButton'
 import SiteFooter from '@/components/layout/SiteFooter'
-import StoryRow from '@/components/account/StoryRow'
+import StoryList from '@/components/account/StoryList'
 import { loadThumbs } from '@/components/account/loadThumbs'
+import { PAGE_SIZE } from '@/components/account/pageSize'
 
 export default async function AccountPage() {
   const supabase = await createClient()
@@ -21,14 +22,15 @@ export default async function AccountPage() {
 
   const adminSupabase = createAdminClient()
 
-  // Active stories — excludes archived. The archived list lives at /account/archived.
+  // Active stories — excludes archived. PAGE_SIZE lines up with the
+  // /api/account/stories endpoint so "Load older" appends a same-sized page.
   const { data: stories } = await adminSupabase
     .from('story_requests')
     .select('id, child_name, story_theme, status, progress_pct, plan_tier, created_at, archived_at')
     .eq('user_id', user.id)
     .is('archived_at', null)
     .order('created_at', { ascending: false })
-    .limit(20)
+    .limit(PAGE_SIZE)
 
   const rows = (stories ?? []) as unknown as StoryRequest[]
 
@@ -40,6 +42,10 @@ export default async function AccountPage() {
     .not('archived_at', 'is', null)
 
   const thumbMap = await loadThumbs(rows.filter(s => s.status === 'complete').map(s => s.id))
+
+  // Initial cursor for "Load older": only set when we returned a full page.
+  const lastRow = rows[rows.length - 1]
+  const initialNextCursor = rows.length < PAGE_SIZE || !lastRow ? null : lastRow.created_at
 
   const planTier = (user.user_metadata?.plan_tier as PlanTier) ?? 'free'
   const plan = PLAN_CONFIG[planTier]
@@ -102,11 +108,12 @@ export default async function AccountPage() {
                 </Link>
               </div>
             ) : (
-              <div className="space-y-3">
-                {rows.map(story => (
-                  <StoryRow key={story.id} story={story} thumbUrl={thumbMap[story.id]} mode="archive" />
-                ))}
-              </div>
+              <StoryList
+                initialRows={rows.map(story => ({ story, thumbUrl: thumbMap[story.id] ?? null }))}
+                initialNextCursor={initialNextCursor}
+                mode="archive"
+                archivedView={false}
+              />
             )}
           </div>
         </div>

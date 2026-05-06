@@ -6,8 +6,9 @@ import { getAdminContext } from '@/lib/admin/guard'
 import type { StoryRequest } from '@/types/database'
 import LogoutButton from '@/components/auth/LogoutButton'
 import SiteFooter from '@/components/layout/SiteFooter'
-import StoryRow from '@/components/account/StoryRow'
+import StoryList from '@/components/account/StoryList'
 import { loadThumbs } from '@/components/account/loadThumbs'
+import { PAGE_SIZE } from '@/components/account/pageSize'
 
 export default async function ArchivedStoriesPage() {
   const supabase = await createClient()
@@ -25,10 +26,16 @@ export default async function ArchivedStoriesPage() {
     .eq('user_id', user.id)
     .not('archived_at', 'is', null)
     .order('archived_at', { ascending: false })
-    .limit(50)
+    .limit(PAGE_SIZE)
 
   const rows = (stories ?? []) as unknown as StoryRequest[]
   const thumbMap = await loadThumbs(rows.filter(s => s.status === 'complete').map(s => s.id))
+
+  const lastRow = rows[rows.length - 1]
+  const initialNextCursor =
+    rows.length < PAGE_SIZE || !lastRow
+      ? null
+      : (lastRow.archived_at as string | null) ?? null
 
   return (
     <div className="h-dvh bg-parchment flex flex-col">
@@ -62,11 +69,12 @@ export default async function ArchivedStoriesPage() {
               </Link>
             </div>
           ) : (
-            <div className="space-y-3">
-              {rows.map(story => (
-                <StoryRow key={story.id} story={story} thumbUrl={thumbMap[story.id]} mode="restore" />
-              ))}
-            </div>
+            <StoryList
+              initialRows={rows.map(story => ({ story, thumbUrl: thumbMap[story.id] ?? null }))}
+              initialNextCursor={initialNextCursor}
+              mode="restore"
+              archivedView
+            />
           )}
         </div>
       </div>

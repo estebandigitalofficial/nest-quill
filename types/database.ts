@@ -115,6 +115,8 @@ export interface StoryRequest {
   updated_at: string
   processing_started_at: string | null
   completed_at: string | null
+  archived_at: string | null
+  archived_by: string | null
   learning_mode: boolean
   learning_subject: string | null
   learning_grade: number | null
