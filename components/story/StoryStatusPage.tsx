@@ -517,10 +517,12 @@ function StoryPageContent({ page, storyIndex, total }: { page: StoryContentPage;
           />
         </div>
       ) : (
+        // The reader only renders for `status === 'complete'` stories, so a
+        // missing image here means the worker either skipped generation
+        // (SKIP_IMAGE_GENERATION / beta_mode_enabled) or DALL·E failed for
+        // this page. Either way "coming soon" was misleading.
         <div style={{ width: '100%', height: '36vh', background: '#f0ece6', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <p style={{ fontSize: 11, color: '#c4b5a0' }}>
-            {page.imageStatus === 'pending' ? 'Illustration coming soon' : ''}
-          </p>
+          <p style={{ fontSize: 11, color: '#c4b5a0' }}>Illustration not available</p>
         </div>
       )}
 
