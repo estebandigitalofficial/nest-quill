@@ -144,7 +144,18 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode, header, 
     )
   }
 
-  return <StoryEbookReader story={story} requestId={requestId} pdfUrl={status.signedUrl} planTier={status.planTier} isAdmin={isAdmin} quiz={quiz} />
+  return (
+    <StoryEbookReader
+      story={story}
+      requestId={requestId}
+      pdfUrl={status.signedUrl}
+      planTier={status.planTier}
+      isAdmin={isAdmin}
+      quiz={quiz}
+      imagesSkipped={status.imagesSkipped}
+      imagesSkippedReason={status.imagesSkippedReason}
+    />
+  )
 }
 
 // ── Non-reader shells ─────────────────────────────────────────────────────────
@@ -227,7 +238,18 @@ type ReaderPage =
   // learning stories (quiz tab + 1-3 generated-on-demand activity tabs).
   | { kind: 'activities' }
 
-function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin, quiz }: { story: StoryContentResponse; requestId: string; pdfUrl?: string; planTier?: string; isAdmin?: boolean; quiz?: StoryQuizResponse | null }) {
+function StoryEbookReader({
+  story, requestId, pdfUrl, planTier, isAdmin, quiz, imagesSkipped, imagesSkippedReason,
+}: {
+  story: StoryContentResponse
+  requestId: string
+  pdfUrl?: string
+  planTier?: string
+  isAdmin?: boolean
+  quiz?: StoryQuizResponse | null
+  imagesSkipped?: boolean
+  imagesSkippedReason?: 'beta' | 'admin'
+}) {
   const canDownload = planTier !== 'free'
   const backHref = isAdmin ? '/admin' : '/account'
   const backLabel = isAdmin ? 'Admin dashboard' : 'My stories'
@@ -420,7 +442,7 @@ function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin, quiz }:
       }}>
         <div style={{ width: '100%', maxWidth: 480, padding: '0 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
           {page.kind === 'cover' && <CoverPage story={story} hasMore={readerPages.length > 1} />}
-          {page.kind === 'story' && <StoryPageContent page={page.page} storyIndex={current} total={storyPages.length} />}
+          {page.kind === 'story' && <StoryPageContent page={page.page} storyIndex={current} total={storyPages.length} imagesSkippedReason={imagesSkippedReason} />}
           {page.kind === 'end' && <EndPage pdfUrl={pdfUrl} canDownload={canDownload} backHref={backHref} hasQuiz={showActivities} onTakeQuiz={() => go(readerPages.length - 1)} />}
           {page.kind === 'activities' && (
             <LearningActivities
@@ -500,7 +522,19 @@ function CoverPage({ story, hasMore }: { story: StoryContentResponse; hasMore: b
   )
 }
 
-function StoryPageContent({ page, storyIndex, total }: { page: StoryContentPage; storyIndex: number; total: number }) {
+function StoryPageContent({ page, storyIndex, total, imagesSkippedReason }: {
+  page: StoryContentPage
+  storyIndex: number
+  total: number
+  imagesSkippedReason?: 'beta' | 'admin'
+}) {
+  // Placeholder copy when no image: prefer the friendliest accurate label.
+  // Beta gets named explicitly so the user understands the cost-control
+  // intent. The admin/SKIP_IMAGE_GENERATION case is rare and stays neutral.
+  const placeholder =
+    imagesSkippedReason === 'beta' ? 'Illustration skipped during beta'
+    : imagesSkippedReason === 'admin' ? 'Illustration skipped'
+    : 'Illustration not available'
   return (
     <>
       <p style={{ fontSize: 10, color: '#c4b5a0', letterSpacing: '0.1em', alignSelf: 'center' }}>
@@ -517,12 +551,8 @@ function StoryPageContent({ page, storyIndex, total }: { page: StoryContentPage;
           />
         </div>
       ) : (
-        // The reader only renders for `status === 'complete'` stories, so a
-        // missing image here means the worker either skipped generation
-        // (SKIP_IMAGE_GENERATION / beta_mode_enabled) or DALL·E failed for
-        // this page. Either way "coming soon" was misleading.
         <div style={{ width: '100%', height: '36vh', background: '#f0ece6', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <p style={{ fontSize: 11, color: '#c4b5a0' }}>Illustration not available</p>
+          <p style={{ fontSize: 11, color: '#c4b5a0' }}>{placeholder}</p>
         </div>
       )}
 

@@ -92,6 +92,15 @@ export interface StoryStatusResponse {
   signedUrl?: string
   completedAt?: string
   learningMode?: boolean
+  /**
+   * True when this story's images are intentionally absent because the worker
+   * skipped DALL·E (beta mode or SKIP_IMAGE_GENERATION). Lets the reader
+   * show a friendly "skipped during beta" placeholder instead of the
+   * generic "not available" copy.
+   */
+  imagesSkipped?: boolean
+  /** 'beta' when beta_mode_enabled is on, 'admin' when SKIP_IMAGE_GENERATION worker secret is set, else undefined. */
+  imagesSkippedReason?: 'beta' | 'admin'
 }
 
 export interface QuizQuestion {

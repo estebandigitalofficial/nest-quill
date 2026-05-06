@@ -83,10 +83,18 @@ function Hero({ betaMode }: { betaMode: boolean }) {
         </div>
 
         <p className="text-lg text-charcoal max-w-xl mx-auto text-balance leading-relaxed">
-          Personalized AI-illustrated storybooks starring your child. Pick a theme,
-          tell us about them, and we&apos;ll write and illustrate a unique book in
-          minutes.
+          Personalized AI storybooks starring your child. Pick a theme,
+          tell us about them, and we&apos;ll write a unique book in minutes.
         </p>
+        {betaMode ? (
+          <p className="text-sm text-charcoal-light max-w-md mx-auto">
+            Illustrations are paused during beta to keep stories free — full illustrated books are coming soon.
+          </p>
+        ) : (
+          <p className="text-sm text-charcoal-light max-w-md mx-auto">
+            Every book is fully illustrated in the style you choose.
+          </p>
+        )}
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
           <Link

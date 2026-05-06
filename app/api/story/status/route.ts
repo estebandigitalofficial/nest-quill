@@ -329,6 +329,34 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // ── Image-skipped indicator ──────────────────────────────────────────────
+    // The worker skips DALL·E when beta_mode_enabled is on OR the
+    // SKIP_IMAGE_GENERATION secret is set. We can read the app setting from
+    // here directly; the worker secret is invisible to Next.js, so we
+    // *infer* it for completed stories whose every scene lacks a
+    // storage_path. The reader uses these to show honest placeholder copy.
+    let imagesSkipped: boolean | undefined
+    let imagesSkippedReason: 'beta' | 'admin' | undefined
+    if (storyRequest.status === 'complete') {
+      const betaModeOn = (await getSetting('beta_mode_enabled', false)) as boolean
+      if (betaModeOn) {
+        imagesSkipped = true
+        imagesSkippedReason = 'beta'
+      } else {
+        const { data: anyImage } = await adminSupabase
+          .from('story_scenes')
+          .select('id')
+          .eq('request_id', requestId)
+          .eq('image_status', 'complete')
+          .limit(1)
+          .maybeSingle()
+        if (!anyImage) {
+          imagesSkipped = true
+          imagesSkippedReason = 'admin'
+        }
+      }
+    }
+
     return NextResponse.json<StoryStatusResponse>({
       requestId: storyRequest.id,
       status: storyRequest.status,
@@ -339,6 +367,8 @@ export async function GET(request: NextRequest) {
       signedUrl,
       completedAt: storyRequest.completed_at ?? undefined,
       learningMode: storyRequest.learning_mode ?? false,
+      imagesSkipped,
+      imagesSkippedReason,
     })
   } catch (err) {
     const { message, code, statusCode } = toApiError(err)

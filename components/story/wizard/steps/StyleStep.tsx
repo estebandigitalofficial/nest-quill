@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils/cn'
 import type { IllustrationStyle } from '@/types/story'
 import { useLanguage } from '@/lib/i18n/context'
 import { StyleCard } from '../cards'
+import { useWizardConfig } from '../WizardContext'
 
 const STYLE_ORDER: IllustrationStyle[] = [
   'watercolor',
@@ -40,6 +41,7 @@ export default function StyleStep() {
   const maxPages = planLimits.maxPagesPerBook
 
   const [showMore, setShowMore] = useState(false)
+  const { betaMode } = useWizardConfig()
 
   return (
     <div className="space-y-6">
@@ -47,6 +49,13 @@ export default function StyleStep() {
         <h2 className="text-xl font-serif text-gray-900">{s.heading}</h2>
         <p className="text-sm text-gray-500 mt-1">{s.sub}</p>
       </div>
+
+      {betaMode && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800 leading-relaxed">
+          <strong className="font-semibold">During beta:</strong> illustrations are paused to keep stories free.
+          Pick a style now — your story will save the choice and we&apos;ll generate full illustrations once beta ends.
+        </div>
+      )}
 
       {/* Illustration style cards */}
       <div className="space-y-2">
