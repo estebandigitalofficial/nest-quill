@@ -1,17 +1,28 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
 import Link from 'next/link'
 import type { StoryStatusResponse, StoryContentResponse, StoryContentPage, StoryQuizResponse } from '@/types/story'
-import SiteHeader from '@/components/layout/SiteHeader'
-import SiteFooter from '@/components/layout/SiteFooter'
 import LearningActivities from './learning/LearningActivities'
+
+// Header / footer are pre-rendered as server elements by the parent server
+// page and passed as ReactNode props. We deliberately do NOT import them
+// here — those modules pull getSetting → createAdminClient into the bundle,
+// which would surface SUPABASE_SERVICE_ROLE_KEY at the client boundary.
 
 const TERMINAL_STATUSES = ['complete', 'failed']
 const POLL_INTERVAL_MS = 3000
 const TRANSITION_MS = 280
 
-export default function StoryStatusPage({ requestId, isAdmin, betaMode }: { requestId: string; isAdmin?: boolean; betaMode?: boolean }) {
+interface StoryStatusPageProps {
+  requestId: string
+  isAdmin?: boolean
+  betaMode?: boolean
+  header: ReactNode
+  footer: ReactNode
+}
+
+export default function StoryStatusPage({ requestId, isAdmin, betaMode, header, footer }: StoryStatusPageProps) {
   const [status, setStatus] = useState<StoryStatusResponse | null>(null)
   const [story, setStory] = useState<StoryContentResponse | null>(null)
   const [quiz, setQuiz] = useState<StoryQuizResponse | null>(null)
@@ -88,12 +99,12 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode }: { requ
     setRetrying(false)
   }
 
-  if (error) return <ErrorView message={error} />
-  if (!status) return <LoadingShell />
+  if (error) return <ErrorView message={error} header={header} footer={footer} />
+  if (!status) return <LoadingShell header={header} footer={footer} />
 
   if (status.status === 'failed') {
     return (
-      <PageShell>
+      <PageShell header={header} footer={footer}>
         <div className="text-center space-y-4 py-8">
           <p className="text-xl font-bold text-red-500">!</p>
           <h2 className="text-xl font-serif text-gray-900">Something went wrong</h2>
@@ -122,7 +133,7 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode }: { requ
 
   if (status.status !== 'complete' || !story) {
     return (
-      <PageShell>
+      <PageShell header={header} footer={footer}>
         {betaMode && (
           <div className="mb-4 text-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
             Beta Mode active — testing features may be simulated.
@@ -137,24 +148,26 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode }: { requ
 }
 
 // ── Non-reader shells ─────────────────────────────────────────────────────────
+// header/footer are pre-rendered ReactNodes from the server parent — these
+// shells just slot them into the layout without touching server-only modules.
 
-function PageShell({ children }: { children: React.ReactNode }) {
+function PageShell({ header, footer, children }: { header: ReactNode; footer: ReactNode; children: ReactNode }) {
   return (
     <div className="h-dvh bg-parchment flex flex-col">
-      <SiteHeader />
+      {header}
       <div className="flex-1 overflow-y-auto py-10 px-4">
         <div className="max-w-2xl mx-auto">
           {children}
         </div>
       </div>
-      <SiteFooter />
+      {footer}
     </div>
   )
 }
 
-function LoadingShell() {
+function LoadingShell({ header, footer }: { header: ReactNode; footer: ReactNode }) {
   return (
-    <PageShell>
+    <PageShell header={header} footer={footer}>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-12 text-center">
         <div className="w-8 h-8 border-2 border-brand-300 border-t-brand-500 rounded-full animate-spin mx-auto mb-4" />
         <p className="text-sm text-gray-400">Loading your story…</p>
@@ -163,10 +176,10 @@ function LoadingShell() {
   )
 }
 
-function ErrorView({ message }: { message: string }) {
+function ErrorView({ message, header, footer }: { message: string; header: ReactNode; footer: ReactNode }) {
   return (
     <div className="h-dvh bg-parchment flex flex-col">
-      <SiteHeader />
+      {header}
       <div className="flex-1 overflow-y-auto flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-10 text-center max-w-sm w-full space-y-4">
           <p className="text-xl font-bold text-gray-400">Oops</p>
@@ -177,7 +190,7 @@ function ErrorView({ message }: { message: string }) {
           </Link>
         </div>
       </div>
-      <SiteFooter />
+      {footer}
     </div>
   )
 }
