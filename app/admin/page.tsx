@@ -63,7 +63,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
   // ── Filtered stories table ────────────────────────────────────────────────
   let query = adminSupabase
     .from('story_requests')
-    .select('id, child_name, story_theme, plan_tier, status, progress_pct, user_email, created_at, last_error, geo_city, geo_region, geo_country')
+    .select('id, child_name, story_theme, plan_tier, status, progress_pct, user_email, created_at, last_error, geo_city, geo_region, geo_country, archived_at')
     .order('created_at', { ascending: false })
     .limit(100)
 
@@ -527,6 +527,11 @@ export default async function AdminPage({ searchParams }: PageProps) {
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={story.status} />
+                          {(story as unknown as { archived_at?: string | null }).archived_at && (
+                            <span className="ml-2 text-[10px] font-semibold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-0.5 align-middle">
+                              Archived
+                            </span>
+                          )}
                           {story.last_error && (
                             <p className="text-[10px] text-red-400 mt-1 max-w-[160px] truncate" title={story.last_error}>
                               {story.last_error}
