@@ -74,7 +74,10 @@ export default function PlanCard({ tier, betaMode, compact = false }: Props) {
       </ul>
 
       <Link
-        href="/create"
+        // ?plan=<tier> lets the wizard preselect this plan and skip the
+        // plan-picker step. The server route still validates planTier
+        // before any DB write, so query params are not trusted.
+        href={`/create?plan=${tier}`}
         className={cn(
           'block text-center text-sm font-semibold py-2.5 rounded-xl transition-colors',
           plan.isPopular

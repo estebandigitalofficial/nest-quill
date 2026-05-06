@@ -8,6 +8,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { storyFormSchema, type StoryFormValues } from '@/lib/validators/story-form'
 import { cn } from '@/lib/utils/cn'
 import { useLanguage } from '@/lib/i18n/context'
+import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
+import type { PlanTier } from '@/types/database'
 import WizardProgress from './WizardProgress'
 import { WizardConfigContext } from './WizardContext'
 import PlanStep from './steps/PlanStep'
@@ -38,18 +40,30 @@ const LEARNING_FIELDS: (keyof StoryFormValues)[][] = [
   ['userEmail'],
 ]
 
+// Resolve a ?plan=<tier> query param to a valid plan tier — only the four
+// tiers in WIZARD_PLANS are accepted, anything else falls back to null and
+// the wizard renders the normal plan-picker step.
+function planFromQuery(raw: string | null): PlanTier | null {
+  if (!raw) return null
+  return (WIZARD_PLANS as readonly string[]).includes(raw) ? (raw as PlanTier) : null
+}
+
 export default function StoryWizard({ betaMode = false }: { betaMode?: boolean }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { lang, t } = useLanguage()
-  const [step, setStep] = useState(0)
+  // Plan-from-URL is read once on mount. We compute the initial step from it
+  // synchronously so users with ?plan=... never see the plan-picker flash.
+  const initialPlan = planFromQuery(searchParams.get('plan'))
+  const [step, setStep] = useState(initialPlan ? 1 : 0)
+  const [planPreselected, setPlanPreselected] = useState(!!initialPlan)
   const [learningMode, setLearningMode] = useState(false)
 
   const methods = useForm<StoryFormValues>({
     resolver: zodResolver(storyFormSchema),
     defaultValues: {
-      planTier: 'free',
-      storyLength: 8,
+      planTier: initialPlan ?? 'free',
+      storyLength: Math.min((initialPlan ? PLAN_CONFIG[initialPlan].limits.maxPagesPerBook : 8), 16) as 8 | 16 | 24 | 32,
       illustrationStyle: 'watercolor',
       storyTone: [],
       learningMode: false,
@@ -57,7 +71,8 @@ export default function StoryWizard({ betaMode = false }: { betaMode?: boolean }
     mode: 'onTouched',
   })
 
-  const { handleSubmit, trigger, setError, setValue, formState: { isSubmitting, errors } } = methods
+  const { handleSubmit, trigger, setError, setValue, watch, formState: { isSubmitting, errors } } = methods
+  const currentPlan = watch('planTier')
 
   // Auto-enable learning mode when ?mode=learning is in the URL
   useEffect(() => {
@@ -72,9 +87,23 @@ export default function StoryWizard({ betaMode = false }: { betaMode?: boolean }
   const isLastStep = step === STEPS.length - 1
   const StepComponent = STEPS[step]
 
+  // The "first visible" step depends on whether the user came in with a plan
+  // pre-selected via ?plan=... — when they did, the plan-picker is skipped so
+  // step 1 (ChildStep) is the first thing they see. The mode toggle and the
+  // "Plan selected · Change" pill both anchor to this step.
+  const firstVisibleStep = planPreselected ? 1 : 0
+
   function toggleLearningMode(on: boolean) {
     setLearningMode(on)
     setValue('learningMode', on)
+    setStep(firstVisibleStep)
+  }
+
+  function showPlanPicker() {
+    // Drop the preselected flag so the wizard returns to its full default
+    // shape — back button, normal first step, etc. The current planTier is
+    // preserved so the user starts from where they were.
+    setPlanPreselected(false)
     setStep(0)
   }
 
@@ -85,7 +114,7 @@ export default function StoryWizard({ betaMode = false }: { betaMode?: boolean }
   }
 
   function handleBack() {
-    setStep((s) => Math.max(0, s - 1))
+    setStep((s) => Math.max(firstVisibleStep, s - 1))
   }
 
   async function onSubmit(data: StoryFormValues) {
@@ -117,9 +146,32 @@ export default function StoryWizard({ betaMode = false }: { betaMode?: boolean }
   return (
     <WizardConfigContext.Provider value={{ betaMode }}>
     <FormProvider {...methods}>
-      {/* Mode toggle — shown only on step 0 */}
-      {step === 0 && (
+      {/* Plan-selected pill — only when ?plan=... preselected the tier and
+          we're still on the first visible step. Lets the user jump back to
+          the normal plan picker if they want a different one. */}
+      {planPreselected && step === firstVisibleStep && (
+        <div className="flex items-center justify-between bg-brand-50 border border-brand-200 rounded-xl px-4 py-2.5 mb-2">
+          <p className="text-xs text-brand-700">
+            <span className="font-semibold">Plan selected:</span>{' '}
+            {PLAN_CONFIG[currentPlan].displayName}
+          </p>
+          <button
+            type="button"
+            onClick={showPlanPicker}
+            className="text-xs font-semibold text-brand-600 hover:text-brand-700 underline underline-offset-2"
+          >
+            Change plan
+          </button>
+        </div>
+      )}
+
+      {/* Mode toggle — shown on the first visible step (step 0 by default,
+          step 1 when a plan was preselected via ?plan=...). */}
+      {step === firstVisibleStep && (
         <div className="flex items-center bg-gray-100 rounded-2xl p-1 mb-2">
+          {planPreselected && (
+            <span className="sr-only">What would you like to create?</span>
+          )}
           <button
             type="button"
             onClick={() => toggleLearningMode(false)}
@@ -193,7 +245,7 @@ export default function StoryWizard({ betaMode = false }: { betaMode?: boolean }
         )}
 
         <div className="flex items-center gap-3">
-          {step > 0 && (
+          {step > firstVisibleStep && (
             <button
               type="button"
               onClick={handleBack}
