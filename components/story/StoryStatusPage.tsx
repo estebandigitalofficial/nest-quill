@@ -222,13 +222,18 @@ function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin, quiz }:
   // even if some non-quiz activity types fail to generate, the picker handles
   // its own per-tab fallback. Non-learning stories skip this slot entirely.
   const showActivities = !!quiz
+  // Defensive `?? []`: the API always returns `pages` as an array, but if
+  // anything ever ships a malformed payload (CDN, stale client bundle,
+  // partial generated_stories row) the reader degrades to cover+end rather
+  // than crashing the whole page.
+  const storyPages = story.pages ?? []
   const readerPages: ReaderPage[] = [
     { kind: 'cover' },
-    ...story.pages.map(p => ({ kind: 'story' as const, page: p })),
+    ...storyPages.map(p => ({ kind: 'story' as const, page: p })),
     { kind: 'end' },
     ...(showActivities ? [{ kind: 'activities' as const }] : []),
   ]
-  const activitiesText = story.pages.map(p => p.text).filter(Boolean).join('\n\n')
+  const activitiesText = storyPages.map(p => p?.text ?? '').filter(Boolean).join('\n\n')
 
   const storageKey = `story-pos-${requestId}`
   const navRef = useRef({ next: () => {}, prev: () => {} })
@@ -402,7 +407,7 @@ function StoryEbookReader({ story, requestId, pdfUrl, planTier, isAdmin, quiz }:
       }}>
         <div style={{ width: '100%', maxWidth: 480, padding: '0 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
           {page.kind === 'cover' && <CoverPage story={story} hasMore={readerPages.length > 1} />}
-          {page.kind === 'story' && <StoryPageContent page={page.page} storyIndex={current} total={story.pages.length} />}
+          {page.kind === 'story' && <StoryPageContent page={page.page} storyIndex={current} total={storyPages.length} />}
           {page.kind === 'end' && <EndPage pdfUrl={pdfUrl} canDownload={canDownload} backHref={backHref} hasQuiz={showActivities} onTakeQuiz={() => go(readerPages.length - 1)} />}
           {page.kind === 'activities' && (
             <LearningActivities
@@ -566,15 +571,22 @@ function EndPage({ pdfUrl, canDownload, backHref, hasQuiz, onTakeQuiz }: { pdfUr
 }
 
 function QuizPage({ quiz, requestId }: { quiz: StoryQuizResponse; requestId: string }) {
+  // Defensive against malformed payloads — fall back to an empty quiz
+  // rather than crashing the reader.
+  const questions = quiz.questions ?? []
   const [currentQ, setCurrentQ] = useState(0)
-  const [selected, setSelected] = useState<(number | null)[]>(Array(quiz.questions.length).fill(null))
+  const [selected, setSelected] = useState<(number | null)[]>(Array(questions.length).fill(null))
   const [submitted, setSubmitted] = useState(false)
   const [feedback, setFeedback] = useState<{ correct_index: number; explanation: string }[] | null>(null)
   const [score, setScore] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  const q = quiz.questions[currentQ]
-  const totalQ = quiz.questions.length
+  if (questions.length === 0) {
+    return <p className="text-sm text-charcoal-light text-center py-8">No quiz available for this story.</p>
+  }
+
+  const q = questions[currentQ]
+  const totalQ = questions.length
   const allAnswered = selected.every(s => s !== null)
 
   async function handleSubmit() {
@@ -610,7 +622,7 @@ function QuizPage({ quiz, requestId }: { quiz: StoryQuizResponse; requestId: str
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {quiz.questions.map((q, i) => {
+          {questions.map((q, i) => {
             const isCorrect = selected[i] === feedback[i].correct_index
             return (
               <div key={i} style={{ background: isCorrect ? '#f0fdf4' : '#fff7f7', border: `1.5px solid ${isCorrect ? '#86efac' : '#fca5a5'}`, borderRadius: 10, padding: '10px 14px' }}>
@@ -637,7 +649,7 @@ function QuizPage({ quiz, requestId }: { quiz: StoryQuizResponse; requestId: str
           Quiz · {quiz.topic}
         </p>
         <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-          {quiz.questions.map((_, i) => (
+          {questions.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrentQ(i)}
