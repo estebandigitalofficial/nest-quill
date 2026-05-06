@@ -252,6 +252,12 @@ export async function GET(request: NextRequest) {
     // stuck job for a few extra minutes than false-positive a slow-but-progressing
     // generation. Admins can still force-requeue from the dashboard.
     const STUCK_MS: Record<string, number> = {
+      // queued auto-fail: catches rows whose initial after() trigger from
+      // /api/story/submit silently failed and that no user has polled
+      // recently. Pairs with the 3-minute fallback re-trigger above —
+      // re-trigger gets the first crack on every poll; auto-fail is the
+      // safety net so stale queued rows can't sit forever.
+      queued:            10 * 60 * 1000,
       generating_text:    5 * 60 * 1000, // single OpenAI call; updated_at moves only at claim, so this is effectively total stage time
       generating_images: 20 * 60 * 1000, // no-progress window — every successful image bumps updated_at via setStatus()
       assembling_pdf:     3 * 60 * 1000, // single render+upload op

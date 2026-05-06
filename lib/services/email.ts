@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { getSetting } from '@/lib/settings/appSettings'
 
 let _resend: Resend | null = null
 function getResend(): Resend {
@@ -20,6 +21,16 @@ export async function sendBookReadyEmail(
   options: SendBookEmailOptions
 ): Promise<{ messageId: string }> {
   const { toEmail, childName, storyTitle, downloadUrl } = options
+
+  // Beta-aware disclaimer: when beta_mode_enabled is on, illustrations are
+  // intentionally skipped. The email shouldn't imply they were generated.
+  const betaMode = await getSetting('beta_mode_enabled', false).catch(() => false) as boolean
+  const betaNote = betaMode
+    ? `<p style="margin:16px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#777;line-height:1.6;font-style:italic;">
+         Illustrations are paused during beta to keep stories free —
+         your story includes the full text and saved illustration style for when generation resumes.
+       </p>`
+    : ''
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -71,6 +82,8 @@ export async function sendBookReadyEmail(
                   </td>
                 </tr>
               </table>
+
+              ${betaNote}
 
               <!-- Divider -->
               <hr style="border:none;border-top:1px solid #ede8e0;margin:32px 0;" />

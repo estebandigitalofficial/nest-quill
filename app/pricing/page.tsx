@@ -21,7 +21,7 @@ export default async function PricingPage() {
           <h1 className="font-serif text-4xl sm:text-5xl text-oxford">Simple, honest pricing</h1>
           <p className="text-charcoal-light max-w-md mx-auto">
             {betaMode
-              ? 'All plans are free during beta. Payments coming soon.'
+              ? 'All plans are free during beta. Illustrations are paused during beta to keep stories free.'
               : 'Start free, then upgrade when you want longer books, illustrations, and PDF downloads.'}
           </p>
         </div>

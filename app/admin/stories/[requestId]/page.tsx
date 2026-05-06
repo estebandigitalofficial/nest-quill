@@ -44,12 +44,23 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
     ? Math.round((Date.now() - new Date(req.updated_at).getTime()) / 60000)
     : null
 
+  // Idle seconds since the last update, regardless of status. Useful for
+  // queued rows that no fallback re-trigger has reached yet, and for
+  // verifying healthy long-running runs are still bumping updated_at.
+  const idleSeconds = Math.floor((Date.now() - new Date(req.updated_at).getTime()) / 1000)
+
   // Image completion summary — drives the "Generate illustrations" admin
   // backfill button and the badge shown in the header. A scene counts as
   // "with image" only when image_status='complete' AND storage_path is set.
   const totalScenes = scenes.length
   const imagesComplete = scenes.filter(s => s.image_status === 'complete' && s.storage_path).length
   const missingImages = totalScenes - imagesComplete
+
+  // Beta-skip indicator: a completed story with scenes but zero images is
+  // the canonical signature of a beta_mode_enabled / SKIP_IMAGE_GENERATION
+  // run. The header chip uses this to color the row neutrally rather than
+  // flagging it as missing-by-error.
+  const looksLikeBetaSkip = req.status === 'complete' && totalScenes > 0 && imagesComplete === 0
 
   return (
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
@@ -71,18 +82,28 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
               {stuckMin !== null && stuckMin > 10 && (
                 <span className="text-xs text-red-400 font-mono">stuck {stuckMin}m</span>
               )}
+              <span
+                className="text-xs font-mono text-adm-subtle"
+                title={`Seconds since updated_at — healthy runs bump this every few seconds during generating_images`}
+              >
+                idle {idleSeconds}s
+              </span>
               {totalScenes > 0 && (
                 <span
                   className={`text-xs font-mono px-2 py-0.5 rounded border ${
                     missingImages === 0
                       ? 'bg-green-500/10 text-green-400 border-green-500/30'
-                      : imagesComplete === 0
-                      ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                      : looksLikeBetaSkip
+                      ? 'bg-violet-500/10 text-violet-300 border-violet-500/30'
                       : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
                   }`}
-                  title="Scenes with image_status='complete' AND storage_path set"
+                  title={
+                    looksLikeBetaSkip
+                      ? 'Completed without illustrations — likely a beta_mode_enabled / SKIP_IMAGE_GENERATION run.'
+                      : "Scenes with image_status='complete' AND storage_path set"
+                  }
                 >
-                  Images: {imagesComplete}/{totalScenes}
+                  Images: {imagesComplete}/{totalScenes}{looksLikeBetaSkip ? ' · beta-skipped' : ''}
                 </span>
               )}
               <AdminStoryActions
@@ -92,6 +113,9 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
                 missingImages={missingImages}
               />
             </div>
+            {req.status_message && (
+              <p className="text-xs text-adm-subtle mt-2 italic">{req.status_message}</p>
+            )}
           </div>
         </div>
 

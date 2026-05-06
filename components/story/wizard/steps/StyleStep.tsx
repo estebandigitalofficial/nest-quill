@@ -52,8 +52,8 @@ export default function StyleStep() {
 
       {betaMode && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800 leading-relaxed">
-          <strong className="font-semibold">During beta:</strong> illustrations are paused to keep stories free.
-          Pick a style now — your story will save the choice and we&apos;ll generate full illustrations once beta ends.
+          <strong className="font-semibold">Pick a style for later</strong> — illustrations are paused during beta.
+          Your story keeps the choice and we&apos;ll generate full illustrations once beta ends.
         </div>
       )}
 
