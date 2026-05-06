@@ -129,11 +129,17 @@ export default function ClassDetail({ classId }: { classId: string }) {
   const [showMoreOpts, setShowMoreOpts] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [assignError, setAssignError] = useState<string | null>(null)
+  // Preview state — the generated payload the educator can review before
+  // committing. When set, the form locks and "Assign to class" sends this
+  // exact payload to the create endpoint so students get what was previewed.
+  const [previewing, setPreviewing] = useState(false)
+  const [preview, setPreview] = useState<{ content: Record<string, unknown>; config: Record<string, unknown> } | null>(null)
 
   function resetAssignForm() {
     setATitle(''); setAType('quiz'); setASource('topic')
     setATopic(''); setAMaterial(''); setAGrade(''); setADue('')
     setShowMoreOpts(false); setAssignError(null)
+    setPreview(null); setPreviewing(false)
   }
 
   function openEditAssignment(a: Assignment) {
@@ -194,6 +200,26 @@ export default function ClassDetail({ classId }: { classId: string }) {
     setLoading(false)
   }
 
+  async function handlePreview() {
+    setAssignError(null)
+    setPreviewing(true)
+    const res = await fetch(`/api/classroom/classes/${classId}/assignments/preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: aType,
+        source: aSource,
+        topic: aSource === 'topic' ? aTopic.trim() : undefined,
+        material: aSource === 'material' ? aMaterial.trim() : undefined,
+        grade: aGrade || undefined,
+      }),
+    })
+    const data = await res.json()
+    setPreviewing(false)
+    if (!res.ok) { setAssignError(data.message ?? 'Could not preview.'); return }
+    setPreview({ content: data.content, config: data.config })
+  }
+
   async function handleAssign(e: React.FormEvent) {
     e.preventDefault()
     setAssignError(null)
@@ -206,6 +232,10 @@ export default function ClassDetail({ classId }: { classId: string }) {
       material: aSource === 'material' ? aMaterial.trim() : undefined,
       grade: aGrade || undefined,
       dueAt: aDue || undefined,
+      // When the educator previewed first, ship the exact payload back so
+      // students get what was reviewed (no regeneration drift).
+      previewContent: preview?.content,
+      previewConfig: preview?.config,
     }
     const res = await fetch(`/api/classroom/classes/${classId}/assignments`, {
       method: 'POST',
@@ -414,7 +444,46 @@ export default function ClassDetail({ classId }: { classId: string }) {
 
               {assignError && <p className="text-sm text-red-500">{assignError}</p>}
 
-              <div className="flex gap-3 pt-1">
+              {/* Preview block — appears once the educator generates a draft.
+                  The form inputs above stay enabled so the educator can
+                  regenerate or tweak grade/due date without losing the draft. */}
+              {preview && (
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-widest">Preview</p>
+                    <button type="button" onClick={() => setPreview(null)}
+                      className="text-[11px] font-semibold text-gray-400 hover:text-gray-600">
+                      Discard preview
+                    </button>
+                  </div>
+                  <AssignmentContentView content={preview.content} tool={aType} />
+                  <p className="text-[11px] text-gray-500">
+                    This is what your students will see. Click <strong>Assign to class</strong> below to publish it.
+                  </p>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-3 pt-1">
+                {!preview && (
+                  <button type="button"
+                    onClick={handlePreview}
+                    disabled={
+                      previewing ||
+                      (aSource === 'topic' && aTopic.trim().length < 3) ||
+                      (aSource === 'material' && aMaterial.trim().length < 50)
+                    }
+                    className="bg-white border-2 border-brand-500 hover:bg-brand-50 disabled:opacity-50 disabled:cursor-not-allowed text-brand-600 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+                    {previewing ? 'Generating preview…' : 'Preview content'}
+                  </button>
+                )}
+                {preview && (
+                  <button type="button"
+                    onClick={handlePreview}
+                    disabled={previewing}
+                    className="bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors">
+                    {previewing ? 'Regenerating…' : 'Regenerate'}
+                  </button>
+                )}
                 <button type="submit"
                   disabled={
                     assigning || !aTitle.trim() ||
@@ -422,7 +491,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
                     (aSource === 'material' && aMaterial.trim().length < 50)
                   }
                   className="bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
-                  {assigning ? 'Generating…' : 'Generate & Assign'}
+                  {assigning ? 'Assigning…' : preview ? 'Assign to class' : 'Generate & Assign'}
                 </button>
                 <button type="button" onClick={() => { resetAssignForm(); setShowAssign(false) }}
                   className="text-sm font-semibold text-gray-500 hover:text-gray-700 px-4 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
@@ -430,7 +499,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
                 </button>
               </div>
               <p className="text-[11px] text-gray-400">
-                Content is generated now and saved to the assignment. Students complete the same activity you authored — they cannot create their own.
+                Content is generated now and saved to the assignment. Students complete the exact activity you authored — they cannot create their own.
               </p>
             </form>
           ) : (

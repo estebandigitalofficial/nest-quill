@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
   generateAssignmentContent,
+  validateAssignmentContent,
   AssignmentGenerationError,
   ASSIGNMENT_TYPES,
   type AssignmentType,
@@ -39,6 +40,11 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       material?: string
       grade?: number
       dueAt?: string
+      // Optional — when the educator has already previewed via the
+      // /preview endpoint, they can ship that exact payload back so the
+      // assigned content matches what they reviewed (no regeneration drift).
+      previewContent?: unknown
+      previewConfig?: Record<string, unknown>
     }
 
     const title = body.title?.trim()
@@ -60,19 +66,29 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
 
     let generated
-    try {
-      generated = await generateAssignmentContent(admin, {
-        type,
-        source,
-        topic: body.topic,
-        material: body.material,
-        grade: body.grade,
-      }, ipAddress)
-    } catch (err) {
-      if (err instanceof AssignmentGenerationError) {
-        return NextResponse.json({ message: err.message }, { status: err.status })
+    if (body.previewContent && validateAssignmentContent(type, body.previewContent)) {
+      // Educator already previewed — trust the validated payload so what
+      // they saw is exactly what students get. Sessions referenced inside
+      // (quiz/reading) were created during the preview call.
+      generated = {
+        content: body.previewContent,
+        config: body.previewConfig ?? {},
       }
-      throw err
+    } else {
+      try {
+        generated = await generateAssignmentContent(admin, {
+          type,
+          source,
+          topic: body.topic,
+          material: body.material,
+          grade: body.grade,
+        }, ipAddress)
+      } catch (err) {
+        if (err instanceof AssignmentGenerationError) {
+          return NextResponse.json({ message: err.message }, { status: err.status })
+        }
+        throw err
+      }
     }
 
     const { data, error } = await admin

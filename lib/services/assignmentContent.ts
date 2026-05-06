@@ -93,6 +93,65 @@ export class AssignmentGenerationError extends Error {
   }
 }
 
+/**
+ * Validates that a payload received from the client matches the shape we
+ * expect for the given assignment type. Used by the create route when the
+ * educator commits a previously-previewed payload — we trust the educator
+ * but never trust shape blindly. Returns true on valid, false otherwise.
+ */
+export function validateAssignmentContent(type: AssignmentType, raw: unknown): raw is AssignmentContent {
+  if (!raw || typeof raw !== 'object') return false
+  const c = raw as Record<string, unknown>
+  if (c.kind !== type) return false
+
+  if (type === 'quiz') {
+    return typeof c.title === 'string'
+      && typeof c.sessionId === 'string'
+      && Array.isArray(c.questions)
+      && c.questions.length > 0
+      && c.questions.every(q => {
+        const r = q as Record<string, unknown>
+        return typeof r.question === 'string' && Array.isArray(r.options) && r.options.every(o => typeof o === 'string')
+      })
+  }
+
+  if (type === 'reading') {
+    return typeof c.title === 'string'
+      && typeof c.passage === 'string'
+      && c.passage.length >= 50
+      && typeof c.sessionId === 'string'
+      && Array.isArray(c.questions)
+  }
+
+  if (type === 'flashcards') {
+    return typeof c.title === 'string'
+      && Array.isArray(c.cards)
+      && c.cards.length > 0
+      && c.cards.every(card => {
+        const r = card as Record<string, unknown>
+        return typeof r.front === 'string' && typeof r.back === 'string'
+      })
+  }
+
+  if (type === 'explain') {
+    return typeof c.title === 'string'
+      && Array.isArray(c.sections)
+      && c.sections.length > 0
+      && typeof c.summary === 'string'
+  }
+
+  if (type === 'study-guide') {
+    return typeof c.title === 'string'
+      && typeof c.overview === 'string'
+      && Array.isArray(c.key_terms)
+      && Array.isArray(c.main_concepts)
+      && Array.isArray(c.remember)
+      && Array.isArray(c.practice_questions)
+  }
+
+  return false
+}
+
 function shuffleQuiz(questions: QuizQ[]): QuizQ[] {
   return questions.map(q => {
     const indices = [0, 1, 2, 3].sort(() => Math.random() - 0.5)
