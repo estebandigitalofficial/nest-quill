@@ -165,12 +165,14 @@ export default async function AdminPage({ searchParams }: PageProps) {
   const { data: viewRows } = viewQuery ? await viewQuery : { data: null }
 
   // ── Dashboard sentinels (cheap, single-row queries) ──────────────────────
+  const lastHourIso = new Date(Date.now() - 60 * 60 * 1000).toISOString()
   const [
     { data: oldestQueuedRow },
     { error: sponsorProbeError },
     betaMode,
     { count: openTicketsCount, error: ticketProbeError },
     { count: urgentTicketsCount },
+    { count: failedLastHour },
   ] = await Promise.all([
     adminSupabase.from('story_requests').select('created_at').eq('status', 'queued').order('created_at', { ascending: true }).limit(1).maybeSingle(),
     // Probe the sponsors table — head:true with limit:1 is the cheapest way
@@ -179,7 +181,9 @@ export default async function AdminPage({ searchParams }: PageProps) {
     getSetting('beta_mode_enabled', false) as Promise<boolean>,
     adminSupabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('status', 'open'),
     adminSupabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('priority', 'urgent').not('status', 'in', '(resolved,closed)'),
+    adminSupabase.from('story_requests').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('updated_at', lastHourIso),
   ])
+  const activeJobsCount = (queuedCount ?? 0) + (processingCount ?? 0)
   const oldestQueuedMinutes = oldestQueuedRow?.created_at
     ? Math.max(0, (Date.now() - new Date(oldestQueuedRow.created_at as string).getTime()) / 60000)
     : null
@@ -240,6 +244,8 @@ export default async function AdminPage({ searchParams }: PageProps) {
           betaMode={betaMode}
           sponsorTableMissing={sponsorTableMissing}
           urgentSupportTickets={urgentTickets}
+          failedLastHour={failedLastHour ?? 0}
+          activeJobsCount={activeJobsCount}
         />
 
         {/* System status — glass tiles for the eight things we care about most */}

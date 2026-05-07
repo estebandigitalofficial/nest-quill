@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import AdminStoryActions from '@/components/admin/AdminStoryActions'
+import AdminRecoveryActions from '@/components/admin/AdminRecoveryActions'
 import type { StoryRequest, GeneratedStory, StoryScene, ProcessingLog } from '@/types/database'
 import { formatAZTime, formatAZTimeOnly } from '@/lib/utils/formatTime'
 
@@ -118,6 +119,27 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
             )}
           </div>
         </div>
+
+        {/* Recovery actions — admin operational toolbox for this row */}
+        <Section title="Recovery">
+          <AdminRecoveryActions
+            requestId={req.id}
+            status={req.status}
+            retryable={(req as unknown as { retryable: boolean | null }).retryable ?? null}
+          />
+        </Section>
+
+        {/* Failure classification (only shows when something has failed) */}
+        {(req.status === 'failed' || (req as unknown as { failure_code: string | null }).failure_code) && (
+          <Section title="Failure">
+            <FailureCard req={req} />
+          </Section>
+        )}
+
+        {/* Pipeline timeline — sourced from processing_logs */}
+        <Section title="Timeline">
+          <Timeline logs={logs} />
+        </Section>
 
         {/* Request fields */}
         <Section title="Request">
@@ -311,5 +333,73 @@ function ImageStatusBadge({ status }: { status: string }) {
     <span className={`text-[10px] font-semibold uppercase ${styles[status] ?? 'text-adm-muted'}`}>
       {status}
     </span>
+  )
+}
+
+function FailureCard({ req }: { req: StoryRequest }) {
+  const cast = req as unknown as { failure_code: string | null; failure_stage: string | null; retryable: boolean | null; last_error: string | null }
+  return (
+    <div className="rounded-lg border border-rose-500/30 bg-rose-500/5 px-4 py-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-widest text-adm-subtle">Code</p>
+          <p className="text-sm font-mono text-rose-300 mt-0.5">{cast.failure_code ?? '—'}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-widest text-adm-subtle">Stage</p>
+          <p className="text-sm font-mono text-adm-text mt-0.5">{cast.failure_stage ?? '—'}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-widest text-adm-subtle">Retryable</p>
+          <p className={`text-sm font-medium mt-0.5 ${cast.retryable === true ? 'text-emerald-400' : cast.retryable === false ? 'text-rose-300' : 'text-adm-muted'}`}>
+            {cast.retryable === true ? 'yes' : cast.retryable === false ? 'no' : 'unknown'}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-widest text-adm-subtle">Attempts</p>
+          <p className="text-sm font-mono text-adm-text mt-0.5">{req.retry_count ?? 0}</p>
+        </div>
+      </div>
+      {cast.last_error && (
+        <pre className="mt-3 text-[11px] text-rose-200/80 whitespace-pre-wrap font-mono leading-relaxed">{cast.last_error}</pre>
+      )}
+    </div>
+  )
+}
+
+const TIMELINE_ICONS: Record<string, string> = {
+  queued: '○', claim: '◐', generating_text: '✎', generate_images: '🖼',
+  assembling_pdf: '📄', story_completed: '✓', pipeline_error: '✕',
+  admin_cancel: '⊗', admin_mark_failed: '⊘',
+}
+
+function Timeline({ logs }: { logs: ProcessingLog[] }) {
+  if (logs.length === 0) {
+    return <p className="text-xs text-adm-subtle">No events recorded yet.</p>
+  }
+  return (
+    <ol className="rounded-lg border border-adm-border bg-adm-surface divide-y divide-adm-border">
+      {logs.map(l => {
+        const tone = l.level === 'error' ? 'text-rose-300'
+                    : l.level === 'warning' ? 'text-amber-300'
+                    : 'text-adm-text'
+        const icon = TIMELINE_ICONS[l.stage] ?? '·'
+        return (
+          <li key={l.id} className="px-4 py-2.5 flex items-start gap-3">
+            <span aria-hidden className={`text-sm leading-5 ${tone}`}>{icon}</span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs font-mono text-adm-muted">{l.stage}</span>
+                <span className="text-[10px] uppercase tracking-widest text-adm-subtle">{l.level}</span>
+              </div>
+              <p className={`text-sm mt-0.5 leading-snug ${tone}`}>{l.message}</p>
+            </div>
+            <span className="text-[11px] font-mono text-adm-subtle shrink-0 whitespace-nowrap">
+              {formatAZTimeOnly(l.created_at)}
+            </span>
+          </li>
+        )
+      })}
+    </ol>
   )
 }

@@ -107,6 +107,9 @@ export interface StoryRequest {
   worker_id: string | null
   retry_count: number
   last_error: string | null
+  failure_code: string | null
+  failure_stage: string | null
+  retryable: boolean | null
   stripe_payment_intent_id: string | null
   stripe_checkout_session_id: string | null
   amount_paid_cents: number | null

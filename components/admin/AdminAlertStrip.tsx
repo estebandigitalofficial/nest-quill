@@ -12,6 +12,10 @@ export interface AdminAlertProps {
   sponsorTableMissing: boolean
   /** When > 0, surfaces an "urgent support tickets waiting" alert. */
   urgentSupportTickets?: number
+  /** Failures in the last hour — drives the failure-spike alert. */
+  failedLastHour?: number
+  /** Active jobs at the time of read — used with stuckCount to compute stuck %. */
+  activeJobsCount?: number
   /** Set when getSetting calls returned without a row, suggesting first-run state. */
   missingCriticalSettings?: string[]
 }
@@ -64,6 +68,27 @@ export default function AdminAlertStrip(props: AdminAlertProps) {
       title: `${props.urgentSupportTickets} urgent support ticket${props.urgentSupportTickets === 1 ? '' : 's'}`,
       body: 'Tickets marked urgent are waiting for triage. Review and update status in support.',
       cta: { href: '/admin/support?status=open', label: 'Open support' },
+    })
+  }
+  // Failure spike: ≥ 5 failures in the last hour usually means a provider
+  // outage, a bad prompt change, or a regression. Surface it loudly.
+  if ((props.failedLastHour ?? 0) >= 5) {
+    blocks.push({
+      tone: 'red',
+      title: `${props.failedLastHour} failures in the last hour`,
+      body: 'Pipeline failure rate is elevated. Inspect recent errors for a common failure_code.',
+      cta: { href: '/admin?view=failed-stories', label: 'See failures' },
+    })
+  }
+  // Stuck-share watch: when stuck stories make up > 20% of active jobs and
+  // there are at least 5 active, something is wedged systemically.
+  const active = props.activeJobsCount ?? 0
+  if (active >= 5 && props.stuckCount > 0 && props.stuckCount / active > 0.2) {
+    blocks.push({
+      tone: 'amber',
+      title: `${Math.round((props.stuckCount / active) * 100)}% of active jobs are stuck`,
+      body: 'Workers may be wedged. Force-requeue the stuck jobs or check Edge Function logs.',
+      cta: { href: '#queue-health', label: 'View queue' },
     })
   }
   for (const key of props.missingCriticalSettings ?? []) {

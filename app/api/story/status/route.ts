@@ -305,6 +305,9 @@ export async function GET(request: NextRequest) {
             status: 'failed',
             worker_id: null,
             last_error: reason,
+            failure_code: 'EDGE_FUNCTION_TIMEOUT',
+            failure_stage: storyRequest.status,
+            retryable: true,
             status_message: 'Generation took too long. Please retry.',
           })
           .eq('id', requestId)

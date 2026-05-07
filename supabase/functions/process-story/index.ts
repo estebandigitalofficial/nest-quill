@@ -565,7 +565,50 @@ Deno.serve(async (req) => {
   // Worker start time — used to enforce the time budget
   const workerStart = Date.now()
 
+  // Track the last pipeline stage we entered so the catch-block
+  // classifier can attribute the failure correctly.
+  let currentStage = 'queued'
+
   // ── Helpers ───────────────────────────────────────────────────────────────
+
+  /**
+   * Normalize a thrown error + active stage into the failure classification
+   * stored on story_requests. Pure function — no I/O.
+   */
+  function classifyFailure(err: unknown, stage: string): { code: string; stage: string; retryable: boolean } {
+    const raw = err instanceof Error ? err.message : String(err)
+    const m = raw.toLowerCase()
+
+    // Hard, non-retryable cases first.
+    if (m.includes('invalid') && (m.includes('payload') || m.includes('input') || m.includes('schema'))) {
+      return { code: 'INVALID_INPUT', stage, retryable: false }
+    }
+    if (m.includes('unauthorized') || m.includes('forbidden') || m.includes('not authorized')) {
+      return { code: 'AUTH_ERROR', stage, retryable: false }
+    }
+
+    // Provider-specific transient errors — retryable.
+    if (m.includes('rate limit') || m.includes('429')) return { code: 'RATE_LIMIT', stage, retryable: true }
+    if (m.includes('timed out') || m.includes('timeout')) {
+      if (stage === 'generating_images') return { code: 'IMAGE_TIMEOUT', stage, retryable: true }
+      if (stage === 'generating_text')   return { code: 'OPENAI_TIMEOUT', stage, retryable: true }
+      return { code: 'EDGE_FUNCTION_TIMEOUT', stage, retryable: true }
+    }
+    if (m.includes('image') && (m.includes('failed') || m.includes('error'))) {
+      return { code: 'IMAGE_GENERATION_FAILED', stage: 'generating_images', retryable: true }
+    }
+    if (m.includes('openai') || m.includes('chat completion')) {
+      return { code: 'OPENAI_ERROR', stage: stage === 'queued' ? 'generating_text' : stage, retryable: true }
+    }
+    if (m.includes('storage') || m.includes('upload') || m.includes('bucket')) {
+      return { code: 'STORAGE_ERROR', stage, retryable: true }
+    }
+    if (stage === 'assembling_pdf') {
+      return { code: 'PDF_ASSEMBLY_FAILED', stage, retryable: true }
+    }
+    return { code: 'UNKNOWN', stage, retryable: true }
+  }
+
 
   async function setStatus(
     status: string,
@@ -573,6 +616,7 @@ Deno.serve(async (req) => {
     progress: number,
     extra: Record<string, unknown> = {}
   ) {
+    currentStage = status
     await supabase
       .from('story_requests')
       .update({ status, status_message: message, progress_pct: progress, ...extra })
@@ -1011,16 +1055,20 @@ Deno.serve(async (req) => {
     const message = err instanceof Error ? err.message : String(err)
     console.error(`[process-story] requestId=${requestId} error:`, message)
 
+    const classified = classifyFailure(err, currentStage)
     await supabase
       .from('story_requests')
       .update({
         status: 'failed',
         last_error: message,
+        failure_code: classified.code,
+        failure_stage: classified.stage,
+        retryable: classified.retryable,
         status_message: 'Something went wrong — we\'ll look into it.',
       })
       .eq('id', requestId)
 
-    await log('pipeline_error', message, 'error')
+    await log('pipeline_error', message, 'error', { code: classified.code, stage: classified.stage, retryable: classified.retryable })
 
     // Notify the user their story failed — only on first failure (retry_count === 0).
     // Retries re-increment retry_count before re-queuing, so this guard prevents
