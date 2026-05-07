@@ -361,7 +361,6 @@ export interface GuidedTourStepRow {
   title: string
   body: string
   placement: 'top' | 'bottom' | 'left' | 'right' | 'center'
-  action_label: string | null
   requires_interaction: boolean
   /** 'next_button' (manual confirmation) or 'click' (auto-advance on selector match). */
   advance_on: 'next_button' | 'click'

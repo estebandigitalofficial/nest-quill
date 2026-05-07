@@ -81,9 +81,15 @@ export async function GET(
   debug.tour_row_found = true
 
   // ── Stage 3: steps ─────────────────────────────────────────────────
+  // Production guided_tour_steps columns (verified):
+  //   id, tour_id, step_order, title, body, target_selector,
+  //   placement, requires_interaction, config,
+  //   advance_on, advance_selector, wait_message
+  // No `action_label`. The frontend TourStep type still includes
+  // action_label; we map it to null below to keep the type stable.
   const { data: stepsRows, error: stepsErr } = await admin
     .from('guided_tour_steps')
-    .select('id, step_order, target_selector, title, body, placement, action_label, requires_interaction, advance_on, advance_selector, wait_message')
+    .select('id, step_order, target_selector, title, body, placement, requires_interaction, advance_on, advance_selector, wait_message')
     .eq('tour_id', tourRow.id)
     .order('step_order', { ascending: true })
   if (stepsErr) {
@@ -100,7 +106,10 @@ export async function GET(
     title: r.title as string,
     body: r.body as string,
     placement: (r.placement as TourStep['placement']) ?? 'bottom',
-    action_label: (r.action_label as string | null) ?? null,
+    // Production schema has no action_label column. The frontend
+    // TourStep type still allows it for forward-compat; map null
+    // here so GuideQuill renders the default "Next" / "Got it" copy.
+    action_label: null,
     requires_interaction: !!r.requires_interaction,
     advance_on: ((r.advance_on as string) === 'click' ? 'click' : 'next_button'),
     advance_selector: (r.advance_selector as string | null) ?? null,
