@@ -67,7 +67,7 @@ export default function DripSequenceView({
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-medium text-white">Step {template.step}</span>
+                          <span className="text-sm font-medium text-adm-text">Step {template.step}</span>
                           <span className="text-[10px] text-adm-subtle">+{template.delay_days}d</span>
                           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${template.enabled ? 'bg-green-900 text-green-400' : 'bg-adm-surface text-adm-muted'}`}>
                             {template.enabled ? 'enabled' : 'disabled'}
@@ -122,7 +122,7 @@ export default function DripSequenceView({
             {rules.map((rule) => (
               <div key={rule.id} className="bg-adm-surface border border-adm-border rounded-xl px-4 py-3 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-white">{rule.name}</p>
+                  <p className="text-sm font-medium text-adm-text">{rule.name}</p>
                   <p className="text-xs text-adm-muted">
                     {rule.trigger_type} · +{rule.delay_days}d
                     {rule.enabled ? '' : ' · disabled'}

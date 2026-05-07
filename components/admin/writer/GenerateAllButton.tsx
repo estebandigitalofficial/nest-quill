@@ -93,7 +93,7 @@ export default function GenerateAllButton({
         <div className="flex items-center gap-3">
           <span className="w-4 h-4 border-2 border-brand-700 border-t-brand-400 rounded-full animate-spin shrink-0" />
           <p className="text-sm text-adm-muted">
-            Writing scenes… <span className="text-white font-semibold">{progress.done}/{progress.total}</span>
+            Writing scenes… <span className="text-adm-text font-semibold">{progress.done}/{progress.total}</span>
           </p>
         </div>
         <div className="h-1.5 bg-adm-surface rounded-full overflow-hidden">
@@ -165,7 +165,7 @@ export default function GenerateAllButton({
 
       <button
         onClick={handleGenerateAll}
-        className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm py-3 rounded-xl transition-colors"
+        className="w-full bg-brand-500 hover:bg-brand-600 text-adm-text font-semibold text-sm py-3 rounded-xl transition-colors"
       >
         Generate all scenes →
       </button>

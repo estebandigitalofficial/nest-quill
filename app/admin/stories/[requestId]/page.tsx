@@ -72,7 +72,7 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
           </Link>
           <div className="flex items-start justify-between mt-3 gap-4 flex-wrap">
             <div>
-              <h1 className="text-xl font-semibold text-white">
+              <h1 className="text-xl font-semibold text-adm-text">
                 {story?.title ?? `${req.child_name}'s Story`}
               </h1>
               <p className="text-sm text-adm-muted mt-1 font-mono">{req.id}</p>

@@ -60,7 +60,7 @@ export default function RuleEditor({
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-adm-surface border border-adm-border rounded-2xl max-w-lg w-full p-6 space-y-4">
-        <h3 className="text-lg font-semibold text-white">{isNew ? 'New Rule' : 'Edit Rule'}</h3>
+        <h3 className="text-lg font-semibold text-adm-text">{isNew ? 'New Rule' : 'Edit Rule'}</h3>
 
         <div>
           <label className="text-xs text-adm-muted block mb-1">Name</label>
@@ -105,8 +105,8 @@ export default function RuleEditor({
         </label>
 
         <div className="flex gap-3 justify-end pt-2">
-          <button onClick={onClose} className="text-sm text-adm-muted hover:text-white px-4 py-2 rounded-lg border border-adm-border transition-colors">Cancel</button>
-          <button onClick={handleSave} disabled={saving} className="text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-50 px-4 py-2 rounded-lg transition-colors">
+          <button onClick={onClose} className="text-sm text-adm-muted hover:text-adm-text px-4 py-2 rounded-lg border border-adm-border transition-colors">Cancel</button>
+          <button onClick={handleSave} disabled={saving} className="text-sm font-semibold text-adm-text bg-brand-500 hover:bg-brand-600 disabled:opacity-50 px-4 py-2 rounded-lg transition-colors">
             {saving ? 'Saving...' : isNew ? 'Create' : 'Save'}
           </button>
         </div>

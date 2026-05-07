@@ -70,7 +70,7 @@ export default function ReportingDashboard({ initialData }: { initialData: Repor
         <button
           onClick={fetchData}
           disabled={loading}
-          className="text-xs font-semibold text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-50 px-4 py-2 rounded-lg transition-colors"
+          className="text-xs font-semibold text-adm-text bg-brand-500 hover:bg-brand-600 disabled:opacity-50 px-4 py-2 rounded-lg transition-colors"
         >
           {loading ? 'Loading...' : 'Update'}
         </button>
@@ -135,7 +135,7 @@ function PlanTierBreakdown({ counts }: { counts: Record<string, number> }) {
         const isPaid = tier !== 'free'
         return (
           <div key={tier} className="px-4 py-3 flex items-center gap-3">
-            <span className="text-sm font-medium text-white w-32 shrink-0">{PLAN_LABELS[tier] ?? tier}</span>
+            <span className="text-sm font-medium text-adm-text w-32 shrink-0">{PLAN_LABELS[tier] ?? tier}</span>
             <div className="flex-1 h-2 bg-adm-bg/60 rounded-full overflow-hidden">
               <div
                 className={`h-full ${isPaid ? 'bg-brand-500' : 'bg-adm-border'}`}
@@ -143,7 +143,7 @@ function PlanTierBreakdown({ counts }: { counts: Record<string, number> }) {
               />
             </div>
             <span className="text-xs text-adm-muted tabular-nums w-12 text-right shrink-0">{pct}%</span>
-            <span className="text-sm font-bold text-white tabular-nums w-12 text-right shrink-0">{n}</span>
+            <span className="text-sm font-bold text-adm-text tabular-nums w-12 text-right shrink-0">{n}</span>
           </div>
         )
       })}

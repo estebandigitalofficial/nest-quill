@@ -54,7 +54,7 @@ export default async function AdminClassroomDetailPage({ params }: RouteContext)
 
       {/* Back — preserves filter context */}
       <Link href={backHref}
-        className="text-xs text-adm-muted hover:text-white transition-colors inline-block">
+        className="text-xs text-adm-muted hover:text-adm-text transition-colors inline-block">
         ← Classrooms
       </Link>
 
@@ -70,7 +70,7 @@ export default async function AdminClassroomDetailPage({ params }: RouteContext)
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-xl font-semibold text-white">{classroom.name}</h1>
+              <h1 className="text-xl font-semibold text-adm-text">{classroom.name}</h1>
               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                 classroom.is_active
                   ? 'bg-green-900 text-green-400'

@@ -77,7 +77,7 @@ export default function StripeStatusPanel({ env, betaMode, lastWebhookEvent, web
             Plan cards display as <strong>Free</strong> across the marketing site, and the submit route accepts paid-tier
             selections without invoking Stripe. Users <em>can</em> still pick paid tiers (the picks are recorded in
             <code className="mx-1 text-[11px] bg-blue-500/10 px-1 py-0.5 rounded">story_requests.plan_tier</code>),
-            so you can see real demand before launching billing — see <Link href="/admin/reporting" className="underline underline-offset-2 text-blue-100 hover:text-white">Reporting</Link>.
+            so you can see real demand before launching billing — see <Link href="/admin/reporting" className="underline underline-offset-2 text-blue-100 hover:text-adm-text">Reporting</Link>.
             No charge events are generated.
           </p>
         </div>

@@ -80,7 +80,7 @@ export default function ClassroomDetailTabs({ members, assignments }: Props) {
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-              tab === t.id ? 'bg-white/10 text-white' : 'text-adm-muted hover:text-white'
+              tab === t.id ? 'bg-adm-text/10 text-adm-text' : 'text-adm-muted hover:text-adm-text'
             }`}>
             {t.label}
           </button>
@@ -109,9 +109,9 @@ export default function ClassroomDetailTabs({ members, assignments }: Props) {
           </thead>
           <tbody className="divide-y divide-adm-border">
             {members.map(m => (
-              <tr key={m.id} className="hover:bg-white/5 transition-colors">
+              <tr key={m.id} className="hover:bg-adm-text/5 transition-colors">
                 <td className="px-4 py-3">
-                  <p className="text-white text-sm font-medium">{m.profiles?.display_name ?? '—'}</p>
+                  <p className="text-adm-text text-sm font-medium">{m.profiles?.display_name ?? '—'}</p>
                   <p className="text-[10px] text-adm-subtle font-mono">{m.student_id.slice(0, 8)}…</p>
                 </td>
                 <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell">
@@ -145,9 +145,9 @@ export default function ClassroomDetailTabs({ members, assignments }: Props) {
               const pct = memberCount > 0 ? Math.round((completed / memberCount) * 100) : 0
               const isOverdue = a.due_at && new Date(a.due_at) < new Date()
               return (
-                <tr key={a.id} className="hover:bg-white/5 transition-colors">
+                <tr key={a.id} className="hover:bg-adm-text/5 transition-colors">
                   <td className="px-4 py-3">
-                    <p className="text-white text-sm font-medium">{a.title}</p>
+                    <p className="text-adm-text text-sm font-medium">{a.title}</p>
                   </td>
                   <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell">
                     {TOOL_LABELS[a.tool] ?? a.tool}
@@ -192,9 +192,9 @@ export default function ClassroomDetailTabs({ members, assignments }: Props) {
               const name = member?.profiles?.display_name ?? member?.profiles?.email ?? `${s.student_id.slice(0, 8)}…`
               const hasScore = s.score !== null && s.total
               return (
-                <tr key={s.id} className="hover:bg-white/5 transition-colors">
+                <tr key={s.id} className="hover:bg-adm-text/5 transition-colors">
                   <td className="px-4 py-3">
-                    <p className="text-white text-sm font-medium">{name}</p>
+                    <p className="text-adm-text text-sm font-medium">{name}</p>
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell">
                     <p className="text-adm-muted text-xs">{s.assignmentTitle}</p>
@@ -259,7 +259,7 @@ function EmptyRow({ colSpan, message }: { colSpan: number; message: string }) {
 }
 
 function StatCard({ label, value, color }: { label: string; value: number | string; color?: 'green' | 'amber' }) {
-  const valueColor = color === 'green' ? 'text-green-400' : color === 'amber' ? 'text-amber-400' : 'text-white'
+  const valueColor = color === 'green' ? 'text-green-400' : color === 'amber' ? 'text-amber-400' : 'text-adm-text'
   return (
     <div className="bg-adm-surface rounded-2xl border border-adm-border px-5 py-4">
       <p className="text-xs text-adm-muted mb-1">{label}</p>

@@ -35,7 +35,7 @@ export default async function AdminSponsorsPage() {
         </div>
         <Link
           href="/admin/sponsors/new"
-          className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          className="bg-brand-500 hover:bg-brand-600 text-adm-text text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
           + New sponsor
         </Link>
       </div>

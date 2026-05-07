@@ -125,7 +125,7 @@ export default function NewBookForm({
       <header className="border-b border-adm-border px-6 h-14 flex items-center gap-3">
         <Link href="/admin/writer" className="text-xs text-adm-muted hover:text-adm-muted">← Books</Link>
         <span className="text-gray-700">/</span>
-        <span className="font-semibold text-white">New book</span>
+        <span className="font-semibold text-adm-text">New book</span>
       </header>
 
       <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
@@ -146,7 +146,7 @@ export default function NewBookForm({
         {/* PDF upload — primary path */}
         <div className="bg-adm-surface border border-adm-border rounded-xl px-6 py-6 space-y-3">
           <div>
-            <p className="text-base font-semibold text-white">Upload a PDF</p>
+            <p className="text-base font-semibold text-adm-text">Upload a PDF</p>
             <p className="text-sm text-adm-muted mt-0.5">Reedsy export or any text-based PDF — title, genre, and premise will be pulled automatically</p>
           </div>
 
@@ -156,7 +156,7 @@ export default function NewBookForm({
               Creating book from PDF…
             </div>
           ) : (
-            <label className="inline-flex cursor-pointer bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors">
+            <label className="inline-flex cursor-pointer bg-brand-500 hover:bg-brand-600 text-adm-text text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors">
               Choose PDF →
               <input
                 ref={fileRef}
@@ -242,7 +242,7 @@ export default function NewBookForm({
               <button type="button" onClick={() => setMode('choose')} className="flex-1 text-center py-3 rounded-xl border border-adm-border text-adm-muted hover:border-adm-border text-sm font-semibold transition-colors">
                 Cancel
               </button>
-              <button type="submit" disabled={saving} className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-800 text-white font-semibold py-3 rounded-xl text-sm transition-colors">
+              <button type="submit" disabled={saving} className="flex-1 bg-brand-500 hover:bg-brand-600 disabled:bg-brand-800 text-adm-text font-semibold py-3 rounded-xl text-sm transition-colors">
                 {saving ? 'Creating…' : 'Create book →'}
               </button>
             </div>
@@ -265,4 +265,4 @@ function Field({ label, hint, required, children }: { label: string; hint?: stri
   )
 }
 
-const input = 'w-full bg-adm-surface border border-adm-border rounded-lg px-3.5 py-2.5 text-sm text-white placeholder:text-adm-subtle focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors'
+const input = 'w-full bg-adm-surface border border-adm-border rounded-lg px-3.5 py-2.5 text-sm text-adm-text placeholder:text-adm-subtle focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors'

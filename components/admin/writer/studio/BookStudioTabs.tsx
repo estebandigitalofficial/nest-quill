@@ -29,7 +29,7 @@ export default function BookStudioTabs({
             onClick={() => setTab(t)}
             className={`flex-1 text-sm font-semibold py-2 rounded-lg transition-colors capitalize ${
               tab === t
-                ? 'bg-adm-surface text-white'
+                ? 'bg-adm-surface text-adm-text'
                 : 'text-adm-muted hover:text-adm-muted'
             }`}
           >

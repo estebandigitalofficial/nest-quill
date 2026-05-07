@@ -63,7 +63,7 @@ export default function LibraryFilters({ q, status }: Props) {
             onClick={() => push({ q, status: opt.value === 'all' ? '' : opt.value })}
             className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
               (status || 'all') === opt.value
-                ? 'bg-brand-500 text-white'
+                ? 'bg-brand-500 text-adm-text'
                 : 'bg-adm-surface text-adm-muted hover:bg-adm-border hover:text-adm-text border border-adm-border'
             }`}
           >

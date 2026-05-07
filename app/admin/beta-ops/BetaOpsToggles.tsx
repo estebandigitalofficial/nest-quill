@@ -72,7 +72,7 @@ export default function BetaOpsToggles({ initial }: { initial: SettingRow[] }) {
   }
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm divide-y divide-white/5">
+    <div className="rounded-2xl border border-adm-text/10 bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm divide-y divide-white/5">
       {rows.map(row => {
         const isBool = typeof row.value === 'boolean'
         const isText = typeof row.value === 'string'
@@ -80,11 +80,11 @@ export default function BetaOpsToggles({ initial }: { initial: SettingRow[] }) {
           <div key={row.key} className="px-4 py-3 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm text-white">{row.label}</p>
+                <p className="text-sm text-adm-text">{row.label}</p>
                 {ENFORCED_KEYS.has(row.key) ? (
                   <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Enforced</span>
                 ) : (
-                  <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/5 text-adm-muted border border-white/10">Display</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-adm-text/5 text-adm-muted border border-adm-text/10">Display</span>
                 )}
               </div>
               <p className="text-[11px] text-adm-subtle font-mono mt-0.5">{row.key}</p>
@@ -97,7 +97,7 @@ export default function BetaOpsToggles({ initial }: { initial: SettingRow[] }) {
                 type="text"
                 defaultValue={row.value as string}
                 onBlur={(e) => setText(row.key, e.target.value)}
-                className="w-64 max-w-[60%] bg-adm-bg border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white"
+                className="w-64 max-w-[60%] bg-adm-bg border border-adm-text/10 rounded-lg px-3 py-1.5 text-xs text-adm-text"
               />
             )}
             {!isBool && !isText && (
@@ -120,7 +120,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (next: boolean) => vo
       role="switch"
       aria-checked={on}
       onClick={() => onChange(!on)}
-      className={`relative w-11 h-6 rounded-full transition-colors ${on ? 'bg-emerald-500' : 'bg-white/10'}`}
+      className={`relative w-11 h-6 rounded-full transition-colors ${on ? 'bg-emerald-500' : 'bg-adm-text/10'}`}
     >
       <span
         aria-hidden

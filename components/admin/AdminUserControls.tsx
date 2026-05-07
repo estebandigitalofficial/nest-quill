@@ -72,7 +72,7 @@ export default function AdminUserControls({ userId, currentPlan, booksGenerated,
           <button
             onClick={savePlan}
             disabled={planState === 'saving'}
-            className="text-xs bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white px-2.5 py-1.5 rounded-lg font-medium transition-colors"
+            className="text-xs bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-adm-text px-2.5 py-1.5 rounded-lg font-medium transition-colors"
           >
             {planState === 'saving' ? 'Saving…' : planState === 'saved' ? 'Saved ✓' : planState === 'error' ? 'Error' : 'Save'}
           </button>

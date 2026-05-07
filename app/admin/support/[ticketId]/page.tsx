@@ -28,8 +28,8 @@ export default async function AdminSupportDetailPage({ params }: PageProps) {
   return (
     <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
       <div>
-        <Link href="/admin/support" className="text-xs text-adm-muted hover:text-white">← Back to support</Link>
-        <h1 className="text-xl font-semibold text-white mt-1">
+        <Link href="/admin/support" className="text-xs text-adm-muted hover:text-adm-text">← Back to support</Link>
+        <h1 className="text-xl font-semibold text-adm-text mt-1">
           <span className="font-mono text-sm text-adm-subtle mr-2">#{t.id.slice(0, 8)}</span>
           {t.subject}
         </h1>
@@ -40,7 +40,7 @@ export default async function AdminSupportDetailPage({ params }: PageProps) {
 
       <div className="bg-adm-surface rounded-2xl border border-adm-border px-5 py-4">
         <p className="text-[11px] uppercase tracking-widest text-adm-muted mb-2">Message</p>
-        <p className="text-sm text-white whitespace-pre-wrap leading-relaxed">{t.message}</p>
+        <p className="text-sm text-adm-text whitespace-pre-wrap leading-relaxed">{t.message}</p>
       </div>
 
       <TicketEditor

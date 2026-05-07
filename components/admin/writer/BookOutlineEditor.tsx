@@ -93,7 +93,7 @@ export default function BookOutlineEditor({
                     </span>
                     <ChapterStatusDot status={chapter.status} />
                   </div>
-                  <h3 className="font-serif text-white text-base leading-snug">{chapter.title}</h3>
+                  <h3 className="font-serif text-adm-text text-base leading-snug">{chapter.title}</h3>
                   <p className="text-xs text-adm-muted mt-1 line-clamp-2">{chapter.brief}</p>
                   <div className="flex gap-3 mt-2 text-xs text-adm-subtle">
                     <span>{writtenCount}/{sceneCount} scenes</span>
@@ -103,7 +103,7 @@ export default function BookOutlineEditor({
                 <div className="flex items-center gap-2 shrink-0">
                   <Link
                     href={`/admin/writer/${book.id}/${chapter.id}`}
-                    className="text-xs bg-brand-500 hover:bg-brand-600 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                    className="text-xs bg-brand-500 hover:bg-brand-600 text-adm-text font-semibold px-3 py-1.5 rounded-lg transition-colors"
                   >
                     Open →
                   </Link>
@@ -149,7 +149,7 @@ export default function BookOutlineEditor({
               <button
                 onClick={addChapter}
                 disabled={saving || !newChapter.title || !newChapter.brief}
-                className="flex-1 text-sm bg-brand-500 hover:bg-brand-600 disabled:bg-brand-900 text-white font-semibold py-2 rounded-lg transition-colors"
+                className="flex-1 text-sm bg-brand-500 hover:bg-brand-600 disabled:bg-brand-900 text-adm-text font-semibold py-2 rounded-lg transition-colors"
               >
                 {saving ? 'Adding…' : 'Add chapter'}
               </button>
@@ -170,4 +170,4 @@ function ChapterStatusDot({ status }: { status: string }) {
   return <span className={`w-1.5 h-1.5 rounded-full inline-block ${colors[status] ?? 'bg-gray-700'}`} />
 }
 
-const inputClass = 'w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-adm-subtle focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent'
+const inputClass = 'w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2.5 text-sm text-adm-text placeholder:text-adm-subtle focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent'

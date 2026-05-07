@@ -55,7 +55,7 @@ export default async function AdminSupportPage({ searchParams }: PageProps) {
   return (
     <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">Support</h1>
+        <h1 className="text-xl font-semibold text-adm-text">Support</h1>
         <p className="text-sm text-adm-muted mt-1">Tickets submitted via /contact and any future support widgets.</p>
       </div>
 
@@ -74,7 +74,7 @@ export default async function AdminSupportPage({ searchParams }: PageProps) {
               key={s}
               href={href}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                active ? 'bg-brand-500 border-brand-500 text-white' : 'bg-adm-surface border-adm-border text-adm-muted hover:text-white hover:border-brand-600'
+                active ? 'bg-brand-500 border-brand-500 text-adm-text' : 'bg-adm-surface border-adm-border text-adm-muted hover:text-adm-text hover:border-brand-600'
               }`}
             >
               {s === 'all' ? 'All' : s.replace(/_/g, ' ')}
@@ -100,7 +100,7 @@ export default async function AdminSupportPage({ searchParams }: PageProps) {
             <tbody className="divide-y divide-adm-border">
               {rows.map(t => (
                 <tr key={t.id} className="hover:bg-adm-surface/50 transition-colors">
-                  <td className="px-4 py-3 text-white max-w-[260px] truncate">
+                  <td className="px-4 py-3 text-adm-text max-w-[260px] truncate">
                     <span className="font-mono text-[10px] text-adm-subtle mr-2">#{t.id.slice(0, 8)}</span>
                     {t.subject}
                   </td>
@@ -138,7 +138,7 @@ export default async function AdminSupportPage({ searchParams }: PageProps) {
 }
 
 function Stat({ label, value, color }: { label: string; value: number; color?: 'amber' | 'red' }) {
-  const valueColor = color === 'amber' ? 'text-amber-400' : color === 'red' ? 'text-red-400' : 'text-white'
+  const valueColor = color === 'amber' ? 'text-amber-400' : color === 'red' ? 'text-red-400' : 'text-adm-text'
   return (
     <div className="bg-adm-surface rounded-2xl border border-adm-border px-5 py-4">
       <p className="text-xs text-adm-muted mb-1">{label}</p>

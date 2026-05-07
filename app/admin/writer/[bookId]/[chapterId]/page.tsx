@@ -47,7 +47,7 @@ export default async function ChapterPage({
             ← {(book as WriterBook).title}
           </Link>
           <span className="text-gray-700">/</span>
-          <span className="font-semibold text-white truncate">
+          <span className="font-semibold text-adm-text truncate">
             Ch. {chapter.chapter_number}: {chapter.title}
           </span>
         </div>

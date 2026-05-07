@@ -26,7 +26,7 @@ export default function AdminQuickActions() {
           key={a.href}
           href={a.href}
           className="rounded-xl bg-adm-surface border border-adm-border hover:border-brand-600 px-3 py-2.5 transition-colors">
-          <p className="text-xs font-semibold text-white">{a.label}</p>
+          <p className="text-xs font-semibold text-adm-text">{a.label}</p>
           <p className="text-[10px] text-adm-subtle mt-0.5">{a.hint}</p>
         </Link>
       ))}

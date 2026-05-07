@@ -100,7 +100,7 @@ export default async function AdminReportingPage() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-white">Reporting</h1>
+        <h1 className="text-xl font-semibold text-adm-text">Reporting</h1>
         <p className="text-sm text-adm-muted mt-1">Revenue, story analytics, and user growth.</p>
       </div>
       <ReportingDashboard initialData={initialData} />

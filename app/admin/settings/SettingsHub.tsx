@@ -481,7 +481,7 @@ export default function SettingsHub({ initialSettings, stripeEnv, betaMode, last
               onClick={() => setActiveId(sec.id)}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                 activeId === sec.id
-                  ? 'bg-brand-500 text-white'
+                  ? 'bg-brand-500 text-adm-text'
                   : 'text-adm-muted hover:text-adm-text hover:bg-adm-bg'
               }`}
             >

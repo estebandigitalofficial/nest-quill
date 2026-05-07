@@ -72,7 +72,7 @@ export default function NewSponsorForm() {
         <button
           type="submit"
           disabled={saving || !name.trim()}
-          className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-adm-text text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
           {saving ? 'Saving…' : 'Create sponsor'}
         </button>
       </div>

@@ -136,7 +136,7 @@ export default function BookSettingsPanel({ book }: { book: WriterBook }) {
             <button
               onClick={save}
               disabled={saving}
-              className="text-xs bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
+              className="text-xs bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-adm-text font-semibold px-4 py-2 rounded-lg transition-colors"
             >
               {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Update'}
             </button>

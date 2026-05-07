@@ -49,11 +49,11 @@ export default async function WriterPage() {
         <div className="flex items-center gap-3">
           <Link href="/admin" className="text-xs text-adm-muted hover:text-adm-muted">← Admin</Link>
           <span className="text-gray-700">/</span>
-          <span className="font-semibold text-white">Book Writer</span>
+          <span className="font-semibold text-adm-text">Book Writer</span>
         </div>
         <Link
           href="/admin/writer/new"
-          className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+          className="bg-brand-500 hover:bg-brand-600 text-adm-text text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
         >
           + New book
         </Link>
@@ -66,7 +66,7 @@ export default async function WriterPage() {
             <p className="text-adm-muted">No books yet. Start writing.</p>
             <Link
               href="/admin/writer/new"
-              className="inline-block mt-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
+              className="inline-block mt-2 bg-brand-500 hover:bg-brand-600 text-adm-text text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
             >
               Create your first book
             </Link>
@@ -87,7 +87,7 @@ export default async function WriterPage() {
                   <Link href={`/admin/writer/${book.id}`} className="absolute inset-0" aria-hidden />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2.5 flex-wrap">
-                      <h2 className="font-serif text-base text-white truncate">{book.title}</h2>
+                      <h2 className="font-serif text-base text-adm-text truncate">{book.title}</h2>
                       <StatusPill status={book.status} />
                     </div>
                     <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs text-adm-subtle">
@@ -110,14 +110,14 @@ export default async function WriterPage() {
                     <DeleteBookButton bookId={book.id} isOwner={canEdit} />
                     <Link
                       href={`/admin/writer/${book.id}/read`}
-                      className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-adm-border text-adm-muted hover:text-white hover:border-adm-border transition-colors"
+                      className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-adm-border text-adm-muted hover:text-adm-text hover:border-adm-border transition-colors"
                     >
                       Read
                     </Link>
                     {canEdit ? (
                       <Link
                         href={`/admin/writer/${book.id}?mode=edit`}
-                        className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-adm-border text-adm-muted hover:text-white hover:border-adm-border transition-colors"
+                        className="text-xs px-3 py-1.5 sm:text-[11px] sm:px-2.5 sm:py-1 rounded-md border border-adm-border text-adm-muted hover:text-adm-text hover:border-adm-border transition-colors"
                       >
                         Edit
                       </Link>

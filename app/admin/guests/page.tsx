@@ -125,7 +125,7 @@ export default async function AdminGuestsPage({ searchParams }: PageProps) {
                       <tr key={g.email} className="hover:bg-adm-surface/50 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-white font-medium text-sm">{g.email}</span>
+                            <span className="text-adm-text font-medium text-sm">{g.email}</span>
                             <span className="text-[10px] bg-adm-surface text-adm-muted font-semibold px-1.5 py-0.5 rounded-full">guest</span>
                           </div>
                         </td>
@@ -167,7 +167,7 @@ export default async function AdminGuestsPage({ searchParams }: PageProps) {
 }
 
 function StatCard({ label, value, color }: { label: string; value: number; color?: 'green' | 'amber' }) {
-  const valueColor = color === 'green' ? 'text-green-400' : color === 'amber' ? 'text-amber-400' : 'text-white'
+  const valueColor = color === 'green' ? 'text-green-400' : color === 'amber' ? 'text-amber-400' : 'text-adm-text'
   return (
     <div className="bg-adm-surface rounded-2xl border border-adm-border px-5 py-4">
       <p className="text-xs text-adm-muted mb-1">{label}</p>

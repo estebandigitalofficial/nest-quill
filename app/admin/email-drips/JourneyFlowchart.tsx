@@ -104,7 +104,7 @@ const dotColor: Record<JourneyNode['color'], string> = {
 export default function JourneyFlowchart() {
   return (
     <div className="overflow-y-auto max-h-[calc(100vh-6rem)] pr-1">
-      <h2 className="text-sm font-semibold text-white mb-6 tracking-wide">
+      <h2 className="text-sm font-semibold text-adm-text mb-6 tracking-wide">
         Customer Journey
       </h2>
 
@@ -153,7 +153,7 @@ export default function JourneyFlowchart() {
                           className={`flex-1 bg-adm-surface border border-adm-border ${borderColor[node.color]} border-l-2 rounded-lg px-3 py-2`}
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <p className="text-xs text-white truncate leading-snug">
+                            <p className="text-xs text-adm-text truncate leading-snug">
                               {node.subject}
                             </p>
                             <span className="text-[10px] text-adm-subtle font-mono shrink-0">

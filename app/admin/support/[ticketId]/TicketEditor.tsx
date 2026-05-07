@@ -55,7 +55,7 @@ export default function TicketEditor({
           <select
             value={status}
             onChange={e => setStatus(e.target.value as SupportTicketStatus)}
-            className="w-full bg-adm-bg border border-adm-border rounded-lg px-3 py-2 text-sm text-white">
+            className="w-full bg-adm-bg border border-adm-border rounded-lg px-3 py-2 text-sm text-adm-text">
             {STATUSES.map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
           </select>
         </div>
@@ -64,7 +64,7 @@ export default function TicketEditor({
           <select
             value={priority}
             onChange={e => setPriority(e.target.value as SupportTicketPriority)}
-            className="w-full bg-adm-bg border border-adm-border rounded-lg px-3 py-2 text-sm text-white">
+            className="w-full bg-adm-bg border border-adm-border rounded-lg px-3 py-2 text-sm text-adm-text">
             {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
@@ -77,7 +77,7 @@ export default function TicketEditor({
           onChange={e => setNotes(e.target.value)}
           rows={4}
           placeholder="Internal notes — never shown to the user."
-          className="w-full bg-adm-bg border border-adm-border rounded-lg px-3 py-2 text-sm text-white resize-none"
+          className="w-full bg-adm-bg border border-adm-border rounded-lg px-3 py-2 text-sm text-adm-text resize-none"
         />
       </div>
 
@@ -87,7 +87,7 @@ export default function TicketEditor({
         type="button"
         onClick={save}
         disabled={saving}
-        className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+        className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-adm-text text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
         {saving ? 'Saving…' : 'Save changes'}
       </button>
     </div>

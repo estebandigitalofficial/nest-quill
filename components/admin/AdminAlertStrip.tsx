@@ -84,23 +84,23 @@ export default function AdminAlertStrip(props: AdminAlertProps) {
           key={i}
           className={`rounded-2xl border px-4 py-3 ${
             b.tone === 'red'
-              ? 'bg-red-950/30 border-red-800'
+              ? 'bg-rose-50 border-rose-300'
               : b.tone === 'amber'
-              ? 'bg-amber-950/30 border-amber-800'
-              : 'bg-blue-950/30 border-blue-800'
+              ? 'bg-amber-50 border-amber-300'
+              : 'bg-sky-50 border-sky-300'
           }`}>
           <div className="flex items-start gap-2">
             <span aria-hidden className={`mt-1 w-2 h-2 rounded-full shrink-0 ${
-              b.tone === 'red' ? 'bg-red-400' : b.tone === 'amber' ? 'bg-amber-400' : 'bg-blue-400'
+              b.tone === 'red' ? 'bg-rose-500' : b.tone === 'amber' ? 'bg-amber-500' : 'bg-sky-500'
             }`} />
             <div className="min-w-0 flex-1">
               <p className={`text-sm font-semibold ${
-                b.tone === 'red' ? 'text-red-300' : b.tone === 'amber' ? 'text-amber-300' : 'text-blue-300'
+                b.tone === 'red' ? 'text-rose-800' : b.tone === 'amber' ? 'text-amber-800' : 'text-sky-800'
               }`}>{b.title}</p>
               <p className="text-xs text-adm-muted mt-0.5 leading-snug">{b.body}</p>
               {b.cta && (
                 <Link href={b.cta.href} className={`inline-block mt-1.5 text-xs font-semibold ${
-                  b.tone === 'red' ? 'text-red-300 hover:text-red-200' : b.tone === 'amber' ? 'text-amber-300 hover:text-amber-200' : 'text-blue-300 hover:text-blue-200'
+                  b.tone === 'red' ? 'text-rose-700 hover:text-rose-900' : b.tone === 'amber' ? 'text-amber-700 hover:text-amber-900' : 'text-sky-700 hover:text-sky-900'
                 }`}>
                   {b.cta.label} →
                 </Link>

@@ -145,7 +145,7 @@ export default function BookSourcePanel({
             <button
               onClick={handleAnalyze}
               disabled={analyzing}
-              className="text-xs font-semibold bg-brand-500 hover:bg-brand-600 text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+              className="text-xs font-semibold bg-brand-500 hover:bg-brand-600 text-adm-text px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
             >
               {analyzing ? 'Analyzing…' : 'Analyze →'}
             </button>
@@ -160,7 +160,7 @@ export default function BookSourcePanel({
             </button>
           )}
           <label className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-            fileName ? 'bg-adm-surface hover:bg-adm-border text-adm-muted' : 'bg-brand-500 hover:bg-brand-600 text-white'
+            fileName ? 'bg-adm-surface hover:bg-adm-border text-adm-muted' : 'bg-brand-500 hover:bg-brand-600 text-adm-text'
           } ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
             {uploading ? 'Uploading…' : fileName ? 'Replace PDF' : 'Upload PDF'}
             <input ref={fileRef} type="file" accept="application/pdf" className="hidden" onChange={handleUpload} />

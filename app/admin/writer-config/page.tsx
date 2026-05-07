@@ -14,7 +14,7 @@ export default async function WriterConfigPage() {
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-white">AI Writer Config</h1>
+        <h1 className="text-xl font-semibold text-adm-text">AI Writer Config</h1>
         <p className="text-sm text-adm-muted mt-1">
           Edit the prompts, rules, and style hints used by the story generation pipeline.
         </p>

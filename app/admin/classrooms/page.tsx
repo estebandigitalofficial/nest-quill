@@ -120,7 +120,7 @@ export default async function AdminClassroomsPage({ searchParams }: PageProps) {
               </thead>
               <tbody className="divide-y divide-adm-border">
                 {rows.map(r => (
-                  <tr key={r.id} className="relative hover:bg-white/5 transition-colors cursor-pointer">
+                  <tr key={r.id} className="relative hover:bg-adm-text/5 transition-colors cursor-pointer">
 
                     {/* First cell contains the row-wide click overlay */}
                     <td className="px-4 py-3">
@@ -128,7 +128,7 @@ export default async function AdminClassroomsPage({ searchParams }: PageProps) {
                         href={`/admin/classrooms/${r.id}`}
                         className="after:absolute after:inset-0"
                       >
-                        <p className="text-white font-medium text-sm">{r.name}</p>
+                        <p className="text-adm-text font-medium text-sm">{r.name}</p>
                         <p className="text-[10px] text-adm-subtle mt-0.5">
                           {[r.grade ? `Grade ${r.grade}` : null, r.subject].filter(Boolean).join(' · ') || '—'}
                         </p>
@@ -190,11 +190,11 @@ export default async function AdminClassroomsPage({ searchParams }: PageProps) {
 function StatCard({ label, value, href, active, color }: {
   label: string; value: number; href: string; active: boolean; color?: 'green' | 'amber'
 }) {
-  const valueColor = color === 'green' ? 'text-green-400' : color === 'amber' ? 'text-amber-400' : 'text-white'
+  const valueColor = color === 'green' ? 'text-green-400' : color === 'amber' ? 'text-amber-400' : 'text-adm-text'
   return (
     <Link
       href={href}
-      className={`block bg-adm-surface rounded-2xl px-5 py-4 transition-colors hover:bg-white/5 ${
+      className={`block bg-adm-surface rounded-2xl px-5 py-4 transition-colors hover:bg-adm-text/5 ${
         active ? 'border-2 border-brand-500' : 'border-2 border-adm-border'
       }`}
     >

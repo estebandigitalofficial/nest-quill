@@ -206,26 +206,26 @@ export default async function AdminPage({ searchParams }: PageProps) {
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
 
         {/* ── Command Center hero ─────────────────────────────────── */}
-        <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-blue-800/25 via-blue-600/10 to-amber-500/10 backdrop-blur-sm px-6 py-6">
-          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-amber-400/20 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-cyan-500/15 blur-3xl pointer-events-none" />
+        <header className="relative overflow-hidden rounded-3xl border border-amber-300/60 bg-gradient-to-br from-blue-50 via-amber-50 to-rose-50/60 px-6 py-6">
+          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-amber-300/40 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-blue-300/35 blur-3xl pointer-events-none" />
           <div className="relative">
-            <p className="text-xs font-semibold text-amber-200 uppercase tracking-widest">Nest &amp; Quill</p>
-            <h1 className="text-2xl font-semibold text-white mt-1">Command Center</h1>
-            <p className="text-sm text-white/70 mt-1.5 max-w-xl">
+            <p className="text-xs font-semibold text-amber-700 uppercase tracking-widest">Nest &amp; Quill</p>
+            <h1 className="text-2xl font-semibold text-adm-text mt-1">Command Center</h1>
+            <p className="text-sm text-adm-muted mt-1.5 max-w-xl">
               At-a-glance status for the beta. Alerts, queue health, support, and quick controls are below — no hunting required.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/admin/beta-ops" className="inline-flex items-center gap-1.5 bg-blue-600/25 hover:bg-blue-600/35 border border-blue-400/40 text-blue-100 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
+              <Link href="/admin/beta-ops" className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-adm-text text-xs font-semibold px-3 py-1.5 rounded-full transition-colors shadow-sm">
                 Beta Ops →
               </Link>
-              <Link href="/admin/support" className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
-                Support {urgentTickets > 0 && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-rose-400" />}
+              <Link href="/admin/support" className="inline-flex items-center gap-1.5 bg-adm-surface/80 hover:bg-adm-surface border border-adm-border text-adm-text text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
+                Support {urgentTickets > 0 && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-rose-500" />}
               </Link>
-              <Link href="/admin/reporting" className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
+              <Link href="/admin/reporting" className="inline-flex items-center gap-1.5 bg-adm-surface/80 hover:bg-adm-surface border border-adm-border text-adm-text text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
                 Reporting
               </Link>
-              <Link href="/admin/settings" className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
+              <Link href="/admin/settings" className="inline-flex items-center gap-1.5 bg-adm-surface/80 hover:bg-adm-surface border border-adm-border text-adm-text text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
                 Settings
               </Link>
             </div>
@@ -331,7 +331,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                   return (
                     <li key={s.id} className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-white truncate">{s.child_name}</p>
+                        <p className="text-sm font-medium text-adm-text truncate">{s.child_name}</p>
                         <p className="text-[11px] text-adm-muted">
                           <StatusBadge status={s.status} />
                           <span className="ml-2">idle {idleMin}m</span>
@@ -360,7 +360,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                 {(recentFailed as unknown as StoryRequest[]).slice(0, 5).map((story) => (
                   <li key={story.id} className="px-4 py-3 flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-white truncate">{story.child_name}</p>
+                      <p className="text-sm font-medium text-adm-text truncate">{story.child_name}</p>
                       <p className="text-xs text-red-400 truncate" title={story.last_error ?? ''}>{story.last_error ?? '—'}</p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
@@ -382,14 +382,14 @@ export default async function AdminPage({ searchParams }: PageProps) {
             <Link href="/admin/users" className="block">
               <div className={`rounded-2xl border px-5 py-4 transition-colors ${(usersAtLimitCount ?? 0) > 0 ? 'bg-red-950/30 border-red-800 hover:border-red-600' : 'bg-adm-surface border-adm-border hover:border-brand-600'}`}>
                 <p className="text-xs text-adm-muted mb-1">Users at free limit</p>
-                <p className={`text-3xl font-bold ${(usersAtLimitCount ?? 0) > 0 ? 'text-red-400' : 'text-white'}`}>{usersAtLimitCount ?? 0}</p>
+                <p className={`text-3xl font-bold ${(usersAtLimitCount ?? 0) > 0 ? 'text-red-400' : 'text-adm-text'}`}>{usersAtLimitCount ?? 0}</p>
                 <p className="text-[10px] text-adm-subtle mt-1">view users →</p>
               </div>
             </Link>
             <Link href="/admin/guests" className="block">
               <div className={`rounded-2xl border px-5 py-4 transition-colors ${guestAtLimitCount > 0 ? 'bg-amber-950/30 border-amber-800 hover:border-amber-600' : 'bg-adm-surface border-adm-border hover:border-brand-600'}`}>
                 <p className="text-xs text-adm-muted mb-1">Guests at trial limit</p>
-                <p className={`text-3xl font-bold ${guestAtLimitCount > 0 ? 'text-amber-400' : 'text-white'}`}>{guestAtLimitCount}</p>
+                <p className={`text-3xl font-bold ${guestAtLimitCount > 0 ? 'text-amber-400' : 'text-adm-text'}`}>{guestAtLimitCount}</p>
                 <p className="text-[10px] text-adm-subtle mt-1">view guests →</p>
               </div>
             </Link>
@@ -440,7 +440,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                         <tbody className="divide-y divide-adm-border">
                           {rows.map(r => (
                             <tr key={r.id} className="hover:bg-adm-surface/50 transition-colors">
-                              <td className="px-4 py-3 font-medium text-white">{r.child_name}</td>
+                              <td className="px-4 py-3 font-medium text-adm-text">{r.child_name}</td>
                               <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell">{r.user_email}</td>
                               <td className="px-4 py-3 text-red-400 text-xs max-w-[260px] truncate" title={r.last_error ?? ''}>{r.last_error ?? '—'}</td>
                               <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell whitespace-nowrap">{formatAZTimeShort(r.updated_at)}</td>
@@ -477,7 +477,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                         <tbody className="divide-y divide-adm-border">
                           {rows.map(r => (
                             <tr key={r.id} className="hover:bg-adm-surface/50 transition-colors">
-                              <td className="px-4 py-3 font-medium text-white">{r.child_name}</td>
+                              <td className="px-4 py-3 font-medium text-adm-text">{r.child_name}</td>
                               <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell">{r.user_email}</td>
                               <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
                               <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell whitespace-nowrap">{formatAZTimeShort(r.created_at)}</td>
@@ -550,7 +550,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                             <tr key={r.id} className="hover:bg-adm-surface/50 transition-colors">
                               <td className="px-4 py-3 font-mono text-[10px] text-adm-muted">{r.assignment_id.slice(0, 8)}…</td>
                               <td className="px-4 py-3 font-mono text-[10px] text-adm-muted hidden sm:table-cell">{r.student_id.slice(0, 8)}…</td>
-                              <td className="px-4 py-3 text-white font-semibold text-sm">
+                              <td className="px-4 py-3 text-adm-text font-semibold text-sm">
                                 {r.score != null && r.total ? `${r.score}/${r.total}` : <span className="text-adm-subtle">—</span>}
                               </td>
                               <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell whitespace-nowrap">
@@ -597,7 +597,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                   {(activeClassList as unknown as { id: string; name: string; grade: number | null; updated_at: string }[]).map((cls) => (
                     <li key={cls.id} className="px-4 py-3 flex items-center justify-between gap-4">
                       <div>
-                        <p className="text-sm font-medium text-white">{cls.name}</p>
+                        <p className="text-sm font-medium text-adm-text">{cls.name}</p>
                         {cls.grade && <p className="text-xs text-adm-muted">Grade {cls.grade}</p>}
                       </div>
                       <span className="text-xs text-adm-subtle whitespace-nowrap shrink-0">
@@ -625,7 +625,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                     .map(([type, count]) => (
                       <li key={type} className="px-4 py-3 flex items-center justify-between">
                         <span className="text-sm font-mono text-adm-muted">{type}</span>
-                        <span className="text-sm font-bold text-white tabular-nums">{count}</span>
+                        <span className="text-sm font-bold text-adm-text tabular-nums">{count}</span>
                       </li>
                     ))}
                 </ul>
@@ -663,7 +663,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
                   <tbody className="divide-y divide-adm-border">
                     {rows.map((story) => (
                       <tr key={story.id} className="hover:bg-adm-surface/50 transition-colors">
-                        <td className="px-4 py-3 font-medium text-white">{story.child_name}</td>
+                        <td className="px-4 py-3 font-medium text-adm-text">{story.child_name}</td>
                         <td className="px-4 py-3 text-adm-muted hidden sm:table-cell max-w-[180px] truncate">
                           {story.story_theme}
                         </td>
@@ -789,14 +789,14 @@ function SystemTile({ label, value, tone }: {
   value: string
   tone: 'neutral' | 'green' | 'amber' | 'red'
 }) {
-  const dot = tone === 'green' ? 'bg-emerald-400' : tone === 'amber' ? 'bg-amber-400' : tone === 'red' ? 'bg-rose-400' : 'bg-white/40'
+  const dot = tone === 'green' ? 'bg-emerald-400' : tone === 'amber' ? 'bg-amber-400' : tone === 'red' ? 'bg-rose-400' : 'bg-adm-text/40'
   return (
     <GlassCard tone={tone === 'neutral' ? 'neutral' : tone} className="px-4 py-3">
       <div className="flex items-center gap-2">
         <span aria-hidden className={`w-2 h-2 rounded-full ${dot}`} />
         <p className="text-[11px] uppercase tracking-widest text-adm-muted">{label}</p>
       </div>
-      <p className="text-sm font-semibold text-white mt-1">{value}</p>
+      <p className="text-sm font-semibold text-adm-text mt-1">{value}</p>
     </GlassCard>
   )
 }
@@ -804,14 +804,14 @@ function SystemTile({ label, value, tone }: {
 function StatCard({ label, value, color, href, active }: {
   label: string; value: number; color?: 'green' | 'red' | 'amber'; href?: string; active?: boolean
 }) {
-  const valueColor = color === 'green' ? 'text-green-400' : color === 'red' ? 'text-red-400' : color === 'amber' ? 'text-amber-400' : 'text-white'
+  const valueColor = color === 'green' ? 'text-emerald-700' : color === 'red' ? 'text-rose-700' : color === 'amber' ? 'text-amber-700' : 'text-adm-text'
   const card = (
-    <div className={`rounded-2xl border px-5 py-4 transition-colors ${
+    <div className={`rounded-2xl border px-5 py-4 transition-colors backdrop-blur-sm ${
       active
-        ? 'bg-brand-950/40 border-brand-600'
+        ? 'bg-amber-100 border-amber-400'
         : href
-        ? 'bg-adm-surface border-adm-border hover:border-brand-600 cursor-pointer'
-        : 'bg-adm-surface border-adm-border'
+        ? 'bg-adm-surface/80 border-adm-border hover:border-amber-400 cursor-pointer'
+        : 'bg-adm-surface/80 border-adm-border'
     }`}>
       <p className="text-xs text-adm-muted mb-1">{label}</p>
       <p className={`text-3xl font-bold ${valueColor}`}>{value}</p>
@@ -822,13 +822,14 @@ function StatCard({ label, value, color, href, active }: {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  // Light tinted pills on parchment; readable + accent-colored.
   const styles: Record<string, string> = {
-    complete: 'bg-green-900 text-green-400',
-    failed: 'bg-red-900 text-red-400',
-    queued: 'bg-adm-surface text-adm-muted',
-    generating_text: 'bg-brand-900 text-brand-400',
-    generating_images: 'bg-brand-900 text-brand-400',
-    assembling_pdf: 'bg-brand-900 text-brand-400',
+    complete:          'bg-emerald-100 text-emerald-800',
+    failed:            'bg-rose-100 text-rose-800',
+    queued:            'bg-amber-100 text-amber-800',
+    generating_text:   'bg-sky-100 text-sky-800',
+    generating_images: 'bg-sky-100 text-sky-800',
+    assembling_pdf:    'bg-sky-100 text-sky-800',
   }
   return (
     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${styles[status] ?? 'bg-adm-surface text-adm-muted'}`}>

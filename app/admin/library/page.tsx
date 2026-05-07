@@ -109,7 +109,7 @@ export default async function AdminLibraryPage({ searchParams }: PageProps) {
     <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-xl font-semibold text-white">Story Library</h1>
+          <h1 className="text-xl font-semibold text-adm-text">Story Library</h1>
           <p className="text-sm text-adm-muted mt-1">
             {rows.length} {rows.length === 200 ? '(limit 200)' : ''} {q || status !== 'all' || genreFilter || styleFilter ? 'matching' : 'most recent'} stories
           </p>
@@ -169,7 +169,7 @@ export default async function AdminLibraryPage({ searchParams }: PageProps) {
                         <Link
                           href={`/story/${row.id}`}
                           target="_blank"
-                          className="text-sm font-semibold text-white hover:text-brand-400 transition-colors"
+                          className="text-sm font-semibold text-adm-text hover:text-brand-400 transition-colors"
                         >
                           {title}
                         </Link>
@@ -246,7 +246,7 @@ function FilterDropdown({
         {current && (
           <Link
             href={`/admin/library?${buildParams({ ...searchParams, [paramName]: undefined })}`}
-            className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-adm-surface text-adm-muted hover:text-white transition-colors"
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-adm-surface text-adm-muted hover:text-adm-text transition-colors"
           >
             All
           </Link>

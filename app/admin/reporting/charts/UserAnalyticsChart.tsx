@@ -37,7 +37,7 @@ export default function UserAnalyticsChart({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
           <p className="text-xs text-adm-muted mb-1">Total Users</p>
-          <p className="text-2xl font-bold text-white">{totals.totalUsers}</p>
+          <p className="text-2xl font-bold text-adm-text">{totals.totalUsers}</p>
         </div>
         <div className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
           <p className="text-xs text-adm-muted mb-1">Paid Users</p>

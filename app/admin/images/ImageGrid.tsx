@@ -142,7 +142,7 @@ export default function ImageGrid({
                       onChange={(e) => setNewTag(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') addTag() }}
                     />
-                    <button onClick={saveTags} className="text-xs font-semibold text-white bg-brand-500 hover:bg-brand-600 px-3 py-1.5 rounded-lg transition-colors">
+                    <button onClick={saveTags} className="text-xs font-semibold text-adm-text bg-brand-500 hover:bg-brand-600 px-3 py-1.5 rounded-lg transition-colors">
                       Save
                     </button>
                   </div>
@@ -151,7 +151,7 @@ export default function ImageGrid({
 
               <button
                 onClick={() => setSelected(null)}
-                className="w-full text-sm text-adm-muted hover:text-white py-2 border border-adm-border rounded-lg transition-colors"
+                className="w-full text-sm text-adm-muted hover:text-adm-text py-2 border border-adm-border rounded-lg transition-colors"
               >
                 Close
               </button>

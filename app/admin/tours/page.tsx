@@ -18,7 +18,7 @@ export default async function AdminToursPage() {
   if (probeErr?.code === '42P01') {
     return (
       <div className="max-w-3xl mx-auto px-6 py-8">
-        <h1 className="text-xl font-semibold text-white">Tours</h1>
+        <h1 className="text-xl font-semibold text-adm-text">Tours</h1>
         <div className="mt-4 bg-red-500/5 border border-red-500/30 rounded-xl px-4 py-3 text-sm">
           <p className="text-red-300 font-medium">Schema not deployed.</p>
           <p className="text-[11px] text-adm-muted mt-1">
@@ -40,7 +40,7 @@ export default async function AdminToursPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">Guided tours</h1>
+        <h1 className="text-xl font-semibold text-adm-text">Guided tours</h1>
         <p className="text-sm text-adm-muted mt-1">Tour definitions are seeded by migration. Toggle a tour off to suppress it across the app.</p>
       </div>
 
@@ -53,7 +53,7 @@ export default async function AdminToursPage() {
               <div className="px-5 py-4 flex items-start justify-between gap-3 border-b border-adm-border">
                 <div className="min-w-0">
                   <p className="text-xs text-adm-subtle font-mono">{t.key}</p>
-                  <p className="text-base font-semibold text-white mt-0.5">{t.title}</p>
+                  <p className="text-base font-semibold text-adm-text mt-0.5">{t.title}</p>
                   {t.description && <p className="text-xs text-adm-muted mt-1">{t.description}</p>}
                   {t.page && <p className="text-[11px] text-adm-subtle mt-1">page: <Link href={t.page} className="text-brand-400 hover:text-brand-300">{t.page}</Link></p>}
                 </div>
@@ -64,7 +64,7 @@ export default async function AdminToursPage() {
                   <li key={s.id} className="px-5 py-3 flex items-start gap-3">
                     <span className="text-[10px] font-mono text-adm-subtle w-6 shrink-0 mt-1">#{s.step_order}</span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-white">{s.title}</p>
+                      <p className="text-sm font-medium text-adm-text">{s.title}</p>
                       <p className="text-[11px] text-adm-muted leading-relaxed mt-0.5">{s.body}</p>
                       {s.target_selector && (
                         <p className="text-[10px] font-mono text-adm-subtle mt-1">target: {s.target_selector}</p>

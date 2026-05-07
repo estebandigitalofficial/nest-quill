@@ -74,7 +74,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: 'System',
-    accent: 'bg-white/60',
+    accent: 'bg-adm-text/60',
     items: [
       { href: '/admin/settings', label: 'Settings' },
       { href: '/admin/beta',     label: 'Beta Mode' },
@@ -94,8 +94,8 @@ export default function AdminSidebar() {
     <nav className="py-5 px-3 space-y-5">
       {/* Brand row — replaces the bare-list look with a clear identity */}
       <div className="px-2 mb-1">
-        <p className="text-[10px] font-bold text-amber-200 uppercase tracking-[0.18em]">Nest &amp; Quill</p>
-        <p className="text-sm font-semibold text-white mt-0.5">Command Center</p>
+        <p className="text-[10px] font-bold text-amber-700 uppercase tracking-[0.18em]">Nest &amp; Quill</p>
+        <p className="text-sm font-semibold text-adm-text mt-0.5">Command Center</p>
       </div>
 
       {NAV_GROUPS.map(group => (
@@ -113,8 +113,8 @@ export default function AdminSidebar() {
                   href={item.href}
                   className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors ${
                     active
-                      ? 'bg-white/10 text-white font-medium'
-                      : 'text-adm-muted hover:text-white hover:bg-white/5'
+                      ? 'bg-amber-100/80 text-adm-text font-medium'
+                      : 'text-adm-muted hover:text-adm-text hover:bg-amber-50'
                   }`}
                 >
                   <span className={`w-1 h-3.5 rounded-full shrink-0 transition-colors ${active ? group.accent : 'bg-transparent'}`} />

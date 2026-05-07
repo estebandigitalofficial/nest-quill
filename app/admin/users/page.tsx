@@ -176,12 +176,12 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                     href={filterHref(value)}
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                       active
-                        ? 'bg-brand-500 border-brand-500 text-white'
-                        : 'bg-adm-surface border-adm-border text-adm-muted hover:border-brand-600 hover:text-white'
+                        ? 'bg-brand-500 border-brand-500 text-adm-text'
+                        : 'bg-adm-surface border-adm-border text-adm-muted hover:border-brand-600 hover:text-adm-text'
                     }`}
                   >
                     <span>{FILTER_LABELS[value]}</span>
-                    <span className={`text-[10px] tabular-nums ${active ? 'text-white/80' : 'text-adm-subtle'}`}>
+                    <span className={`text-[10px] tabular-nums ${active ? 'text-adm-text/80' : 'text-adm-subtle'}`}>
                       {count}
                     </span>
                   </Link>
@@ -211,7 +211,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                       <tr key={user.id} className="hover:bg-adm-surface/50 transition-colors">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-white font-medium text-sm">{user.email}</span>
+                            <span className="text-adm-text font-medium text-sm">{user.email}</span>
                             {user.is_admin && (
                               <span className="text-[10px] bg-brand-900 text-brand-400 font-semibold px-1.5 py-0.5 rounded-full">admin</span>
                             )}
@@ -288,7 +288,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
 }
 
 function StatCard({ label, value, color }: { label: string; value: number; color?: 'green' | 'amber' }) {
-  const valueColor = color === 'green' ? 'text-green-400' : color === 'amber' ? 'text-amber-400' : 'text-white'
+  const valueColor = color === 'green' ? 'text-green-400' : color === 'amber' ? 'text-amber-400' : 'text-adm-text'
   return (
     <div className="bg-adm-surface rounded-2xl border border-adm-border px-5 py-4">
       <p className="text-xs text-adm-muted mb-1">{label}</p>

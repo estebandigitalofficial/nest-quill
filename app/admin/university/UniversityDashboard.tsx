@@ -317,7 +317,7 @@ export default function UniversityDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white">Bright Tale University</h1>
+          <h1 className="text-xl font-bold text-adm-text">Bright Tale University</h1>
           <p className="text-sm text-adm-muted mt-1">
             {view === 'grades' ? 'Curriculum, content library, and educator materials for all grades' :
              view === 'grade-detail' ? `Grade ${selectedGrade} — ${selectedSubject ?? 'All Subjects'}` :
@@ -327,14 +327,14 @@ export default function UniversityDashboard() {
         <div className="flex items-center gap-2">
           {view !== 'grades' && (
             <button onClick={goBack}
-              className="text-xs font-semibold text-adm-muted hover:text-white px-3 py-1.5 rounded-lg border border-adm-border transition-colors">
+              className="text-xs font-semibold text-adm-muted hover:text-adm-text px-3 py-1.5 rounded-lg border border-adm-border transition-colors">
               ← Back
             </button>
           )}
           <button
             onClick={() => { setView(view === 'library' ? 'grades' : 'library'); setLibPage(1) }}
             className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
-              view === 'library' ? 'border-brand-500 bg-brand-500/20 text-brand-400' : 'border-adm-border text-adm-muted hover:text-white'
+              view === 'library' ? 'border-brand-500 bg-brand-500/20 text-brand-400' : 'border-adm-border text-adm-muted hover:text-adm-text'
             }`}
           >
             {view === 'library' ? 'Grade View' : 'Content Library'}
@@ -350,11 +350,11 @@ export default function UniversityDashboard() {
               Content Library: {genProgress.filled} filled / {genProgress.empty} empty / {genProgress.total} total
             </p>
             <div className="flex items-center gap-3">
-              <p className="text-xs font-bold text-white">
+              <p className="text-xs font-bold text-adm-text">
                 {Math.round((genProgress.filled / genProgress.total) * 100)}%
               </p>
               <button onClick={handleGenerateAll} disabled={generating || autoRunning}
-                className="text-xs font-bold text-white px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition-colors disabled:opacity-50">
+                className="text-xs font-bold text-adm-text px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition-colors disabled:opacity-50">
                 {autoRunning ? `Generating... (${autoTotal})` : 'Generate All'}
               </button>
             </div>
@@ -434,7 +434,7 @@ export default function UniversityDashboard() {
                     return (
                       <button key={course.id} onClick={() => setSelectedSubject(course.subject)}
                         className={`${colors.bg} border ${colors.border} rounded-xl px-4 py-4 text-left hover:brightness-110 transition-all`}>
-                        <div className={`w-8 h-8 ${colors.accent} rounded-lg flex items-center justify-center text-white text-xs font-bold mb-3`}>
+                        <div className={`w-8 h-8 ${colors.accent} rounded-lg flex items-center justify-center text-adm-text text-xs font-bold mb-3`}>
                           {course.subject.charAt(0)}
                         </div>
                         <p className={`font-semibold text-sm ${colors.text}`}>{course.subject}</p>
@@ -473,7 +473,7 @@ export default function UniversityDashboard() {
                   ]).map(tab => (
                     <button key={tab.id} onClick={() => setGradeTab(tab.id)}
                       className={`flex-1 text-xs font-semibold py-2.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                        gradeTab === tab.id ? 'bg-white/10 text-white' : 'text-adm-muted hover:text-white'
+                        gradeTab === tab.id ? 'bg-adm-text/10 text-adm-text' : 'text-adm-muted hover:text-adm-text'
                       }`}>
                       <span>{tab.icon}</span> {tab.label}
                     </button>
@@ -500,12 +500,12 @@ export default function UniversityDashboard() {
                         return (
                           <div key={unit.id} className="bg-adm-card border border-adm-border rounded-xl overflow-hidden">
                             <button onClick={() => setExpandedUnit(isExpanded ? null : unit.id)}
-                              className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-white/5 transition-colors">
+                              className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-adm-text/5 transition-colors">
                               <span className="w-6 h-6 bg-adm-bg rounded-md flex items-center justify-center text-[10px] font-bold text-adm-muted shrink-0">
                                 {i + 1}
                               </span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-white truncate">{unit.title}</p>
+                                <p className="text-sm font-medium text-adm-text truncate">{unit.title}</p>
                                 {unit.description && <p className="text-[10px] text-adm-muted truncate">{unit.description}</p>}
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
@@ -527,7 +527,7 @@ export default function UniversityDashboard() {
                                   <p className="text-[10px] font-bold text-adm-muted uppercase tracking-widest mb-1.5">Learning Objectives</p>
                                   <ul className="space-y-1">
                                     {guide.objectives.map((obj, j) => (
-                                      <li key={j} className="text-xs text-white/80 flex gap-2">
+                                      <li key={j} className="text-xs text-adm-text/80 flex gap-2">
                                         <span className="text-emerald-400 shrink-0">-</span>{obj}
                                       </li>
                                     ))}
@@ -545,7 +545,7 @@ export default function UniversityDashboard() {
                                         <div key={j} className="bg-adm-bg rounded-lg px-3 py-2">
                                           <div className="flex items-center gap-2">
                                             <span className="text-[10px] font-bold text-brand-400">Day {lesson.day}</span>
-                                            <span className="text-xs font-medium text-white">{lesson.title}</span>
+                                            <span className="text-xs font-medium text-adm-text">{lesson.title}</span>
                                             <span className="text-[10px] text-adm-muted ml-auto">{lesson.duration}m</span>
                                           </div>
                                           <p className="text-[11px] text-adm-muted mt-0.5 leading-relaxed">{lesson.description}</p>
@@ -560,7 +560,7 @@ export default function UniversityDashboard() {
                                   <p className="text-[10px] font-bold text-adm-muted uppercase tracking-widest mb-1.5">Assessment Ideas</p>
                                   <ul className="space-y-1">
                                     {guide.assessment_ideas.map((idea, j) => (
-                                      <li key={j} className="text-xs text-white/70 flex gap-2">
+                                      <li key={j} className="text-xs text-adm-text/70 flex gap-2">
                                         <span className="text-adm-muted shrink-0">☐</span>{idea}
                                       </li>
                                     ))}
@@ -617,9 +617,9 @@ export default function UniversityDashboard() {
                     <button
                       onClick={() => handleGenerateForSubject(selectedGrade!, selectedSubject)}
                       disabled={generating}
-                      className="text-xs font-bold text-white px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition-colors disabled:opacity-50 shrink-0 flex items-center gap-2"
+                      className="text-xs font-bold text-adm-text px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition-colors disabled:opacity-50 shrink-0 flex items-center gap-2"
                     >
-                      {generating && <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                      {generating && <div className="w-3 h-3 border-2 border-adm-text/30 border-t-white rounded-full animate-spin" />}
                       {generating ? `Generating... (${genCount})` : `Generate ${selectedSubject} Content`}
                     </button>
                   </div>
@@ -639,7 +639,7 @@ export default function UniversityDashboard() {
                           <div key={unit.id} className="bg-adm-card border border-adm-border rounded-xl px-4 py-3 mb-2">
                             <div className="flex items-center gap-3 mb-2">
                               <span className="text-[10px] font-bold text-adm-muted w-5">{i + 1}</span>
-                              <p className="text-sm font-medium text-white flex-1">{unit.title}</p>
+                              <p className="text-sm font-medium text-adm-text flex-1">{unit.title}</p>
                               <span className="text-[10px] text-adm-muted">{filled.length} ready / {empty.length} empty</span>
                             </div>
                             <div className="flex flex-wrap gap-1.5 ml-8">
@@ -700,7 +700,7 @@ export default function UniversityDashboard() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <p className="text-sm font-medium text-white">{book.title}</p>
+                                  <p className="text-sm font-medium text-adm-text">{book.title}</p>
                                   {book.is_required && <span className="text-[9px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded">Required</span>}
                                   <span className="text-[9px] text-adm-muted bg-adm-bg px-1.5 py-0.5 rounded border border-adm-border">
                                     {BOOK_TYPE_LABELS[book.book_type] ?? book.book_type}
@@ -741,7 +741,7 @@ export default function UniversityDashboard() {
                         <div key={course.id} className="mb-3">
                           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-1">
                             {[...courseMats].sort().map((mat, i) => (
-                              <label key={i} className="flex items-center gap-2 text-xs text-white/70 cursor-pointer hover:bg-white/5 px-2 py-1 rounded transition-colors">
+                              <label key={i} className="flex items-center gap-2 text-xs text-adm-text/70 cursor-pointer hover:bg-adm-text/5 px-2 py-1 rounded transition-colors">
                                 <input type="checkbox" className="rounded border-adm-border bg-adm-bg text-brand-500 focus:ring-brand-500 w-3.5 h-3.5" />
                                 {mat}
                               </label>
@@ -766,7 +766,7 @@ export default function UniversityDashboard() {
                   {allMaterials.size > 0 ? (
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-1">
                       {[...allMaterials].sort().map((mat, i) => (
-                        <label key={i} className="flex items-center gap-2 text-xs text-white/70 cursor-pointer hover:bg-white/5 px-2 py-1 rounded transition-colors">
+                        <label key={i} className="flex items-center gap-2 text-xs text-adm-text/70 cursor-pointer hover:bg-adm-text/5 px-2 py-1 rounded transition-colors">
                           <input type="checkbox" className="rounded border-adm-border bg-adm-bg text-brand-500 focus:ring-brand-500 w-3.5 h-3.5" />
                           {mat}
                         </label>
@@ -811,13 +811,13 @@ export default function UniversityDashboard() {
                     {libItems.map(item => (
                       <tr key={item.id} className="border-b border-adm-border/50 hover:bg-adm-bg/50 transition-colors">
                         <td className="px-4 py-3">
-                          <p className="text-white font-medium text-sm truncate max-w-[250px]">{item.title}</p>
+                          <p className="text-adm-text font-medium text-sm truncate max-w-[250px]">{item.title}</p>
                           <p className="text-adm-muted text-xs truncate max-w-[250px]">{item.topic}</p>
                         </td>
-                        <td className="px-4 py-3 text-xs text-white/70">{TOOL_LABELS[item.tool_type] ?? item.tool_type}</td>
-                        <td className="px-4 py-3 text-white/70">{item.grade ?? '—'}</td>
-                        <td className="px-4 py-3 text-white/70 text-xs">{item.subject ?? '—'}</td>
-                        <td className="px-4 py-3 text-right text-white/70">{item.use_count}</td>
+                        <td className="px-4 py-3 text-xs text-adm-text/70">{TOOL_LABELS[item.tool_type] ?? item.tool_type}</td>
+                        <td className="px-4 py-3 text-adm-text/70">{item.grade ?? '—'}</td>
+                        <td className="px-4 py-3 text-adm-text/70 text-xs">{item.subject ?? '—'}</td>
+                        <td className="px-4 py-3 text-right text-adm-text/70">{item.use_count}</td>
                         <td className="px-4 py-3">
                           {JSON.stringify(item.content) !== '{}' ? (
                             <button onClick={() => setViewItem(item)} className="text-xs text-brand-400 hover:text-brand-300 font-medium">View</button>
@@ -835,9 +835,9 @@ export default function UniversityDashboard() {
                   <p className="text-xs text-adm-muted">{libTotal} items · Page {libPage}</p>
                   <div className="flex gap-2">
                     <button disabled={libPage <= 1} onClick={() => setLibPage(p => p - 1)}
-                      className="text-xs text-white/60 px-3 py-1.5 rounded-lg border border-adm-border disabled:opacity-30">← Prev</button>
+                      className="text-xs text-adm-text/60 px-3 py-1.5 rounded-lg border border-adm-border disabled:opacity-30">← Prev</button>
                     <button disabled={libPage >= Math.ceil(libTotal / 50)} onClick={() => setLibPage(p => p + 1)}
-                      className="text-xs text-white/60 px-3 py-1.5 rounded-lg border border-adm-border disabled:opacity-30">Next →</button>
+                      className="text-xs text-adm-text/60 px-3 py-1.5 rounded-lg border border-adm-border disabled:opacity-30">Next →</button>
                   </div>
                 </div>
               )}
@@ -852,14 +852,14 @@ export default function UniversityDashboard() {
           <div className="bg-adm-card border border-adm-border rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 space-y-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-semibold text-white">{viewItem.title}</p>
+                <p className="font-semibold text-adm-text">{viewItem.title}</p>
                 <p className="text-xs text-adm-muted mt-0.5">
                   {TOOL_LABELS[viewItem.tool_type]} · Grade {viewItem.grade ?? 'Any'} · {viewItem.subject ?? 'General'}
                 </p>
               </div>
-              <button onClick={() => setViewItem(null)} className="text-adm-muted hover:text-white text-lg">✕</button>
+              <button onClick={() => setViewItem(null)} className="text-adm-muted hover:text-adm-text text-lg">✕</button>
             </div>
-            <pre className="text-xs text-white/70 bg-adm-bg rounded-xl p-4 overflow-x-auto border border-adm-border max-h-[400px] overflow-y-auto">
+            <pre className="text-xs text-adm-text/70 bg-adm-bg rounded-xl p-4 overflow-x-auto border border-adm-border max-h-[400px] overflow-y-auto">
               {JSON.stringify(viewItem.content, null, 2)}
             </pre>
           </div>
@@ -879,7 +879,7 @@ function GradeCard({ grade, onClick }: { grade: GradeSummary; onClick: () => voi
     <button onClick={onClick}
       className="bg-adm-card border border-adm-border rounded-xl px-4 py-4 text-left hover:border-brand-500/50 hover:bg-brand-500/5 transition-all group">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-2xl font-bold text-white group-hover:text-brand-400 transition-colors">
+        <span className="text-2xl font-bold text-adm-text group-hover:text-brand-400 transition-colors">
           {GRADE_LABELS[grade.grade]}
         </span>
         {hasGuides && (
@@ -895,15 +895,15 @@ function GradeCard({ grade, onClick }: { grade: GradeSummary; onClick: () => voi
 
       <div className="grid grid-cols-3 gap-1 text-center mb-2">
         <div>
-          <p className="text-xs font-bold text-white">{grade.unitCount}</p>
+          <p className="text-xs font-bold text-adm-text">{grade.unitCount}</p>
           <p className="text-[9px] text-adm-muted">Units</p>
         </div>
         <div>
-          <p className="text-xs font-bold text-white">{grade.guideCount}</p>
+          <p className="text-xs font-bold text-adm-text">{grade.guideCount}</p>
           <p className="text-[9px] text-adm-muted">Guides</p>
         </div>
         <div>
-          <p className="text-xs font-bold text-white">{grade.bookCount}</p>
+          <p className="text-xs font-bold text-adm-text">{grade.bookCount}</p>
           <p className="text-[9px] text-adm-muted">Books</p>
         </div>
       </div>

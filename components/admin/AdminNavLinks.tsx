@@ -33,7 +33,7 @@ export default function AdminNavLinks() {
           href={href}
           className={`text-xs transition-colors whitespace-nowrap ${
             isActive(href, exact)
-              ? 'font-semibold text-white'
+              ? 'font-semibold text-adm-text'
               : 'text-adm-muted hover:text-adm-text'
           }`}
         >

@@ -153,7 +153,7 @@ export default function CleanupTool() {
         <button
           onClick={handleScan}
           disabled={scanning}
-          className="shrink-0 px-4 py-2 rounded-lg bg-adm-border text-white text-xs font-medium hover:bg-adm-muted/30 disabled:opacity-50 transition-colors"
+          className="shrink-0 px-4 py-2 rounded-lg bg-adm-border text-adm-text text-xs font-medium hover:bg-adm-muted/30 disabled:opacity-50 transition-colors"
         >
           {scanning ? 'Scanning…' : 'Scan'}
         </button>
@@ -305,8 +305,8 @@ export default function CleanupTool() {
                   disabled={executing}
                   className={`px-4 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
                     dryRun
-                      ? 'bg-adm-border text-white hover:bg-adm-muted/30'
-                      : 'bg-red-700 text-white hover:bg-red-600'
+                      ? 'bg-adm-border text-adm-text hover:bg-adm-muted/30'
+                      : 'bg-red-700 text-adm-text hover:bg-red-600'
                   }`}
                 >
                   {executing
@@ -324,7 +324,7 @@ export default function CleanupTool() {
       {/* Execute result */}
       {executeResult && (
         <div className="bg-adm-bg border border-adm-border rounded-xl p-4 space-y-3">
-          <p className="text-sm font-semibold text-white">
+          <p className="text-sm font-semibold text-adm-text">
             {executeResult.dryRun ? 'Dry Run Preview' : 'Cleanup Complete'}
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -362,7 +362,7 @@ export default function CleanupTool() {
 function Stat({ label, value, warn, sub }: { label: string; value: number; warn?: boolean; sub?: string }) {
   return (
     <div className="bg-adm-bg border border-adm-border rounded-lg px-3 py-2.5">
-      <div className={`text-xl font-semibold tabular-nums ${warn && value > 0 ? 'text-amber-400' : 'text-white'}`}>
+      <div className={`text-xl font-semibold tabular-nums ${warn && value > 0 ? 'text-amber-400' : 'text-adm-text'}`}>
         {value}
       </div>
       <div className="text-[11px] text-adm-muted mt-0.5">{label}</div>
@@ -393,7 +393,7 @@ function ExpandableSection({ label, open, onToggle, children }: {
 }) {
   return (
     <div>
-      <button onClick={onToggle} className="text-xs text-adm-muted hover:text-white transition-colors">
+      <button onClick={onToggle} className="text-xs text-adm-muted hover:text-adm-text transition-colors">
         {open ? '▾' : '▸'} {label}
       </button>
       {open && <div className="mt-2">{children}</div>}

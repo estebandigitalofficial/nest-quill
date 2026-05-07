@@ -59,7 +59,7 @@ export default function BookReader({
     <div className="max-w-2xl mx-auto px-6 py-12 space-y-16">
       {/* Title */}
       <div className="text-center space-y-3 pb-8 border-b border-adm-border">
-        <h1 className="font-serif text-white text-3xl">{book.title}</h1>
+        <h1 className="font-serif text-adm-text text-3xl">{book.title}</h1>
         {book.subtitle && <p className="font-serif italic text-adm-muted">{book.subtitle}</p>}
         {(book.pen_name || book.author_name) && (
           <p className="text-adm-subtle text-xs tracking-widest uppercase mt-1">
@@ -72,7 +72,7 @@ export default function BookReader({
       {frontMatter.map(s => (
         <div key={s.type} className="space-y-4">
           <div className="flex items-baseline justify-between gap-4">
-            <h2 className="font-serif text-white text-xl">{SECTION_LABELS[s.type] ?? s.type}</h2>
+            <h2 className="font-serif text-adm-text text-xl">{SECTION_LABELS[s.type] ?? s.type}</h2>
             <button
               onClick={() => onEditSection('front')}
               className="text-xs text-adm-subtle hover:text-adm-muted shrink-0 transition-colors"
@@ -96,7 +96,7 @@ export default function BookReader({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs text-adm-subtle uppercase tracking-widest mb-1">Chapter {ch.chapter_number}</p>
-                <h2 className="font-serif text-white text-xl">{ch.title}</h2>
+                <h2 className="font-serif text-adm-text text-xl">{ch.title}</h2>
               </div>
               <button
                 onClick={() => onEditChapter(ch.id)}
@@ -121,7 +121,7 @@ export default function BookReader({
       {backMatter.map(s => (
         <div key={s.type} className="space-y-4">
           <div className="flex items-baseline justify-between gap-4">
-            <h2 className="font-serif text-white text-xl">{SECTION_LABELS[s.type] ?? s.type}</h2>
+            <h2 className="font-serif text-adm-text text-xl">{SECTION_LABELS[s.type] ?? s.type}</h2>
             <button
               onClick={() => onEditSection('back')}
               className="text-xs text-adm-subtle hover:text-adm-muted shrink-0 transition-colors"

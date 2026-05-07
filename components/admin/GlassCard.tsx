@@ -18,14 +18,19 @@ import type { ReactNode } from 'react'
 
 type Tone = 'neutral' | 'green' | 'amber' | 'red' | 'blue' | 'violet' | 'gold'
 
+// Tones tuned for the parchment Command Center: gentle tinted washes
+// over a cream surface, with borders strong enough to define the
+// card edge but soft enough to stay editorial. Text inside cards
+// uses text-adm-text by default (warm charcoal), so the tinted
+// backgrounds intentionally stay pale.
 const TONE_RING: Record<Tone, string> = {
-  neutral: 'from-white/5 to-white/[0.02] border-white/10',
-  green:   'from-emerald-500/15 to-emerald-500/5 border-emerald-500/30',
-  amber:   'from-amber-500/15 to-amber-500/5 border-amber-500/30',
-  red:     'from-rose-500/15 to-rose-500/5 border-rose-500/30',
-  blue:    'from-sky-500/15 to-sky-500/5 border-sky-500/30',
-  violet:  'from-violet-500/15 to-violet-500/5 border-violet-500/30',
-  gold:    'from-yellow-500/20 to-amber-500/5 border-yellow-400/30',
+  neutral: 'from-white/80 to-amber-50/40 border-amber-200/70',
+  green:   'from-emerald-100/80 to-emerald-50/40 border-emerald-300/70',
+  amber:   'from-amber-100/80 to-amber-50/40 border-amber-300/70',
+  red:     'from-rose-100/80 to-rose-50/40 border-rose-300/70',
+  blue:    'from-sky-100/80 to-sky-50/40 border-sky-300/70',
+  violet:  'from-violet-100/80 to-violet-50/40 border-violet-300/70',
+  gold:    'from-yellow-100/80 to-amber-50/40 border-yellow-400/70',
 }
 
 export default function GlassCard({

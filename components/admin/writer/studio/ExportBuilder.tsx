@@ -77,7 +77,7 @@ export default function ExportBuilder({ bookId }: { bookId: string }) {
 
       <a
         href={buildUrl()}
-        className="block w-full text-center bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm py-3 rounded-xl transition-colors"
+        className="block w-full text-center bg-brand-500 hover:bg-brand-600 text-adm-text font-semibold text-sm py-3 rounded-xl transition-colors"
       >
         Build & Download {formats.find(f => f.id === format)?.label} →
       </a>

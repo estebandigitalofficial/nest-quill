@@ -211,7 +211,7 @@ export default function SponsorDetail({
           <button
             onClick={saveSponsor}
             disabled={!dirty || savingSponsor || !draft.name.trim()}
-            className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+            className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-adm-text text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
             {savingSponsor ? 'Saving…' : dirty ? 'Save changes' : 'Saved'}
           </button>
           <button
@@ -249,7 +249,7 @@ export default function SponsorDetail({
         action={
           <button
             onClick={() => setShowNewReward(true)}
-            className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
+            className="bg-brand-500 hover:bg-brand-600 text-adm-text text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
             + New reward
           </button>
         }
@@ -439,7 +439,7 @@ function NewRewardForm({ onCreate, onCancel }: {
         <button
           onClick={handleCreate}
           disabled={!title.trim()}
-          className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-adm-text text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
           Create reward
         </button>
         <button onClick={onCancel} className="text-sm text-adm-muted hover:text-adm-text">Cancel</button>

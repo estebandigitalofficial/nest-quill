@@ -109,7 +109,7 @@ export default function BookPageClient({
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Link href="/admin/writer" className="text-xs text-adm-muted hover:text-adm-muted shrink-0">← Books</Link>
           <span className="text-gray-700 shrink-0">/</span>
-          <span className="font-semibold text-white truncate text-sm">{book.title}</span>
+          <span className="font-semibold text-adm-text truncate text-sm">{book.title}</span>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
@@ -132,7 +132,7 @@ export default function BookPageClient({
           {mode === 'edit' && (
             <a
               href={`/api/admin/writer/books/${book.id}/export-epub`}
-              className="hidden sm:inline-flex bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+              className="hidden sm:inline-flex bg-brand-500 hover:bg-brand-600 text-adm-text text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
             >
               Export ePub
             </a>
@@ -176,7 +176,7 @@ export default function BookPageClient({
           <div className="bg-adm-surface border border-adm-border rounded-xl px-5 sm:px-6 py-5 space-y-2">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="font-serif text-xl sm:text-2xl text-white">{book.title}</h1>
+                <h1 className="font-serif text-xl sm:text-2xl text-adm-text">{book.title}</h1>
                 {book.subtitle && <p className="text-adm-muted italic text-sm mt-0.5">{book.subtitle}</p>}
               </div>
               <div className="flex items-center gap-3 shrink-0">
@@ -194,9 +194,9 @@ export default function BookPageClient({
             </div>
             <p className="text-sm text-adm-muted">{book.premise}</p>
             <div className="flex flex-wrap gap-4 sm:gap-6 pt-2 text-xs text-adm-muted">
-              <span><span className="text-white font-semibold">{book.target_chapters}</span> chapters</span>
-              <span><span className="text-white font-semibold">{doneScenes}/{totalScenes}</span> scenes</span>
-              <span><span className="text-white font-semibold">{totalWords.toLocaleString()}</span> words</span>
+              <span><span className="text-adm-text font-semibold">{book.target_chapters}</span> chapters</span>
+              <span><span className="text-adm-text font-semibold">{doneScenes}/{totalScenes}</span> scenes</span>
+              <span><span className="text-adm-text font-semibold">{totalWords.toLocaleString()}</span> words</span>
             </div>
           </div>
 

@@ -164,7 +164,7 @@ export default function ChapterEditor({
       {/* Chapter header */}
       <div className="space-y-1">
         <p className="text-xs font-bold text-adm-subtle uppercase tracking-widest">Chapter {chapter.chapter_number}</p>
-        <h1 className="font-serif text-2xl text-white">{chapter.title}</h1>
+        <h1 className="font-serif text-2xl text-adm-text">{chapter.title}</h1>
         <p className="text-sm text-adm-muted">{chapter.brief}</p>
         <p className="text-xs text-adm-subtle pt-1">
           {scenes.length} scenes · {totalWords.toLocaleString()} words written
@@ -260,7 +260,7 @@ export default function ChapterEditor({
                     <button
                       onClick={() => saveEdit(scene)}
                       disabled={savingEdit}
-                      className="text-xs bg-green-700 hover:bg-green-600 text-white font-semibold px-3 py-1 rounded-lg transition-colors"
+                      className="text-xs bg-green-700 hover:bg-green-600 text-adm-text font-semibold px-3 py-1 rounded-lg transition-colors"
                     >
                       {savingEdit ? 'Saving…' : 'Save'}
                     </button>
@@ -291,7 +291,7 @@ export default function ChapterEditor({
                         'text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors',
                         scene.content
                           ? 'bg-adm-surface hover:bg-adm-border text-adm-muted'
-                          : 'bg-brand-500 hover:bg-brand-600 text-white',
+                          : 'bg-brand-500 hover:bg-brand-600 text-adm-text',
                         generatingId === scene.id && 'opacity-50 cursor-not-allowed'
                       )}
                     >
@@ -340,7 +340,7 @@ export default function ChapterEditor({
             <p className="text-xs font-semibold text-brand-400 uppercase tracking-widest">Scene {scenes.length + 1}</p>
             <textarea
               autoFocus
-              className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-adm-subtle focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+              className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2.5 text-sm text-adm-text placeholder:text-adm-subtle focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
               rows={2}
               placeholder="What happens in this scene? (brief — guides the AI)"
               value={newSceneBrief}
@@ -372,7 +372,7 @@ export default function ChapterEditor({
               <button
                 onClick={addScene}
                 disabled={!newSceneBrief.trim()}
-                className="flex-1 text-sm bg-brand-500 hover:bg-brand-600 disabled:bg-brand-900 text-white font-semibold py-2 rounded-lg transition-colors"
+                className="flex-1 text-sm bg-brand-500 hover:bg-brand-600 disabled:bg-brand-900 text-adm-text font-semibold py-2 rounded-lg transition-colors"
               >
                 Add scene
               </button>

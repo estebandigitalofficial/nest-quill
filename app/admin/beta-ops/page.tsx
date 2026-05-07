@@ -128,9 +128,9 @@ export default async function BetaOpsPage() {
     <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
       <header>
         <p className="text-xs font-semibold text-violet-300 uppercase tracking-widest">Beta Ops</p>
-        <h1 className="text-2xl font-semibold text-white mt-1">30-day beta control room</h1>
+        <h1 className="text-2xl font-semibold text-adm-text mt-1">30-day beta control room</h1>
         <p className="text-sm text-adm-muted mt-1.5 max-w-2xl">
-          One-glance status for the public beta. Toggles below are wired to <code className="text-[11px] bg-white/5 px-1 py-0.5 rounded">app_settings</code>;
+          One-glance status for the public beta. Toggles below are wired to <code className="text-[11px] bg-adm-text/5 px-1 py-0.5 rounded">app_settings</code>;
           enforcement is rolled out progressively across the app.
         </p>
       </header>
@@ -154,7 +154,7 @@ export default async function BetaOpsPage() {
             is unambiguous. */}
         <GlassCard className="mt-3 px-4 py-3" tone={imagesActive ? 'green' : 'amber'}>
           <p className="text-[11px] uppercase tracking-widest text-adm-muted">Image generation — effective state</p>
-          <p className="text-sm font-semibold text-white mt-1">{imagesActive ? 'Active' : 'Paused'}</p>
+          <p className="text-sm font-semibold text-adm-text mt-1">{imagesActive ? 'Active' : 'Paused'}</p>
           <p className="text-[11px] text-adm-muted mt-1">
             Active when:&nbsp;
             <Flag on={!betaMode}>beta_mode_enabled = false</Flag>&nbsp;·&nbsp;
@@ -196,7 +196,7 @@ export default async function BetaOpsPage() {
             tone={queue.level === 'critical' ? 'red' : queue.level === 'warning' ? 'amber' : 'green'}
             className="px-4 py-3">
             <p className="text-[11px] uppercase tracking-widest text-adm-muted">Queue pressure</p>
-            <p className="text-sm font-semibold text-white mt-1">{queue.level}</p>
+            <p className="text-sm font-semibold text-adm-text mt-1">{queue.level}</p>
             <p className="text-[11px] text-adm-subtle mt-1">
               {queue.active} active · warn {QUEUE_THRESHOLDS.warning} · stop {QUEUE_THRESHOLDS.critical}
             </p>
@@ -211,7 +211,7 @@ export default async function BetaOpsPage() {
         </div>
         {rateLimitTableMissing ? (
           <p className="mt-2 text-[11px] text-rose-300">
-            rate_limit_events table missing — apply migration <code className="text-[11px] bg-white/5 px-1 py-0.5 rounded">20240054_rate_limit_events.sql</code> for throttle metrics.
+            rate_limit_events table missing — apply migration <code className="text-[11px] bg-adm-text/5 px-1 py-0.5 rounded">20240054_rate_limit_events.sql</code> for throttle metrics.
           </p>
         ) : (
           <div className="mt-3 grid grid-cols-3 gap-3">
@@ -246,7 +246,7 @@ export default async function BetaOpsPage() {
             <p className="text-[11px] uppercase tracking-widest text-adm-muted mb-2">Plan tier picked today</p>
             <div className="flex flex-wrap gap-2">
               {Object.entries(planTierCounts).sort((a, b) => b[1] - a[1]).map(([tier, n]) => (
-                <span key={tier} className="text-xs text-white bg-white/10 border border-white/10 rounded-full px-2.5 py-1">
+                <span key={tier} className="text-xs text-adm-text bg-adm-text/10 border border-adm-text/10 rounded-full px-2.5 py-1">
                   {tier.replace(/_/g, ' ')} <span className="text-adm-subtle ml-1">{n}</span>
                 </span>
               ))}
@@ -267,18 +267,18 @@ export default async function BetaOpsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <GlassCard className="px-4 py-4">
             <p className="text-[11px] uppercase tracking-widest text-adm-muted">Open tickets</p>
-            <p className="text-3xl font-bold text-white mt-1 tabular-nums">{supportTableMissing ? '—' : (ticketsToday ?? 0)}</p>
+            <p className="text-3xl font-bold text-adm-text mt-1 tabular-nums">{supportTableMissing ? '—' : (ticketsToday ?? 0)}</p>
             <p className="text-[11px] text-adm-subtle mt-1">opened today</p>
           </GlassCard>
           <GlassCard className="px-4 py-4" tone={(urgentTickets ?? 0) > 0 ? 'red' : 'neutral'}>
             <p className="text-[11px] uppercase tracking-widest text-adm-muted">Urgent waiting</p>
-            <p className="text-3xl font-bold text-white mt-1 tabular-nums">{supportTableMissing ? '—' : (urgentTickets ?? 0)}</p>
+            <p className="text-3xl font-bold text-adm-text mt-1 tabular-nums">{supportTableMissing ? '—' : (urgentTickets ?? 0)}</p>
             <p className="text-[11px] text-adm-subtle mt-1">priority=urgent &amp; not resolved</p>
           </GlassCard>
           <Link href="/admin/support" className="block">
             <GlassCard tone="blue" className="px-4 py-4 h-full hover:border-blue-400/50 transition-colors">
               <p className="text-[11px] uppercase tracking-widest text-blue-200">Open support inbox</p>
-              <p className="text-sm text-white mt-1">Triage incoming tickets, set status &amp; priority.</p>
+              <p className="text-sm text-adm-text mt-1">Triage incoming tickets, set status &amp; priority.</p>
             </GlassCard>
           </Link>
         </div>
@@ -290,21 +290,21 @@ export default async function BetaOpsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <GlassCard className="px-4 py-4">
             <p className="text-[11px] uppercase tracking-widest text-adm-muted">Create-story tour</p>
-            <p className="text-sm text-white mt-1">{settingsMap.get('guided_tours_enabled') !== false ? 'Enabled' : 'Disabled'}</p>
+            <p className="text-sm text-adm-text mt-1">{settingsMap.get('guided_tours_enabled') !== false ? 'Enabled' : 'Disabled'}</p>
             <p className="text-[11px] text-adm-subtle mt-1">
               {tourProgressMissing ? '—' : `${tourCompleted ?? 0} completed · ${tourSkipped ?? 0} skipped`}
             </p>
           </GlassCard>
           <Link href="/admin/tours" className="block">
-            <GlassCard className="px-4 py-4 h-full hover:border-white/30 transition-colors">
+            <GlassCard className="px-4 py-4 h-full hover:border-adm-text/30 transition-colors">
               <p className="text-[11px] uppercase tracking-widest text-adm-muted">Manage tours</p>
-              <p className="text-sm text-white mt-1">Enable/disable, view step config.</p>
+              <p className="text-sm text-adm-text mt-1">Enable/disable, view step config.</p>
             </GlassCard>
           </Link>
           <Link href="/create?replayTour=create_story_wizard" className="block">
             <GlassCard tone="violet" className="px-4 py-4 h-full hover:border-violet-400/50 transition-colors">
               <p className="text-[11px] uppercase tracking-widest text-violet-200">Replay tour</p>
-              <p className="text-sm text-white mt-1">Start the create-story tour from step 0.</p>
+              <p className="text-sm text-adm-text mt-1">Start the create-story tour from step 0.</p>
             </GlassCard>
           </Link>
         </div>
@@ -328,14 +328,14 @@ function StateTile({
   offLabel?: string
 }) {
   const tone = on ? onTone : offTone
-  const dot = tone === 'green' ? 'bg-emerald-400' : tone === 'amber' ? 'bg-amber-400' : 'bg-white/40'
+  const dot = tone === 'green' ? 'bg-emerald-400' : tone === 'amber' ? 'bg-amber-400' : 'bg-adm-text/40'
   return (
     <GlassCard tone={tone === 'neutral' ? 'neutral' : tone === 'green' ? 'green' : 'amber'} className="px-4 py-3">
       <div className="flex items-center gap-2">
         <span aria-hidden className={`w-2 h-2 rounded-full ${dot}`} />
         <p className="text-xs text-adm-muted">{label}</p>
       </div>
-      <p className="text-sm font-semibold text-white mt-1">{on ? onLabel : offLabel}</p>
+      <p className="text-sm font-semibold text-adm-text mt-1">{on ? onLabel : offLabel}</p>
     </GlassCard>
   )
 }
@@ -345,7 +345,7 @@ function MetricTile({ label, value, tone = 'neutral' }: { label: string; value: 
     tone === 'green'  ? 'text-emerald-300' :
     tone === 'amber'  ? 'text-amber-300'   :
     tone === 'red'    ? 'text-rose-300'    :
-    tone === 'violet' ? 'text-violet-300'  : 'text-white'
+    tone === 'violet' ? 'text-violet-300'  : 'text-adm-text'
   return (
     <GlassCard tone={tone === 'neutral' ? 'neutral' : tone} className="px-4 py-3">
       <p className="text-[11px] uppercase tracking-widest text-adm-muted">{label}</p>
@@ -371,7 +371,7 @@ function Check({ ok, label, hint }: { ok: boolean; label: string; hint: string }
         {ok ? '✓' : '!'}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-white">{label}</p>
+        <p className="text-sm text-adm-text">{label}</p>
         <p className="text-[11px] text-adm-subtle mt-0.5">{hint}</p>
       </div>
     </li>

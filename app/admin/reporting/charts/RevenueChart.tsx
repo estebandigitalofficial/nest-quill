@@ -40,11 +40,11 @@ export default function RevenueChart({ data }: { data: RevenueRow[] }) {
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
           <p className="text-xs text-adm-muted mb-1">Total Revenue</p>
-          <p className="text-2xl font-bold text-white">${(totalRevenue / 100).toFixed(2)}</p>
+          <p className="text-2xl font-bold text-adm-text">${(totalRevenue / 100).toFixed(2)}</p>
         </div>
         <div className="bg-adm-surface border border-adm-border rounded-xl px-5 py-4">
           <p className="text-xs text-adm-muted mb-1">Transactions</p>
-          <p className="text-2xl font-bold text-white">{data.length}</p>
+          <p className="text-2xl font-bold text-adm-text">{data.length}</p>
         </div>
       </div>
 

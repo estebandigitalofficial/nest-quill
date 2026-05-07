@@ -64,7 +64,7 @@ export default function ClassroomAdminActions({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
           <div className="bg-adm-surface border border-adm-border rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
             <div>
-              <p className="font-semibold text-white text-base">
+              <p className="font-semibold text-adm-text text-base">
                 {isActive ? 'Archive classroom?' : 'Restore classroom?'}
               </p>
               <p className="text-sm text-adm-muted mt-1.5 font-medium">{classroomName}</p>
@@ -82,8 +82,8 @@ export default function ClassroomAdminActions({
                 disabled={loading}
                 className={`text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50 ${
                   isActive
-                    ? 'bg-red-500 hover:bg-red-600 text-white'
-                    : 'bg-green-600 hover:bg-green-700 text-white'
+                    ? 'bg-red-500 hover:bg-red-600 text-adm-text'
+                    : 'bg-green-600 hover:bg-green-700 text-adm-text'
                 }`}
               >
                 {loading ? 'Saving…' : isActive ? 'Archive' : 'Restore'}
@@ -91,7 +91,7 @@ export default function ClassroomAdminActions({
               <button
                 onClick={() => { setShowModal(false); setError(null) }}
                 disabled={loading}
-                className="text-sm font-semibold text-adm-muted hover:text-white px-4 py-2.5 rounded-xl border border-adm-border hover:bg-white/5 transition-colors"
+                className="text-sm font-semibold text-adm-muted hover:text-adm-text px-4 py-2.5 rounded-xl border border-adm-border hover:bg-adm-text/5 transition-colors"
               >
                 Cancel
               </button>

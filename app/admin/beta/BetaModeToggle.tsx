@@ -44,7 +44,7 @@ export default function BetaModeToggle({ initialEnabled }: { initialEnabled: boo
     <>
       <div className="flex items-center justify-between gap-6">
         <div>
-          <p className="text-sm font-semibold text-white">
+          <p className="text-sm font-semibold text-adm-text">
             Beta Mode is{' '}
             <span className={enabled ? 'text-amber-400' : 'text-adm-subtle'}>
               {enabled ? 'ENABLED' : 'disabled'}
@@ -62,8 +62,8 @@ export default function BetaModeToggle({ initialEnabled }: { initialEnabled: boo
           disabled={loading}
           className={`shrink-0 text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-50 ${
             enabled
-              ? 'bg-adm-surface border border-adm-border text-adm-muted hover:bg-white/5'
-              : 'bg-amber-600 hover:bg-amber-700 text-white'
+              ? 'bg-adm-surface border border-adm-border text-adm-muted hover:bg-adm-text/5'
+              : 'bg-amber-600 hover:bg-amber-700 text-adm-text'
           }`}
         >
           {loading ? 'Saving…' : enabled ? 'Disable Beta Mode' : 'Enable Beta Mode'}
@@ -74,7 +74,7 @@ export default function BetaModeToggle({ initialEnabled }: { initialEnabled: boo
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
           <div className="bg-adm-surface border border-adm-border rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
             <div>
-              <p className="font-semibold text-white text-base">Enable Beta Mode?</p>
+              <p className="font-semibold text-adm-text text-base">Enable Beta Mode?</p>
               <p className="text-sm text-adm-muted mt-1.5 leading-relaxed">
                 Beta Mode affects all users globally. Story limits will be bypassed and some generation will be simulated until you turn it off.
               </p>
@@ -82,13 +82,13 @@ export default function BetaModeToggle({ initialEnabled }: { initialEnabled: boo
             <div className="flex gap-3 pt-1">
               <button
                 onClick={() => commit(true)}
-                className="text-sm font-semibold px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white transition-colors"
+                className="text-sm font-semibold px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-adm-text transition-colors"
               >
                 Yes, enable
               </button>
               <button
                 onClick={() => setShowConfirm(false)}
-                className="text-sm font-semibold text-adm-muted hover:text-white px-4 py-2.5 rounded-xl border border-adm-border hover:bg-white/5 transition-colors"
+                className="text-sm font-semibold text-adm-muted hover:text-adm-text px-4 py-2.5 rounded-xl border border-adm-border hover:bg-adm-text/5 transition-colors"
               >
                 Cancel
               </button>

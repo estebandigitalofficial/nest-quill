@@ -170,8 +170,8 @@ export default function WriterConfigEditor({
             className={cn(
               'px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
               activeTab === i
-                ? 'bg-brand-500 text-white'
-                : 'text-adm-muted hover:text-white hover:bg-white/5'
+                ? 'bg-brand-500 text-adm-text'
+                : 'text-adm-muted hover:text-adm-text hover:bg-adm-text/5'
             )}
           >
             {tab.label}
@@ -183,7 +183,7 @@ export default function WriterConfigEditor({
       {currentSections.map((section) => (
         <div key={section.title}>
           <div className="mb-4">
-            <h2 className="text-sm font-semibold text-white">{section.title}</h2>
+            <h2 className="text-sm font-semibold text-adm-text">{section.title}</h2>
             {section.subtitle && (
               <p className="text-xs text-adm-muted mt-0.5">{section.subtitle}</p>
             )}
@@ -210,7 +210,7 @@ export default function WriterConfigEditor({
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-white">
+                      <p className="text-sm font-medium text-adm-text">
                         {KEY_LABELS[key] ?? key}
                       </p>
                       {config.description && (
@@ -254,7 +254,7 @@ export default function WriterConfigEditor({
         <button
           onClick={() => setShowConfirm(true)}
           disabled={!hasChanges || saving}
-          className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors"
+          className="bg-brand-500 hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed text-adm-text text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors"
         >
           {saving ? 'Saving...' : `Save changes${changedCount > 0 ? ` (${changedCount})` : ''}`}
         </button>
@@ -269,20 +269,20 @@ export default function WriterConfigEditor({
       {showConfirm && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-adm-surface border border-adm-border rounded-2xl px-8 py-6 max-w-md mx-4 space-y-4">
-            <h3 className="text-lg font-semibold text-white">Confirm changes</h3>
+            <h3 className="text-lg font-semibold text-adm-text">Confirm changes</h3>
             <p className="text-sm text-adm-muted">
               Are you sure you want to change {changedCount} writer setting{changedCount > 1 ? 's' : ''}? This will affect all future story generations.
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowConfirm(false)}
-                className="text-sm text-adm-muted hover:text-white px-4 py-2 rounded-lg border border-adm-border hover:border-adm-border transition-colors"
+                className="text-sm text-adm-muted hover:text-adm-text px-4 py-2 rounded-lg border border-adm-border hover:border-adm-border transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 px-4 py-2 rounded-lg transition-colors"
+                className="text-sm font-semibold text-adm-text bg-brand-500 hover:bg-brand-600 px-4 py-2 rounded-lg transition-colors"
               >
                 Yes, save changes
               </button>

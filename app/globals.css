@@ -7,48 +7,35 @@
     --font-sans: 'Nunito', system-ui, sans-serif;
     --font-serif: 'Playfair Display', Georgia, serif;
 
-    /* Admin panel — default to light */
-    --adm-bg:      248 250 252;
-    --adm-surface: 255 255 255;
-    --adm-border:  226 232 240;
-    --adm-text:    15  23  42;
-    --adm-muted:   100 116 139;
-    --adm-subtle:  148 163 184;
+    /* Admin "Command Center" — single theme, parchment family.
+     *
+     *   bg      — warm parchment, base of every admin page
+     *   surface — lighter cream, anchors cards/panels
+     *   border  — warm taupe, visible without being heavy
+     *   text    — warm charcoal, primary copy
+     *   muted   — warm slate, secondary copy
+     *   subtle  — warm light slate, tertiary / hints
+     *
+     * The admin doesn't honor the system light/dark preference; both
+     * .light and .dark below resolve to the same parchment palette so
+     * the look stays consistent regardless of OS theme.
+     */
+    --adm-bg:      247 240 224;
+    --adm-surface: 253 248 235;
+    --adm-border:  217 202 175;
+    --adm-text:     45  38  28;
+    --adm-muted:   120 105  85;
+    --adm-subtle:  165 148 122;
   }
 
-  /* Admin panel — light */
-  .light {
-    --adm-bg:      248 250 252;
-    --adm-surface: 255 255 255;
-    --adm-border:  226 232 240;
-    --adm-text:    15  23  42;
-    --adm-muted:   100 116 139;
-    --adm-subtle:  148 163 184;
-  }
-
-  /* Admin panel — dark
-   *
-   * "Command Center" palette. We deliberately keep the dark family so
-   * existing admin pages (text-white literals on glass tiles, dark
-   * tables, etc.) remain readable, but every channel is warmed up so
-   * the surface reads as a warm slate / editorial command room rather
-   * than a cold dev panel. Numbers below are RGB triplets for the
-   * `<alpha-value>` Tailwind token.
-   *
-   *   bg      — warm near-black with a violet/brown undertone
-   *   surface — warm slate; cards anchor here
-   *   border  — warm violet-leaning border, easier to see than 31/41/55
-   *   text    — parchment cream (NOT pure white)
-   *   muted   — warm cream-gray, comfortably readable
-   *   subtle  — warm taupe; small but not invisible
-   */
+  .light,
   .dark {
-    --adm-bg:      28  24  33;
-    --adm-surface: 44  38  52;
-    --adm-border:  72  62  84;
-    --adm-text:    245 240 232;
-    --adm-muted:   198 188 175;
-    --adm-subtle:  132 122 112;
+    --adm-bg:      247 240 224;
+    --adm-surface: 253 248 235;
+    --adm-border:  217 202 175;
+    --adm-text:     45  38  28;
+    --adm-muted:   120 105  85;
+    --adm-subtle:  165 148 122;
   }
 
   html {

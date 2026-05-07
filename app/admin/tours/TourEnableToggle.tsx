@@ -37,7 +37,7 @@ export default function TourEnableToggle({
       className={`shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
         enabled
           ? 'bg-green-500/10 border-green-500/40 text-green-300 hover:bg-green-500/20'
-          : 'bg-adm-bg border-adm-border text-adm-muted hover:text-white'
+          : 'bg-adm-bg border-adm-border text-adm-muted hover:text-adm-text'
       }`}
     >
       {enabled ? 'Enabled' : 'Disabled'}

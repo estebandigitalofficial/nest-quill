@@ -160,7 +160,7 @@ export default function AdminUserActions({ userId, isSelf, userEmail, isBanned: 
                 }
                 className={btnClass(
                   resetUsageState,
-                  'text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-brand-500 text-white hover:bg-brand-600'
+                  'text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-brand-500 text-adm-text hover:bg-brand-600'
                 )}
               >
                 {label(resetUsageState, 'Confirm reset', 'Reset ✓')}
@@ -223,7 +223,7 @@ export default function AdminUserActions({ userId, isSelf, userEmail, isBanned: 
                 }
                 className={btnClass(
                   deleteState,
-                  'text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-red-600 text-white hover:bg-red-500'
+                  'text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-red-600 text-adm-text hover:bg-red-500'
                 )}
               >
                 {label(deleteState, 'Confirm delete', 'Deleted ✓')}

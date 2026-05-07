@@ -28,7 +28,7 @@ export default function SponsorsList({ initialSponsors }: { initialSponsors: Spo
         <p className="text-sm text-adm-muted">Add your first brand partner to start funding rewards.</p>
         <Link
           href="/admin/sponsors/new"
-          className="inline-block mt-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+          className="inline-block mt-2 bg-brand-500 hover:bg-brand-600 text-adm-text text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
           + New sponsor
         </Link>
       </div>
