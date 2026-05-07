@@ -12,8 +12,17 @@ interface ReportingData {
   topThemes: [string, number][]
   styleCounts: Record<string, number>
   planCounts: Record<string, number>
+  storiesByPlanTier: Record<string, number>
   signupsByDay: Record<string, number>
   totals: { totalUsers: number; paidUsers: number; activeUsers: number; conversionRate: string }
+}
+
+const PLAN_LABELS: Record<string, string> = {
+  free: 'Free',
+  single: 'Single Story',
+  story_pack: 'Story Pack',
+  story_pro: 'Story Pro',
+  educator: 'Educator',
 }
 
 export default function ReportingDashboard({ initialData }: { initialData: ReportingData }) {
@@ -84,6 +93,18 @@ export default function ReportingDashboard({ initialData }: { initialData: Repor
         />
       </section>
 
+      {/* Plan tier demand (story-creation picks) */}
+      <section>
+        <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest mb-4">
+          Plan tier picked at story creation
+        </h2>
+        <p className="text-xs text-adm-subtle mb-3">
+          What plan users selected when starting a story in the date range. During beta, prices are overridden to free,
+          but the selection is still recorded — useful as a leading signal for paid demand before billing is enabled.
+        </p>
+        <PlanTierBreakdown counts={data.storiesByPlanTier} />
+      </section>
+
       {/* User Analytics */}
       <section>
         <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest mb-4">User Analytics</h2>
@@ -93,6 +114,39 @@ export default function ReportingDashboard({ initialData }: { initialData: Repor
           totals={data.totals}
         />
       </section>
+    </div>
+  )
+}
+
+function PlanTierBreakdown({ counts }: { counts: Record<string, number> }) {
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1])
+  const total = entries.reduce((sum, [, n]) => sum + n, 0)
+  if (entries.length === 0) {
+    return (
+      <div className="bg-adm-surface border border-adm-border rounded-2xl px-4 py-6 text-center text-xs text-adm-subtle">
+        No story submissions in the selected range.
+      </div>
+    )
+  }
+  return (
+    <div className="bg-adm-surface border border-adm-border rounded-2xl divide-y divide-adm-border overflow-hidden">
+      {entries.map(([tier, n]) => {
+        const pct = total > 0 ? Math.round((n / total) * 1000) / 10 : 0
+        const isPaid = tier !== 'free'
+        return (
+          <div key={tier} className="px-4 py-3 flex items-center gap-3">
+            <span className="text-sm font-medium text-white w-32 shrink-0">{PLAN_LABELS[tier] ?? tier}</span>
+            <div className="flex-1 h-2 bg-adm-bg/60 rounded-full overflow-hidden">
+              <div
+                className={`h-full ${isPaid ? 'bg-brand-500' : 'bg-adm-border'}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="text-xs text-adm-muted tabular-nums w-12 text-right shrink-0">{pct}%</span>
+            <span className="text-sm font-bold text-white tabular-nums w-12 text-right shrink-0">{n}</span>
+          </div>
+        )
+      })}
     </div>
   )
 }

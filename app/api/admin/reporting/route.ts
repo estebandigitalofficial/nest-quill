@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
     { data: statusData },
     { data: themeData },
     { data: styleData },
+    { data: storyPlanTierData },
     { data: usersByPlan },
     { data: signupsByDay },
     { count: totalUsers },
@@ -53,6 +54,14 @@ export async function GET(req: NextRequest) {
     // Stories by illustration style
     db.from('story_requests')
       .select('illustration_style')
+      .gte('created_at', fromDate)
+      .lte('created_at', toDate)
+      .limit(5000),
+
+    // Stories by selected plan tier — captures user demand even during beta
+    // (prices are overridden but the picked tier is still recorded).
+    db.from('story_requests')
+      .select('plan_tier')
       .gte('created_at', fromDate)
       .lte('created_at', toDate)
       .limit(5000),
@@ -107,10 +116,16 @@ export async function GET(req: NextRequest) {
     styleCounts[s.illustration_style] = (styleCounts[s.illustration_style] ?? 0) + 1
   }
 
-  // Plan tier counts
+  // Plan tier counts (users)
   const planCounts: Record<string, number> = {}
   for (const u of usersByPlan ?? []) {
     planCounts[u.plan_tier] = (planCounts[u.plan_tier] ?? 0) + 1
+  }
+
+  // Plan tier counts (stories) — what plans were picked at story creation
+  const storiesByPlanTier: Record<string, number> = {}
+  for (const s of storyPlanTierData ?? []) {
+    storiesByPlanTier[s.plan_tier] = (storiesByPlanTier[s.plan_tier] ?? 0) + 1
   }
 
   // Signups by day
@@ -127,6 +142,7 @@ export async function GET(req: NextRequest) {
     topThemes,
     styleCounts,
     planCounts,
+    storiesByPlanTier,
     signupsByDay: signupsByDayAgg,
     totals: {
       totalUsers: totalUsers ?? 0,

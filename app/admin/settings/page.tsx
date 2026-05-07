@@ -1,8 +1,9 @@
 import { getAdminContext } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getSetting } from '@/lib/settings/appSettings'
 import SettingsHub from './SettingsHub'
 import type { AdminNotificationType } from '@/lib/services/adminNotifications'
-import type { StripeEnv } from './StripeStatusPanel'
+import type { StripeEnv, LastWebhookEvent } from './StripeStatusPanel'
 
 // Secret values stay on the server; only booleans + the public flag are
 // passed to the client component.
@@ -50,13 +51,36 @@ export default async function AdminSettingsPage() {
     VALID_TYPES.map(t => [t, saved.has(t) ? saved.get(t)! : DEFAULT_ON.has(t)])
   )
 
+  // Beta + last webhook event come from the DB. The webhook log is created
+  // by migration 20240048; if that hasn't been applied yet, the probe errors
+  // with 42P01 (undefined_table) and we surface a "schema not deployed"
+  // signal instead of crashing the page.
+  const [betaMode, lastWebhookProbe] = await Promise.all([
+    getSetting('beta_mode_enabled', false) as Promise<boolean>,
+    db.from('stripe_webhook_events')
+      .select('event_id, type, received_at, processed_at, error')
+      .order('received_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
+  const webhookLogMissing = lastWebhookProbe.error?.code === '42P01'
+  const lastWebhookEvent: LastWebhookEvent | null = webhookLogMissing
+    ? null
+    : (lastWebhookProbe.data as LastWebhookEvent | null)
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       <div>
         <h1 className="text-xl font-semibold text-adm-text">Settings</h1>
         <p className="text-sm text-adm-muted mt-1">Manage admin preferences and configure product behavior.</p>
       </div>
-      <SettingsHub initialSettings={initialSettings} stripeEnv={readStripeEnv()} />
+      <SettingsHub
+        initialSettings={initialSettings}
+        stripeEnv={readStripeEnv()}
+        betaMode={betaMode}
+        lastWebhookEvent={lastWebhookEvent}
+        webhookLogMissing={webhookLogMissing}
+      />
     </div>
   )
 }

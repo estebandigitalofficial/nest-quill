@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import NotificationToggles from './NotificationToggles'
-import StripeStatusPanel, { type StripeEnv } from './StripeStatusPanel'
+import StripeStatusPanel, { type StripeEnv, type LastWebhookEvent } from './StripeStatusPanel'
 import CleanupTool from '../cleanup/CleanupTool'
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -369,9 +369,12 @@ function SkeletonRow() {
 interface Props {
   initialSettings: Record<string, boolean>
   stripeEnv: StripeEnv
+  betaMode: boolean
+  lastWebhookEvent: LastWebhookEvent | null
+  webhookLogMissing: boolean
 }
 
-export default function SettingsHub({ initialSettings, stripeEnv }: Props) {
+export default function SettingsHub({ initialSettings, stripeEnv, betaMode, lastWebhookEvent, webhookLogMissing }: Props) {
   const [activeId, setActiveId] = useState(SECTIONS[0].id)
   const [appSettings, setAppSettings] = useState<Record<string, unknown>>({})
   const [isLoading, setIsLoading] = useState(true)
@@ -541,7 +544,7 @@ export default function SettingsHub({ initialSettings, stripeEnv }: Props) {
           <div className="px-6 py-5 space-y-6">
             {activeSec.live
               ? activeSec.id === 'payments'
-                ? <StripeStatusPanel env={stripeEnv} />
+                ? <StripeStatusPanel env={stripeEnv} betaMode={betaMode} lastWebhookEvent={lastWebhookEvent} webhookLogMissing={webhookLogMissing} />
                 : <NotificationToggles initialSettings={initialSettings} />
               : renderGroupedItems(activeSec.items ?? [], activeSec.columns)
             }

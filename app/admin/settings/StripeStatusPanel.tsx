@@ -4,6 +4,8 @@
 // — the parent computes env presence server-side and sends only booleans.
 // Nothing here can enable payments; this is a checklist + diagnostics view.
 
+import Link from 'next/link'
+
 export interface StripeEnv {
   hasSecretKey: boolean
   hasWebhookSecret: boolean
@@ -11,6 +13,14 @@ export interface StripeEnv {
   paymentsEnabledFlag: boolean
   // 'test' if the secret key starts with sk_test_, 'live' if sk_live_, else null.
   detectedMode: 'test' | 'live' | null
+}
+
+export interface LastWebhookEvent {
+  event_id: string
+  type: string
+  received_at: string
+  processed_at: string | null
+  error: string | null
 }
 
 const WIRING: { label: string; state: 'not_wired' | 'partial' | 'wired'; note: string }[] = [
@@ -34,10 +44,18 @@ const CHECKLIST: { label: string; done: boolean }[] = [
   { label: 'Reporting revenue chart populating',           done: false },
 ]
 
-export default function StripeStatusPanel({ env }: { env: StripeEnv }) {
+export default function StripeStatusPanel({ env, betaMode, lastWebhookEvent, webhookLogMissing }: {
+  env: StripeEnv
+  betaMode: boolean
+  lastWebhookEvent: LastWebhookEvent | null
+  webhookLogMissing: boolean
+}) {
   const modeLabel = env.detectedMode
     ? env.detectedMode === 'test' ? 'Test mode' : 'Live mode'
     : '— (no STRIPE_SECRET_KEY)'
+  const stripeDashboard = env.detectedMode === 'live'
+    ? 'https://dashboard.stripe.com'
+    : 'https://dashboard.stripe.com/test'
 
   return (
     <div className="space-y-6">
@@ -50,6 +68,20 @@ export default function StripeStatusPanel({ env }: { env: StripeEnv }) {
           would block all paid-tier story submissions with a 402 response.
         </p>
       </div>
+
+      {/* Beta-mode interaction notice */}
+      {betaMode && (
+        <div className="bg-blue-500/5 border border-blue-500/30 text-blue-200 rounded-xl px-4 py-3 space-y-1">
+          <p className="text-sm font-semibold">Beta mode is on — pricing is overridden.</p>
+          <p className="text-xs leading-relaxed text-blue-200/80">
+            Plan cards display as <strong>Free</strong> across the marketing site, and the submit route accepts paid-tier
+            selections without invoking Stripe. Users <em>can</em> still pick paid tiers (the picks are recorded in
+            <code className="mx-1 text-[11px] bg-blue-500/10 px-1 py-0.5 rounded">story_requests.plan_tier</code>),
+            so you can see real demand before launching billing — see <Link href="/admin/reporting" className="underline underline-offset-2 text-blue-100 hover:text-white">Reporting</Link>.
+            No charge events are generated.
+          </p>
+        </div>
+      )}
 
       {/* Status grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -73,6 +105,73 @@ export default function StripeStatusPanel({ env }: { env: StripeEnv }) {
           <EnvRow label="STRIPE_WEBHOOK_SECRET"              present={env.hasWebhookSecret} />
           <EnvRow label="NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" present={env.hasPublishableKey} />
           <EnvRow label="NEXT_PUBLIC_PAYMENTS_ENABLED"       present={env.paymentsEnabledFlag} valueOverride={env.paymentsEnabledFlag ? 'true' : 'false'} neutral />
+        </div>
+      </Section>
+
+      {/* Last webhook event */}
+      <Section title="Webhook health" subtitle="Recorded by /api/stripe/webhook (not built yet) into stripe_webhook_events.">
+        {webhookLogMissing ? (
+          <div className="bg-red-500/5 border border-red-500/30 rounded-xl px-4 py-3 text-sm">
+            <p className="text-red-300 font-medium">Schema not deployed.</p>
+            <p className="text-[11px] text-adm-muted mt-1">
+              Apply migration <code className="text-[11px] bg-red-500/10 px-1 py-0.5 rounded">20240048_stripe_webhook_events.sql</code>
+              in the Supabase SQL editor before wiring the webhook route.
+            </p>
+          </div>
+        ) : lastWebhookEvent ? (
+          <div className="bg-adm-bg/50 border border-adm-border rounded-xl px-4 py-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+            <div>
+              <p className="text-[11px] text-adm-muted uppercase tracking-widest">Type</p>
+              <p className="font-mono text-xs text-adm-text mt-0.5 break-all">{lastWebhookEvent.type}</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-adm-muted uppercase tracking-widest">Received</p>
+              <p className="text-xs text-adm-text mt-0.5">{new Date(lastWebhookEvent.received_at).toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-adm-muted uppercase tracking-widest">Status</p>
+              <p className={`text-xs mt-0.5 font-semibold ${
+                lastWebhookEvent.error
+                  ? 'text-red-300'
+                  : lastWebhookEvent.processed_at
+                  ? 'text-green-400'
+                  : 'text-amber-300'
+              }`}>
+                {lastWebhookEvent.error ? 'Errored' : lastWebhookEvent.processed_at ? 'Processed' : 'Pending'}
+              </p>
+            </div>
+            {lastWebhookEvent.error && (
+              <p className="sm:col-span-3 text-[11px] text-red-300/80 break-words" title={lastWebhookEvent.error}>
+                {lastWebhookEvent.error}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="bg-adm-bg/50 border border-adm-border rounded-xl px-4 py-3 text-xs text-adm-muted">
+            No webhook events recorded yet. The log fills in once the webhook handler is wired and Stripe starts delivering events.
+          </div>
+        )}
+      </Section>
+
+      {/* Quick links */}
+      <Section title="Quick links" subtitle="Outbound dashboards and docs — no app state changes.">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <QuickLink href={stripeDashboard} external>
+            Stripe dashboard
+            <span className="block text-[10px] text-adm-subtle mt-0.5">{env.detectedMode === 'live' ? 'Live' : 'Test'}</span>
+          </QuickLink>
+          <QuickLink href="https://stripe.com/docs/webhooks" external>
+            Webhook docs
+            <span className="block text-[10px] text-adm-subtle mt-0.5">stripe.com/docs</span>
+          </QuickLink>
+          <QuickLink href="/admin/beta">
+            Beta settings
+            <span className="block text-[10px] text-adm-subtle mt-0.5">/admin/beta</span>
+          </QuickLink>
+          <QuickLink href="/admin/reporting">
+            Reporting
+            <span className="block text-[10px] text-adm-subtle mt-0.5">Plan tier demand</span>
+          </QuickLink>
         </div>
       </Section>
 
@@ -135,6 +234,13 @@ function StatusRow({ label, value, tone, hint }: {
       </span>
     </div>
   )
+}
+
+function QuickLink({ href, external, children }: { href: string; external?: boolean; children: React.ReactNode }) {
+  const className = 'rounded-xl bg-adm-bg/50 border border-adm-border hover:border-brand-600 px-3 py-2.5 text-xs font-semibold text-adm-text transition-colors'
+  return external
+    ? <a href={href} target="_blank" rel="noopener noreferrer" className={className}>{children}</a>
+    : <Link href={href} className={className}>{children}</Link>
 }
 
 function EnvRow({ label, present, valueOverride, neutral }: {

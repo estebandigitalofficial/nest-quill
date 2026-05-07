@@ -13,6 +13,7 @@ export default async function AdminReportingPage() {
     { data: statusData },
     { data: themeData },
     { data: styleData },
+    { data: storyPlanTierData },
     { data: usersByPlan },
     { data: signupsByDay },
     { count: totalUsers },
@@ -24,6 +25,7 @@ export default async function AdminReportingPage() {
     db.from('story_requests').select('status').limit(10000),
     db.from('story_requests').select('story_theme').gte('created_at', fromDate).lte('created_at', toDate).limit(5000),
     db.from('story_requests').select('illustration_style').gte('created_at', fromDate).lte('created_at', toDate).limit(5000),
+    db.from('story_requests').select('plan_tier').gte('created_at', fromDate).lte('created_at', toDate).limit(5000),
     db.from('profiles').select('plan_tier').limit(10000),
     db.from('profiles').select('created_at').gte('created_at', fromDate).lte('created_at', toDate).order('created_at').limit(5000),
     db.from('profiles').select('id', { count: 'exact', head: true }),
@@ -63,6 +65,14 @@ export default async function AdminReportingPage() {
     planCounts[u.plan_tier] = (planCounts[u.plan_tier] ?? 0) + 1
   }
 
+  // Plan tier picked at story creation. During beta the prices are overridden
+  // to free, but the user's selection is still recorded — this surface tells
+  // us which paid tiers users would have bought if billing were live.
+  const storiesByPlanTier: Record<string, number> = {}
+  for (const s of storyPlanTierData ?? []) {
+    storiesByPlanTier[s.plan_tier] = (storiesByPlanTier[s.plan_tier] ?? 0) + 1
+  }
+
   const signupsByDayAgg: Record<string, number> = {}
   for (const s of signupsByDay ?? []) {
     const day = s.created_at.slice(0, 10)
@@ -77,6 +87,7 @@ export default async function AdminReportingPage() {
     topThemes,
     styleCounts,
     planCounts,
+    storiesByPlanTier,
     signupsByDay: signupsByDayAgg,
     totals: {
       totalUsers: t,
