@@ -73,20 +73,12 @@ export default function UserControls() {
     return () => { cancelled = true }
   }, [user, open === 'notifications'])
 
-  // Tour availability — drives whether the "Replay tour" link appears
-  // in the help menu. The /api/tours route returns { tour: null } when
-  // the master guided_tours_enabled switch is off OR when the specific
-  // tour has been disabled in /admin/tours. Either way → hide the link.
+  // Tour availability is now best-effort. We optimistically show the
+  // Replay link by default — TourRunner has its own clear "tour is
+  // unavailable" handling and a dev-only console.warn. Hiding the
+  // link here was masking real diagnostic signal during beta.
   useEffect(() => {
-    let cancelled = false
-    fetch('/api/tours/create_story_wizard')
-      .then(r => r.ok ? r.json() : null)
-      .then((data) => {
-        if (cancelled) return
-        setTourAvailable(!!data?.tour)
-      })
-      .catch(() => { if (!cancelled) setTourAvailable(false) })
-    return () => { cancelled = true }
+    setTourAvailable(true)
   }, [])
 
   // Click-outside + Escape close the open menu so the dropdowns behave like a
