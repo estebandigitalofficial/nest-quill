@@ -297,6 +297,20 @@ export interface ImageLibraryItem {
   updated_at: string
 }
 
+export type NotificationAudience = 'user' | 'admin' | 'system'
+
+export interface NotificationRow {
+  id: string
+  user_id: string | null
+  audience: NotificationAudience
+  type: string
+  title: string
+  body: string | null
+  href: string | null
+  read_at: string | null
+  created_at: string
+}
+
 // ─── Supabase Database shape (used by createClient<Database>) ───────────────
 // Must include Views, Functions, Enums, CompositeTypes for correct type inference.
 // Replace this entire file by running `pnpm run types` once Supabase CLI is set up.
@@ -311,6 +325,7 @@ export interface Database {
       book_exports: { Row: BookExport; Insert: Partial<BookExport>; Update: Partial<BookExport>; Relationships: [] }
       delivery_logs: { Row: DeliveryLog; Insert: Partial<DeliveryLog>; Update: Partial<DeliveryLog>; Relationships: [] }
       processing_logs: { Row: ProcessingLog; Insert: Partial<ProcessingLog>; Update: Partial<ProcessingLog>; Relationships: [] }
+      notifications: { Row: NotificationRow; Insert: Partial<NotificationRow>; Update: Partial<NotificationRow>; Relationships: [] }
     }
     Views: Record<string, never>
     Functions: {

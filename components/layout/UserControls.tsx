@@ -16,9 +16,8 @@ interface UserSummary {
 export default function UserControls() {
   const [user, setUser] = useState<UserSummary | null | undefined>(undefined)
   const [isAdmin, setIsAdmin] = useState(false)
-  // Notifications are typed for the day this becomes a real feed; the
-  // current implementation seeds an empty list so the empty state renders.
-  const [notifications] = useState<readonly Notification[]>([])
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [notifError, setNotifError] = useState<string | null>(null)
   const [open, setOpen] = useState<Menu>(null)
   const router = useRouter()
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -56,6 +55,23 @@ export default function UserControls() {
     return () => { cancelled = true }
   }, [user])
 
+  // Notifications: fetch once after sign-in, refetch when the bell opens
+  // so a freshly-arrived notification (e.g. story complete) shows up
+  // without a page reload. No realtime/polling.
+  useEffect(() => {
+    if (!user) { setNotifications([]); setNotifError(null); return }
+    let cancelled = false
+    setNotifError(null)
+    fetch('/api/notifications', { credentials: 'same-origin' })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json() as Promise<{ notifications: Notification[]; unreadCount: number }>
+      })
+      .then((data) => { if (!cancelled) setNotifications(data.notifications) })
+      .catch(() => { if (!cancelled) setNotifError("Couldn't load notifications.") })
+    return () => { cancelled = true }
+  }, [user, open === 'notifications'])
+
   // Click-outside + Escape close the open menu so the dropdowns behave like a
   // single mutually-exclusive control cluster.
   useEffect(() => {
@@ -88,6 +104,19 @@ export default function UserControls() {
     router.refresh()
   }
 
+  // Optimistically flip the row to read locally and fire-and-forget the
+  // PATCH. A failed PATCH leaves the optimistic state — the next fetch
+  // will reconcile if needed. Idempotent server-side.
+  async function markRead(id: string) {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, unread: false } : n))
+    try {
+      await fetch(`/api/notifications/${id}/read`, {
+        method: 'PATCH',
+        credentials: 'same-origin',
+      })
+    } catch { /* swallow — local state already updated */ }
+  }
+
   // Don't render for logged-out users (or while we don't yet know the state).
   if (!user) return null
 
@@ -115,7 +144,9 @@ export default function UserControls() {
 
       {open === 'notifications' && (
         <Dropdown title="Notifications">
-          {notifications.length === 0 ? (
+          {notifError ? (
+            <p className="px-4 py-6 text-sm text-red-500 text-center">{notifError}</p>
+          ) : notifications.length === 0 ? (
             <p className="px-4 py-6 text-sm text-charcoal-light text-center">No notifications yet.</p>
           ) : (
             <ul role="list" className="max-h-80 overflow-y-auto">
@@ -124,12 +155,18 @@ export default function UserControls() {
                   {n.href ? (
                     <Link
                       href={n.href}
-                      onClick={() => setOpen(null)}
+                      onClick={() => { if (n.unread) markRead(n.id); setOpen(null) }}
                       className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
                       <NotificationRow n={n} />
                     </Link>
                   ) : (
-                    <div className="px-4 py-2.5"><NotificationRow n={n} /></div>
+                    <button
+                      type="button"
+                      disabled={!n.unread}
+                      onClick={() => markRead(n.id)}
+                      className="block w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors disabled:cursor-default">
+                      <NotificationRow n={n} />
+                    </button>
                   )}
                 </li>
               ))}
