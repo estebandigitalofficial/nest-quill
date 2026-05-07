@@ -176,12 +176,16 @@ async function handlePost(req: NextRequest) {
       code: ticketErr?.code,
       details: ticketErr?.details,
       hint: ticketErr?.hint,
+      payload_keys: ['user_id', 'email', 'name', 'subject', 'message', 'category', 'source'],
     })
     return NextResponse.json(
       {
         error: 'Could not save your message. Please try again.',
         code: CODE.INSERT,
         debug: ticketErr?.code ? `${ticketErr.code}: ${ticketErr.message}` : (ticketErr?.message ?? 'unknown'),
+        // Operator hint: maps the PostgREST / Postgres SQLSTATE to the
+        // recovery action. Read this before guessing.
+        recovery: pgrstRecoveryHint(ticketErr?.code, ticketErr?.message),
       },
       { status: 500 },
     )
@@ -250,4 +254,34 @@ function escapeHtml(s: string): string {
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
+}
+
+// Maps a PostgREST/Postgres SQLSTATE to a one-line operator hint. The
+// codes that matter for support_tickets inserts are below; any other
+// code surfaces a generic note + the raw SQLSTATE.
+function pgrstRecoveryHint(code?: string, msg?: string): string {
+  switch (code) {
+    case '42P01':
+      return 'support_tickets table is missing — apply migration 20240050_support_tickets.sql in the Supabase SQL editor.'
+    case '42703':
+      return 'a column referenced by the insert payload is missing — re-apply migration 20240050_support_tickets.sql.'
+    case '23502':
+      return 'NOT NULL violation on a column the route should be filling — check the payload + schema.'
+    case '23514':
+      return 'CHECK constraint violation (priority/status) — investigate which value drifted.'
+    case '23503':
+      return 'FK violation on user_id or assigned_to — the referenced auth.users row does not exist.'
+    case '42501':
+      return 'permission denied — service-role key is wrong or RLS is blocking; verify SUPABASE_SERVICE_ROLE_KEY in Vercel.'
+    case 'PGRST116':
+      return 'PostgREST: zero rows returned by .single() — possible schema cache miss; run NOTIFY pgrst, "reload schema".'
+    default:
+      if (msg && /relation .* does not exist/i.test(msg)) {
+        return 'support_tickets table is missing — apply migration 20240050_support_tickets.sql.'
+      }
+      if (msg && /column .* does not exist/i.test(msg)) {
+        return 'column drift — re-apply migration 20240050_support_tickets.sql.'
+      }
+      return code ? `unmapped SQLSTATE ${code}; check Supabase logs.` : 'no SQLSTATE returned — likely a network or client error.'
+  }
 }
