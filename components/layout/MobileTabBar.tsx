@@ -2,6 +2,23 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+
+// Role-aware destination for the bottom-right Account tab. Logged-out
+// users get /login; signed-in users go to their role's home so the tab
+// never sends an authenticated user back through the login page.
+//   parent   → /account
+//   educator → /classroom (auto-redirects to /classroom/educator when
+//             they have classes, otherwise lands on the setup page)
+//   student  → /classroom/student
+//   admin    → routed by their underlying role (typically /account);
+//             the admin dashboard remains reachable from the profile menu.
+function accountDestination(accountType: string | null | undefined): string {
+  if (accountType === 'student')  return '/classroom/student'
+  if (accountType === 'educator') return '/classroom'
+  return '/account'
+}
 
 const TABS = [
   {
@@ -41,20 +58,39 @@ const TABS = [
       </svg>
     ),
   },
-  {
-    label: 'Account',
-    href: '/login',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-      </svg>
-    ),
-  },
 ]
+
+const ACCOUNT_TAB = {
+  label: 'Account',
+  icon: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
+}
 
 export default function MobileTabBar() {
   const pathname = usePathname()
+  // SSR/first-paint default is /login; resolves to the role destination
+  // once the supabase session is read on the client. No hydration mismatch
+  // because the initial state matches the server-rendered HTML.
+  const [accountHref, setAccountHref] = useState<string>('/login')
+
+  useEffect(() => {
+    let cancelled = false
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      if (cancelled) return
+      const u = data.user
+      setAccountHref(u ? accountDestination(u.user_metadata?.account_type as string | undefined) : '/login')
+    })
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      const u = session?.user ?? null
+      setAccountHref(u ? accountDestination(u.user_metadata?.account_type as string | undefined) : '/login')
+    })
+    return () => { cancelled = true; sub.subscription.unsubscribe() }
+  }, [])
 
   function isActive(href: string) {
     if (href === '/') return pathname === '/'
@@ -86,6 +122,25 @@ export default function MobileTabBar() {
             </Link>
           )
         })}
+        {(() => {
+          const active = isActive(accountHref)
+          return (
+            <Link
+              key="account"
+              href={accountHref}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
+                active ? 'text-brand-500' : 'text-charcoal-light'
+              }`}
+            >
+              <span className={active ? 'text-brand-500' : 'text-charcoal-light'}>
+                {ACCOUNT_TAB.icon}
+              </span>
+              <span className="text-[10px] font-medium tracking-wide">
+                {ACCOUNT_TAB.label}
+              </span>
+            </Link>
+          )
+        })()}
       </div>
     </nav>
   )
