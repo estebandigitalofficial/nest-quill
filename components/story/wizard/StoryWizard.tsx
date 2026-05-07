@@ -178,6 +178,16 @@ export default function StoryWizard({
         return
       }
 
+      // Successful submission: the wizard tour (if active) treats this
+      // as the terminal action. Dispatching here — not on the submit-
+      // button click — guarantees the tour only completes when a real
+      // requestId came back, never on validation failure or 4xx/5xx.
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nq-tour-complete', {
+          detail: { tourKey: 'create_story_wizard' },
+        }))
+      }
+
       router.push(`/story/${json.requestId}`)
     } catch {
       setError('root', {

@@ -141,12 +141,21 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
 
   // Click-advance: when the active step says advance_on='click', listen
   // capture-phase for any click that matches advance_selector, and
-  // advance the tour when it fires. While we're in pendingNext mode
-  // (target not on screen yet), suppress click-advance so a stray click
-  // can't skip the step the user actually needs to perform.
+  // advance the tour when it fires.
+  //
+  // Two important suppressions:
+  //   1. pendingNext mode (target not on screen yet) — a stray click
+  //      shouldn't skip the action the user actually needs to perform.
+  //   2. The final step. The last step typically wraps the submit
+  //      button, but submission can fail validation server-side; we
+  //      don't want a click on Submit to mark the tour completed when
+  //      the story didn't actually go through. Completion of the last
+  //      step flows through the 'nq-tour-complete' window event,
+  //      dispatched by the page after a confirmed successful submit.
   useEffect(() => {
-    if (!step || step.advance_on !== 'click' || !step.advance_selector || pendingNext) {
-      setWaiting(false)
+    const isLastNow = !!tour && stepIdx === tour.steps.length - 1
+    if (!step || step.advance_on !== 'click' || !step.advance_selector || pendingNext || isLastNow) {
+      setWaiting(step?.advance_on === 'click' && isLastNow ? true : false)
       return
     }
     setWaiting(true)
@@ -163,7 +172,27 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
     return () => document.removeEventListener('click', onDocClick, true)
     // advance closes over stepIdx; we re-bind whenever step changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, pendingNext])
+  }, [step, pendingNext, tour, stepIdx])
+
+  // Submit-success completion. Pages that own a tour-terminal action
+  // (e.g. StoryWizard's POST /api/story/submit) dispatch
+  //   window.dispatchEvent(new CustomEvent('nq-tour-complete', { detail: { tourKey } }))
+  // after the action succeeds. The runner only acts when the event
+  // matches the active tourKey, so multiple tours on the same page (or
+  // unrelated dispatches) are safe.
+  useEffect(() => {
+    if (!active) return
+    function onComplete(e: Event) {
+      const detail = (e as CustomEvent<{ tourKey?: string }>).detail
+      if (!detail || detail.tourKey !== tourKey) return
+      setActive(false)
+      setGuestDismissed()
+      persist({ last_step: stepIdx + 1, completed: true })
+    }
+    window.addEventListener('nq-tour-complete', onComplete as EventListener)
+    return () => window.removeEventListener('nq-tour-complete', onComplete as EventListener)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, tourKey, stepIdx])
 
   if (!tour || !active || !step) return null
 
