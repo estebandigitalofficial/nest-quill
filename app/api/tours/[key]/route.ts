@@ -56,10 +56,13 @@ export async function GET(
   const admin = createAdminClient()
 
   // ── Stage 2: tour catalog row ──────────────────────────────────────
+  // Production schema uses guided_tours.tour_key (not `key`). The
+  // response still exposes the field as `key` so the frontend Tour
+  // type and TourRunner don't need to change.
   const { data: tourRow, error: tourErr } = await admin
     .from('guided_tours')
-    .select('id, key, title, description, page, enabled')
-    .eq('key', key)
+    .select('id, tour_key, title, description, page, enabled')
+    .eq('tour_key', key)
     .eq('enabled', true)
     .maybeSingle()
   if (tourErr) {
@@ -113,7 +116,8 @@ export async function GET(
 
   const tour: Tour = {
     id: tourRow.id as string,
-    key: tourRow.key as string,
+    // Map DB column tour_key → API field `key` for frontend compat.
+    key: tourRow.tour_key as string,
     title: tourRow.title as string,
     description: (tourRow.description as string | null) ?? null,
     page: (tourRow.page as string | null) ?? null,

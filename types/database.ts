@@ -342,7 +342,10 @@ export interface SupportTicketRow {
 
 export interface GuidedTourRow {
   id: string
-  key: string
+  /** Production schema column is `tour_key`. The API maps this to
+   * `Tour.key` for the frontend; only the DB-row type uses
+   * `tour_key`. */
+  tour_key: string
   title: string
   description: string | null
   page: string | null
