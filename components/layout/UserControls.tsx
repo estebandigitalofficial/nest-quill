@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { hasUnread, type Notification } from '@/lib/notifications/types'
 
 type Menu = 'notifications' | 'help' | 'settings' | null
 
@@ -14,6 +15,10 @@ interface UserSummary {
 
 export default function UserControls() {
   const [user, setUser] = useState<UserSummary | null | undefined>(undefined)
+  const [isAdmin, setIsAdmin] = useState(false)
+  // Notifications are typed for the day this becomes a real feed; the
+  // current implementation seeds an empty list so the empty state renders.
+  const [notifications] = useState<readonly Notification[]>([])
   const [open, setOpen] = useState<Menu>(null)
   const router = useRouter()
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -38,6 +43,18 @@ export default function UserControls() {
     })
     return () => { cancelled = true; sub.subscription.unsubscribe() }
   }, [])
+
+  // Admin status comes from the server (profiles.is_admin OR an env-allowlisted
+  // email). Cheap one-shot fetch; the route does its own auth-context check.
+  useEffect(() => {
+    if (!user) { setIsAdmin(false); return }
+    let cancelled = false
+    fetch('/api/auth/is-admin', { credentials: 'same-origin' })
+      .then((r) => (r.ok ? r.json() : { isAdmin: false }))
+      .then((data) => { if (!cancelled) setIsAdmin(!!data.isAdmin) })
+      .catch(() => { if (!cancelled) setIsAdmin(false) })
+    return () => { cancelled = true }
+  }, [user])
 
   // Click-outside + Escape close the open menu so the dropdowns behave like a
   // single mutually-exclusive control cluster.
@@ -75,16 +92,19 @@ export default function UserControls() {
   if (!user) return null
 
   const { email, accountType } = user
-  const settingsHref = accountType === 'student'
-    ? '/classroom/student'
-    : accountType === 'educator'
-      ? '/classroom/educator'
-      : '/account'
+  const isStudent = accountType === 'student'
+  const isEducator = accountType === 'educator'
+  const showClassroomLink = isStudent || isEducator
+  const showArchivedLink = !isStudent && !isEducator // archives only exist for parent accounts
+  const unread = hasUnread(notifications)
 
   return (
     <div ref={wrapperRef} className="flex items-center gap-1 relative">
-      <IconButton label="Notifications" active={open === 'notifications'} onClick={() => toggle('notifications')}>
+      <IconButton label={unread ? 'Notifications (unread)' : 'Notifications'} active={open === 'notifications'} onClick={() => toggle('notifications')}>
         <BellIcon />
+        {unread && (
+          <span aria-hidden className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-500 ring-2 ring-parchment" />
+        )}
       </IconButton>
       <IconButton label="Help" active={open === 'help'} onClick={() => toggle('help')}>
         <HelpIcon />
@@ -95,24 +115,55 @@ export default function UserControls() {
 
       {open === 'notifications' && (
         <Dropdown title="Notifications">
-          <p className="px-4 py-6 text-sm text-charcoal-light text-center">No notifications yet.</p>
+          {notifications.length === 0 ? (
+            <p className="px-4 py-6 text-sm text-charcoal-light text-center">No notifications yet.</p>
+          ) : (
+            <ul role="list" className="max-h-80 overflow-y-auto">
+              {notifications.map((n) => (
+                <li key={n.id}>
+                  {n.href ? (
+                    <Link
+                      href={n.href}
+                      onClick={() => setOpen(null)}
+                      className="block px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                      <NotificationRow n={n} />
+                    </Link>
+                  ) : (
+                    <div className="px-4 py-2.5"><NotificationRow n={n} /></div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </Dropdown>
       )}
 
       {open === 'help' && (
         <Dropdown title="Help & support">
           <DropdownLink href="/contact" onClick={() => setOpen(null)}>Contact support</DropdownLink>
-          <DropdownItem disabled>Help Center (coming soon)</DropdownItem>
-          <DropdownItem disabled>FAQ (coming soon)</DropdownItem>
+          <DropdownLink href="/pricing" onClick={() => setOpen(null)}>Plans &amp; pricing</DropdownLink>
+          <DropdownLink href="/privacy" onClick={() => setOpen(null)}>Privacy</DropdownLink>
+          <DropdownLink href="/terms" onClick={() => setOpen(null)}>Terms</DropdownLink>
         </Dropdown>
       )}
 
       {open === 'settings' && (
         <Dropdown title={email ?? 'Account'}>
-          <DropdownLink href="/account" onClick={() => setOpen(null)}>Account</DropdownLink>
-          <DropdownLink href={settingsHref} onClick={() => setOpen(null)}>
-            {accountType === 'student' ? 'My dashboard' : accountType === 'educator' ? 'My classes' : 'Profile & settings'}
-          </DropdownLink>
+          {showClassroomLink ? (
+            <DropdownLink href={isEducator ? '/classroom/educator' : '/classroom/student'} onClick={() => setOpen(null)}>
+              {isEducator ? 'My classes' : 'My dashboard'}
+            </DropdownLink>
+          ) : (
+            <>
+              <DropdownLink href="/account" onClick={() => setOpen(null)}>My stories</DropdownLink>
+              {showArchivedLink && (
+                <DropdownLink href="/account/archived" onClick={() => setOpen(null)}>Archived stories</DropdownLink>
+              )}
+            </>
+          )}
+          {isAdmin && (
+            <DropdownLink href="/admin" onClick={() => setOpen(null)}>Admin dashboard</DropdownLink>
+          )}
           <div className="border-t border-gray-100 my-1" />
           <button
             type="button"
@@ -122,6 +173,18 @@ export default function UserControls() {
           </button>
         </Dropdown>
       )}
+    </div>
+  )
+}
+
+function NotificationRow({ n }: { n: Notification }) {
+  return (
+    <div className="flex items-start gap-2.5">
+      {n.unread && <span aria-hidden className="mt-1.5 w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" />}
+      <div className="min-w-0 flex-1">
+        <p className={`text-sm leading-snug ${n.unread ? 'font-semibold text-charcoal' : 'text-charcoal-light'}`}>{n.title}</p>
+        {n.body && <p className="text-xs text-charcoal-light mt-0.5 line-clamp-2">{n.body}</p>}
+      </div>
     </div>
   )
 }
@@ -141,7 +204,7 @@ function IconButton({
       aria-label={label}
       aria-haspopup="menu"
       aria-expanded={active}
-      className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
+      className={`relative w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
         active ? 'bg-oxford/10 text-oxford' : 'text-charcoal-light hover:text-oxford hover:bg-oxford/5'
       }`}
     >
@@ -172,17 +235,6 @@ function DropdownLink({ href, onClick, children }: { href: string; onClick: () =
       className="block px-4 py-2 text-sm text-charcoal hover:bg-gray-50 hover:text-oxford transition-colors">
       {children}
     </Link>
-  )
-}
-
-function DropdownItem({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
-  return (
-    <div
-      role="menuitem"
-      aria-disabled={disabled}
-      className={`block px-4 py-2 text-sm ${disabled ? 'text-gray-300 cursor-default' : 'text-charcoal hover:bg-gray-50'}`}>
-      {children}
-    </div>
   )
 }
 
