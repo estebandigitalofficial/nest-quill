@@ -76,8 +76,12 @@ export default function ContactForm() {
       const json = await res.json().catch(() => ({}))
       // The API uses { error } for our own validation paths, but the
       // beta-ops gate (gateSupportIntake) returns { message, code }.
-      // Read either so the user sees the actual reason.
-      setErrorMsg(json.error ?? json.message ?? 'Something went wrong. Please try again.')
+      // Read either so the user sees the actual reason. While we're
+      // hardening the contact pipeline we also surface the diagnostic
+      // code to make production failures self-describing.
+      const baseMsg = json.error ?? json.message ?? 'Something went wrong. Please try again.'
+      const codeSuffix = json.code ? ` (code: ${json.code})` : ''
+      setErrorMsg(baseMsg + codeSuffix)
       setStatus('error')
     } catch {
       setErrorMsg("Couldn't reach the server. Check your connection and try again.")
