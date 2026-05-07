@@ -10,7 +10,7 @@ export default async function AdminToursPage() {
 
   const db = createAdminClient()
   const [{ data: tours, error: probeErr }, { data: steps }] = await Promise.all([
-    db.from('guided_tours').select('id, tour_key, title, description, page, enabled, updated_at').order('updated_at', { ascending: false }),
+    db.from('guided_tours').select('id, tour_key, name, description, enabled, updated_at').order('updated_at', { ascending: false }),
     db.from('guided_tour_steps').select('id, tour_id, step_order, target_selector, title, body, placement, advance_on, advance_selector, wait_message').order('step_order'),
   ])
 
@@ -53,9 +53,8 @@ export default async function AdminToursPage() {
               <div className="px-5 py-4 flex items-start justify-between gap-3 border-b border-adm-border">
                 <div className="min-w-0">
                   <p className="text-xs text-adm-subtle font-mono">{t.tour_key}</p>
-                  <p className="text-base font-semibold text-adm-text mt-0.5">{t.title}</p>
+                  <p className="text-base font-semibold text-adm-text mt-0.5">{(t as { name?: string }).name ?? '—'}</p>
                   {t.description && <p className="text-xs text-adm-muted mt-1">{t.description}</p>}
-                  {t.page && <p className="text-[11px] text-adm-subtle mt-1">page: <Link href={t.page} className="text-brand-400 hover:text-brand-300">{t.page}</Link></p>}
                 </div>
                 <TourEnableToggle tourId={t.id} initialEnabled={t.enabled} />
               </div>

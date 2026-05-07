@@ -56,12 +56,14 @@ export async function GET(
   const admin = createAdminClient()
 
   // ── Stage 2: tour catalog row ──────────────────────────────────────
-  // Production schema uses guided_tours.tour_key (not `key`). The
-  // response still exposes the field as `key` so the frontend Tour
-  // type and TourRunner don't need to change.
+  // Production columns are: id, tour_key, name, description, enabled
+  // (no `title`, no `page`). The API response still exposes Tour.key,
+  // Tour.title, and Tour.page so the frontend types stay stable —
+  // we map name → title and default page to '/create' (every tour
+  // we ship today runs there).
   const { data: tourRow, error: tourErr } = await admin
     .from('guided_tours')
-    .select('id, tour_key, title, description, page, enabled')
+    .select('id, tour_key, name, description, enabled')
     .eq('tour_key', key)
     .eq('enabled', true)
     .maybeSingle()
@@ -118,9 +120,13 @@ export async function GET(
     id: tourRow.id as string,
     // Map DB column tour_key → API field `key` for frontend compat.
     key: tourRow.tour_key as string,
-    title: tourRow.title as string,
+    // Map DB column `name` → API field `title`.
+    title: tourRow.name as string,
     description: (tourRow.description as string | null) ?? null,
-    page: (tourRow.page as string | null) ?? null,
+    // Production schema doesn't have a page column. Default to /create
+    // (the path the wizard tour runs on); a separate field can be
+    // wired later if/when we host tours on multiple routes.
+    page: '/create',
     steps,
   }
 

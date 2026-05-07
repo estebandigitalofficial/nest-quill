@@ -343,12 +343,11 @@ export interface SupportTicketRow {
 export interface GuidedTourRow {
   id: string
   /** Production schema column is `tour_key`. The API maps this to
-   * `Tour.key` for the frontend; only the DB-row type uses
-   * `tour_key`. */
+   * `Tour.key` for the frontend. */
   tour_key: string
-  title: string
+  /** Production column is `name`. The API maps this to Tour.title. */
+  name: string
   description: string | null
-  page: string | null
   enabled: boolean
   created_at: string
   updated_at: string
