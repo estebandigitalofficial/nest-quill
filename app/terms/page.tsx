@@ -1,10 +1,19 @@
 import Link from 'next/link'
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
+import { getSetting } from '@/lib/settings/appSettings'
 
 export const metadata = { title: 'Terms of Service — Nest & Quill' }
+// Re-read beta_mode_enabled on every request so an admin toggle takes
+// effect without a redeploy or page revalidation window.
+export const dynamic = 'force-dynamic'
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  // Beta clauses (free paid plans, paused illustrations, rapidly-changing
+  // features) only apply while the admin beta toggle is on. The non-beta
+  // copy is the steady-state text.
+  const betaMode = (await getSetting('beta_mode_enabled', false)) as boolean
+
   return (
     <div className="h-dvh bg-parchment flex flex-col">
       <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Back</Link>} />
@@ -13,7 +22,7 @@ export default function TermsPage() {
       <main className="max-w-3xl mx-auto px-6 py-14 space-y-10 w-full">
         <div>
           <h1 className="font-serif text-4xl text-oxford mb-3">Terms of Service</h1>
-          <p className="text-sm text-charcoal-light">Last updated: April 2026</p>
+          <p className="text-sm text-charcoal-light">Last updated: May 2026</p>
           <p className="text-sm text-charcoal-light mt-1">Nest &amp; Quill is operated by Bright Tale Books.</p>
         </div>
 
@@ -29,12 +38,37 @@ export default function TermsPage() {
           <p>Nest &amp; Quill is an AI-powered platform that provides:</p>
           <ul>
             <li>Personalized story generation with illustrations</li>
-            <li>Interactive learning tools (quizzes, flashcards, study guides, explanations, and practice tools)</li>
+            <li>
+              Interactive learning tools (quizzes, flashcards, matching, fill-in-the-blank, puzzles,
+              trivia, study guides, explanations, and practice tools)
+            </li>
             <li>Classroom features for educators and students</li>
             <li>Study tools that transform user-provided material into learning activities</li>
           </ul>
           <p>Content is generated using artificial intelligence based on user inputs and preferences.</p>
         </Section>
+
+        {betaMode && (
+          <Section title="Beta Period">
+            <p>The Service is currently in beta. During this period:</p>
+            <ul>
+              <li>
+                Paid plans may be available at no charge while we evaluate the experience. We will
+                notify users in advance before activating billing.
+              </li>
+              <li>
+                Some capabilities (such as automatic illustration generation) may be paused, limited,
+                or simulated to control infrastructure costs. Stories may deliver as text-only during
+                these windows.
+              </li>
+              <li>Features may be added, changed, or removed without prior notice.</li>
+            </ul>
+            <p>
+              We do our best to keep beta limitations transparent in the product UI and in transactional
+              emails.
+            </p>
+          </Section>
+        )}
 
         <Section title="Accounts">
           <p>You must provide accurate information when creating an account.</p>
@@ -55,10 +89,36 @@ export default function TermsPage() {
           </p>
         </Section>
 
+        <Section title="Classroom Use">
+          <p>
+            Educators may create classrooms, share a join code with students, and assign learning
+            activities. By creating a classroom, the educator confirms they are authorized by their
+            school, district, or family to enroll the participating students.
+          </p>
+          <p>Educators control:</p>
+          <ul>
+            <li>Which students join the classroom (via join code).</li>
+            <li>Which activities are assigned and the content backing those activities.</li>
+            <li>Removal of student submissions and removal of the classroom itself.</li>
+          </ul>
+          <p>
+            Students can review and complete only the activities the educator has assigned to them.
+            Students do not have access to other students&apos; submissions unless the educator enables
+            that within a specific feature.
+          </p>
+          <p>
+            Nest &amp; Quill may suspend or remove classrooms that violate these Terms or the Acceptable
+            Use policy.
+          </p>
+        </Section>
+
         <Section title="Payments and Refunds">
           <ul>
-            <li>Paid plans are billed in advance on a monthly or annual basis.</li>
-            <li>All payments are processed securely by Stripe.</li>
+            <li>Paid plans are billed in advance on a monthly, annual, or one-time basis.</li>
+            {betaMode && (
+              <li>During beta, paid plans may be free while we evaluate the experience.</li>
+            )}
+            <li>All payments are processed securely by Stripe. We do not store full credit card numbers on our servers.</li>
             <li>One-time story purchases are non-refundable once the story has been generated and delivered.</li>
             <li>Subscription plans may be cancelled at any time. Access continues through the end of the billing period.</li>
             <li>We reserve the right to change pricing with reasonable notice.</li>
@@ -75,6 +135,18 @@ export default function TermsPage() {
           </p>
           <p>
             Nest &amp; Quill retains ownership of the platform, AI systems, prompts, and underlying technology.
+          </p>
+        </Section>
+
+        <Section title="Archive and Deletion">
+          <p>
+            You may archive stories from your account; archived stories remain in our system in a
+            hidden state and can be restored.
+          </p>
+          <p>
+            To request permanent deletion of your account or of specific stories, contact us at the
+            email below. Permanent deletion removes content from active systems within 30 days,
+            subject to backup retention windows that may take slightly longer to roll over.
           </p>
         </Section>
 
