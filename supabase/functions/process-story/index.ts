@@ -7,7 +7,18 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')!
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
 const RESEND_FROM = Deno.env.get('RESEND_FROM_EMAIL') ?? 'stories@nestandquill.com'
-const APP_URL = Deno.env.get('NEXT_PUBLIC_APP_URL') ?? 'https://nestandquill.com'
+
+// Mirrors lib/utils/appUrl.ts — keep in sync. Vercel preview URLs leak
+// into NEXT_PUBLIC_APP_URL on previews; reject them so user-facing emails
+// always point at the canonical production host.
+const _APP_URL_RAW = Deno.env.get('NEXT_PUBLIC_APP_URL')?.trim()
+const APP_URL = (
+  _APP_URL_RAW
+  && /^https?:\/\//i.test(_APP_URL_RAW)
+  && !/\.vercel\.app(?:[\/:]|$)/i.test(_APP_URL_RAW)
+)
+  ? _APP_URL_RAW.replace(/\/+$/, '')
+  : 'https://www.nestandquill.com'
 const EXPECTED_TOKEN = Deno.env.get('EDGE_FUNCTION_SECRET') ?? SUPABASE_SERVICE_ROLE_KEY
 const SKIP_IMAGES = Deno.env.get('SKIP_IMAGE_GENERATION') === 'true'
 const MOCK_PIPELINE = Deno.env.get('MOCK_PIPELINE') === 'true'

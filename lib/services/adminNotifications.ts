@@ -1,5 +1,6 @@
 import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getAppUrl } from '@/lib/utils/appUrl'
 
 let _resend: Resend | null = null
 function getResend(): Resend {
@@ -8,7 +9,7 @@ function getResend(): Resend {
 }
 
 const FROM = 'Nest & Quill by Bright Tale Books <stories@nestandquill.com>'
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://nestandquill.com'
+const APP_URL = getAppUrl()
 
 export type AdminNotificationType =
   | 'story_completed'

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
+import { appUrl } from '@/lib/utils/appUrl'
 import { AuthError, NotFoundError, toApiError } from '@/lib/utils/errors'
 
 export async function POST(
@@ -10,9 +11,6 @@ export async function POST(
   try {
     const adminCtx = await getAdminContext()
     if (!adminCtx) throw new AuthError('Admin access required')
-
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL
-    if (!appUrl) throw new Error('NEXT_PUBLIC_APP_URL is not set')
 
     const { userId } = await params
     const supabase = createAdminClient()
@@ -29,7 +27,7 @@ export async function POST(
     const { error } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email,
-      options: { redirectTo: `${appUrl}/auth/callback` },
+      options: { redirectTo: appUrl('/auth/callback') },
     })
 
     if (error) throw new Error(error.message)

@@ -8,6 +8,7 @@ import { sendAdminNotification, buildStoryCompletedEmail, buildStoryFailedEmail 
 import type { StoryRequest } from '@/types/database'
 import type { StoryStatusResponse } from '@/types/story'
 import { getSetting } from '@/lib/settings/appSettings'
+import { appUrl } from '@/lib/utils/appUrl'
 
 export async function GET(request: NextRequest) {
   try {
@@ -109,7 +110,7 @@ export async function GET(request: NextRequest) {
         } else if (storyRequest.plan_tier !== 'free') {
           // No export yet — trigger PDF assembly in the background (Node.js, no CPU limit).
           // The generate-pdf route is idempotent; concurrent polls won't double-assemble.
-          const generatePdfUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/story/${requestId}/generate-pdf`
+          const generatePdfUrl = appUrl(`/api/story/${requestId}/generate-pdf`)
           const pdfSecret = process.env.EDGE_FUNCTION_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY
           after(async () => {
             try {
@@ -147,7 +148,7 @@ export async function GET(request: NextRequest) {
             .single()
 
           const storyTitle = (storyData as unknown as { title: string } | null)?.title ?? `${storyRequest.child_name}'s Story`
-          const storyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/story/${requestId}`
+          const storyUrl = appUrl(`/story/${requestId}`)
 
           after(async () => {
             try {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendBookReadyEmail } from '@/lib/services/email'
+import { appUrl } from '@/lib/utils/appUrl'
 
 export async function POST(request: NextRequest) {
   // Internal route — verify shared secret (same token used by Edge Function calls)
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     const storyTitle = (storyData as unknown as { title: string } | null)?.title
       ?? `${(storyReq as unknown as { child_name: string }).child_name}'s Story`
-    const storyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/story/${requestId}`
+    const storyUrl = appUrl(`/story/${requestId}`)
     const childName = (storyReq as unknown as { child_name: string }).child_name
     const toEmail = (storyReq as unknown as { user_email: string }).user_email
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendStoryDripEmail, sendSignupDripEmail, sendDripEmailFromTemplate } from '@/lib/services/email'
+import { getAppUrl } from '@/lib/utils/appUrl'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -47,7 +48,7 @@ export async function GET(req: NextRequest) {
     1, 3, 5, 7, // fallback
   ])].sort()
 
-  const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://nestandquill.com'
+  const APP_URL = getAppUrl()
 
   // ── Story drip ──────────────────────────────────────────────────────────────
   for (const step of storySteps) {

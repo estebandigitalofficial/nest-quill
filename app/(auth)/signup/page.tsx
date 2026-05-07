@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { appUrl } from '@/lib/utils/appUrl'
 import { Suspense } from 'react'
 
 type Role = 'parent' | 'educator' | 'student'
@@ -41,10 +42,10 @@ function SignupForm() {
       email,
       password,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=${
+        emailRedirectTo: appUrl(`/auth/callback?next=${
           role === 'educator' ? '/classroom/educator' :
           role === 'student'  ? '/classroom/student'  : '/account'
-        }`,
+        }`),
         data: { account_type: role },
       },
     })

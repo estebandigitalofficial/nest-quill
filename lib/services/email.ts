@@ -1,5 +1,6 @@
 import { Resend } from 'resend'
 import { getSetting } from '@/lib/settings/appSettings'
+import { appUrl, getAppUrl } from '@/lib/utils/appUrl'
 
 let _resend: Resend | null = null
 function getResend(): Resend {
@@ -133,7 +134,7 @@ export async function sendSubmissionConfirmationEmail(
   childName: string,
   requestId: string
 ): Promise<void> {
-  const storyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/story/${requestId}`
+  const storyUrl = appUrl(`/story/${requestId}`)
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -226,7 +227,7 @@ export async function sendSubmissionConfirmationEmail(
 
 // ── Shared email shell ────────────────────────────────────────────────────────
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://nestandquill.com'
+const APP_URL = getAppUrl()
 const FROM = 'Nest & Quill by Bright Tale Books <stories@nestandquill.com>'
 
 function emailShell(bodyContent: string): string {

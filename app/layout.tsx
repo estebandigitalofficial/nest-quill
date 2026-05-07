@@ -7,6 +7,7 @@ import FloatingToggles from '@/components/FloatingToggles'
 import ThemeProvider from '@/components/ThemeProvider'
 import { LanguageProvider } from '@/lib/i18n/context'
 import { getSetting } from '@/lib/settings/appSettings'
+import { getAppUrl } from '@/lib/utils/appUrl'
 
 const nunito = Nunito({
   subsets: ['latin'],
@@ -22,7 +23,7 @@ const playfair = Playfair_Display({
   display: 'swap',
 })
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+const APP_URL = getAppUrl()
 
 export async function generateMetadata(): Promise<Metadata> {
   const faviconUrl = await getSetting(
