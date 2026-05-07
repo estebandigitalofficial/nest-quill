@@ -105,6 +105,15 @@ export default function StoryWizard({ betaMode = false }: { betaMode?: boolean }
     // preserved so the user starts from where they were.
     setPlanPreselected(false)
     setStep(0)
+    // Strip ?plan= from the URL so a refresh doesn't re-apply the
+    // preselection the user just opted out of. Other params (e.g.
+    // ?mode=learning) are preserved.
+    if (searchParams.get('plan')) {
+      const next = new URLSearchParams(searchParams.toString())
+      next.delete('plan')
+      const qs = next.toString()
+      router.replace(qs ? `/create?${qs}` : '/create', { scroll: false })
+    }
   }
 
   async function handleNext() {
