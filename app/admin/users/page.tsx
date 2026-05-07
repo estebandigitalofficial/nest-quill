@@ -10,7 +10,7 @@ import type { Profile, PlanTier } from '@/types/database'
 import { formatAZTimeShort } from '@/lib/utils/formatTime'
 
 interface PageProps {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; plan?: string }>
 }
 
 const PLAN_BADGE: Record<PlanTier, string> = {
@@ -21,27 +21,71 @@ const PLAN_BADGE: Record<PlanTier, string> = {
   educator: 'bg-teal-900 text-teal-300',
 }
 
+// Filter values the page accepts on `?plan=`. 'all' is the default and
+// is also represented by the absence of the param. 'admin' filters by
+// profiles.is_admin = true regardless of plan_tier; everything else
+// matches profiles.plan_tier directly.
+const FILTER_VALUES = ['all', 'free', 'single', 'story_pack', 'story_pro', 'educator', 'admin'] as const
+type FilterValue = (typeof FILTER_VALUES)[number]
+
+const FILTER_LABELS: Record<FilterValue, string> = {
+  all: 'All',
+  free: 'Free',
+  single: 'Single',
+  story_pack: 'Story Pack',
+  story_pro: 'Story Pro',
+  educator: 'Educators',
+  admin: 'Admins',
+}
+
+function parseFilter(raw: string | undefined): FilterValue {
+  if (!raw) return 'all'
+  return (FILTER_VALUES as readonly string[]).includes(raw) ? (raw as FilterValue) : 'all'
+}
+
 export default async function AdminUsersPage({ searchParams }: PageProps) {
   const ctx = await getAdminContext()
   if (!ctx) return null
   const currentUserId = ctx.userId
 
-  const { q } = await searchParams
+  const { q, plan: planRaw } = await searchParams
+  const filter = parseFilter(planRaw)
   const adminSupabase = createAdminClient()
 
-  // ── Counts ────────────────────────────────────────────────────────────────
-  const { count: totalUsers } = await adminSupabase
-    .from('profiles')
-    .select('id', { count: 'exact', head: true })
+  // ── Counts (per-filter chip + the existing summary cards) ────────────────
+  // All counts are head:true so PostgREST returns a count from the planner
+  // without fetching rows. Parallel.
+  const [
+    { count: totalUsers },
+    { count: paidUsers },
+    { count: activeUsers },
+    { count: countFree },
+    { count: countSingle },
+    { count: countStoryPack },
+    { count: countStoryPro },
+    { count: countEducator },
+    { count: countAdmin },
+  ] = await Promise.all([
+    adminSupabase.from('profiles').select('id', { count: 'exact', head: true }),
+    adminSupabase.from('profiles').select('id', { count: 'exact', head: true }).neq('plan_tier', 'free'),
+    adminSupabase.from('story_requests').select('id', { count: 'exact', head: true }),
+    adminSupabase.from('profiles').select('id', { count: 'exact', head: true }).eq('plan_tier', 'free'),
+    adminSupabase.from('profiles').select('id', { count: 'exact', head: true }).eq('plan_tier', 'single'),
+    adminSupabase.from('profiles').select('id', { count: 'exact', head: true }).eq('plan_tier', 'story_pack'),
+    adminSupabase.from('profiles').select('id', { count: 'exact', head: true }).eq('plan_tier', 'story_pro'),
+    adminSupabase.from('profiles').select('id', { count: 'exact', head: true }).eq('plan_tier', 'educator'),
+    adminSupabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_admin', true),
+  ])
 
-  const { count: paidUsers } = await adminSupabase
-    .from('profiles')
-    .select('id', { count: 'exact', head: true })
-    .neq('plan_tier', 'free')
-
-  const { count: activeUsers } = await adminSupabase
-    .from('story_requests')
-    .select('id', { count: 'exact', head: true })
+  const filterCounts: Record<FilterValue, number> = {
+    all:        totalUsers ?? 0,
+    free:       countFree ?? 0,
+    single:     countSingle ?? 0,
+    story_pack: countStoryPack ?? 0,
+    story_pro:  countStoryPro ?? 0,
+    educator:   countEducator ?? 0,
+    admin:      countAdmin ?? 0,
+  }
 
   // ── Users list ────────────────────────────────────────────────────────────
   // Fetch auth.users for real created_at — profiles.created_at is unreliable
@@ -57,6 +101,12 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
     .limit(100)
 
   if (q) query = query.ilike('email', `%${q}%`)
+  if (filter === 'admin') {
+    query = query.eq('is_admin', true)
+  } else if (filter !== 'all') {
+    // free / single / story_pack / story_pro / educator → straight tier match
+    query = query.eq('plan_tier', filter)
+  }
 
   const { data: users } = await query
 
@@ -75,6 +125,15 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
   const authLastLogin = new Map(
     (authUsersData?.users ?? []).map(u => [u.id, u.last_sign_in_at ?? null])
   )
+
+  // href helper for filter chips — preserves the current ?q= search.
+  function filterHref(value: FilterValue): string {
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    if (value !== 'all') params.set('plan', value)
+    const qs = params.toString()
+    return qs ? `/admin/users?${qs}` : '/admin/users'
+  }
 
   const rows = (users ?? []).map(u => {
     const meta = authMeta.get(u.id)
@@ -105,6 +164,31 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
             Registered users
           </h2>
           <div className="space-y-4">
+            {/* Plan-tier filter chips — server-rendered Links so the
+                filter persists in the URL and survives reload/share. */}
+            <div className="flex flex-wrap gap-2">
+              {FILTER_VALUES.map((value) => {
+                const active = filter === value
+                const count = filterCounts[value]
+                return (
+                  <Link
+                    key={value}
+                    href={filterHref(value)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                      active
+                        ? 'bg-brand-500 border-brand-500 text-white'
+                        : 'bg-adm-surface border-adm-border text-adm-muted hover:border-brand-600 hover:text-white'
+                    }`}
+                  >
+                    <span>{FILTER_LABELS[value]}</span>
+                    <span className={`text-[10px] tabular-nums ${active ? 'text-white/80' : 'text-adm-subtle'}`}>
+                      {count}
+                    </span>
+                  </Link>
+                )
+              })}
+            </div>
+
             <Suspense>
               <AdminUserSearch defaultValue={q ?? ''} />
             </Suspense>
@@ -179,7 +263,11 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                     {rows.length === 0 && (
                       <tr>
                         <td colSpan={6} className="px-4 py-8 text-center text-adm-subtle">
-                          {q ? 'No users match that search.' : 'No users yet.'}
+                          {q
+                            ? 'No users match that search.'
+                            : filter !== 'all'
+                            ? `No ${FILTER_LABELS[filter].toLowerCase()} match the current view.`
+                            : 'No users yet.'}
                         </td>
                       </tr>
                     )}
