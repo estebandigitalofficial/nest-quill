@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useFormContext } from 'react-hook-form'
 import type { StoryFormValues } from '@/lib/validators/story-form'
 import { ILLUSTRATION_STYLES } from '@/types/story'
@@ -12,6 +13,7 @@ import {
   SETTING_META,
   CONFLICT_META,
   GOAL_META,
+  themeBgUrl,
 } from '../cards'
 import type { AgeTier, Trait, Setting, Conflict, Goal } from '@/lib/validators/story-form'
 
@@ -45,10 +47,24 @@ export default function ReviewStep() {
 
       {/* Hero theme card — visual at-a-glance preview. Falls back to a
           plain card when the user typed a custom theme (no setting). */}
-      {themeMeta ? (
+      {themeMeta && values.setting ? (
         <div className="relative overflow-hidden rounded-2xl border border-gray-100 aspect-[5/2] sm:aspect-[5/1.6]">
           <div className={cn('absolute inset-0 bg-gradient-to-br', themeMeta.gradient)} />
-          {themeMeta.art}
+          {(() => {
+            const bg = themeBgUrl(values.setting as Setting)
+            return bg ? (
+              <Image
+                src={bg}
+                alt=""
+                fill
+                sizes="(max-width: 640px) 100vw, 560px"
+                className="object-cover"
+                priority
+              />
+            ) : (
+              themeMeta.art
+            )
+          })()}
           <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
           <div className="relative h-full flex flex-col justify-end p-4">
             <p className="text-xs uppercase tracking-wider text-white/80">Theme</p>

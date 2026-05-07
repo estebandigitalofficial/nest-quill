@@ -5,6 +5,7 @@
 // for back-compat with the synthesizer and DB column. Animations are pure
 // CSS (see globals.css) and respect prefers-reduced-motion.
 
+import Image from 'next/image'
 import { cn } from '@/lib/utils/cn'
 import type {
   AgeTier,
@@ -87,9 +88,28 @@ export function TraitChip({
   )
 }
 
-// ── Themes (storybook-style cards with idle CSS animation) ──
+// ── Themes (illustrated artwork with CSS-art fallback) ──
 // Internal id stays `Setting` to keep the synthesizer + DB column
 // stable; the user sees them as "themes" everywhere.
+//
+// Artwork pipeline:
+//   1. Drop a real illustrated image at /public/images/themes/<setting>.webp
+//      (recommended: 1200×900 painterly storybook style, sRGB, ~120 KB)
+//   2. Add the setting key to THEMES_WITH_ARTWORK below.
+//   3. The card automatically switches from CSS art → real artwork.
+//
+// Until artwork lands, themes keep the existing layered CSS art so the
+// wizard always looks finished. The gradient + dark overlay always render
+// underneath so labels stay readable in either mode.
+const THEMES_WITH_ARTWORK = new Set<Setting>([
+  // Add keys here as artwork is added to /public/images/themes/<key>.webp:
+  // 'jungle', 'space', 'ocean', 'school', 'fantasy_kingdom', 'city',
+])
+
+export function themeBgUrl(setting: Setting): string | null {
+  return THEMES_WITH_ARTWORK.has(setting) ? `/images/themes/${setting}.webp` : null
+}
+
 interface ThemePalette {
   label: string
   gradient: string
@@ -231,6 +251,7 @@ export function SettingCard({
   setting, active, onClick,
 }: { setting: Setting; active: boolean; onClick: () => void }) {
   const meta = SETTING_META[setting]
+  const bgUrl = themeBgUrl(setting)
   return (
     <button
       type="button"
@@ -241,8 +262,20 @@ export function SettingCard({
           ? 'border-brand-500 ring-2 ring-brand-200'
           : 'border-transparent hover:border-gray-300'
       )}>
+      {/* Gradient is always present so labels stay readable even if the
+          image 404s or hasn't loaded yet — and as a backdrop for CSS art. */}
       <div className={cn('absolute inset-0 bg-gradient-to-br', meta.gradient)} />
-      {meta.art}
+      {bgUrl ? (
+        <Image
+          src={bgUrl}
+          alt=""
+          fill
+          sizes="(max-width: 640px) 50vw, 200px"
+          className="object-cover"
+        />
+      ) : (
+        meta.art
+      )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
       <div className="relative p-3 h-full flex flex-col justify-end">
         <p className="text-white font-semibold text-sm drop-shadow">{meta.label}</p>
