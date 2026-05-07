@@ -43,8 +43,9 @@ export default function ReviewStep() {
         <p className="text-sm text-gray-500 mt-1">{r.sub}</p>
       </div>
 
-      {/* Hero theme card — visual at-a-glance preview */}
-      {themeMeta && (
+      {/* Hero theme card — visual at-a-glance preview. Falls back to a
+          plain card when the user typed a custom theme (no setting). */}
+      {themeMeta ? (
         <div className="relative overflow-hidden rounded-2xl border border-gray-100 aspect-[5/2] sm:aspect-[5/1.6]">
           <div className={cn('absolute inset-0 bg-gradient-to-br', themeMeta.gradient)} />
           {themeMeta.art}
@@ -57,7 +58,12 @@ export default function ReviewStep() {
             )}
           </div>
         </div>
-      )}
+      ) : values.storyTheme ? (
+        <div className="rounded-2xl border border-gray-100 bg-gradient-to-br from-amber-50 to-rose-50 p-4">
+          <p className="text-[11px] uppercase tracking-wider text-gray-500">Theme</p>
+          <p className="text-gray-900 font-serif text-base mt-1 leading-snug">{values.storyTheme}</p>
+        </div>
+      ) : null}
 
       {/* Chip grid: traits / conflict / goal / tone */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

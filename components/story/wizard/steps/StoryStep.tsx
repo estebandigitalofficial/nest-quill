@@ -52,6 +52,7 @@ export default function StoryStep() {
     register,
     watch,
     setValue,
+    getValues,
     formState: { errors },
   } = useFormContext<StoryFormValues>()
 
@@ -65,7 +66,14 @@ export default function StoryStep() {
   const selectedGoal = watch('goal') as Goal | undefined
   const customTrait = watch('customTrait') as string | undefined
 
-  const [showCustomTheme, setShowCustomTheme] = useState(false)
+  // Derive initial state from form values so the custom-theme input stays
+  // open when the user navigates away from this step and comes back. A
+  // populated storyTheme with no setting selected means the user is in
+  // custom mode.
+  const [showCustomTheme, setShowCustomTheme] = useState<boolean>(() => {
+    const v = getValues()
+    return !v.setting && !!v.storyTheme && v.storyTheme.trim().length > 0
+  })
   const [showCustomTrait, setShowCustomTrait] = useState<boolean>(!!customTrait)
 
   const tones = tonesForTier(ageTier, learningMode)
@@ -139,9 +147,13 @@ export default function StoryStep() {
         <button
           type="button"
           onClick={() => {
+            // Only blank the theme when leaving an actual selection — re-clicking
+            // while already in custom mode must not erase the user's typed text.
+            if (!showCustomTheme && selectedSetting) {
+              setValue('setting', undefined)
+              setValue('storyTheme', '', { shouldValidate: false })
+            }
             setShowCustomTheme(true)
-            setValue('setting', undefined)
-            setValue('storyTheme', '', { shouldValidate: false })
           }}
           className={cn(
             'mt-3 text-xs font-semibold transition-colors',

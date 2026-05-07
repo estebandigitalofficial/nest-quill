@@ -214,13 +214,13 @@ export const SETTING_META: Record<Setting, ThemePalette> = {
         <span aria-hidden className="absolute bottom-0 left-1 w-6 h-12 bg-slate-900/80" />
         <span aria-hidden className="absolute bottom-0 left-8 w-8 h-16 bg-slate-950/80" />
         <span aria-hidden className="absolute bottom-0 left-16 w-5 h-10 bg-slate-900/80" />
-        <span aria-hidden className="absolute bottom-0 left-22 w-7 h-14 bg-slate-950/80" />
+        <span aria-hidden className="absolute bottom-0 left-[5.5rem] w-7 h-14 bg-slate-950/80" />
         <span aria-hidden className="absolute bottom-0 right-12 w-6 h-12 bg-slate-900/80" />
         <span aria-hidden className="absolute bottom-0 right-3 w-5 h-9 bg-slate-950/80" />
         {/* lit windows */}
         <span aria-hidden className="absolute bottom-6 left-3 w-1 h-1 bg-amber-200" />
         <span aria-hidden className="absolute bottom-9 left-10 w-1 h-1 bg-amber-200 nq-twinkle" />
-        <span aria-hidden className="absolute bottom-8 left-19 w-1 h-1 bg-amber-200" />
+        <span aria-hidden className="absolute bottom-8 left-[4.75rem] w-1 h-1 bg-amber-200" />
         <span aria-hidden className="absolute bottom-5 right-14 w-1 h-1 bg-amber-200 nq-twinkle" style={{ animationDelay: '0.6s' }} />
       </>
     ),
