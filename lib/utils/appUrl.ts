@@ -10,7 +10,7 @@
 //
 // Local dev: set NEXT_PUBLIC_APP_URL=http://localhost:3000 in .env.local.
 
-const PROD_URL = 'https://www.nestandquill.com'
+const PROD_URL = 'https://nestandquill.com'
 
 function isUsable(url: string): boolean {
   if (!/^https?:\/\//i.test(url)) return false

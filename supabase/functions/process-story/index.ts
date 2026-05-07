@@ -18,7 +18,7 @@ const APP_URL = (
   && !/\.vercel\.app(?:[\/:]|$)/i.test(_APP_URL_RAW)
 )
   ? _APP_URL_RAW.replace(/\/+$/, '')
-  : 'https://www.nestandquill.com'
+  : 'https://nestandquill.com'
 const EXPECTED_TOKEN = Deno.env.get('EDGE_FUNCTION_SECRET') ?? SUPABASE_SERVICE_ROLE_KEY
 const SKIP_IMAGES = Deno.env.get('SKIP_IMAGE_GENERATION') === 'true'
 const MOCK_PIPELINE = Deno.env.get('MOCK_PIPELINE') === 'true'
