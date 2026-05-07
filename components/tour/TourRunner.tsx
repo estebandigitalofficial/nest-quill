@@ -28,6 +28,9 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
   const [active, setActive] = useState(false)
   const [stepIdx, setStepIdx] = useState(0)
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
+  // True when the real target wasn't on screen and we pivoted to spotlighting
+  // the wizard's Next button instead. The popover swaps copy in this mode.
+  const [pendingNext, setPendingNext] = useState(false)
   const [waiting, setWaiting] = useState(false) // true while we're listening for a click
   const cancelledRef = useRef(false)
 
@@ -70,24 +73,56 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
     return tour.steps[stepIdx] ?? null
   }, [tour, active, stepIdx])
 
-  // Resolve target rect; re-measure on resize/scroll/poll. Centred steps
-  // and steps whose target isn't on the page yet just leave rect null.
+  // Resolve target rect; re-measure on resize/scroll/poll.
+  //
+  // Resolution order, per measurement:
+  //   1. The step's real target_selector. If it resolves, spotlight that
+  //      and clear the pendingNext flag.
+  //   2. The wizard's Next button (data-tour-id="wizard-next"). Used when
+  //      the real target hasn't appeared yet because the wizard is on an
+  //      earlier step. We spotlight Next so the user knows what to click;
+  //      the popover swaps to "Click Next to continue" copy.
+  //   3. Nothing — for centred steps (target_selector === null) and
+  //      genuine missing-target situations (logged in dev).
   useEffect(() => {
-    if (!step || !step.target_selector) { setTargetRect(null); return }
+    // Centred steps short-circuit immediately.
+    if (!step || !step.target_selector) {
+      setTargetRect(null)
+      setPendingNext(false)
+      return
+    }
     const sel = step.target_selector
     let raf = 0
+    let warnedMissing = false
+
     function measure() {
       const el = document.querySelector(sel)
       if (el instanceof HTMLElement) {
         const r = el.getBoundingClientRect()
         setTargetRect(r)
+        setPendingNext(false)
         if (r.top < 60 || r.bottom > window.innerHeight - 60) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }
-      } else {
-        setTargetRect(null)
+        return
+      }
+      // Real target missing → try the wizard-next fallback so the tour
+      // can guide the user one screen further instead of going centred.
+      const nextBtn = document.querySelector('[data-tour-id="wizard-next"]')
+      if (nextBtn instanceof HTMLElement) {
+        setTargetRect(nextBtn.getBoundingClientRect())
+        setPendingNext(true)
+        return
+      }
+      setTargetRect(null)
+      setPendingNext(false)
+      if (process.env.NODE_ENV !== 'production' && !warnedMissing) {
+        warnedMissing = true
+        // eslint-disable-next-line no-console
+        console.warn(`[TourRunner] selector did not resolve and no wizard-next fallback present: ${sel}`)
       }
     }
+
     measure()
     function onResize() {
       cancelAnimationFrame(raf)
@@ -106,10 +141,11 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
 
   // Click-advance: when the active step says advance_on='click', listen
   // capture-phase for any click that matches advance_selector, and
-  // advance the tour when it fires. Capture-phase ensures we observe
-  // the click even if the target stops propagation.
+  // advance the tour when it fires. While we're in pendingNext mode
+  // (target not on screen yet), suppress click-advance so a stray click
+  // can't skip the step the user actually needs to perform.
   useEffect(() => {
-    if (!step || step.advance_on !== 'click' || !step.advance_selector) {
+    if (!step || step.advance_on !== 'click' || !step.advance_selector || pendingNext) {
       setWaiting(false)
       return
     }
@@ -117,7 +153,6 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
     const sel = step.advance_selector
     function onDocClick(e: MouseEvent) {
       const path = e.composedPath ? e.composedPath() : []
-      // Check the path so a click on a child of the matching element still counts.
       const matched = (path.length > 0 ? path : [e.target as EventTarget])
         .some(node => node instanceof Element && node.matches?.(sel))
       if (!matched) return
@@ -128,7 +163,7 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
     return () => document.removeEventListener('click', onDocClick, true)
     // advance closes over stepIdx; we re-bind whenever step changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step])
+  }, [step, pendingNext])
 
   if (!tour || !active || !step) return null
 
@@ -177,6 +212,7 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
       targetRect={targetRect}
       isLast={isLast}
       waitingForClick={waiting}
+      pendingNext={pendingNext}
       onNext={advance}
       onBack={back}
       onSkip={skip}

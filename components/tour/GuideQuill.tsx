@@ -28,6 +28,8 @@ interface Props {
   isLast: boolean
   /** True when the tour is listening for a click on advance_selector. */
   waitingForClick: boolean
+  /** True when the real target isn't on screen and we're spotlighting the wizard's Next button instead. */
+  pendingNext: boolean
   onNext: () => void
   onBack: () => void
   onSkip: () => void
@@ -36,8 +38,17 @@ interface Props {
 type Placement = 'top' | 'bottom' | 'center'
 
 export default function GuideQuill(props: Props) {
-  const { step, stepIdx, totalSteps, targetRect, isLast, waitingForClick, onNext, onBack, onSkip } = props
+  const { step, stepIdx, totalSteps, targetRect, isLast, waitingForClick, pendingNext, onNext, onBack, onSkip } = props
   const centred = !targetRect || step.placement === 'center'
+
+  // When we've pivoted to the wizard's Next button, override the body
+  // copy to make the action unambiguous. The original step body would
+  // describe the still-hidden target and confuse the user.
+  const displayBody = pendingNext
+    ? "We're not there yet. Click Next below and I'll point at the next thing."
+    : step.body
+  const showWaitMessage = waitingForClick && !pendingNext && !!step.wait_message
+  const showNextButton = step.advance_on === 'next_button' || pendingNext
 
   // Pick a placement (top vs bottom) based on available room.
   const placement: Placement = (() => {
@@ -115,9 +126,9 @@ export default function GuideQuill(props: Props) {
           <p className="font-serif text-base text-oxford leading-snug">{step.title}</p>
         </div>
 
-        <p className="text-sm text-charcoal mt-2 leading-relaxed">{step.body}</p>
+        <p className="text-sm text-charcoal mt-2 leading-relaxed">{displayBody}</p>
 
-        {waitingForClick && step.wait_message && (
+        {showWaitMessage && (
           <p className="mt-3 text-xs text-brand-700 bg-brand-50 border border-brand-200 rounded-lg px-3 py-2">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand-500 mr-1.5 align-middle nq-twinkle" />
             {step.wait_message}
@@ -133,7 +144,7 @@ export default function GuideQuill(props: Props) {
             Skip tour
           </button>
           <div className="flex items-center gap-2">
-            {stepIdx > 0 && (
+            {stepIdx > 0 && !pendingNext && (
               <button
                 type="button"
                 onClick={onBack}
@@ -142,7 +153,14 @@ export default function GuideQuill(props: Props) {
                 Back
               </button>
             )}
-            {step.advance_on === 'next_button' && (
+            {/* In pendingNext mode the user advances by clicking the
+                wizard's Next button (which the spotlight is pointing
+                at). We deliberately do not show the tour's own Next
+                button here — the wizard Next is the real action, and
+                detecting it via the polling/measure cycle is what
+                advances the tour. The popover's tour-Next is shown
+                only for genuine next_button steps. */}
+            {showNextButton && !pendingNext && (
               <button
                 type="button"
                 onClick={onNext}
@@ -184,11 +202,19 @@ function positions(targetRect: DOMRect | null, placement: Placement): {
   }
 
   const r = targetRect
+  // Reserve space at the bottom for the mobile tab bar (h-14 ≈ 56 px)
+  // plus a touch of padding so the popover never overlaps it.
+  const BOTTOM_RESERVE = 72
+  const POPOVER_H_GUESS = 200
+
   const popoverLeft = Math.max(16, Math.min(window.innerWidth - POPOVER_W - 16, r.left + r.width / 2 - POPOVER_W / 2))
   const targetCenterX = r.left + r.width / 2
+  const clampedQuillLeft = Math.max(8, Math.min(window.innerWidth - QUILL_SIZE - 8, targetCenterX - QUILL_SIZE / 2))
 
   if (placement === 'bottom') {
-    const popoverTop = Math.min(window.innerHeight - 16, r.bottom + 18)
+    const popoverTopRaw = r.bottom + 18
+    const popoverTop = Math.max(16, Math.min(window.innerHeight - BOTTOM_RESERVE - POPOVER_H_GUESS, popoverTopRaw))
+    const quillTop = Math.max(8, Math.min(window.innerHeight - QUILL_SIZE - BOTTOM_RESERVE, r.bottom + 4))
     return {
       popoverStyle: {
         position: 'fixed',
@@ -199,8 +225,8 @@ function positions(targetRect: DOMRect | null, placement: Placement): {
       },
       quillStyle: {
         position: 'fixed',
-        top: r.bottom + 4,
-        left: targetCenterX - QUILL_SIZE / 2,
+        top: quillTop,
+        left: clampedQuillLeft,
       },
       arrowStyle: {
         top: -7,
@@ -212,8 +238,9 @@ function positions(targetRect: DOMRect | null, placement: Placement): {
   }
 
   // placement === 'top'
-  const popoverHeightGuess = 180
-  const popoverTop = Math.max(16, r.top - 18 - popoverHeightGuess)
+  const popoverTopRaw = r.top - 18 - POPOVER_H_GUESS
+  const popoverTop = Math.max(16, Math.min(window.innerHeight - BOTTOM_RESERVE - POPOVER_H_GUESS, popoverTopRaw))
+  const quillTop = Math.max(8, Math.min(window.innerHeight - QUILL_SIZE - 8, r.top - QUILL_SIZE - 4))
   return {
     popoverStyle: {
       position: 'fixed',
@@ -224,8 +251,8 @@ function positions(targetRect: DOMRect | null, placement: Placement): {
     },
     quillStyle: {
       position: 'fixed',
-      top: r.top - QUILL_SIZE - 4,
-      left: targetCenterX - QUILL_SIZE / 2,
+      top: quillTop,
+      left: clampedQuillLeft,
     },
     arrowStyle: {
       bottom: -7,

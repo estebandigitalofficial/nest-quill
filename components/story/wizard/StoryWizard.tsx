@@ -322,6 +322,7 @@ export default function StoryWizard({
             </button>
           ) : (
             <button
+              data-tour-id="wizard-next"
               type="button"
               onClick={handleNext}
               className="flex-1 py-3.5 px-6 rounded-xl font-semibold text-white text-base bg-brand-500 hover:bg-brand-600 active:scale-[0.99] transition-all"
