@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { calcXP, xpToLevel } from '@/lib/utils/xp'
 import { triggerStoryReward } from '@/lib/services/storyReward'
 import { sendAdminNotification, buildAssignmentCompletedEmail } from '@/lib/services/adminNotifications'
+import { createNotification } from '@/lib/notifications/createNotification'
 
 type RouteContext = { params: Promise<{ assignmentId: string }> }
 
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     // Get assignment for tool type + config
     const { data: assignment } = await admin
       .from('assignments')
-      .select('id, title, tool, classroom_id, config, classrooms(name)')
+      .select('id, title, tool, classroom_id, config, classrooms(name, educator_id)')
       .eq('id', assignmentId)
       .single()
 
@@ -186,6 +187,32 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         await sendAdminNotification('assignment_completed', subject, html)
       } catch { /* non-blocking */ }
     })
+
+    // Bell notification for the educator who owns the classroom. Deduped
+    // by (educator_id, type, href) — href encodes assignment + student
+    // so each (assignment, student) submission lands as exactly one
+    // notification, even if the student resubmits.
+    const classroomMeta = (assignment.classrooms as unknown as { name: string; educator_id: string | null } | null)
+    const educatorId = classroomMeta?.educator_id ?? null
+    const classroomId = (assignment as unknown as { classroom_id: string }).classroom_id
+    const assignmentTitle = (assignment as unknown as { title: string }).title ?? 'an assignment'
+    const studentName = profile?.display_name ?? 'A student'
+    if (educatorId) {
+      after(async () => {
+        try {
+          await createNotification({
+            userId: educatorId,
+            type: 'assignment_submitted',
+            title: 'Assignment submitted',
+            body: `${studentName} submitted ${assignmentTitle}.`,
+            href: `/classroom/educator/${classroomId}?a=${assignmentId}&s=${user.id}`,
+            dedupe: true,
+          })
+        } catch (err) {
+          console.error('[submit] educator notification failed (non-fatal)', err)
+        }
+      })
+    }
 
     return NextResponse.json({
       submission,

@@ -9,6 +9,7 @@ import type { StoryRequest } from '@/types/database'
 import type { StoryStatusResponse } from '@/types/story'
 import { getSetting } from '@/lib/settings/appSettings'
 import { appUrl } from '@/lib/utils/appUrl'
+import { createNotification } from '@/lib/notifications/createNotification'
 
 export async function GET(request: NextRequest) {
   try {
@@ -238,6 +239,27 @@ export async function GET(request: NextRequest) {
             })
             await sendAdminNotification('story_failed', subject, html, { requestId })
           } catch { /* non-blocking */ }
+        })
+      }
+
+      // User-facing bell notification — only for logged-in users with a
+      // user_id. Deduped on (user_id, type, href) so repeated polls
+      // against a failed story don't pile up rows.
+      const failedUserId = (storyRequest as unknown as { user_id: string | null }).user_id
+      if (failedUserId) {
+        after(async () => {
+          try {
+            await createNotification({
+              userId: failedUserId,
+              type: 'story_failed',
+              title: 'Story generation needs attention',
+              body: 'Something went wrong while creating your story. You can retry it now.',
+              href: `/story/${requestId}`,
+              dedupe: true,
+            })
+          } catch (err) {
+            console.error('[status] story_failed notification failed:', requestId, err)
+          }
         })
       }
     }

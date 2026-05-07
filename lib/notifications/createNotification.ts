@@ -25,15 +25,44 @@ export interface CreateNotificationArgs {
   body?: string | null
   /** Click target; relative or absolute. */
   href?: string | null
+  /**
+   * When true, skip the insert if a notification already exists with the
+   * same (user_id, type, href). Used by hooks that may fire more than
+   * once for the same event (poll loops, retried completions). Requires
+   * userId + href.
+   *
+   * Race-tolerant only: two concurrent inserts could both pass the
+   * pre-check and create two rows. Acceptable for current volumes.
+   */
+  dedupe?: boolean
 }
 
-export async function createNotification(args: CreateNotificationArgs): Promise<{ id: string }> {
+export interface CreateNotificationResult {
+  id: string
+  /** True when dedupe was set and an existing matching row was returned. */
+  deduped?: boolean
+}
+
+export async function createNotification(args: CreateNotificationArgs): Promise<CreateNotificationResult> {
   const audience: NotificationAudience = args.audience ?? 'user'
   if (audience === 'user' && !args.userId) {
     throw new Error('createNotification: user audience requires userId')
   }
 
   const admin = createAdminClient()
+
+  if (args.dedupe && args.userId && args.href) {
+    const { data: existing } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('user_id', args.userId)
+      .eq('type', args.type)
+      .eq('href', args.href)
+      .limit(1)
+      .maybeSingle()
+    if (existing?.id) return { id: existing.id as string, deduped: true }
+  }
+
   const { data, error } = await admin
     .from('notifications')
     .insert({

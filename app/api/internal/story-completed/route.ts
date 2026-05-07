@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendBookReadyEmail } from '@/lib/services/email'
 import { appUrl } from '@/lib/utils/appUrl'
+import { createNotification } from '@/lib/notifications/createNotification'
 
 export async function POST(request: NextRequest) {
   // Internal route — verify shared secret (same token used by Edge Function calls)
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     const { data: storyReq, error: reqErr } = await adminSupabase
       .from('story_requests')
-      .select('user_email, child_name, status')
+      .select('user_email, child_name, status, user_id')
       .eq('id', requestId)
       .single()
 
@@ -78,6 +79,26 @@ export async function POST(request: NextRequest) {
         recipient_email: toEmail,
         resend_message_id: messageId,
       })
+
+      // Bell notification — only for logged-in users; guests have no
+      // user_id and therefore no notification feed. Deduped on
+      // (user_id, type, href) so re-invocations don't pile up rows.
+      const userId = (storyReq as unknown as { user_id: string | null }).user_id
+      if (userId) {
+        try {
+          await createNotification({
+            userId,
+            type: 'story_complete',
+            title: 'Your story is ready',
+            body: `${childName}'s story is ready to read.`,
+            href: `/story/${requestId}`,
+            dedupe: true,
+          })
+        } catch (notifErr) {
+          // Notifications are supplementary; never block the email path.
+          console.error('[story-completed] notification failed:', requestId, notifErr)
+        }
+      }
 
       return NextResponse.json({ requestId, status: 'sent', messageId })
     } catch (emailErr) {
