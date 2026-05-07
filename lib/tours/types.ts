@@ -21,6 +21,11 @@ export interface TourStep {
   advance_selector: string | null
   /** Hint shown while waiting for the user's action. */
   wait_message: string | null
+  /** Optional per-step metadata. Recognised keys:
+   *   skip_if_target_missing — auto-advance when target_selector
+   *     resolves to nothing (used for branch-only steps like the
+   *     adult-consent modal that don't apply to other audiences). */
+  config: Record<string, unknown> | null
 }
 
 export interface Tour {

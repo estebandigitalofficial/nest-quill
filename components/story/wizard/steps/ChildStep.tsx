@@ -196,7 +196,7 @@ export default function ChildStep() {
           <div className="bg-white rounded-2xl px-8 py-6 max-w-md mx-4 space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">{c.consentTitle}</h3>
             <p className="text-sm text-gray-600 leading-relaxed">{c.consentBody}</p>
-            <label className="flex items-start gap-3 cursor-pointer">
+            <label data-tour-id="adult-consent" className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={consentChecked}
@@ -214,6 +214,7 @@ export default function ChildStep() {
               </button>
               <button
                 type="button"
+                data-tour-id="adult-consent-confirm"
                 onClick={handleConsentConfirm}
                 disabled={!consentChecked}
                 className="text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg transition-colors">

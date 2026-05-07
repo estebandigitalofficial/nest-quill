@@ -368,6 +368,9 @@ export interface GuidedTourStepRow {
   advance_selector: string | null
   /** Hint shown beneath the step body while we wait for the user's action. */
   wait_message: string | null
+  /** Free-form per-step metadata. Production has this as JSONB. May be
+   * absent on older local databases — readers should treat it as optional. */
+  config: Json | null
   created_at: string
 }
 

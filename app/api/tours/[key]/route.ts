@@ -87,11 +87,30 @@ export async function GET(
   //   advance_on, advance_selector, wait_message
   // No `action_label`. The frontend TourStep type still includes
   // action_label; we map it to null below to keep the type stable.
-  const { data: stepsRows, error: stepsErr } = await admin
+  // Try the full select first; if `config` is missing on this DB
+  // (older deploys where the migration hasn't run yet), retry without
+  // it so the tour still renders. Same pattern we use elsewhere when
+  // production schema drifts behind the migration files.
+  const fullCols = 'id, step_order, target_selector, title, body, placement, requires_interaction, advance_on, advance_selector, wait_message, config'
+  const fallbackCols = 'id, step_order, target_selector, title, body, placement, requires_interaction, advance_on, advance_selector, wait_message'
+  let { data: stepsRows, error: stepsErr } = await admin
     .from('guided_tour_steps')
-    .select('id, step_order, target_selector, title, body, placement, requires_interaction, advance_on, advance_selector, wait_message')
+    .select(fullCols)
     .eq('tour_id', tourRow.id)
     .order('step_order', { ascending: true })
+  if (stepsErr && stepsErr.code === '42703') {
+    console.warn('[tours] config column missing, retrying without it', { tour_id: tourRow.id })
+    const retry = await admin
+      .from('guided_tour_steps')
+      .select(fallbackCols)
+      .eq('tour_id', tourRow.id)
+      .order('step_order', { ascending: true })
+    // Shape differs (no `config`); the mapper below treats config as
+    // optional via `r.config && typeof r.config === 'object'`, so this
+    // wider cast is safe.
+    stepsRows = retry.data as typeof stepsRows
+    stepsErr = retry.error
+  }
   if (stepsErr) {
     debug.steps_query_error = { code: stepsErr.code, message: stepsErr.message }
     debug.reason = 'steps_query_error'
@@ -114,6 +133,7 @@ export async function GET(
     advance_on: ((r.advance_on as string) === 'click' ? 'click' : 'next_button'),
     advance_selector: (r.advance_selector as string | null) ?? null,
     wait_message: (r.wait_message as string | null) ?? null,
+    config: (r.config && typeof r.config === 'object' ? (r.config as Record<string, unknown>) : null),
   }))
   debug.step_count = steps.length
 

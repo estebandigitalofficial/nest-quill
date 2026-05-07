@@ -89,11 +89,15 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
   // Resolution order, per measurement:
   //   1. The step's real target_selector. If it resolves, spotlight that
   //      and clear the pendingNext flag.
-  //   2. The wizard's Next button (data-tour-id="wizard-next"). Used when
+  //   2. config.skip_if_target_missing — for branch-only steps that
+  //      shouldn't apply on every path (e.g. the adult-consent step
+  //      only matters when the user picked the adult audience). After
+  //      a short stabilization window with no target, auto-advance.
+  //   3. The wizard's Next button (data-tour-id="wizard-next"). Used when
   //      the real target hasn't appeared yet because the wizard is on an
   //      earlier step. We spotlight Next so the user knows what to click;
   //      the popover swaps to "Click Next to continue" copy.
-  //   3. Nothing — for centred steps (target_selector === null) and
+  //   4. Nothing — for centred steps (target_selector === null) and
   //      genuine missing-target situations (logged in dev).
   useEffect(() => {
     // Centred steps short-circuit immediately.
@@ -103,18 +107,46 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
       return
     }
     const sel = step.target_selector
+    const skipIfMissing = !!(step.config && (step.config as Record<string, unknown>).skip_if_target_missing)
     let raf = 0
     let warnedMissing = false
+    // Stabilization window before we conclude the branch doesn't apply.
+    // Some targets (modals, conditionally-rendered cards) appear a tick
+    // after the click that opened them, so we wait a few polls before
+    // skipping. ~3 polls × 400ms ≈ 1.2s.
+    let missingPolls = 0
+    let skipped = false
 
     function measure() {
+      if (skipped) return
       const el = document.querySelector(sel)
       if (el instanceof HTMLElement) {
+        missingPolls = 0
         const r = el.getBoundingClientRect()
         setTargetRect(r)
         setPendingNext(false)
         if (r.top < 60 || r.bottom > window.innerHeight - 60) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }
+        return
+      }
+      // Branch-only step whose target never showed up — auto-advance
+      // so users on other paths aren't stuck staring at a generic
+      // wizard-next prompt for a step that doesn't apply to them.
+      if (skipIfMissing) {
+        missingPolls += 1
+        if (missingPolls >= 3) {
+          skipped = true
+          // Clear UI before the parent re-renders the next step.
+          setTargetRect(null)
+          setPendingNext(false)
+          advance()
+          return
+        }
+        // While we're still in the stabilization window, hide the
+        // popover entirely instead of flashing the wizard-next fallback.
+        setTargetRect(null)
+        setPendingNext(false)
         return
       }
       // Real target missing → try the wizard-next fallback so the tour
@@ -148,6 +180,10 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
       window.clearInterval(interval)
       cancelAnimationFrame(raf)
     }
+    // advance() is stable enough — re-binding when the step changes is
+    // intentional, and we don't want it in deps to avoid re-creating
+    // the polling interval on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
 
   // Click-advance: when the active step says advance_on='click', listen
