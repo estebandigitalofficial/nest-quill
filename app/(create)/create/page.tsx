@@ -105,7 +105,7 @@ export default async function CreatePage() {
         )}
 
         <Suspense>
-          <StoryWizard betaMode={betaMode as boolean} />
+          <StoryWizard betaMode={betaMode as boolean} accountPlan={planTier} />
         </Suspense>
       </div>
     </div>

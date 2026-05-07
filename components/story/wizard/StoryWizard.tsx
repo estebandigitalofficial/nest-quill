@@ -48,13 +48,38 @@ function planFromQuery(raw: string | null): PlanTier | null {
   return (WIZARD_PLANS as readonly string[]).includes(raw) ? (raw as PlanTier) : null
 }
 
-export default function StoryWizard({ betaMode = false }: { betaMode?: boolean }) {
+// Resolve the signed-in user's profiles.plan_tier into an implicit
+// preselect. Free tier returns null so authenticated free users still
+// see the picker (they're a conversion target, not a sticky selection).
+// Tiers outside WIZARD_PLANS — e.g. 'educator' — also return null so
+// those users get the picker rather than an unsupported wizard branch.
+function planFromAccount(raw: string | null | undefined): PlanTier | null {
+  if (!raw || raw === 'free') return null
+  return (WIZARD_PLANS as readonly string[]).includes(raw) ? (raw as PlanTier) : null
+}
+
+export default function StoryWizard({
+  betaMode = false,
+  accountPlan = null,
+}: {
+  betaMode?: boolean
+  /** profiles.plan_tier for the signed-in user; null/undefined for guests. */
+  accountPlan?: string | null
+}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { lang, t } = useLanguage()
-  // Plan-from-URL is read once on mount. We compute the initial step from it
-  // synchronously so users with ?plan=... never see the plan-picker flash.
-  const initialPlan = planFromQuery(searchParams.get('plan'))
+  // Resolution order for the implicit preselect:
+  //   1. ?plan=<tier> query param (highest — explicit user intent)
+  //   2. authenticated user's plan_tier when it's a paid tier
+  //   3. nothing — render the picker
+  const urlPlan = planFromQuery(searchParams.get('plan'))
+  const accountInitial = planFromAccount(accountPlan)
+  const initialPlan = urlPlan ?? accountInitial
+  // Whether the preselect came from the user's account (vs the URL).
+  // Drives the pill copy and stays stable across renders since the
+  // values it depends on are fixed at mount time.
+  const preselectFromAccount = !urlPlan && accountInitial !== null
   const [step, setStep] = useState(initialPlan ? 1 : 0)
   const [planPreselected, setPlanPreselected] = useState(!!initialPlan)
   const [learningMode, setLearningMode] = useState(false)
@@ -161,7 +186,7 @@ export default function StoryWizard({ betaMode = false }: { betaMode?: boolean }
       {planPreselected && step === firstVisibleStep && (
         <div className="flex items-center justify-between bg-brand-50 border border-brand-200 rounded-xl px-4 py-2.5 mb-2">
           <p className="text-xs text-brand-700">
-            <span className="font-semibold">Plan selected:</span>{' '}
+            <span className="font-semibold">{preselectFromAccount ? 'Current plan:' : 'Plan selected:'}</span>{' '}
             {PLAN_CONFIG[currentPlan].displayName}
           </p>
           <button
