@@ -1,7 +1,9 @@
 'use client'
 
-// Shared selectable cards/chips for the story wizard. Co-located so the
-// step components stay light. Animations are pure CSS (see globals.css).
+// Shared selectable cards/chips for the story wizard. User-facing copy uses
+// "theme" instead of "setting" — the internal `setting` field name stays
+// for back-compat with the synthesizer and DB column. Animations are pure
+// CSS (see globals.css) and respect prefers-reduced-motion.
 
 import { cn } from '@/lib/utils/cn'
 import type {
@@ -42,8 +44,26 @@ export function AgeTierCard({
 
 // ── Traits ──────────────────────────────────────────────────
 export const TRAIT_LABELS: Record<Trait, string> = {
-  brave: 'Brave', curious: 'Curious', funny: 'Funny',
-  shy: 'Shy', leader: 'Leader', adventurous: 'Adventurous',
+  brave: 'Brave',
+  curious: 'Curious',
+  funny: 'Funny',
+  shy: 'Shy',
+  leader: 'Leader',
+  adventurous: 'Adventurous',
+  loyal: 'Loyal',
+  clever: 'Clever',
+  creative: 'Creative',
+  determined: 'Determined',
+  kind: 'Kind',
+  energetic: 'Energetic',
+  calm: 'Calm',
+  mischievous: 'Mischievous',
+  thoughtful: 'Thoughtful',
+  imaginative: 'Imaginative',
+  athletic: 'Athletic',
+  optimistic: 'Optimistic',
+  resilient: 'Resilient',
+  compassionate: 'Compassionate',
 }
 
 export function TraitChip({
@@ -67,81 +87,141 @@ export function TraitChip({
   )
 }
 
-// ── Settings (themed cards with idle CSS animation) ────────
-interface SettingPalette {
+// ── Themes (storybook-style cards with idle CSS animation) ──
+// Internal id stays `Setting` to keep the synthesizer + DB column
+// stable; the user sees them as "themes" everywhere.
+interface ThemePalette {
   label: string
   gradient: string
   description: string
-  decoration: React.ReactNode
+  art: React.ReactNode
 }
 
-export const SETTING_META: Record<Setting, SettingPalette> = {
+export const SETTING_META: Record<Setting, ThemePalette> = {
   jungle: {
     label: 'Jungle',
     description: 'Vines, animals, hidden paths',
-    gradient: 'from-emerald-400 via-emerald-500 to-emerald-700',
-    decoration: (
+    gradient: 'from-emerald-400 via-emerald-600 to-emerald-900',
+    art: (
       <>
-        <span aria-hidden className="absolute -bottom-3 -left-3 w-16 h-16 rounded-full bg-emerald-300/40 nq-drift" />
-        <span aria-hidden className="absolute top-1 right-2 w-10 h-10 rounded-full bg-lime-200/60 nq-glow" />
+        {/* canopy silhouettes */}
+        <span aria-hidden className="absolute -top-2 -left-3 w-20 h-10 bg-emerald-900/50 rounded-full blur-[2px]" />
+        <span aria-hidden className="absolute -top-3 right-2 w-16 h-8 bg-emerald-950/40 rounded-full blur-[2px]" />
+        {/* sun rays */}
+        <span aria-hidden className="absolute top-2 right-4 w-12 h-12 rounded-full bg-amber-200/70 blur-md nq-glow" />
+        {/* leaves drifting */}
+        <span aria-hidden className="absolute bottom-2 left-3 w-3 h-5 rounded-full bg-lime-200/80 rotate-12 nq-drift" />
+        <span aria-hidden className="absolute bottom-6 left-12 w-2.5 h-4 rounded-full bg-emerald-200/70 -rotate-12 nq-drift" style={{ animationDelay: '1.4s' }} />
+        <span aria-hidden className="absolute bottom-3 right-8 w-2.5 h-4 rounded-full bg-lime-100/60 nq-drift" style={{ animationDelay: '0.7s' }} />
+        {/* ground vines */}
+        <span aria-hidden className="absolute bottom-0 inset-x-0 h-3 bg-emerald-950/60" />
       </>
     ),
   },
   space: {
     label: 'Space',
     description: 'Stars, planets, galaxies',
-    gradient: 'from-indigo-700 via-violet-700 to-slate-900',
-    decoration: (
+    gradient: 'from-indigo-900 via-violet-800 to-slate-950',
+    art: (
       <>
+        {/* nebula glow */}
+        <span aria-hidden className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-fuchsia-500/30 blur-2xl nq-glow" />
+        <span aria-hidden className="absolute -bottom-8 -left-6 w-20 h-20 rounded-full bg-indigo-400/30 blur-2xl nq-glow" style={{ animationDelay: '1s' }} />
+        {/* planet */}
+        <span aria-hidden className="absolute top-3 right-3 w-7 h-7 rounded-full bg-gradient-to-br from-amber-300 to-orange-500 shadow-md" />
+        <span aria-hidden className="absolute top-5 right-1 w-9 h-1.5 rounded-full bg-amber-100/50 -rotate-12" />
+        {/* stars */}
         <span aria-hidden className="absolute top-3 left-4 w-1.5 h-1.5 rounded-full bg-white nq-twinkle" />
         <span aria-hidden className="absolute top-7 left-12 w-1 h-1 rounded-full bg-white nq-twinkle" style={{ animationDelay: '0.6s' }} />
-        <span aria-hidden className="absolute bottom-4 right-6 w-2 h-2 rounded-full bg-white nq-twinkle" style={{ animationDelay: '1.2s' }} />
-        <span aria-hidden className="absolute -bottom-4 -right-4 w-14 h-14 rounded-full bg-violet-400/40 nq-glow" />
+        <span aria-hidden className="absolute bottom-5 left-6 w-1 h-1 rounded-full bg-white nq-twinkle" style={{ animationDelay: '1.2s' }} />
+        <span aria-hidden className="absolute bottom-7 right-12 w-1.5 h-1.5 rounded-full bg-white nq-twinkle" style={{ animationDelay: '1.6s' }} />
+        <span aria-hidden className="absolute top-12 right-20 w-1 h-1 rounded-full bg-white nq-twinkle" style={{ animationDelay: '0.3s' }} />
       </>
     ),
   },
   ocean: {
     label: 'Ocean',
     description: 'Waves, reefs, deep blue',
-    gradient: 'from-sky-400 via-cyan-500 to-blue-700',
-    decoration: (
+    gradient: 'from-sky-300 via-cyan-500 to-blue-900',
+    art: (
       <>
-        <span aria-hidden className="absolute inset-x-0 bottom-0 h-6 bg-white/20 rounded-t-[100%] nq-wave origin-bottom" />
-        <span aria-hidden className="absolute inset-x-0 bottom-1 h-4 bg-white/30 rounded-t-[100%] nq-wave origin-bottom" style={{ animationDelay: '1s' }} />
+        {/* sun */}
+        <span aria-hidden className="absolute top-2 right-3 w-8 h-8 rounded-full bg-yellow-100/80 blur-[1px] nq-glow" />
+        {/* fish */}
+        <span aria-hidden className="absolute top-1/2 left-4 w-2 h-1.5 rounded-full bg-white/70 nq-drift" />
+        <span aria-hidden className="absolute top-[60%] left-14 w-1.5 h-1 rounded-full bg-white/60 nq-drift" style={{ animationDelay: '1s' }} />
+        {/* bubbles */}
+        <span aria-hidden className="absolute bottom-8 left-6 w-1.5 h-1.5 rounded-full bg-white/70 nq-drift" style={{ animationDelay: '0.4s' }} />
+        <span aria-hidden className="absolute bottom-4 left-10 w-1 h-1 rounded-full bg-white/60 nq-drift" style={{ animationDelay: '1.2s' }} />
+        {/* wave layers */}
+        <span aria-hidden className="absolute inset-x-0 bottom-0 h-7 bg-cyan-200/40 rounded-t-[100%] nq-wave origin-bottom" />
+        <span aria-hidden className="absolute inset-x-0 bottom-1 h-5 bg-white/30 rounded-t-[100%] nq-wave origin-bottom" style={{ animationDelay: '1s' }} />
+        <span aria-hidden className="absolute inset-x-0 bottom-2 h-3 bg-white/40 rounded-t-[100%] nq-wave origin-bottom" style={{ animationDelay: '0.5s' }} />
       </>
     ),
   },
   school: {
     label: 'School',
     description: 'Classrooms, friends, lessons',
-    gradient: 'from-amber-300 via-orange-400 to-rose-400',
-    decoration: (
-      <span aria-hidden className="absolute top-2 right-2 w-12 h-12 rounded-full bg-yellow-200/50 nq-glow" />
+    gradient: 'from-amber-200 via-orange-300 to-rose-400',
+    art: (
+      <>
+        {/* sun */}
+        <span aria-hidden className="absolute top-2 right-3 w-12 h-12 rounded-full bg-yellow-200/80 blur-[1px] nq-glow" />
+        {/* schoolhouse silhouette */}
+        <span aria-hidden className="absolute bottom-2 left-1/2 -translate-x-1/2 w-16 h-10 bg-rose-700/60 rounded-sm" />
+        <span aria-hidden className="absolute bottom-12 left-1/2 -translate-x-1/2 w-0 h-0"
+          style={{ borderLeft: '12px solid transparent', borderRight: '12px solid transparent', borderBottom: '8px solid rgba(190,18,60,0.7)' }} />
+        {/* windows */}
+        <span aria-hidden className="absolute bottom-5 left-[calc(50%-5px)] w-2.5 h-2.5 bg-yellow-100/80 rounded-sm" />
+        {/* paper bits */}
+        <span aria-hidden className="absolute top-6 left-4 w-3 h-3 bg-white/60 rotate-12 nq-drift" />
+        <span aria-hidden className="absolute top-10 right-8 w-2.5 h-2.5 bg-white/60 -rotate-12 nq-drift" style={{ animationDelay: '0.8s' }} />
+      </>
     ),
   },
   fantasy_kingdom: {
     label: 'Fantasy kingdom',
     description: 'Castles, magic, knights',
-    gradient: 'from-fuchsia-500 via-purple-600 to-indigo-700',
-    decoration: (
+    gradient: 'from-fuchsia-500 via-purple-700 to-indigo-900',
+    art: (
       <>
+        {/* moon */}
+        <span aria-hidden className="absolute top-2 right-3 w-8 h-8 rounded-full bg-pink-100/80 nq-glow" />
+        {/* castle silhouette */}
+        <span aria-hidden className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-12 bg-indigo-950/70" />
+        <span aria-hidden className="absolute bottom-12 left-[calc(50%-6px)] w-3 h-4 bg-indigo-950/70" />
+        <span aria-hidden className="absolute bottom-12 left-[calc(50%-12px)] w-2 h-2 bg-indigo-950/70" />
+        <span aria-hidden className="absolute bottom-12 left-[calc(50%+6px)] w-2 h-2 bg-indigo-950/70" />
+        {/* magical sparkles */}
         <span aria-hidden className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-pink-200 nq-twinkle" />
-        <span aria-hidden className="absolute top-5 right-5 w-2 h-2 rounded-full bg-fuchsia-200 nq-twinkle" style={{ animationDelay: '0.4s' }} />
-        <span aria-hidden className="absolute bottom-2 right-3 w-1.5 h-1.5 rounded-full bg-violet-200 nq-twinkle" style={{ animationDelay: '1s' }} />
-        <span aria-hidden className="absolute -bottom-2 -left-3 w-12 h-12 rounded-full bg-pink-300/40 nq-glow" />
+        <span aria-hidden className="absolute top-7 left-12 w-2 h-2 rounded-full bg-fuchsia-200 nq-twinkle" style={{ animationDelay: '0.4s' }} />
+        <span aria-hidden className="absolute top-5 right-12 w-1.5 h-1.5 rounded-full bg-violet-200 nq-twinkle" style={{ animationDelay: '0.8s' }} />
+        <span aria-hidden className="absolute bottom-6 right-4 w-1 h-1 rounded-full bg-pink-200 nq-twinkle" style={{ animationDelay: '1.2s' }} />
+        <span aria-hidden className="absolute -bottom-2 -left-3 w-12 h-12 rounded-full bg-pink-300/30 blur-xl nq-glow" />
       </>
     ),
   },
   city: {
     label: 'City',
     description: 'Streets, parks, neighbors',
-    gradient: 'from-slate-400 via-gray-500 to-slate-700',
-    decoration: (
+    gradient: 'from-slate-500 via-slate-700 to-slate-900',
+    art: (
       <>
-        <span aria-hidden className="absolute bottom-3 left-3 w-10 h-3 bg-white/30 rounded-sm" />
-        <span aria-hidden className="absolute bottom-3 left-14 w-6 h-5 bg-white/25 rounded-sm" />
-        <span aria-hidden className="absolute bottom-3 left-22 w-8 h-4 bg-white/35 rounded-sm" />
-        <span aria-hidden className="absolute top-2 right-2 w-3 h-3 rounded-full bg-amber-200 nq-glow" />
+        {/* moon/sun */}
+        <span aria-hidden className="absolute top-2 right-3 w-6 h-6 rounded-full bg-amber-200/80 nq-glow" />
+        {/* skyline */}
+        <span aria-hidden className="absolute bottom-0 left-1 w-6 h-12 bg-slate-900/80" />
+        <span aria-hidden className="absolute bottom-0 left-8 w-8 h-16 bg-slate-950/80" />
+        <span aria-hidden className="absolute bottom-0 left-16 w-5 h-10 bg-slate-900/80" />
+        <span aria-hidden className="absolute bottom-0 left-22 w-7 h-14 bg-slate-950/80" />
+        <span aria-hidden className="absolute bottom-0 right-12 w-6 h-12 bg-slate-900/80" />
+        <span aria-hidden className="absolute bottom-0 right-3 w-5 h-9 bg-slate-950/80" />
+        {/* lit windows */}
+        <span aria-hidden className="absolute bottom-6 left-3 w-1 h-1 bg-amber-200" />
+        <span aria-hidden className="absolute bottom-9 left-10 w-1 h-1 bg-amber-200 nq-twinkle" />
+        <span aria-hidden className="absolute bottom-8 left-19 w-1 h-1 bg-amber-200" />
+        <span aria-hidden className="absolute bottom-5 right-14 w-1 h-1 bg-amber-200 nq-twinkle" style={{ animationDelay: '0.6s' }} />
       </>
     ),
   },
@@ -156,20 +236,20 @@ export function SettingCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'group relative overflow-hidden rounded-2xl border-2 text-left transition-all aspect-[4/3] sm:aspect-[5/3]',
+        'group relative overflow-hidden rounded-2xl border-2 text-left transition-all aspect-[4/3] sm:aspect-[5/3] min-h-[112px]',
         active
           ? 'border-brand-500 ring-2 ring-brand-200'
           : 'border-transparent hover:border-gray-300'
       )}>
       <div className={cn('absolute inset-0 bg-gradient-to-br', meta.gradient)} />
-      {meta.decoration}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+      {meta.art}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
       <div className="relative p-3 h-full flex flex-col justify-end">
-        <p className="text-white font-semibold text-sm drop-shadow-sm">{meta.label}</p>
-        <p className="text-white/80 text-[11px] leading-tight">{meta.description}</p>
+        <p className="text-white font-semibold text-sm drop-shadow">{meta.label}</p>
+        <p className="text-white/85 text-[11px] leading-tight drop-shadow-sm">{meta.description}</p>
       </div>
       {active && (
-        <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white text-brand-600 flex items-center justify-center text-xs font-bold">
+        <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white text-brand-600 flex items-center justify-center text-xs font-bold shadow">
           ✓
         </span>
       )}
@@ -179,11 +259,18 @@ export function SettingCard({
 
 // ── Conflict cards ─────────────────────────────────────────
 export const CONFLICT_META: Record<Conflict, { label: string; sub: string }> = {
-  lost_something:  { label: 'Lost something',  sub: 'Find what\'s missing' },
-  save_someone:    { label: 'Save someone',    sub: 'A rescue mission' },
-  solve_mystery:   { label: 'Solve a mystery', sub: 'Follow the clues' },
-  overcome_fear:   { label: 'Overcome a fear', sub: 'Be brave together' },
-  win_challenge:   { label: 'Win a challenge', sub: 'Train, try, succeed' },
+  lost_something:    { label: 'Lost something',     sub: "Find what's missing" },
+  save_someone:      { label: 'Save someone',       sub: 'A rescue mission' },
+  solve_mystery:     { label: 'Solve a mystery',    sub: 'Follow the clues' },
+  overcome_fear:     { label: 'Overcome a fear',    sub: 'Be brave together' },
+  win_challenge:     { label: 'Win a challenge',    sub: 'Train, try, succeed' },
+  make_new_friend:   { label: 'Make a new friend',  sub: 'Build the courage to say hi' },
+  face_a_bully:      { label: 'Face a bully',       sub: 'Stand up with kindness' },
+  protect_home:      { label: 'Protect home',       sub: 'Keep family safe' },
+  survive_storm:     { label: 'Survive a storm',    sub: 'Weather it together' },
+  cross_a_journey:   { label: 'Cross a journey',    sub: 'Far places, long roads' },
+  mend_a_friendship: { label: 'Mend a friendship',  sub: 'Make things right again' },
+  learn_a_truth:     { label: 'Learn a truth',      sub: 'Something hidden surfaces' },
 }
 
 export function ConflictCard({
@@ -195,7 +282,7 @@ export function ConflictCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex flex-col gap-0.5 px-3.5 py-2.5 rounded-xl border-2 text-left transition-all',
+        'flex flex-col gap-0.5 px-3.5 py-2.5 rounded-xl border-2 text-left transition-all min-h-[64px]',
         active
           ? 'border-brand-500 bg-brand-50'
           : 'border-gray-200 bg-white hover:border-gray-300'
@@ -212,6 +299,12 @@ export const GOAL_META: Record<Goal, { label: string; sub: string }> = {
   complete_mission:    { label: 'Complete a mission', sub: 'See it through to the end' },
   help_others:         { label: 'Help others',        sub: 'Make a difference' },
   discover_something:  { label: 'Discover something', sub: 'Wonder and curiosity' },
+  find_courage:        { label: 'Find courage',       sub: 'The bravery inside' },
+  find_belonging:      { label: 'Find belonging',     sub: 'Where they fit in' },
+  become_a_hero:       { label: 'Become a hero',      sub: 'Rise to the moment' },
+  protect_someone:     { label: 'Protect someone',    sub: 'Keep them safe' },
+  restore_balance:     { label: 'Restore balance',    sub: 'Make things right' },
+  celebrate_together:  { label: 'Celebrate together', sub: 'Joy at the end of the road' },
 }
 
 export function GoalCard({
@@ -223,7 +316,7 @@ export function GoalCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex flex-col gap-0.5 px-3.5 py-2.5 rounded-xl border-2 text-left transition-all',
+        'flex flex-col gap-0.5 px-3.5 py-2.5 rounded-xl border-2 text-left transition-all min-h-[64px]',
         active
           ? 'border-brand-500 bg-brand-50'
           : 'border-gray-200 bg-white hover:border-gray-300'

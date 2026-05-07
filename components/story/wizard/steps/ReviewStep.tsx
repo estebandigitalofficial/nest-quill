@@ -29,55 +29,72 @@ export default function ReviewStep() {
   const styleInfo = values.illustrationStyle
     ? ILLUSTRATION_STYLES[values.illustrationStyle]
     : null
+  const themeMeta = values.setting ? SETTING_META[values.setting as Setting] : null
+  const traitChips: string[] = [
+    ...((values.traits ?? []).map(tr => TRAIT_LABELS[tr as Trait] ?? tr)),
+    ...(values.customTrait ? [values.customTrait] : []),
+  ]
+  const toneChips = values.storyTone?.map(prettifyTone) ?? []
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-serif text-gray-900">{r.heading}</h2>
+        <h2 className="text-xl font-serif text-gray-900">Here's the story you built</h2>
         <p className="text-sm text-gray-500 mt-1">{r.sub}</p>
       </div>
 
-      {/* Summary card */}
+      {/* Hero theme card — visual at-a-glance preview */}
+      {themeMeta && (
+        <div className="relative overflow-hidden rounded-2xl border border-gray-100 aspect-[5/2] sm:aspect-[5/1.6]">
+          <div className={cn('absolute inset-0 bg-gradient-to-br', themeMeta.gradient)} />
+          {themeMeta.art}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
+          <div className="relative h-full flex flex-col justify-end p-4">
+            <p className="text-xs uppercase tracking-wider text-white/80">Theme</p>
+            <p className="text-white font-serif text-lg drop-shadow">{themeMeta.label}</p>
+            {values.storyTheme && (
+              <p className="text-white/90 text-xs mt-0.5 line-clamp-2 drop-shadow">{values.storyTheme}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Chip grid: traits / conflict / goal / tone */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {traitChips.length > 0 && (
+          <ChipGroup label="Character traits" items={traitChips} />
+        )}
+        {values.conflict && (
+          <ChipGroup label="Conflict" items={[CONFLICT_META[values.conflict as Conflict].label]} highlight />
+        )}
+        {values.goal && (
+          <ChipGroup label="Goal" items={[GOAL_META[values.goal as Goal].label]} highlight />
+        )}
+        {toneChips.length > 0 && (
+          <ChipGroup label={r.labels.tone} items={toneChips} />
+        )}
+      </div>
+
+      {/* Compact details card */}
       <div className="bg-gray-50 rounded-2xl border border-gray-100 divide-y divide-gray-100 text-sm">
         <Row label={r.labels.plan} value={plan.displayName} />
         <Row label="Audience" value={values.ageTier ? AGE_TIER_META[values.ageTier as AgeTier].label : (values.childAge && values.childAge >= 18 ? 'Adult (18+)' : 'Child')} />
         <Row label={values.childAge && values.childAge >= 18 ? 'Name' : r.labels.child} value={values.childName ?? '—'} />
         <Row label={r.labels.age} value={values.childAge ? (values.childAge >= 18 ? 'Adult (18+)' : `~${values.childAge} ${t.common.years}`) : '—'} />
-        {values.traits && values.traits.length > 0 && (
-          <Row label="Traits" value={values.traits.map(tr => TRAIT_LABELS[tr as Trait] ?? tr).join(', ')} />
-        )}
-        {values.setting && (
-          <Row label="Setting" value={SETTING_META[values.setting as Setting].label} />
-        )}
-        {values.conflict && (
-          <Row label="Conflict" value={CONFLICT_META[values.conflict as Conflict].label} />
-        )}
-        {values.goal && (
-          <Row label="Goal" value={GOAL_META[values.goal as Goal].label} />
-        )}
         {values.childDescription && (
           <Row label={r.labels.description} value={values.childDescription} />
         )}
-        <Row label={r.labels.theme} value={values.storyTheme ? truncate(values.storyTheme, 80) : '—'} />
-        <Row
-          label={r.labels.tone}
-          value={
-            values.storyTone?.length
-              ? values.storyTone.map(tone => tone.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')).join(', ')
-              : '—'
-          }
-        />
         {values.storyMoral && <Row label={r.labels.lesson} value={values.storyMoral} />}
         <Row label={r.labels.style} value={styleInfo ? styleInfo.label : '—'} />
         <Row label={r.labels.length} value={values.storyLength ? `${values.storyLength} ${t.common.pages}` : '—'} />
         {values.dedicationText && (
-          <Row label={r.labels.dedication} value={truncate(values.dedicationText, 60)} />
+          <Row label={r.labels.dedication} value={truncate(values.dedicationText, 80)} />
         )}
         {values.supportingCharacters && (
-          <Row label={r.labels.characters} value={truncate(values.supportingCharacters, 60)} />
+          <Row label={r.labels.characters} value={truncate(values.supportingCharacters, 80)} />
         )}
         {values.customNotes && (
-          <Row label="Custom note" value={truncate(values.customNotes, 80)} />
+          <Row label="Custom note" value={truncate(values.customNotes, 100)} />
         )}
       </div>
 
@@ -107,6 +124,28 @@ export default function ReviewStep() {
   )
 }
 
+function ChipGroup({ label, items, highlight }: { label: string; items: string[]; highlight?: boolean }) {
+  return (
+    <div className="rounded-xl border border-gray-100 bg-white p-3">
+      <p className="text-[11px] uppercase tracking-wider text-gray-400 mb-1.5">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((item, i) => (
+          <span
+            key={`${item}-${i}`}
+            className={cn(
+              'px-2.5 py-1 rounded-full text-xs font-medium',
+              highlight
+                ? 'bg-brand-50 text-brand-700 border border-brand-100'
+                : 'bg-gray-100 text-gray-700'
+            )}>
+            {item}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start gap-3 px-4 py-2.5">
@@ -118,6 +157,10 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function truncate(str: string, max: number) {
   return str.length > max ? str.slice(0, max) + '…' : str
+}
+
+function prettifyTone(tone: string) {
+  return tone.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
 function inputClass(hasError: boolean) {

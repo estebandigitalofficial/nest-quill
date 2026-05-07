@@ -63,9 +63,10 @@ export default function StoryStep() {
   const selectedSetting = watch('setting') as Setting | undefined
   const selectedConflict = watch('conflict') as Conflict | undefined
   const selectedGoal = watch('goal') as Goal | undefined
-  const customTheme = watch('storyTheme') as string | undefined
+  const customTrait = watch('customTrait') as string | undefined
 
   const [showCustomTheme, setShowCustomTheme] = useState(false)
+  const [showCustomTrait, setShowCustomTrait] = useState<boolean>(!!customTrait)
 
   const tones = tonesForTier(ageTier, learningMode)
   const adultGated = ageTier === 'adult' && adultConsent === true && !learningMode
@@ -120,11 +121,11 @@ export default function StoryStep() {
     <div className="space-y-7">
       <div>
         <h2 className="text-xl font-serif text-gray-900">{s.heading}</h2>
-        <p className="text-sm text-gray-500 mt-1">Pick a setting, then add details. Almost no typing.</p>
+        <p className="text-sm text-gray-500 mt-1">Pick a theme, then add details. Almost no typing.</p>
       </div>
 
-      {/* Setting cards */}
-      <Section label="Setting" required hint="Choose where the story takes place.">
+      {/* Theme cards (internal field name stays `setting` for back-compat) */}
+      <Section label="Pick a theme" required hint="Choose where the story takes place.">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {SETTINGS.map(set => (
             <SettingCard
@@ -177,7 +178,39 @@ export default function StoryStep() {
               <TraitChip key={tr} trait={tr} active={active} disabled={maxed} onClick={() => toggleTrait(tr)} />
             )
           })}
+          {!showCustomTrait && (
+            <button
+              type="button"
+              onClick={() => setShowCustomTrait(true)}
+              className="px-3.5 py-1.5 rounded-full text-sm font-medium border border-dashed border-gray-300 text-gray-500 hover:border-brand-300 hover:text-brand-600 transition-colors">
+              + Add your own
+            </button>
+          )}
         </div>
+        {showCustomTrait && (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              maxLength={40}
+              autoFocus
+              placeholder="e.g. quietly stubborn"
+              {...register('customTrait')}
+              className={inputClass(!!errors.customTrait)}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setValue('customTrait', undefined)
+                setShowCustomTrait(false)
+              }}
+              className="text-xs text-gray-400 hover:text-gray-600 px-2">
+              Remove
+            </button>
+          </div>
+        )}
+        {errors.customTrait && (
+          <p className="text-xs text-red-500">{errors.customTrait.message}</p>
+        )}
       </Section>
 
       {/* Conflict */}

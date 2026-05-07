@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     const finalStoryTheme = formData.storyTheme && formData.storyTheme.trim().length > 0
       ? formData.storyTheme
       : synthesizedTheme ?? formData.storyTheme
-    const traitsLine = synthesizeTraitsLine(formData.traits)
+    const traitsLine = synthesizeTraitsLine(formData.traits, formData.customTrait)
     const finalCustomNotes = mergeIntoCustomNotes(formData.customNotes, [traitsLine]) ?? null
 
     const { data: storyRequest, error: insertError } = await adminSupabase

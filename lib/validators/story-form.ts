@@ -57,10 +57,35 @@ export type StoryTone = (typeof STORY_TONES)[number]
 
 // ── Structured story selections ───────────────────────────────
 export const AGE_TIERS = ['child', 'teen', 'adult'] as const
-export const TRAITS = ['brave', 'curious', 'funny', 'shy', 'leader', 'adventurous'] as const
+
+// Trait list expanded from 6 → 20. Internal field name stays `traits`;
+// per-trait label lives in the cards module so wording can drift without
+// touching the schema.
+export const TRAITS = [
+  'brave', 'curious', 'funny', 'shy', 'leader', 'adventurous',
+  'loyal', 'clever', 'creative', 'determined', 'kind', 'energetic',
+  'calm', 'mischievous', 'thoughtful', 'imaginative', 'athletic',
+  'optimistic', 'resilient', 'compassionate',
+] as const
+
+// `setting` field name kept for back-compat with prompts/synthesis;
+// user-facing copy throughout the wizard reads "theme" instead.
 export const SETTINGS = ['jungle', 'space', 'ocean', 'school', 'fantasy_kingdom', 'city'] as const
-export const CONFLICTS = ['lost_something', 'save_someone', 'solve_mystery', 'overcome_fear', 'win_challenge'] as const
-export const GOALS = ['learn_lesson', 'complete_mission', 'help_others', 'discover_something'] as const
+
+// Conflicts expanded with more variety so users have meaningful choices
+// without typing.
+export const CONFLICTS = [
+  'lost_something', 'save_someone', 'solve_mystery', 'overcome_fear', 'win_challenge',
+  'make_new_friend', 'face_a_bully', 'protect_home', 'survive_storm',
+  'cross_a_journey', 'mend_a_friendship', 'learn_a_truth',
+] as const
+
+// Goals widened with more emotional and adventure-shaped options.
+export const GOALS = [
+  'learn_lesson', 'complete_mission', 'help_others', 'discover_something',
+  'find_courage', 'find_belonging', 'become_a_hero', 'protect_someone',
+  'restore_balance', 'celebrate_together',
+] as const
 
 export type AgeTier = (typeof AGE_TIERS)[number]
 export type Trait = (typeof TRAITS)[number]
@@ -92,10 +117,14 @@ export const storyFormSchema = z.object({
     .optional(),
 
   // ── Story details ─────────────────────────────────────────────────────────
+  // Theme supports either a free-form user phrase or a synthesized sentence
+  // built from theme + conflict + goal. 280 char ceiling matches the DB
+  // CHECK constraint relaxed in 20240047_relax_story_theme_check.sql and
+  // gives synthesis comfortable headroom without truncation.
   storyTheme: z
     .string()
     .min(3, 'Please choose or describe a theme')
-    .max(100, 'Theme must be 100 characters or less')
+    .max(280, 'Theme must be 280 characters or less')
     .trim(),
 
   storyTone: z
@@ -171,6 +200,7 @@ export const storyFormSchema = z.object({
   // ── Structured selections (all optional — derived for the prompt) ────────
   ageTier: z.enum(AGE_TIERS).optional(),
   traits: z.array(z.enum(TRAITS)).max(3, 'Pick up to 3 traits').optional(),
+  customTrait: z.string().max(40, 'Keep custom trait short').trim().optional(),
   setting: z.enum(SETTINGS).optional(),
   conflict: z.enum(CONFLICTS).optional(),
   goal: z.enum(GOALS).optional(),
