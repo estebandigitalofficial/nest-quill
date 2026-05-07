@@ -104,14 +104,15 @@ export default function ChildStep() {
 
       {/* Age tier */}
       <Field label="Audience" required>
-        <div className="grid grid-cols-3 gap-2">
+        <div data-tour-id="audience-tier" className="grid grid-cols-3 gap-2">
           {AGE_TIERS.map(tier => (
-            <AgeTierCard
-              key={tier}
-              tier={tier}
-              active={ageTier === tier}
-              onClick={() => handleTierSelect(tier)}
-            />
+            <div key={tier} data-tour-id={`audience-card-${tier}`}>
+              <AgeTierCard
+                tier={tier}
+                active={ageTier === tier}
+                onClick={() => handleTierSelect(tier)}
+              />
+            </div>
           ))}
         </div>
       </Field>

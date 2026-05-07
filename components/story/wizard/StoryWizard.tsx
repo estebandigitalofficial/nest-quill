@@ -211,7 +211,7 @@ export default function StoryWizard({
       {/* Mode toggle — shown on the first visible step (step 0 by default,
           step 1 when a plan was preselected via ?plan=...). */}
       {step === firstVisibleStep && (
-        <div className="flex items-center bg-gray-100 rounded-2xl p-1 mb-2">
+        <div data-tour-id="mode-toggle" className="flex items-center bg-gray-100 rounded-2xl p-1 mb-2">
           {planPreselected && (
             <span className="sr-only">What would you like to create?</span>
           )}
@@ -308,6 +308,7 @@ export default function StoryWizard({
 
           {isLastStep ? (
             <button
+              data-tour-id="submit-button"
               type="submit"
               disabled={isSubmitting}
               className={cn(

@@ -11,7 +11,7 @@ export default async function AdminToursPage() {
   const db = createAdminClient()
   const [{ data: tours, error: probeErr }, { data: steps }] = await Promise.all([
     db.from('guided_tours').select('id, key, title, description, page, enabled, updated_at').order('updated_at', { ascending: false }),
-    db.from('guided_tour_steps').select('id, tour_id, step_order, target_selector, title, body, placement').order('step_order'),
+    db.from('guided_tour_steps').select('id, tour_id, step_order, target_selector, title, body, placement, advance_on, advance_selector, wait_message').order('step_order'),
   ])
 
   // Surface a clear "schema not deployed" message rather than crashing.
@@ -67,8 +67,21 @@ export default async function AdminToursPage() {
                       <p className="text-sm font-medium text-white">{s.title}</p>
                       <p className="text-[11px] text-adm-muted leading-relaxed mt-0.5">{s.body}</p>
                       {s.target_selector && (
-                        <p className="text-[10px] font-mono text-adm-subtle mt-1">{s.target_selector}</p>
+                        <p className="text-[10px] font-mono text-adm-subtle mt-1">target: {s.target_selector}</p>
                       )}
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                        <span className="text-[10px] text-adm-subtle">
+                          advance: <span className="font-mono">{s.advance_on}</span>
+                        </span>
+                        {s.advance_selector && (
+                          <span className="text-[10px] text-adm-subtle">
+                            on: <span className="font-mono">{s.advance_selector}</span>
+                          </span>
+                        )}
+                        {s.wait_message && (
+                          <span className="text-[10px] text-adm-subtle italic">&ldquo;{s.wait_message}&rdquo;</span>
+                        )}
+                      </div>
                     </div>
                     <span className="text-[10px] text-adm-subtle shrink-0">{s.placement}</span>
                   </li>

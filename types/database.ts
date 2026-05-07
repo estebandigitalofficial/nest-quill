@@ -355,6 +355,12 @@ export interface GuidedTourStepRow {
   placement: 'top' | 'bottom' | 'left' | 'right' | 'center'
   action_label: string | null
   requires_interaction: boolean
+  /** 'next_button' (manual confirmation) or 'click' (auto-advance on selector match). */
+  advance_on: 'next_button' | 'click'
+  /** When advance_on='click', the CSS selector that triggers the next step. */
+  advance_selector: string | null
+  /** Hint shown beneath the step body while we wait for the user's action. */
+  wait_message: string | null
   created_at: string
 }
 

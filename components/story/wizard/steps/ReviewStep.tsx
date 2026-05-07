@@ -39,7 +39,7 @@ export default function ReviewStep() {
   const toneChips = values.storyTone?.map(prettifyTone) ?? []
 
   return (
-    <div className="space-y-6">
+    <div data-tour-id="review-summary" className="space-y-6">
       <div>
         <h2 className="text-xl font-serif text-gray-900">Here's the story you built</h2>
         <p className="text-sm text-gray-500 mt-1">{r.sub}</p>

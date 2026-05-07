@@ -134,14 +134,15 @@ export default function StoryStep() {
 
       {/* Theme cards (internal field name stays `setting` for back-compat) */}
       <Section label="Pick a theme" required hint="Choose where the story takes place.">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div data-tour-id="theme-cards" className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {SETTINGS.map(set => (
-            <SettingCard
-              key={set}
-              setting={set}
-              active={selectedSetting === set}
-              onClick={() => selectSetting(set)}
-            />
+            <div key={set} data-tour-id={`theme-card-${set}`}>
+              <SettingCard
+                setting={set}
+                active={selectedSetting === set}
+                onClick={() => selectSetting(set)}
+              />
+            </div>
           ))}
         </div>
         <button
@@ -182,7 +183,7 @@ export default function StoryStep() {
 
       {/* Traits */}
       <Section label="Character traits" hint="Pick up to 3.">
-        <div className="flex flex-wrap gap-2">
+        <div data-tour-id="traits-chips" className="flex flex-wrap gap-2">
           {TRAITS.map(tr => {
             const active = selectedTraits.includes(tr)
             const maxed = selectedTraits.length >= 3 && !active
@@ -227,7 +228,7 @@ export default function StoryStep() {
 
       {/* Conflict */}
       <Section label="What happens?" hint="The challenge that drives the story.">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div data-tour-id="conflict-section" className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {CONFLICTS.map(cf => (
             <ConflictCard key={cf} conflict={cf} active={selectedConflict === cf} onClick={() => selectConflict(cf)} />
           ))}
@@ -236,7 +237,7 @@ export default function StoryStep() {
 
       {/* Goal */}
       <Section label="What's the goal?" hint="How the journey ends.">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div data-tour-id="goal-section" className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {GOALS.map(g => (
             <GoalCard key={g} goal={g} active={selectedGoal === g} onClick={() => selectGoal(g)} />
           ))}

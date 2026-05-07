@@ -22,7 +22,7 @@ export default function PlanStep() {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div data-tour-id="plan-cards" className="grid gap-3 sm:grid-cols-2">
         {WIZARD_PLANS.map((tier) => {
           const plan = PLAN_CONFIG[tier]
           const isSelected = selected === tier
@@ -30,6 +30,7 @@ export default function PlanStep() {
           return (
             <button
               key={tier}
+              data-tour-id={`plan-card-${tier}`}
               type="button"
               onClick={() => {
                 setValue('planTier', tier, { shouldValidate: true })

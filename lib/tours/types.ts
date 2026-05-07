@@ -3,6 +3,8 @@
 
 export type TourPlacement = 'top' | 'bottom' | 'left' | 'right' | 'center'
 
+export type TourAdvanceOn = 'next_button' | 'click'
+
 export interface TourStep {
   id: string
   step_order: number
@@ -13,6 +15,12 @@ export interface TourStep {
   placement: TourPlacement
   action_label: string | null
   requires_interaction: boolean
+  /** How the tour advances away from this step. */
+  advance_on: TourAdvanceOn
+  /** When advance_on='click', the selector that triggers progression. */
+  advance_selector: string | null
+  /** Hint shown while waiting for the user's action. */
+  wait_message: string | null
 }
 
 export interface Tour {

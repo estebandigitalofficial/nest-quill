@@ -1,9 +1,15 @@
 'use client'
 
 // Reusable guided-tour runner. Mount once on a page with a tourKey;
-// it fetches the tour, checks per-user progress (or sessionStorage for
-// guests), and presents a quill-led popover anchored to each step's
-// target selector. Skip / Replay / Complete all flow through PATCH.
+// it fetches the tour, decides whether to start from saved progress,
+// and presents a quill-led overlay anchored to each step's target.
+//
+// Step advancement:
+//   advance_on='next_button' (default) — user taps the popover's Next.
+//   advance_on='click' — runner attaches a capture-phase document
+//     click listener and advances when the click matches advance_selector.
+//
+// Skip + Replay flow through PATCH /api/tours/<key>/progress.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Tour, TourStep } from '@/lib/tours/types'
@@ -11,7 +17,7 @@ import GuideQuill from './GuideQuill'
 
 interface Props {
   tourKey: string
-  /** When set, forces the tour to start from step 0 even if previously dismissed. */
+  /** When true, force-start from step 0 even if previously dismissed. */
   forceReplay?: boolean
 }
 
@@ -22,6 +28,7 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
   const [active, setActive] = useState(false)
   const [stepIdx, setStepIdx] = useState(0)
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
+  const [waiting, setWaiting] = useState(false) // true while we're listening for a click
   const cancelledRef = useRef(false)
 
   // Fetch the tour and decide whether to start.
@@ -36,12 +43,10 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
         if (forceReplay) {
           setStepIdx(0)
           setActive(true)
-          // Clear guest dismissal too.
           try { sessionStorage.removeItem(`${GUEST_DISMISS_PREFIX}${tourKey}`) } catch { /* ignore */ }
           return
         }
 
-        // Auth path: don't auto-start a completed/skipped tour.
         if (data.progress) {
           if (data.progress.completed || data.progress.skipped) return
           setStepIdx(Math.max(0, Math.min(data.progress.last_step, data.tour.steps.length - 1)))
@@ -49,8 +54,6 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
           return
         }
 
-        // Guest path: respect a session-scope dismissal so the tour
-        // doesn't restart on every step navigation.
         try {
           if (sessionStorage.getItem(`${GUEST_DISMISS_PREFIX}${tourKey}`) === '1') return
         } catch { /* ignore */ }
@@ -67,9 +70,8 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
     return tour.steps[stepIdx] ?? null
   }, [tour, active, stepIdx])
 
-  // Resolve the target element + position. Re-measures on resize and
-  // when the active step changes. For null selectors we render the
-  // popover centred without an anchor.
+  // Resolve target rect; re-measure on resize/scroll/poll. Centred steps
+  // and steps whose target isn't on the page yet just leave rect null.
   useEffect(() => {
     if (!step || !step.target_selector) { setTargetRect(null); return }
     const sel = step.target_selector
@@ -79,7 +81,6 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
       if (el instanceof HTMLElement) {
         const r = el.getBoundingClientRect()
         setTargetRect(r)
-        // Scroll into view if it's off-screen.
         if (r.top < 60 || r.bottom > window.innerHeight - 60) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }
@@ -94,13 +95,39 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
     }
     window.addEventListener('resize', onResize)
     window.addEventListener('scroll', onResize, true)
-    const interval = window.setInterval(measure, 500) // catch DOM shifts
+    const interval = window.setInterval(measure, 400)
     return () => {
       window.removeEventListener('resize', onResize)
       window.removeEventListener('scroll', onResize, true)
       window.clearInterval(interval)
       cancelAnimationFrame(raf)
     }
+  }, [step])
+
+  // Click-advance: when the active step says advance_on='click', listen
+  // capture-phase for any click that matches advance_selector, and
+  // advance the tour when it fires. Capture-phase ensures we observe
+  // the click even if the target stops propagation.
+  useEffect(() => {
+    if (!step || step.advance_on !== 'click' || !step.advance_selector) {
+      setWaiting(false)
+      return
+    }
+    setWaiting(true)
+    const sel = step.advance_selector
+    function onDocClick(e: MouseEvent) {
+      const path = e.composedPath ? e.composedPath() : []
+      // Check the path so a click on a child of the matching element still counts.
+      const matched = (path.length > 0 ? path : [e.target as EventTarget])
+        .some(node => node instanceof Element && node.matches?.(sel))
+      if (!matched) return
+      // Tiny delay so the user sees their click register before we advance.
+      window.setTimeout(() => advance(), 120)
+    }
+    document.addEventListener('click', onDocClick, true)
+    return () => document.removeEventListener('click', onDocClick, true)
+    // advance closes over stepIdx; we re-bind whenever step changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
 
   if (!tour || !active || !step) return null
@@ -120,7 +147,7 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
     try { sessionStorage.setItem(`${GUEST_DISMISS_PREFIX}${tourKey}`, '1') } catch { /* ignore */ }
   }
 
-  function next() {
+  function advance() {
     if (isLast) {
       setActive(false)
       setGuestDismissed()
@@ -149,7 +176,8 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
       totalSteps={totalSteps}
       targetRect={targetRect}
       isLast={isLast}
-      onNext={next}
+      waitingForClick={waiting}
+      onNext={advance}
       onBack={back}
       onSkip={skip}
     />

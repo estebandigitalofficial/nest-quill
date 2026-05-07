@@ -63,21 +63,22 @@ export default function StyleStep() {
           {s.styleLabel} <span className="text-brand-500">*</span>
         </label>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div data-tour-id="style-cards" className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {STYLE_ORDER.map((style, i) => {
             const { label, description } = ILLUSTRATION_STYLES[style]
             const locked = i >= availableStyleCount
             const active = selectedStyle === style
             return (
-              <StyleCard
-                key={style}
-                style={style}
-                label={label}
-                description={description}
-                active={active}
-                locked={locked}
-                onClick={() => !locked && setValue('illustrationStyle', style, { shouldValidate: true })}
-              />
+              <div key={style} data-tour-id={`style-card-${style}`}>
+                <StyleCard
+                  style={style}
+                  label={label}
+                  description={description}
+                  active={active}
+                  locked={locked}
+                  onClick={() => !locked && setValue('illustrationStyle', style, { shouldValidate: true })}
+                />
+              </div>
             )
           })}
         </div>

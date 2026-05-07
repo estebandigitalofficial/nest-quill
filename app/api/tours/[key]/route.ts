@@ -31,7 +31,7 @@ export async function GET(
 
   const { data: stepsRows } = await admin
     .from('guided_tour_steps')
-    .select('id, step_order, target_selector, title, body, placement, action_label, requires_interaction')
+    .select('id, step_order, target_selector, title, body, placement, action_label, requires_interaction, advance_on, advance_selector, wait_message')
     .eq('tour_id', tourRow.id)
     .order('step_order', { ascending: true })
 
@@ -44,6 +44,9 @@ export async function GET(
     placement: (r.placement as TourStep['placement']) ?? 'bottom',
     action_label: (r.action_label as string | null) ?? null,
     requires_interaction: !!r.requires_interaction,
+    advance_on: ((r.advance_on as string) === 'click' ? 'click' : 'next_button'),
+    advance_selector: (r.advance_selector as string | null) ?? null,
+    wait_message: (r.wait_message as string | null) ?? null,
   }))
 
   const tour: Tour = {
