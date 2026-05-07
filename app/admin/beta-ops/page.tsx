@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
 import { getAllSettings } from '@/lib/settings/appSettings'
+import { getQueuePressure, QUEUE_THRESHOLDS } from '@/lib/limits/rateLimits'
 import GlassCard from '@/components/admin/GlassCard'
 import BetaOpsToggles from './BetaOpsToggles'
 
@@ -46,6 +47,23 @@ export default async function BetaOpsPage() {
     label: BETA_LABELS[k],
     value: settingsMap.get(k) ?? null,
   }))
+
+  // Soft beta protection metrics. Each is a head:true count and
+  // tolerates missing tables (rate_limit_events) gracefully.
+  const lastHourIso = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  const queue = await getQueuePressure()
+  const [
+    { count: throttleStoryToday, error: rateProbeError },
+    { count: throttleSupportToday },
+    { count: throttleQueueToday },
+    { count: storiesLastHour },
+  ] = await Promise.all([
+    db.from('rate_limit_events').select('id', { count: 'exact', head: true }).eq('action', 'story_submit').gte('created_at', todayStart),
+    db.from('rate_limit_events').select('id', { count: 'exact', head: true }).eq('action', 'support_ticket').gte('created_at', todayStart),
+    db.from('rate_limit_events').select('id', { count: 'exact', head: true }).in('action', ['queue_warning', 'queue_critical']).gte('created_at', todayStart),
+    db.from('story_requests').select('id', { count: 'exact', head: true }).gte('created_at', lastHourIso),
+  ])
+  const rateLimitTableMissing = rateProbeError?.code === '42P01'
 
   // Schema-existence probes — graceful for first-run environments.
   // Each fires a head:true count so missing tables surface as 42P01
@@ -168,6 +186,40 @@ export default async function BetaOpsPage() {
                    hint={paymentsEnabled ? 'NEXT_PUBLIC_PAYMENTS_ENABLED is true — disable in Vercel env before launch' : 'Off'} />
           </ul>
         </GlassCard>
+      </section>
+
+      {/* ── Beta protection ─────────────────────────────────────────── */}
+      <section>
+        <h2 className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">Beta protection</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <GlassCard
+            tone={queue.level === 'critical' ? 'red' : queue.level === 'warning' ? 'amber' : 'green'}
+            className="px-4 py-3">
+            <p className="text-[11px] uppercase tracking-widest text-adm-muted">Queue pressure</p>
+            <p className="text-sm font-semibold text-white mt-1">{queue.level}</p>
+            <p className="text-[11px] text-adm-subtle mt-1">
+              {queue.active} active · warn {QUEUE_THRESHOLDS.warning} · stop {QUEUE_THRESHOLDS.critical}
+            </p>
+          </GlassCard>
+          <MetricTile label="Active jobs" value={queue.active} tone={queue.level === 'critical' ? 'red' : queue.level === 'warning' ? 'amber' : 'neutral'} />
+          <MetricTile label="Stories last hour" value={storiesLastHour ?? 0} />
+          <MetricTile
+            label="Throttles today"
+            value={rateLimitTableMissing ? 0 : ((throttleStoryToday ?? 0) + (throttleSupportToday ?? 0) + (throttleQueueToday ?? 0))}
+            tone={rateLimitTableMissing ? 'neutral' : 'amber'}
+          />
+        </div>
+        {rateLimitTableMissing ? (
+          <p className="mt-2 text-[11px] text-rose-300">
+            rate_limit_events table missing — apply migration <code className="text-[11px] bg-white/5 px-1 py-0.5 rounded">20240054_rate_limit_events.sql</code> for throttle metrics.
+          </p>
+        ) : (
+          <div className="mt-3 grid grid-cols-3 gap-3">
+            <MetricTile label="Story throttles"   value={throttleStoryToday ?? 0}   tone={(throttleStoryToday ?? 0) > 0 ? 'amber' : 'neutral'} />
+            <MetricTile label="Support throttles" value={throttleSupportToday ?? 0} tone={(throttleSupportToday ?? 0) > 0 ? 'amber' : 'neutral'} />
+            <MetricTile label="Queue rejects"     value={throttleQueueToday ?? 0}   tone={(throttleQueueToday ?? 0) > 0 ? 'amber' : 'neutral'} />
+          </div>
+        )}
       </section>
 
       {/* ── Health metrics ──────────────────────────────────────────── */}

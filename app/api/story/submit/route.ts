@@ -11,6 +11,8 @@ import { sendAdminNotification, buildGuestStoryEmail } from '@/lib/services/admi
 import { classifyGenre } from '@/lib/services/genre'
 import { synthesizeTheme, synthesizeTraitsLine, mergeIntoCustomNotes } from '@/lib/services/storyFormSynthesis'
 import { gateStoryCreation, gateGuestStoryCreation } from '@/lib/settings/gates'
+import { checkStoryRateLimit, checkQueueGate, hashIp } from '@/lib/limits/rateLimits'
+import { getAdminContext } from '@/lib/admin/guard'
 import type { SubmitStoryResponse } from '@/types/story'
 
 export async function POST(request: NextRequest) {
@@ -38,6 +40,42 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       guestToken = cookieStore.get('guest_token')?.value ?? crypto.randomUUID()
+    }
+
+    // ── 2.5 Beta abuse protection: rate limit + queue pressure ──────────────
+    // Admins bypass both gates. Order matters: per-identifier rate limit
+    // first (so a misbehaving caller doesn't wedge queue checks for
+    // legitimate users), queue gate second.
+    const adminCtx = user ? await getAdminContext() : null
+    const isAdmin = !!adminCtx
+    const ipRawForHash = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
+    const ipHash = await hashIp(ipRawForHash)
+
+    const rateBlock = await checkStoryRateLimit({
+      userId: user?.id ?? null,
+      guestEmail: !user ? formData.userEmail : null,
+      ipHash,
+      isAdmin,
+    })
+    if (!rateBlock.allowed) {
+      return NextResponse.json(
+        { message: rateBlock.message, code: rateBlock.code, retryAfterSeconds: rateBlock.retryAfterSeconds },
+        { status: 429 },
+      )
+    }
+
+    const queueBlock = await checkQueueGate({
+      isGuest: !user,
+      isAdmin,
+      ipHash,
+      email: formData.userEmail ?? null,
+      userId: user?.id ?? null,
+    })
+    if (!queueBlock.allowed) {
+      return NextResponse.json(
+        { message: queueBlock.message, code: queueBlock.code, retryAfterSeconds: queueBlock.retryAfterSeconds },
+        { status: queueBlock.code === 'QUEUE_CRITICAL' ? 503 : 429 },
+      )
     }
 
     // ── 3. Check plan limits ─────────────────────────────────────────────────

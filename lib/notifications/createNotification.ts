@@ -35,6 +35,13 @@ export interface CreateNotificationArgs {
    * pre-check and create two rows. Acceptable for current volumes.
    */
   dedupe?: boolean
+  /**
+   * When set, skip the insert if a notification with the same
+   * (user_id, type) was created within the last `cooldownMinutes`.
+   * Prevents notification floods from a noisy event source. Requires
+   * userId. Independent of `dedupe` — both can be combined.
+   */
+  cooldownMinutes?: number
 }
 
 export interface CreateNotificationResult {
@@ -61,6 +68,19 @@ export async function createNotification(args: CreateNotificationArgs): Promise<
       .limit(1)
       .maybeSingle()
     if (existing?.id) return { id: existing.id as string, deduped: true }
+  }
+
+  if (args.cooldownMinutes && args.cooldownMinutes > 0 && args.userId) {
+    const since = new Date(Date.now() - args.cooldownMinutes * 60_000).toISOString()
+    const { data: recent } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('user_id', args.userId)
+      .eq('type', args.type)
+      .gte('created_at', since)
+      .limit(1)
+      .maybeSingle()
+    if (recent?.id) return { id: recent.id as string, deduped: true }
   }
 
   const { data, error } = await admin

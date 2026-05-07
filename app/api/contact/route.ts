@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { appUrl } from '@/lib/utils/appUrl'
 import { gateSupportIntake } from '@/lib/settings/gates'
+import { checkSupportRateLimit, hashIp } from '@/lib/limits/rateLimits'
+import { getAdminContext } from '@/lib/admin/guard'
 
 const VALID_CATEGORIES = new Set([
   'story_issue', 'account', 'classroom', 'billing',
@@ -35,6 +37,23 @@ export async function POST(req: NextRequest) {
   // Identify the submitter without forcing a sign-in.
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  // Beta abuse protection: per-identifier daily rate limit. Admins bypass.
+  const adminCtx = user ? await getAdminContext() : null
+  const ipRawForHash = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
+  const ipHash = await hashIp(ipRawForHash)
+  const rate = await checkSupportRateLimit({
+    userId: user?.id ?? null,
+    email,
+    ipHash,
+    isAdmin: !!adminCtx,
+  })
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: rate.message, code: rate.code, retryAfterSeconds: rate.retryAfterSeconds },
+      { status: 429 },
+    )
+  }
 
   // Source-of-truth insert: a ticket exists even if the email send fails.
   const admin = createAdminClient()

@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import StoryWizard from '@/components/story/wizard/StoryWizard'
 import { getSetting } from '@/lib/settings/appSettings'
 import { isSettingEnabled } from '@/lib/settings/gates'
+import { getQueuePressure } from '@/lib/limits/rateLimits'
 
 export const metadata: Metadata = {
   title: 'Create Your Story',
@@ -28,6 +29,10 @@ export default async function CreatePage() {
   ])
   if (!storyOpen) return <CreateUnavailable mode="paused" />
   if (!user && !guestOpen) return <CreateUnavailable mode="signin_required" />
+
+  // Soft queue-pressure check for the UI. Hard guest blocks happen
+  // server-side at submit time; this is just expectation-setting.
+  const queue = await getQueuePressure()
 
   // Fetch live limits, user profile, and beta mode in parallel
   const [[guestLimit, freeLimit, betaMode], profileResult] = await Promise.all([
@@ -111,6 +116,21 @@ export default async function CreatePage() {
         {betaMode && (
           <div className="mb-6 text-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
             Beta Mode active — some features may be simulated.
+          </div>
+        )}
+
+        {/* Queue pressure notices. Critical → no submissions accepted
+            (server-side gate also enforces). Warning → expectation-set
+            but signed-in users can still submit. */}
+        {queue.level === 'critical' && (
+          <div className="mb-6 text-center text-sm text-rose-800 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3">
+            <strong className="block">High demand right now</strong>
+            <span className="text-xs">The story queue is at capacity. Please try again in a few minutes — your story is safe to come back to.</span>
+          </div>
+        )}
+        {queue.level === 'warning' && (
+          <div className="mb-6 text-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+            High demand — your story may take a little longer to start. Thanks for your patience!
           </div>
         )}
 
