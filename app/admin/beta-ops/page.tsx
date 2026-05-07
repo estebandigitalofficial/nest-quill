@@ -110,6 +110,42 @@ export default async function BetaOpsPage() {
   const tourProgressMissing  = tourCompletedErr?.code === '42P01'
   const stuckSupported       = !stuckErr || stuckErr.code !== '42P01'
 
+  // ── Queue health detail (Phase 3 resilience) ────────────────────────
+  // Three lightweight reads: stale leases, retried-today share, and
+  // recent completion durations. Each tolerates a missing column /
+  // table without crashing the page.
+  const [
+    { count: staleLeaseCount },
+    { count: retriedTodayCount },
+    { data: durationRows },
+  ] = await Promise.all([
+    db.from('story_requests').select('id', { count: 'exact', head: true })
+      .not('worker_id', 'is', null)
+      .lt('worker_lease_expires_at', new Date().toISOString()),
+    db.from('story_requests').select('id', { count: 'exact', head: true })
+      .gte('retry_count', 1)
+      .gte('created_at', todayStart),
+    db.from('story_requests').select('processing_started_at, completed_at')
+      .eq('status', 'complete')
+      .gte('completed_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .not('processing_started_at', 'is', null)
+      .limit(200),
+  ])
+  // Average completion duration (s). Skip outliers > 30 min so a stuck
+  // worker that finished doesn't pull the average to infinity.
+  let avgProcessingSec = 0
+  let durationSamples = 0
+  for (const r of (durationRows ?? [])) {
+    const cell = r as { processing_started_at: string | null; completed_at: string | null }
+    if (!cell.processing_started_at || !cell.completed_at) continue
+    const delta = (new Date(cell.completed_at).getTime() - new Date(cell.processing_started_at).getTime()) / 1000
+    if (delta > 0 && delta < 30 * 60) {
+      avgProcessingSec += delta
+      durationSamples++
+    }
+  }
+  if (durationSamples > 0) avgProcessingSec = Math.round(avgProcessingSec / durationSamples)
+
   // Plan tier breakdown today.
   const planTierCounts: Record<string, number> = {}
   for (const r of (storyPlanRows ?? [])) {
@@ -239,6 +275,15 @@ export default async function BetaOpsPage() {
           <MetricTile label="Learning"       value={learningToday ?? 0} />
           <MetricTile label="Tour completed" value={tourProgressMissing ? 0 : (tourCompleted ?? 0)} tone="violet" />
           <MetricTile label="Tour skipped"   value={tourProgressMissing ? 0 : (tourSkipped ?? 0)} />
+        </div>
+
+        {/* Queue health — surfaced only when the 20240056 columns/data
+            return non-zero, so first-run admins don't see noise. */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+          <MetricTile label="Avg run (24h)"   value={avgProcessingSec} tone="neutral" />
+          <MetricTile label="Retried today"   value={retriedTodayCount ?? 0} tone={(retriedTodayCount ?? 0) > 0 ? 'amber' : 'neutral'} />
+          <MetricTile label="Stale leases"    value={staleLeaseCount ?? 0}    tone={(staleLeaseCount ?? 0) > 0 ? 'amber' : 'neutral'} />
+          <MetricTile label="Active jobs"     value={queue.active} tone={queue.level === 'critical' ? 'red' : queue.level === 'warning' ? 'amber' : 'neutral'} />
         </div>
 
         {Object.keys(planTierCounts).length > 0 && (

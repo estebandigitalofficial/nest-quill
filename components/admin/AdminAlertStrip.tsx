@@ -16,6 +16,8 @@ export interface AdminAlertProps {
   failedLastHour?: number
   /** Active jobs at the time of read — used with stuckCount to compute stuck %. */
   activeJobsCount?: number
+  /** Workers whose lease expired but worker_id is still set — needs reclaim. */
+  staleLeaseCount?: number
   /** Set when getSetting calls returned without a row, suggesting first-run state. */
   missingCriticalSettings?: string[]
 }
@@ -88,6 +90,17 @@ export default function AdminAlertStrip(props: AdminAlertProps) {
       tone: 'amber',
       title: `${Math.round((props.stuckCount / active) * 100)}% of active jobs are stuck`,
       body: 'Workers may be wedged. Force-requeue the stuck jobs or check Edge Function logs.',
+      cta: { href: '#queue-health', label: 'View queue' },
+    })
+  }
+  // Stale lease — worker_id is still set but the lease expired. The
+  // Edge Function reclaim path handles this on the next trigger, but
+  // surfacing it lets the admin force a sweep if needed.
+  if ((props.staleLeaseCount ?? 0) > 0) {
+    blocks.push({
+      tone: 'amber',
+      title: `${props.staleLeaseCount} stale worker lease${props.staleLeaseCount === 1 ? '' : 's'}`,
+      body: 'A worker died mid-run. The next pipeline trigger reclaims expired leases automatically.',
       cta: { href: '#queue-health', label: 'View queue' },
     })
   }

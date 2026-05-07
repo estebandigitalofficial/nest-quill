@@ -110,6 +110,9 @@ export interface StoryRequest {
   failure_code: string | null
   failure_stage: string | null
   retryable: boolean | null
+  worker_lease_expires_at: string | null
+  worker_heartbeat_at: string | null
+  retry_after: string | null
   stripe_payment_intent_id: string | null
   stripe_checkout_session_id: string | null
   amount_paid_cents: number | null

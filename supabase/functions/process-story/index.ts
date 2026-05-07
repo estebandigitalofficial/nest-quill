@@ -531,17 +531,27 @@ Deno.serve(async (req) => {
   // If only generated_stories exists (scenes missing), regenerate both cleanly.
   const isResume = !!existingStoryCheck?.id && (existingSceneCheck?.length ?? 0) > 0
 
-  // ── Atomic claim ──────────────────────────────────────────────────────────
-  // A single conditional UPDATE wins or loses. When two workers race, only
-  // the first sees a returned row; the second sees `null` (no row matched
-  // the predicate because worker_id is no longer NULL) and exits. This is
-  // the only place the worker grabs the lock — the row is the lock.
+  // ── Atomic lease-aware claim ─────────────────────────────────────────────
+  // The conditional UPDATE wins when EITHER no worker holds the row OR the
+  // existing lease has expired. Combined with the unique row + atomic
+  // UPDATE this remains race-safe: two workers can't both succeed.
+  //
+  // Lease window is 2 minutes — comfortably longer than any single image
+  // generation but short enough that a crashed worker can be reclaimed
+  // quickly. The Edge Function refreshes the lease via heartbeat() on
+  // every image loop iteration so long runs don't time themselves out.
   const workerId = crypto.randomUUID()
+  const LEASE_MS = 2 * 60 * 1000
+  const leaseExpiresIso = new Date(Date.now() + LEASE_MS).toISOString()
+  const nowIso = new Date().toISOString()
+  const reclaiming = storyRequest.worker_id !== null
 
   const { data: claim } = await supabase
     .from('story_requests')
     .update({
       worker_id: workerId,
+      worker_lease_expires_at: leaseExpiresIso,
+      worker_heartbeat_at: nowIso,
       status: isResume ? 'generating_images' : 'generating_text',
       ...(!isResume ? { processing_started_at: new Date().toISOString() } : {}),
       status_message: isResume ? 'Resuming illustrations…' : 'Writing your story…',
@@ -549,7 +559,8 @@ Deno.serve(async (req) => {
       last_error: null,
     })
     .eq('id', requestId)
-    .is('worker_id', null)
+    // Accept rows where there's no worker, OR the lease has expired.
+    .or(`worker_id.is.null,worker_lease_expires_at.lt.${nowIso}`)
     .in('status', claimableStatuses)
     .select('id')
     .maybeSingle()
@@ -562,8 +573,33 @@ Deno.serve(async (req) => {
     )
   }
 
+  // Heartbeat — call from inside long stages to refresh the lease.
+  // Conditional on worker_id matching ours so a stale worker that
+  // tries to extend after being reclaimed is a no-op.
+  async function heartbeat() {
+    const next = new Date(Date.now() + LEASE_MS).toISOString()
+    await supabase
+      .from('story_requests')
+      .update({ worker_heartbeat_at: new Date().toISOString(), worker_lease_expires_at: next })
+      .eq('id', requestId)
+      .eq('worker_id', workerId)
+  }
+
   // Worker start time — used to enforce the time budget
   const workerStart = Date.now()
+
+  // Audit trail entry for the claim. lease_reclaimed is the more
+  // interesting signal — it means a previous worker died and we
+  // re-grabbed the row.
+  await supabase.from('processing_logs').insert({
+    request_id: requestId,
+    level: 'info',
+    stage: reclaiming ? 'lease_reclaimed' : 'lease_acquired',
+    message: reclaiming
+      ? `Reclaimed expired lease (worker=${workerId.slice(0, 8)})`
+      : `Lease acquired (worker=${workerId.slice(0, 8)})`,
+    metadata: { worker_id: workerId, lease_ms: LEASE_MS },
+  })
 
   // Track the last pipeline stage we entered so the catch-block
   // classifier can attribute the failure correctly.
@@ -906,6 +942,11 @@ Deno.serve(async (req) => {
       }
 
       for (const scene of pendingScenes) {
+        // Heartbeat — refresh the lease before each scene so a long
+        // run doesn't get reclaimed by a stuck-job sweeper while it's
+        // still actively working.
+        await heartbeat()
+
         // ── Time budget check ─────────────────────────────────────────────
         // Evaluated BEFORE each DALL-E call so we never start an image we
         // cannot finish within the Edge Function wall-clock limit.

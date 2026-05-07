@@ -184,6 +184,16 @@ export default async function AdminPage({ searchParams }: PageProps) {
     adminSupabase.from('story_requests').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('updated_at', lastHourIso),
   ])
   const activeJobsCount = (queuedCount ?? 0) + (processingCount ?? 0)
+
+  // Stale leases — worker_id set but lease expired. Graceful when
+  // the 20240056 migration hasn't applied: the column is missing,
+  // the query errors, count comes back null, the alert hides.
+  const { count: staleLeaseCount } = await adminSupabase
+    .from('story_requests')
+    .select('id', { count: 'exact', head: true })
+    .not('worker_id', 'is', null)
+    .lt('worker_lease_expires_at', new Date().toISOString())
+
   const oldestQueuedMinutes = oldestQueuedRow?.created_at
     ? Math.max(0, (Date.now() - new Date(oldestQueuedRow.created_at as string).getTime()) / 60000)
     : null
@@ -246,6 +256,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
           urgentSupportTickets={urgentTickets}
           failedLastHour={failedLastHour ?? 0}
           activeJobsCount={activeJobsCount}
+          staleLeaseCount={staleLeaseCount ?? 0}
         />
 
         {/* System status — glass tiles for the eight things we care about most */}

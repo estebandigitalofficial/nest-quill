@@ -12,6 +12,7 @@ import { classifyGenre } from '@/lib/services/genre'
 import { synthesizeTheme, synthesizeTraitsLine, mergeIntoCustomNotes } from '@/lib/services/storyFormSynthesis'
 import { gateStoryCreation, gateGuestStoryCreation } from '@/lib/settings/gates'
 import { checkStoryRateLimit, checkQueueGate, hashIp } from '@/lib/limits/rateLimits'
+import { deriveStorySubmissionKey, reserveIdempotencyKey, finalizeIdempotencyKey } from '@/lib/limits/idempotency'
 import { getAdminContext } from '@/lib/admin/guard'
 import type { SubmitStoryResponse } from '@/types/story'
 
@@ -76,6 +77,32 @@ export async function POST(request: NextRequest) {
         { message: queueBlock.message, code: queueBlock.code, retryAfterSeconds: queueBlock.retryAfterSeconds },
         { status: queueBlock.code === 'QUEUE_CRITICAL' ? 503 : 429 },
       )
+    }
+
+    // ── 2.6 Submission idempotency ─────────────────────────────────────────
+    // Either honor an explicit X-Idempotency-Key header or derive one
+    // from identity + payload. Duplicate hits inside the 15-minute
+    // window short-circuit and return the prior request id without
+    // creating a second story_requests row.
+    const explicitKey = request.headers.get('x-idempotency-key')?.trim()
+    const idemKey = explicitKey && explicitKey.length >= 8 && explicitKey.length <= 200
+      ? explicitKey
+      : await deriveStorySubmissionKey({
+          identity: user?.id ?? guestToken,
+          email: formData.userEmail,
+          childName: formData.childName,
+          childAge: formData.childAge,
+          storyTheme: formData.storyTheme,
+          planTier: formData.planTier,
+          storyLength: formData.storyLength,
+        })
+    const idem = await reserveIdempotencyKey(idemKey)
+    if (idem.isDuplicate && idem.requestId) {
+      return NextResponse.json<SubmitStoryResponse>({
+        requestId: idem.requestId,
+        status: 'queued',
+        requiresPayment: false,
+      }, { headers: { 'X-Idempotency-Hit': '1' } })
     }
 
     // ── 3. Check plan limits ─────────────────────────────────────────────────
@@ -208,6 +235,10 @@ export async function POST(request: NextRequest) {
     }
 
     const requestId = storyRequest.id
+
+    // Finalize the idempotency reservation so subsequent duplicates
+    // get the same requestId back instead of creating a new row.
+    await finalizeIdempotencyKey(idem.keyRowId, requestId, 200)
 
     // ── 6. Trigger the background processing pipeline + confirmation email ────
     after(async () => {
