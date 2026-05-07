@@ -20,22 +20,25 @@
      * .light and .dark below resolve to the same parchment palette so
      * the look stays consistent regardless of OS theme.
      */
-    --adm-bg:      241 233 215;
-    --adm-surface: 255 252 245;
-    --adm-border:  207 192 165;
-    --adm-text:     38  32  22;
-    --adm-muted:   110  95  75;
-    --adm-subtle:  155 138 112;
+    /* Linear/Vercel/Supabase-style operational palette: dark zinc
+     * surface, near-white text, sharp borders. No warm tints. The
+     * admin reads as infrastructure software, not a designed theme. */
+    --adm-bg:        9   9  11;
+    --adm-surface:  24  24  27;
+    --adm-border:   39  39  42;
+    --adm-text:    250 250 250;
+    --adm-muted:   161 161 170;
+    --adm-subtle:  113 113 122;
   }
 
   .light,
   .dark {
-    --adm-bg:      241 233 215;
-    --adm-surface: 255 252 245;
-    --adm-border:  207 192 165;
-    --adm-text:     38  32  22;
-    --adm-muted:   110  95  75;
-    --adm-subtle:  155 138 112;
+    --adm-bg:        9   9  11;
+    --adm-surface:  24  24  27;
+    --adm-border:   39  39  42;
+    --adm-text:    250 250 250;
+    --adm-muted:   161 161 170;
+    --adm-subtle:  113 113 122;
   }
 
   html {

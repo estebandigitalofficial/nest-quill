@@ -22,7 +22,7 @@ const SECTIONS: Section[] = [
     href: '/admin',
     activePaths: ['/admin', '/admin/library', '/admin/images'],
     exactRoot: true,
-    accent: 'text-amber-700',
+    accent: 'text-adm-text',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
         <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
@@ -34,7 +34,7 @@ const SECTIONS: Section[] = [
     label: 'Ops',
     href: '/admin/beta-ops',
     activePaths: ['/admin/beta-ops', '/admin/tours'],
-    accent: 'text-sky-700',
+    accent: 'text-sky-400',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
         <circle cx="12" cy="12" r="3" />
@@ -46,7 +46,7 @@ const SECTIONS: Section[] = [
     label: 'Support',
     href: '/admin/support',
     activePaths: ['/admin/support'],
-    accent: 'text-rose-700',
+    accent: 'text-rose-400',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
         <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
@@ -57,7 +57,7 @@ const SECTIONS: Section[] = [
     label: 'Users',
     href: '/admin/users',
     activePaths: ['/admin/users', '/admin/guests', '/admin/classrooms'],
-    accent: 'text-blue-700',
+    accent: 'text-blue-400',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
         <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -89,7 +89,7 @@ export default function AdminBottomNav() {
 
   return (
     <nav
-      className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-adm-surface/95 backdrop-blur border-t border-adm-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
+      className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-adm-bg border-t border-adm-border"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex items-stretch h-16">

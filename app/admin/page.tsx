@@ -205,29 +205,27 @@ export default async function AdminPage({ searchParams }: PageProps) {
   return (
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
 
-        {/* ── Command Center hero ─────────────────────────────────── */}
-        <header className="relative overflow-hidden rounded-3xl border-2 border-amber-300 bg-gradient-to-br from-blue-100 via-amber-50 to-amber-100 px-6 py-7 shadow-xl shadow-blue-900/15">
-          {/* Cobalt anchor on the left edge — the structural element */}
-          <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-blue-700 via-blue-500 to-amber-500" aria-hidden />
-          <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-amber-300/50 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-20 -left-12 w-64 h-64 rounded-full bg-blue-400/40 blur-3xl pointer-events-none" />
-          <div className="relative pl-3">
-            <p className="text-[11px] font-bold text-amber-800 uppercase tracking-[0.2em]">Nest &amp; Quill</p>
-            <h1 className="text-3xl font-semibold text-adm-text mt-1">Command Center</h1>
-            <p className="text-sm text-adm-muted mt-2 max-w-xl">
-              At-a-glance status for the beta. Alerts, queue health, support, and quick controls are below — no hunting required.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/admin/beta-ops" className="inline-flex items-center gap-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-full transition-colors shadow-md shadow-blue-900/20">
-                Beta Ops →
+        {/* ── Command Center overview panel ───────────────────────── */}
+        <header className="rounded-lg border border-adm-border bg-adm-surface px-5 py-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-medium text-adm-subtle uppercase tracking-[0.14em]">Overview</p>
+              <h1 className="text-lg font-semibold text-adm-text mt-0.5">Command Center</h1>
+              <p className="text-sm text-adm-muted mt-1 max-w-xl">
+                At-a-glance status for the beta. Alerts, queue health, support, and quick controls are below.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 shrink-0">
+              <Link href="/admin/beta-ops" className="inline-flex items-center gap-1.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-medium px-3 py-1.5 rounded-md transition-colors">
+                Beta Ops
               </Link>
-              <Link href="/admin/support" className="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50 border border-amber-300 text-adm-text text-xs font-semibold px-3.5 py-1.5 rounded-full transition-colors shadow-sm">
+              <Link href="/admin/support" className="inline-flex items-center gap-1.5 bg-adm-bg hover:bg-adm-surface border border-adm-border text-adm-text text-xs font-medium px-3 py-1.5 rounded-md transition-colors">
                 Support {urgentTickets > 0 && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-rose-500" />}
               </Link>
-              <Link href="/admin/reporting" className="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50 border border-amber-300 text-adm-text text-xs font-semibold px-3.5 py-1.5 rounded-full transition-colors shadow-sm">
+              <Link href="/admin/reporting" className="inline-flex items-center gap-1.5 bg-adm-bg hover:bg-adm-surface border border-adm-border text-adm-text text-xs font-medium px-3 py-1.5 rounded-md transition-colors">
                 Reporting
               </Link>
-              <Link href="/admin/settings" className="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50 border border-amber-300 text-adm-text text-xs font-semibold px-3.5 py-1.5 rounded-full transition-colors shadow-sm">
+              <Link href="/admin/settings" className="inline-flex items-center gap-1.5 bg-adm-bg hover:bg-adm-surface border border-adm-border text-adm-text text-xs font-medium px-3 py-1.5 rounded-md transition-colors">
                 Settings
               </Link>
             </div>
@@ -806,13 +804,13 @@ function SystemTile({ label, value, tone }: {
 function StatCard({ label, value, color, href, active }: {
   label: string; value: number; color?: 'green' | 'red' | 'amber'; href?: string; active?: boolean
 }) {
-  const valueColor = color === 'green' ? 'text-emerald-700' : color === 'red' ? 'text-rose-700' : color === 'amber' ? 'text-amber-700' : 'text-adm-text'
+  const valueColor = color === 'green' ? 'text-emerald-400' : color === 'red' ? 'text-rose-400' : color === 'amber' ? 'text-amber-400' : 'text-adm-text'
   const card = (
-    <div className={`rounded-2xl border px-5 py-4 transition-all shadow-md shadow-amber-900/5 ${
+    <div className={`rounded-md border px-5 py-4 transition-colors ${
       active
-        ? 'bg-amber-100 border-amber-400 shadow-amber-300/40'
+        ? 'bg-sky-500/10 border-sky-500/40'
         : href
-        ? 'bg-adm-surface border-adm-border hover:border-blue-500 hover:shadow-lg cursor-pointer'
+        ? 'bg-adm-surface border-adm-border hover:border-sky-500/50 cursor-pointer'
         : 'bg-adm-surface border-adm-border'
     }`}>
       <p className="text-xs text-adm-muted mb-1">{label}</p>
@@ -824,17 +822,17 @@ function StatCard({ label, value, color, href, active }: {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  // Light tinted pills on parchment; readable + accent-colored.
+  // Subtle dark-tinted pills — Linear/Vercel notification style.
   const styles: Record<string, string> = {
-    complete:          'bg-emerald-100 text-emerald-800',
-    failed:            'bg-rose-100 text-rose-800',
-    queued:            'bg-amber-100 text-amber-800',
-    generating_text:   'bg-sky-100 text-sky-800',
-    generating_images: 'bg-sky-100 text-sky-800',
-    assembling_pdf:    'bg-sky-100 text-sky-800',
+    complete:          'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30',
+    failed:            'bg-rose-500/10 text-rose-300 border border-rose-500/30',
+    queued:            'bg-amber-500/10 text-amber-300 border border-amber-500/30',
+    generating_text:   'bg-sky-500/10 text-sky-300 border border-sky-500/30',
+    generating_images: 'bg-sky-500/10 text-sky-300 border border-sky-500/30',
+    assembling_pdf:    'bg-sky-500/10 text-sky-300 border border-sky-500/30',
   }
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${styles[status] ?? 'bg-adm-surface text-adm-muted'}`}>
+    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md ${styles[status] ?? 'bg-adm-bg text-adm-muted border border-adm-border'}`}>
       {status.replace(/_/g, ' ')}
     </span>
   )

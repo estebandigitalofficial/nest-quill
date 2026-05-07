@@ -92,17 +92,10 @@ export default function AdminSidebar() {
 
   return (
     <nav className="py-5 px-3 space-y-5">
-      {/* Brand row — sits on the navy rail; amber lockup */}
-      <div className="px-2 mb-1">
-        <p className="text-[10px] font-bold text-amber-300 uppercase tracking-[0.18em]">Nest &amp; Quill</p>
-        <p className="text-sm font-semibold text-white mt-0.5">Command Center</p>
-      </div>
-
       {NAV_GROUPS.map(group => (
         <div key={group.label}>
-          <div className="px-2 mb-1 flex items-center gap-2">
-            <span aria-hidden className={`w-1.5 h-1.5 rounded-full ${group.accent}`} />
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{group.label}</p>
+          <div className="px-2 mb-1.5">
+            <p className="text-[10px] font-medium text-adm-subtle uppercase tracking-[0.12em]">{group.label}</p>
           </div>
           <div className="space-y-0.5">
             {group.items.map(item => {
@@ -111,13 +104,12 @@ export default function AdminSidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors ${
+                  className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
                     active
-                      ? 'bg-white/10 text-white font-medium'
-                      : 'text-slate-300 hover:text-white hover:bg-white/5'
+                      ? 'bg-adm-surface text-adm-text font-medium'
+                      : 'text-adm-muted hover:text-adm-text hover:bg-adm-surface/60'
                   }`}
                 >
-                  <span className={`w-1 h-3.5 rounded-full shrink-0 transition-colors ${active ? group.accent : 'bg-transparent'}`} />
                   {item.label}
                 </Link>
               )

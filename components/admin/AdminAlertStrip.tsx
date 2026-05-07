@@ -82,25 +82,25 @@ export default function AdminAlertStrip(props: AdminAlertProps) {
       {blocks.map((b, i) => (
         <div
           key={i}
-          className={`rounded-2xl border-l-4 border border-l-current px-4 py-3 shadow-md shadow-amber-900/5 ${
+          className={`rounded-lg border px-4 py-3 ${
             b.tone === 'red'
-              ? 'bg-rose-50 border-rose-300 border-l-rose-500'
+              ? 'bg-rose-500/10 border-rose-500/30'
               : b.tone === 'amber'
-              ? 'bg-amber-50 border-amber-300 border-l-amber-500'
-              : 'bg-sky-50 border-sky-300 border-l-sky-500'
+              ? 'bg-amber-500/10 border-amber-500/30'
+              : 'bg-sky-500/10 border-sky-500/30'
           }`}>
           <div className="flex items-start gap-2">
-            <span aria-hidden className={`mt-1 w-2 h-2 rounded-full shrink-0 ${
-              b.tone === 'red' ? 'bg-rose-500' : b.tone === 'amber' ? 'bg-amber-500' : 'bg-sky-500'
+            <span aria-hidden className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${
+              b.tone === 'red' ? 'bg-rose-400' : b.tone === 'amber' ? 'bg-amber-400' : 'bg-sky-400'
             }`} />
             <div className="min-w-0 flex-1">
-              <p className={`text-sm font-semibold ${
-                b.tone === 'red' ? 'text-rose-800' : b.tone === 'amber' ? 'text-amber-800' : 'text-sky-800'
+              <p className={`text-sm font-medium ${
+                b.tone === 'red' ? 'text-rose-300' : b.tone === 'amber' ? 'text-amber-300' : 'text-sky-300'
               }`}>{b.title}</p>
               <p className="text-xs text-adm-muted mt-0.5 leading-snug">{b.body}</p>
               {b.cta && (
-                <Link href={b.cta.href} className={`inline-block mt-1.5 text-xs font-semibold ${
-                  b.tone === 'red' ? 'text-rose-700 hover:text-rose-900' : b.tone === 'amber' ? 'text-amber-700 hover:text-amber-900' : 'text-sky-700 hover:text-sky-900'
+                <Link href={b.cta.href} className={`inline-block mt-1.5 text-xs font-medium ${
+                  b.tone === 'red' ? 'text-rose-300 hover:text-rose-200' : b.tone === 'amber' ? 'text-amber-300 hover:text-amber-200' : 'text-sky-300 hover:text-sky-200'
                 }`}>
                   {b.cta.label} →
                 </Link>

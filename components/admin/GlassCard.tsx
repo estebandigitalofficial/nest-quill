@@ -18,18 +18,18 @@ import type { ReactNode } from 'react'
 
 type Tone = 'neutral' | 'green' | 'amber' | 'red' | 'blue' | 'violet' | 'gold'
 
-// Tones tuned for the parchment Command Center. Cards lift off the
-// page with a soft drop shadow (shadow-md/xl + warm shadow color)
-// plus solid mid-200 borders so card edges register without
-// shouting. Text inside cards uses text-adm-text by default.
+// Operational SaaS tones — solid dark surface with a tinted border
+// signaling state. Linear/Vercel approach: the tone communicates
+// information through a thin colored edge, not through coloured
+// backgrounds, gradients or glow.
 const TONE_RING: Record<Tone, string> = {
-  neutral: 'from-white to-amber-50/60 border-amber-300',
-  green:   'from-emerald-50 to-emerald-100/80 border-emerald-400',
-  amber:   'from-amber-50 to-amber-100/80 border-amber-400',
-  red:     'from-rose-50 to-rose-100/80 border-rose-400',
-  blue:    'from-sky-50 to-sky-100/80 border-sky-400',
-  violet:  'from-violet-50 to-violet-100/80 border-violet-400',
-  gold:    'from-yellow-50 to-amber-100/80 border-yellow-500',
+  neutral: 'bg-adm-surface border-adm-border',
+  green:   'bg-adm-surface border-emerald-700/60',
+  amber:   'bg-adm-surface border-amber-700/60',
+  red:     'bg-adm-surface border-rose-700/60',
+  blue:    'bg-adm-surface border-sky-700/60',
+  violet:  'bg-adm-surface border-violet-700/60',
+  gold:    'bg-adm-surface border-amber-600/60',
 }
 
 export default function GlassCard({
@@ -42,7 +42,7 @@ export default function GlassCard({
   children: ReactNode
 }) {
   return (
-    <div className={`relative rounded-2xl border bg-gradient-to-br ${TONE_RING[tone]} shadow-md shadow-amber-900/10 ${className}`}>
+    <div className={`relative rounded-lg border ${TONE_RING[tone]} ${className}`}>
       {children}
     </div>
   )
