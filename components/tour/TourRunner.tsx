@@ -40,7 +40,18 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
     fetch(`/api/tours/${tourKey}`)
       .then(r => r.ok ? r.json() : null)
       .then((data: { tour: Tour | null; progress: { completed: boolean; skipped: boolean; last_step: number } | null } | null) => {
-        if (cancelledRef.current || !data?.tour) return
+        if (cancelledRef.current) return
+        if (!data?.tour) {
+          // The route returns null when guided_tours_enabled is off
+          // OR when the specific tour row has enabled=false. Surface
+          // this clearly in dev so an "I clicked replay and nothing
+          // happened" report doesn't go unanswered.
+          if (process.env.NODE_ENV !== 'production' && forceReplay) {
+            // eslint-disable-next-line no-console
+            console.warn(`[TourRunner] forceReplay requested for "${tourKey}" but the tour is unavailable. Check guided_tours_enabled in app_settings and the row's enabled flag in /admin/tours.`)
+          }
+          return
+        }
         setTour(data.tour)
 
         if (forceReplay) {

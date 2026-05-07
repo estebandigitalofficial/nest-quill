@@ -18,6 +18,7 @@ export default function UserControls() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [notifError, setNotifError] = useState<string | null>(null)
+  const [tourAvailable, setTourAvailable] = useState(false)
   const [open, setOpen] = useState<Menu>(null)
   const router = useRouter()
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -71,6 +72,22 @@ export default function UserControls() {
       .catch(() => { if (!cancelled) setNotifError("Couldn't load notifications.") })
     return () => { cancelled = true }
   }, [user, open === 'notifications'])
+
+  // Tour availability — drives whether the "Replay tour" link appears
+  // in the help menu. The /api/tours route returns { tour: null } when
+  // the master guided_tours_enabled switch is off OR when the specific
+  // tour has been disabled in /admin/tours. Either way → hide the link.
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/tours/create_story_wizard')
+      .then(r => r.ok ? r.json() : null)
+      .then((data) => {
+        if (cancelled) return
+        setTourAvailable(!!data?.tour)
+      })
+      .catch(() => { if (!cancelled) setTourAvailable(false) })
+    return () => { cancelled = true }
+  }, [])
 
   // Click-outside + Escape close the open menu so the dropdowns behave like a
   // single mutually-exclusive control cluster.
@@ -177,9 +194,11 @@ export default function UserControls() {
 
       {open === 'help' && (
         <Dropdown title="Help & support">
-          <DropdownLink href="/create?replayTour=create_story_wizard" onClick={() => setOpen(null)}>
-            Replay story-wizard tour
-          </DropdownLink>
+          {tourAvailable && (
+            <DropdownLink href="/create?replayTour=create_story_wizard" onClick={() => setOpen(null)}>
+              Replay story-wizard tour
+            </DropdownLink>
+          )}
           <DropdownLink href="/contact" onClick={() => setOpen(null)}>Contact support</DropdownLink>
           <DropdownLink href="/pricing" onClick={() => setOpen(null)}>Plans &amp; pricing</DropdownLink>
           <DropdownLink href="/privacy" onClick={() => setOpen(null)}>Privacy</DropdownLink>

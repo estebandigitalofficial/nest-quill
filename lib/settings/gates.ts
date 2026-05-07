@@ -15,9 +15,23 @@
 import { NextResponse } from 'next/server'
 import { getSetting } from '@/lib/settings/appSettings'
 
+/**
+ * Coerce an app_settings boolean. Tolerates a JSONB column that
+ * sometimes serializes the value as a string (`"true"`/`"false"`)
+ * vs. the JSON boolean (`true`/`false`) — both are common when
+ * admins hand-edit via the SQL editor or via the existing PATCH
+ * route. Anything unrecognised falls back to `fallback`.
+ */
 export async function isSettingEnabled(key: string, fallback = true): Promise<boolean> {
   const v = await getSetting<unknown>(key, fallback)
-  return v === true || (v === undefined && fallback)
+  if (v === true) return true
+  if (v === false) return false
+  if (typeof v === 'string') {
+    const s = v.trim().toLowerCase()
+    if (s === 'true') return true
+    if (s === 'false') return false
+  }
+  return fallback
 }
 
 function disabled(message: string, code: string, status = 503): NextResponse {

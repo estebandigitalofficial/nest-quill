@@ -7,12 +7,44 @@ import { gateSupportIntake } from '@/lib/settings/gates'
 import { checkSupportRateLimit, hashIp } from '@/lib/limits/rateLimits'
 import { getAdminContext } from '@/lib/admin/guard'
 
+// Stable slug set. Mirrors components/admin (read-only display) and
+// app/contact/ContactForm (the dropdown). When a client posts something
+// outside this set, we accept the request but coerce to 'other' so
+// the ticket is still created — the client may have an older bundle.
+// To return a hard 400 instead, set REJECT_UNKNOWN_CATEGORY = true.
 const VALID_CATEGORIES = new Set([
-  'story_issue', 'account', 'classroom', 'billing',
-  'sponsor', 'tour', 'bug', 'other',
+  'story_issue',
+  'account_login',
+  'classroom_educator',
+  'billing_pricing',
+  'sponsor_rewards',
+  'guided_tour_confusion',
+  'bug_report',
+  'other',
 ])
+// Backwards-compat: shorter slugs from the prior ContactForm bundle.
+const LEGACY_CATEGORY_MAP: Record<string, string> = {
+  account:    'account_login',
+  classroom:  'classroom_educator',
+  billing:    'billing_pricing',
+  sponsor:    'sponsor_rewards',
+  tour:       'guided_tour_confusion',
+  bug:        'bug_report',
+}
 
 export async function POST(req: NextRequest) {
+  try {
+    return await handlePost(req)
+  } catch (err) {
+    console.error('[contact] unhandled error in POST:', err)
+    return NextResponse.json(
+      { error: 'We could not process your message. Please try again.', code: 'CONTACT_INTERNAL' },
+      { status: 500 },
+    )
+  }
+}
+
+async function handlePost(req: NextRequest) {
   // Beta-ops gate — admin can pause new ticket intake while still seeing
   // the existing inbox at /admin/support.
   const blocked = await gateSupportIntake()
@@ -28,10 +60,18 @@ export async function POST(req: NextRequest) {
   const email   = body.email?.trim().toLowerCase()
   const subject = body.subject?.trim()
   const message = body.message?.trim()
-  const category = body.category && VALID_CATEGORIES.has(body.category) ? body.category : 'other'
+  // Resolve category: accept current slugs as-is, map known legacy
+  // shorter slugs forward, fall through to 'other' for anything else.
+  const rawCat = body.category?.trim()
+  const category = rawCat && VALID_CATEGORIES.has(rawCat)
+    ? rawCat
+    : (rawCat && LEGACY_CATEGORY_MAP[rawCat]) ?? 'other'
 
-  if (!email || !message) {
-    return NextResponse.json({ error: 'Email and message are required.' }, { status: 400 })
+  if (!email) {
+    return NextResponse.json({ error: 'Email is required.' }, { status: 400 })
+  }
+  if (!message) {
+    return NextResponse.json({ error: 'Message is required.' }, { status: 400 })
   }
 
   // Identify the submitter without forcing a sign-in.

@@ -9,15 +9,18 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
+// Slug values match the API's VALID_CATEGORIES set exactly. Labels
+// can be tweaked freely; values must stay stable so existing tickets
+// keep their categorization.
 const CATEGORIES: { value: string; label: string }[] = [
-  { value: 'story_issue', label: 'Story issue' },
-  { value: 'account',     label: 'Account / login' },
-  { value: 'classroom',   label: 'Classroom / educator' },
-  { value: 'billing',     label: 'Billing / pricing' },
-  { value: 'sponsor',     label: 'Sponsor / rewards' },
-  { value: 'tour',        label: 'Guided tour confusion' },
-  { value: 'bug',         label: 'Bug report' },
-  { value: 'other',       label: 'Other' },
+  { value: 'story_issue',           label: 'Story issue' },
+  { value: 'account_login',         label: 'Account / login' },
+  { value: 'classroom_educator',    label: 'Classroom / educator' },
+  { value: 'billing_pricing',       label: 'Billing / pricing' },
+  { value: 'sponsor_rewards',       label: 'Sponsor / rewards' },
+  { value: 'guided_tour_confusion', label: 'Guided tour confusion' },
+  { value: 'bug_report',            label: 'Bug report' },
+  { value: 'other',                 label: 'Other' },
 ]
 
 const inputClass =
@@ -71,7 +74,10 @@ export default function ContactForm() {
       }
 
       const json = await res.json().catch(() => ({}))
-      setErrorMsg(json.error ?? 'Something went wrong. Please try again.')
+      // The API uses { error } for our own validation paths, but the
+      // beta-ops gate (gateSupportIntake) returns { message, code }.
+      // Read either so the user sees the actual reason.
+      setErrorMsg(json.error ?? json.message ?? 'Something went wrong. Please try again.')
       setStatus('error')
     } catch {
       setErrorMsg("Couldn't reach the server. Check your connection and try again.")
