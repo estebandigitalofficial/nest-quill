@@ -43,8 +43,9 @@ const NAV_GROUPS = [
   {
     label: 'Operations',
     items: [
-      { href: '/admin/support', label: 'Support' },
-      { href: '/admin/tours',   label: 'Tours' },
+      { href: '/admin/beta-ops', label: 'Beta Ops' },
+      { href: '/admin/support',  label: 'Support' },
+      { href: '/admin/tours',    label: 'Tours' },
     ],
   },
   {

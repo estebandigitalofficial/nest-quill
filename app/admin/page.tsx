@@ -6,6 +6,7 @@ import AdminForceRequeueButton from '@/components/admin/AdminForceRequeueButton'
 import AdminFilters from '@/components/admin/AdminFilters'
 import AdminAlertStrip from '@/components/admin/AdminAlertStrip'
 import AdminQuickActions from '@/components/admin/AdminQuickActions'
+import GlassCard from '@/components/admin/GlassCard'
 import type { StoryRequest } from '@/types/database'
 import { formatAZTimeShort, formatAZTimeOnly } from '@/lib/utils/formatTime'
 import { getSetting } from '@/lib/settings/appSettings'
@@ -204,6 +205,33 @@ export default async function AdminPage({ searchParams }: PageProps) {
   return (
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
 
+        {/* ── Command Center hero ─────────────────────────────────── */}
+        <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/15 via-fuchsia-500/10 to-amber-500/10 backdrop-blur-sm px-6 py-6">
+          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-amber-400/20 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-violet-500/20 blur-3xl pointer-events-none" />
+          <div className="relative">
+            <p className="text-xs font-semibold text-amber-200 uppercase tracking-widest">Nest &amp; Quill</p>
+            <h1 className="text-2xl font-semibold text-white mt-1">Command Center</h1>
+            <p className="text-sm text-white/70 mt-1.5 max-w-xl">
+              At-a-glance status for the beta. Alerts, queue health, support, and quick controls are below — no hunting required.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href="/admin/beta-ops" className="inline-flex items-center gap-1.5 bg-violet-500/20 hover:bg-violet-500/30 border border-violet-400/40 text-violet-100 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
+                Beta Ops →
+              </Link>
+              <Link href="/admin/support" className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
+                Support {urgentTickets > 0 && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-rose-400" />}
+              </Link>
+              <Link href="/admin/reporting" className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
+                Reporting
+              </Link>
+              <Link href="/admin/settings" className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
+                Settings
+              </Link>
+            </div>
+          </div>
+        </header>
+
         {/* Alerts that need attention — renders nothing when all-clear */}
         <AdminAlertStrip
           stuckCount={stuckStories.length}
@@ -213,6 +241,37 @@ export default async function AdminPage({ searchParams }: PageProps) {
           sponsorTableMissing={sponsorTableMissing}
           urgentSupportTickets={urgentTickets}
         />
+
+        {/* System status — glass tiles for the eight things we care about most */}
+        <section>
+          <h2 className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">System status</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <SystemTile label="Story generation"
+              tone={(failedStories24h ?? 0) > 0 ? 'amber' : 'green'}
+              value={(failedStories24h ?? 0) > 0 ? `${failedStories24h} failed in 24 h` : 'Healthy'} />
+            <SystemTile label="Queue"
+              tone={stuckStories.length > 0 ? 'red' : (queuedCount ?? 0) > 0 ? 'amber' : 'green'}
+              value={stuckStories.length > 0 ? `${stuckStories.length} stuck` : `${queuedCount ?? 0} queued · ${processingCount ?? 0} active`} />
+            <SystemTile label="Support"
+              tone={(urgentTickets ?? 0) > 0 ? 'red' : (openTickets > 0 ? 'amber' : 'green')}
+              value={supportTableMissing ? 'Schema missing' : `${openTickets} open · ${urgentTickets ?? 0} urgent`} />
+            <SystemTile label="Beta mode"
+              tone={betaMode ? 'amber' : 'neutral'}
+              value={betaMode ? 'On' : 'Off'} />
+            <SystemTile label="Images"
+              tone={betaMode ? 'amber' : 'green'}
+              value={betaMode ? 'Paused (beta)' : 'Generating'} />
+            <SystemTile label="Payments"
+              tone="neutral"
+              value={process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true' ? 'Live' : 'Disabled'} />
+            <SystemTile label="Notifications"
+              tone="green"
+              value="Live" />
+            <SystemTile label="Classroom"
+              tone="neutral"
+              value={`${activeClassroomCount ?? 0} active`} />
+          </div>
+        </section>
 
         {/* Quick actions — single-tap shortcuts (the sidebar covers full nav) */}
         <AdminQuickActions />
@@ -724,6 +783,23 @@ export default async function AdminPage({ searchParams }: PageProps) {
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
+
+function SystemTile({ label, value, tone }: {
+  label: string
+  value: string
+  tone: 'neutral' | 'green' | 'amber' | 'red'
+}) {
+  const dot = tone === 'green' ? 'bg-emerald-400' : tone === 'amber' ? 'bg-amber-400' : tone === 'red' ? 'bg-rose-400' : 'bg-white/40'
+  return (
+    <GlassCard tone={tone === 'neutral' ? 'neutral' : tone} className="px-4 py-3">
+      <div className="flex items-center gap-2">
+        <span aria-hidden className={`w-2 h-2 rounded-full ${dot}`} />
+        <p className="text-[11px] uppercase tracking-widest text-adm-muted">{label}</p>
+      </div>
+      <p className="text-sm font-semibold text-white mt-1">{value}</p>
+    </GlassCard>
+  )
+}
 
 function StatCard({ label, value, color, href, active }: {
   label: string; value: number; color?: 'green' | 'red' | 'amber'; href?: string; active?: boolean
