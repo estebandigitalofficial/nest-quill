@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import AdminRetryButton from '@/components/admin/AdminRetryButton'
 import AdminForceRequeueButton from '@/components/admin/AdminForceRequeueButton'
 import AdminFilters from '@/components/admin/AdminFilters'
+import AdminAlertStrip from '@/components/admin/AdminAlertStrip'
+import AdminQuickActions from '@/components/admin/AdminQuickActions'
 import type { StoryRequest } from '@/types/database'
 import { formatAZTimeShort, formatAZTimeOnly } from '@/lib/utils/formatTime'
 import { getSetting } from '@/lib/settings/appSettings'
@@ -28,7 +30,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
   const stuckCutoff = new Date(Date.now() - stuckThresholdMinutes * 60 * 1000).toISOString()
   const { data: stuckData } = await adminSupabase
     .from('story_requests')
-    .select('id, child_name, story_theme, plan_tier, status, progress_pct, user_email, created_at, updated_at, last_error')
+    .select('id, child_name, story_theme, plan_tier, status, progress_pct, user_email, created_at, updated_at, last_error, worker_id, status_message, processing_started_at')
     .in('status', PROCESSING_STATUSES)
     .lt('updated_at', stuckCutoff)
     .order('updated_at', { ascending: true })
@@ -161,6 +163,23 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
   const { data: viewRows } = viewQuery ? await viewQuery : { data: null }
 
+  // ── Dashboard sentinels (cheap, single-row queries) ──────────────────────
+  const [
+    { data: oldestQueuedRow },
+    { error: sponsorProbeError },
+    betaMode,
+  ] = await Promise.all([
+    adminSupabase.from('story_requests').select('created_at').eq('status', 'queued').order('created_at', { ascending: true }).limit(1).maybeSingle(),
+    // Probe the sponsors table — head:true with limit:1 is the cheapest way
+    // to detect "relation does not exist" without scanning rows.
+    adminSupabase.from('sponsors').select('id', { head: true, count: 'exact' }).limit(1),
+    getSetting('beta_mode_enabled', false) as Promise<boolean>,
+  ])
+  const oldestQueuedMinutes = oldestQueuedRow?.created_at
+    ? Math.max(0, (Date.now() - new Date(oldestQueuedRow.created_at as string).getTime()) / 60000)
+    : null
+  const sponsorTableMissing = sponsorProbeError?.code === '42P01' // undefined_table
+
   // Build href helpers
   function mkViewHref(v: AdminView) {
     const p = new URLSearchParams({ view: v })
@@ -177,6 +196,18 @@ export default async function AdminPage({ searchParams }: PageProps) {
 
   return (
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+
+        {/* Alerts that need attention — renders nothing when all-clear */}
+        <AdminAlertStrip
+          stuckCount={stuckStories.length}
+          failed24h={failedStories24h ?? 0}
+          oldestQueuedMinutes={oldestQueuedMinutes}
+          betaMode={betaMode}
+          sponsorTableMissing={sponsorTableMissing}
+        />
+
+        {/* Quick actions — single-tap shortcuts (the sidebar covers full nav) */}
+        <AdminQuickActions />
 
         {/* Today's metrics */}
         <div>
@@ -196,13 +227,58 @@ export default async function AdminPage({ searchParams }: PageProps) {
         </div>
 
         {/* System Health */}
-        <div>
+        <div id="queue-health">
           <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">System Health</p>
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
             <StatCard label="Queued" value={queuedCount ?? 0} color={(queuedCount ?? 0) > 0 ? 'amber' : undefined} />
             <StatCard label="Processing" value={processingCount ?? 0} color={(processingCount ?? 0) > 0 ? 'amber' : undefined} />
             <StatCard label="Stuck" value={stuckStories.length} color={stuckStories.length > 0 ? 'red' : undefined} />
+            <StatCard
+              label="Images"
+              value={betaMode ? 0 : 1}
+              color={betaMode ? 'amber' : 'green'}
+            />
           </div>
+          {betaMode && (
+            <p className="text-[11px] text-amber-300/80 -mt-1 mb-3">
+              Beta mode: image generation is paused (text-only stories).
+            </p>
+          )}
+
+          {/* Stuck story details — only renders when there are stuck stories */}
+          {stuckStories.length > 0 && (
+            <div className="bg-adm-surface rounded-2xl border border-red-900/60 overflow-hidden mb-4">
+              <div className="px-4 py-3 border-b border-adm-border flex items-center justify-between">
+                <p className="text-xs font-semibold text-red-300 uppercase tracking-widest">Stuck stories</p>
+                <span className="text-[11px] text-adm-subtle">threshold: {stuckThresholdMinutes}m no progress</span>
+              </div>
+              <ul className="divide-y divide-adm-border">
+                {stuckStories.slice(0, 8).map((s) => {
+                  const idleMs = Date.now() - new Date(s.updated_at!).getTime()
+                  const idleMin = Math.round(idleMs / 60000)
+                  const w = (s as unknown as { worker_id: string | null; status_message: string | null }).worker_id
+                  const msg = (s as unknown as { status_message: string | null }).status_message
+                  return (
+                    <li key={s.id} className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-white truncate">{s.child_name}</p>
+                        <p className="text-[11px] text-adm-muted">
+                          <StatusBadge status={s.status} />
+                          <span className="ml-2">idle {idleMin}m</span>
+                          {w && <span className="ml-2 font-mono text-adm-subtle">worker {w.slice(0, 8)}…</span>}
+                        </p>
+                        {msg && <p className="text-[11px] text-adm-subtle mt-1 truncate" title={msg}>{msg}</p>}
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <Link href={`/admin/stories/${s.id}`} className="text-xs text-brand-400 hover:text-brand-300 font-medium">View →</Link>
+                        <AdminForceRequeueButton requestId={s.id} />
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )}
           <div className="bg-adm-surface rounded-2xl border border-adm-border overflow-hidden">
             <div className="px-4 py-3 border-b border-adm-border">
               <p className="text-xs font-semibold text-adm-muted uppercase tracking-widest">Recent failures</p>
