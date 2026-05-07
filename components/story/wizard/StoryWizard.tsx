@@ -18,6 +18,7 @@ import StoryStep from './steps/StoryStep'
 import LearningStep from './steps/LearningStep'
 import StyleStep from './steps/StyleStep'
 import ReviewStep from './steps/ReviewStep'
+import TourRunner from '@/components/tour/TourRunner'
 
 // Standard story steps + validation fields
 const STANDARD_STEPS = [PlanStep, ChildStep, StoryStep, StyleStep, ReviewStep]
@@ -111,6 +112,14 @@ export default function StoryWizard({
   const STEP_FIELDS = learningMode ? LEARNING_FIELDS : STANDARD_FIELDS
   const isLastStep = step === STEPS.length - 1
   const StepComponent = STEPS[step]
+  // Map the active wizard step to the tour selector convention.
+  // Selector values match the seed in 20240051_guided_tours.sql; the
+  // tour highlights whichever step is currently rendered, so users
+  // can read the popover and follow the wizard at their own pace.
+  const STEP_TOUR_IDS_STANDARD = ['plan-step', 'child-step', 'story-step', 'style-step', 'review-step']
+  const STEP_TOUR_IDS_LEARNING = ['plan-step', 'child-step', 'story-step', 'learning-step', 'style-step', 'review-step']
+  const stepTourId = (learningMode ? STEP_TOUR_IDS_LEARNING : STEP_TOUR_IDS_STANDARD)[step] ?? null
+  const replayTour = searchParams.get('replayTour') === 'create_story_wizard'
 
   // The "first visible" step depends on whether the user came in with a plan
   // pre-selected via ?plan=... — when they did, the plan-picker is skipped so
@@ -236,9 +245,17 @@ export default function StoryWizard({
       <WizardProgress currentStep={step} totalSteps={STEPS.length} />
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6">
+        <div
+          data-tour-id={stepTourId ?? undefined}
+          className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6"
+        >
           <StepComponent />
         </div>
+
+        {/* Guided tour overlay — opt-in via the tour table being enabled.
+            forceReplay kicks in when the user clicks "Replay tour" from
+            the help menu (which sets ?replayTour=create_story_wizard). */}
+        <TourRunner tourKey="create_story_wizard" forceReplay={replayTour} />
 
         {errors.root && (
           errors.root.type === 'GUEST_LIMIT_EXCEEDED' ? (

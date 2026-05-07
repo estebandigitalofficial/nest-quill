@@ -6,23 +6,46 @@
 // (which are async server components and would crash if pulled into a
 // client bundle via createAdminClient).
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
-const SUBJECTS = [
-  'General question',
-  'Story problem',
-  'Billing or account',
-  'Feature request',
-  'Other',
+const CATEGORIES: { value: string; label: string }[] = [
+  { value: 'story_issue', label: 'Story issue' },
+  { value: 'account',     label: 'Account / login' },
+  { value: 'classroom',   label: 'Classroom / educator' },
+  { value: 'billing',     label: 'Billing / pricing' },
+  { value: 'sponsor',     label: 'Sponsor / rewards' },
+  { value: 'tour',        label: 'Guided tour confusion' },
+  { value: 'bug',         label: 'Bug report' },
+  { value: 'other',       label: 'Other' },
 ]
 
 const inputClass =
   'w-full rounded-lg border border-parchment-dark px-3.5 py-2.5 text-sm text-charcoal bg-white placeholder:text-charcoal-light/40 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-oxford/30'
 
 export default function ContactForm() {
-  const [form, setForm] = useState({ name: '', email: '', subject: SUBJECTS[0], message: '' })
+  const [form, setForm] = useState({ name: '', email: '', subject: '', category: 'other', message: '' })
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
+  const [refId, setRefId] = useState<string | null>(null)
+
+  // Prefill name + email when the user is signed in. Best-effort; if the
+  // session isn't ready yet, the form simply renders empty.
+  useEffect(() => {
+    let cancelled = false
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      if (cancelled || !data.user) return
+      const meta = (data.user.user_metadata ?? {}) as Record<string, unknown>
+      const name = typeof meta.full_name === 'string' ? meta.full_name : ''
+      setForm(f => ({
+        ...f,
+        email: f.email || data.user!.email || '',
+        name:  f.name  || name,
+      }))
+    })
+    return () => { cancelled = true }
+  }, [])
 
   function set(field: string, value: string) {
     setForm(f => ({ ...f, [field]: value }))
@@ -41,6 +64,8 @@ export default function ContactForm() {
       })
 
       if (res.ok) {
+        const json = await res.json().catch(() => ({}))
+        setRefId(json.refId ?? null)
         setStatus('sent')
         return
       }
@@ -61,8 +86,17 @@ export default function ContactForm() {
         <p className="text-sm text-charcoal-light max-w-xs mx-auto">
           Thanks for reaching out. We typically reply within one business day.
         </p>
+        {refId && (
+          <p className="text-xs text-charcoal-light">
+            Reference: <span className="font-mono text-oxford">#{refId}</span>
+          </p>
+        )}
         <button
-          onClick={() => { setStatus('idle'); setForm({ name: '', email: '', subject: SUBJECTS[0], message: '' }) }}
+          onClick={() => {
+            setStatus('idle')
+            setRefId(null)
+            setForm(f => ({ ...f, subject: '', message: '' }))
+          }}
           className="text-sm text-brand-600 font-medium hover:text-brand-700"
         >
           Send another message
@@ -86,7 +120,6 @@ export default function ContactForm() {
             <label className="block text-sm font-medium text-charcoal">Name</label>
             <input
               type="text"
-              required
               value={form.name}
               onChange={e => set('name', e.target.value)}
               placeholder="Your name"
@@ -106,15 +139,27 @@ export default function ContactForm() {
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-charcoal">Subject</label>
-          <select
-            value={form.subject}
-            onChange={e => set('subject', e.target.value)}
-            className={inputClass}
-          >
-            {SUBJECTS.map(s => <option key={s}>{s}</option>)}
-          </select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-charcoal">Category</label>
+            <select
+              value={form.category}
+              onChange={e => set('category', e.target.value)}
+              className={inputClass}
+            >
+              {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-charcoal">Subject</label>
+            <input
+              type="text"
+              value={form.subject}
+              onChange={e => set('subject', e.target.value)}
+              placeholder="Short summary"
+              className={inputClass}
+            />
+          </div>
         </div>
 
         <div className="space-y-1.5">

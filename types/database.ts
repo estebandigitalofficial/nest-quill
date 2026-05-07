@@ -311,6 +311,64 @@ export interface NotificationRow {
   created_at: string
 }
 
+export type SupportTicketStatus = 'open' | 'in_progress' | 'waiting_on_user' | 'resolved' | 'closed'
+export type SupportTicketPriority = 'low' | 'normal' | 'high' | 'urgent'
+
+export interface SupportTicketRow {
+  id: string
+  user_id: string | null
+  email: string
+  name: string | null
+  subject: string
+  message: string
+  category: string | null
+  priority: SupportTicketPriority
+  status: SupportTicketStatus
+  source: string
+  related_story_id: string | null
+  related_classroom_id: string | null
+  assigned_to: string | null
+  admin_notes: string | null
+  created_at: string
+  updated_at: string
+  closed_at: string | null
+}
+
+export interface GuidedTourRow {
+  id: string
+  key: string
+  title: string
+  description: string | null
+  page: string | null
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface GuidedTourStepRow {
+  id: string
+  tour_id: string
+  step_order: number
+  target_selector: string | null
+  title: string
+  body: string
+  placement: 'top' | 'bottom' | 'left' | 'right' | 'center'
+  action_label: string | null
+  requires_interaction: boolean
+  created_at: string
+}
+
+export interface UserTourProgressRow {
+  id: string
+  user_id: string
+  tour_key: string
+  completed: boolean
+  skipped: boolean
+  last_step: number
+  completed_at: string | null
+  updated_at: string
+}
+
 // ─── Supabase Database shape (used by createClient<Database>) ───────────────
 // Must include Views, Functions, Enums, CompositeTypes for correct type inference.
 // Replace this entire file by running `pnpm run types` once Supabase CLI is set up.
@@ -326,6 +384,10 @@ export interface Database {
       delivery_logs: { Row: DeliveryLog; Insert: Partial<DeliveryLog>; Update: Partial<DeliveryLog>; Relationships: [] }
       processing_logs: { Row: ProcessingLog; Insert: Partial<ProcessingLog>; Update: Partial<ProcessingLog>; Relationships: [] }
       notifications: { Row: NotificationRow; Insert: Partial<NotificationRow>; Update: Partial<NotificationRow>; Relationships: [] }
+      support_tickets: { Row: SupportTicketRow; Insert: Partial<SupportTicketRow>; Update: Partial<SupportTicketRow>; Relationships: [] }
+      guided_tours: { Row: GuidedTourRow; Insert: Partial<GuidedTourRow>; Update: Partial<GuidedTourRow>; Relationships: [] }
+      guided_tour_steps: { Row: GuidedTourStepRow; Insert: Partial<GuidedTourStepRow>; Update: Partial<GuidedTourStepRow>; Relationships: [] }
+      user_tour_progress: { Row: UserTourProgressRow; Insert: Partial<UserTourProgressRow>; Update: Partial<UserTourProgressRow>; Relationships: [] }
     }
     Views: Record<string, never>
     Functions: {

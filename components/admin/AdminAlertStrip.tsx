@@ -10,6 +10,8 @@ export interface AdminAlertProps {
   oldestQueuedMinutes: number | null
   betaMode: boolean
   sponsorTableMissing: boolean
+  /** When > 0, surfaces an "urgent support tickets waiting" alert. */
+  urgentSupportTickets?: number
   /** Set when getSetting calls returned without a row, suggesting first-run state. */
   missingCriticalSettings?: string[]
 }
@@ -54,6 +56,14 @@ export default function AdminAlertStrip(props: AdminAlertProps) {
       tone: 'red',
       title: 'Sponsor schema not deployed',
       body: 'The sponsors / sponsor_rewards tables are missing. Run migration 20240044_sponsors.sql in the SQL editor.',
+    })
+  }
+  if ((props.urgentSupportTickets ?? 0) > 0) {
+    blocks.push({
+      tone: 'red',
+      title: `${props.urgentSupportTickets} urgent support ticket${props.urgentSupportTickets === 1 ? '' : 's'}`,
+      body: 'Tickets marked urgent are waiting for triage. Review and update status in support.',
+      cta: { href: '/admin/support?status=open', label: 'Open support' },
     })
   }
   for (const key of props.missingCriticalSettings ?? []) {

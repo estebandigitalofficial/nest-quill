@@ -13,9 +13,9 @@ interface ActionItem {
 const ACTIONS: ActionItem[] = [
   { href: '/admin?view=recent-stories', label: 'Recent stories', hint: 'Last 24 h' },
   { href: '/admin/users',               label: 'Users',           hint: 'Plans & limits' },
+  { href: '/admin/support',             label: 'Support',         hint: 'Tickets' },
   { href: '/admin/sponsors',            label: 'Sponsors',        hint: 'Brand partners' },
   { href: '/admin/settings',            label: 'Settings',        hint: 'Limits & flags' },
-  { href: '/admin/writer',              label: 'AI Writer Config', hint: 'Prompt rules' },
 ]
 
 export default function AdminQuickActions() {

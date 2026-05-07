@@ -168,17 +168,24 @@ export default async function AdminPage({ searchParams }: PageProps) {
     { data: oldestQueuedRow },
     { error: sponsorProbeError },
     betaMode,
+    { count: openTicketsCount, error: ticketProbeError },
+    { count: urgentTicketsCount },
   ] = await Promise.all([
     adminSupabase.from('story_requests').select('created_at').eq('status', 'queued').order('created_at', { ascending: true }).limit(1).maybeSingle(),
     // Probe the sponsors table — head:true with limit:1 is the cheapest way
     // to detect "relation does not exist" without scanning rows.
     adminSupabase.from('sponsors').select('id', { head: true, count: 'exact' }).limit(1),
     getSetting('beta_mode_enabled', false) as Promise<boolean>,
+    adminSupabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('status', 'open'),
+    adminSupabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('priority', 'urgent').not('status', 'in', '(resolved,closed)'),
   ])
   const oldestQueuedMinutes = oldestQueuedRow?.created_at
     ? Math.max(0, (Date.now() - new Date(oldestQueuedRow.created_at as string).getTime()) / 60000)
     : null
   const sponsorTableMissing = sponsorProbeError?.code === '42P01' // undefined_table
+  const supportTableMissing = ticketProbeError?.code === '42P01'
+  const openTickets = supportTableMissing ? 0 : (openTicketsCount ?? 0)
+  const urgentTickets = supportTableMissing ? 0 : (urgentTicketsCount ?? 0)
 
   // Build href helpers
   function mkViewHref(v: AdminView) {
@@ -204,6 +211,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
           oldestQueuedMinutes={oldestQueuedMinutes}
           betaMode={betaMode}
           sponsorTableMissing={sponsorTableMissing}
+          urgentSupportTickets={urgentTickets}
         />
 
         {/* Quick actions — single-tap shortcuts (the sidebar covers full nav) */}
@@ -223,6 +231,9 @@ export default async function AdminPage({ searchParams }: PageProps) {
               active={view === 'failed-stories'} />
             <StatCard label="New users" value={newUsersToday ?? 0} />
             <StatCard label="Guest submissions" value={guestSubmissionsToday ?? 0} />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-4">
+            <StatCard label="Open support" value={openTickets} color={openTickets > 0 ? 'amber' : undefined} href="/admin/support?status=open" />
           </div>
         </div>
 

@@ -177,6 +177,9 @@ export default function UserControls() {
 
       {open === 'help' && (
         <Dropdown title="Help & support">
+          <DropdownLink href="/create?replayTour=create_story_wizard" onClick={() => setOpen(null)}>
+            Replay story-wizard tour
+          </DropdownLink>
           <DropdownLink href="/contact" onClick={() => setOpen(null)}>Contact support</DropdownLink>
           <DropdownLink href="/pricing" onClick={() => setOpen(null)}>Plans &amp; pricing</DropdownLink>
           <DropdownLink href="/privacy" onClick={() => setOpen(null)}>Privacy</DropdownLink>
