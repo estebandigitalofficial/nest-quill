@@ -206,9 +206,9 @@ export default async function AdminPage({ searchParams }: PageProps) {
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
 
         {/* ── Command Center hero ─────────────────────────────────── */}
-        <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-violet-500/15 via-fuchsia-500/10 to-amber-500/10 backdrop-blur-sm px-6 py-6">
+        <header className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-blue-800/25 via-blue-600/10 to-amber-500/10 backdrop-blur-sm px-6 py-6">
           <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-amber-400/20 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-violet-500/20 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-cyan-500/15 blur-3xl pointer-events-none" />
           <div className="relative">
             <p className="text-xs font-semibold text-amber-200 uppercase tracking-widest">Nest &amp; Quill</p>
             <h1 className="text-2xl font-semibold text-white mt-1">Command Center</h1>
@@ -216,7 +216,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
               At-a-glance status for the beta. Alerts, queue health, support, and quick controls are below — no hunting required.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/admin/beta-ops" className="inline-flex items-center gap-1.5 bg-violet-500/20 hover:bg-violet-500/30 border border-violet-400/40 text-violet-100 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
+              <Link href="/admin/beta-ops" className="inline-flex items-center gap-1.5 bg-blue-600/25 hover:bg-blue-600/35 border border-blue-400/40 text-blue-100 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
                 Beta Ops →
               </Link>
               <Link href="/admin/support" className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">

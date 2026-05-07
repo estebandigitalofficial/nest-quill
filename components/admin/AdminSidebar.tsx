@@ -39,7 +39,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: 'Users & Stories',
-    accent: 'bg-violet-400',
+    accent: 'bg-blue-400',
     items: [
       { href: '/admin/users',    label: 'Users' },
       { href: '/admin/guests',   label: 'Guests' },

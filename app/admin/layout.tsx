@@ -24,9 +24,12 @@ export default async function AdminLayout({
           events-none so they can't intercept clicks. The whole admin
           inherits a warmer feel without flipping the dark base. */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute -top-40 -left-32 w-[36rem] h-[36rem] rounded-full bg-violet-500/10 blur-3xl" />
+        {/* Cobalt + amber + soft cyan — operations-room atmosphere on
+            top of the warm-dark base. Saturation is intentionally low
+            to stay editorial, not Tron. */}
+        <div className="absolute -top-40 -left-32 w-[36rem] h-[36rem] rounded-full bg-blue-700/12 blur-3xl" />
         <div className="absolute -top-32 right-[-8rem] w-[32rem] h-[32rem] rounded-full bg-amber-500/10 blur-3xl" />
-        <div className="absolute bottom-[-12rem] left-1/3 w-[36rem] h-[36rem] rounded-full bg-fuchsia-500/8 blur-3xl" />
+        <div className="absolute bottom-[-12rem] left-1/3 w-[36rem] h-[36rem] rounded-full bg-cyan-500/8 blur-3xl" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20" />
       </div>
 
