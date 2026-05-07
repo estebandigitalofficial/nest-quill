@@ -3,6 +3,7 @@ import { Resend } from 'resend'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { appUrl } from '@/lib/utils/appUrl'
+import { gateSupportIntake } from '@/lib/settings/gates'
 
 const VALID_CATEGORIES = new Set([
   'story_issue', 'account', 'classroom', 'billing',
@@ -10,6 +11,11 @@ const VALID_CATEGORIES = new Set([
 ])
 
 export async function POST(req: NextRequest) {
+  // Beta-ops gate — admin can pause new ticket intake while still seeing
+  // the existing inbox at /admin/support.
+  const blocked = await gateSupportIntake()
+  if (blocked) return blocked
+
   const body = await req.json().catch(() => null) as
     | { name?: string; email?: string; subject?: string; message?: string; category?: string }
     | null

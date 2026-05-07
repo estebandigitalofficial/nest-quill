@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { gateLearningTools } from '@/lib/settings/gates'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 
 export async function POST(request: NextRequest) {
+  const blocked = await gateLearningTools()
+  if (blocked) return blocked
   const limited = await checkLearningRateLimit(request, 'reading')
   if (limited) return limited
   const { neutralityRule } = await getActiveGuardrails()

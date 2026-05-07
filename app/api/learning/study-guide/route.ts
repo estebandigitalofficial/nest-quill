@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { gateLearningTools } from '@/lib/settings/gates'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getOrNull, storeContent, recordUsage } from '@/lib/services/contentLibrary'
 
 export async function POST(request: NextRequest) {
+  const blocked = await gateLearningTools()
+  if (blocked) return blocked
   const limited = await checkLearningRateLimit(request, 'study-guide')
   if (limited) return limited
   const { neutralityRule, politicalClarificationEnabled } = await getActiveGuardrails()

@@ -3,6 +3,9 @@ import Link from 'next/link'
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 import { getSetting } from '@/lib/settings/appSettings'
+import { isSettingEnabled } from '@/lib/settings/gates'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Learning Tools — Nest & Quill',
@@ -11,7 +14,29 @@ export const metadata: Metadata = {
 }
 
 export default async function LearningPage() {
-  const scanEnabled = await getSetting('scan_homework_enabled', true)
+  const [scanEnabled, learningOpen] = await Promise.all([
+    getSetting('scan_homework_enabled', true),
+    isSettingEnabled('learning_tools_enabled'),
+  ])
+
+  if (!learningOpen) {
+    return (
+      <div className="min-h-dvh bg-parchment flex flex-col">
+        <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford">← Home</Link>} />
+        <main className="flex-1 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-12 text-center max-w-md">
+            <p className="text-3xl">📚</p>
+            <h1 className="font-serif text-2xl text-oxford mt-3">Learning tools are paused</h1>
+            <p className="text-sm text-charcoal-light mt-2">
+              We&apos;re tuning quizzes, flashcards, and the rest of the learning suite. They&apos;ll be back shortly.
+            </p>
+            <Link href="/" className="inline-block mt-4 text-sm text-brand-600 font-medium hover:text-brand-700">Back to home</Link>
+          </div>
+        </main>
+        <SiteFooter />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-dvh bg-parchment flex flex-col">

@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isSettingEnabled } from '@/lib/settings/gates'
 import type { Tour, TourProgress, TourStep } from '@/lib/tours/types'
 
 export async function GET(
@@ -15,6 +16,12 @@ export async function GET(
 ) {
   const { key } = await params
   if (!key) return NextResponse.json({ error: 'Missing key' }, { status: 400 })
+
+  // Beta-ops gate: when guided_tours_enabled is off, no tour ever
+  // returns. The runner treats `tour: null` as "not active", so the
+  // overlay never appears and the replay link is a no-op.
+  const toursEnabled = await isSettingEnabled('guided_tours_enabled')
+  if (!toursEnabled) return NextResponse.json({ tour: null, progress: null })
 
   const supabase = await createClient()
 

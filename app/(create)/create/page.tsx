@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import StoryWizard from '@/components/story/wizard/StoryWizard'
 import { getSetting } from '@/lib/settings/appSettings'
+import { isSettingEnabled } from '@/lib/settings/gates'
 
 export const metadata: Metadata = {
   title: 'Create Your Story',
@@ -18,6 +19,15 @@ export const metadata: Metadata = {
 export default async function CreatePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  // Beta-ops gates first — short-circuit before any heavier reads if the
+  // wizard isn't accepting submissions right now.
+  const [storyOpen, guestOpen] = await Promise.all([
+    isSettingEnabled('story_creation_enabled'),
+    isSettingEnabled('guest_story_creation_enabled'),
+  ])
+  if (!storyOpen) return <CreateUnavailable mode="paused" />
+  if (!user && !guestOpen) return <CreateUnavailable mode="signin_required" />
 
   // Fetch live limits, user profile, and beta mode in parallel
   const [[guestLimit, freeLimit, betaMode], profileResult] = await Promise.all([
@@ -107,6 +117,40 @@ export default async function CreatePage() {
         <Suspense>
           <StoryWizard betaMode={betaMode as boolean} accountPlan={planTier} />
         </Suspense>
+      </div>
+    </div>
+  )
+}
+
+function CreateUnavailable({ mode }: { mode: 'paused' | 'signin_required' }) {
+  const isPaused = mode === 'paused'
+  return (
+    <div className="py-16 px-4">
+      <div className="max-w-md mx-auto text-center bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-10">
+        <p className="text-3xl">{isPaused ? '🛠️' : '🔒'}</p>
+        <h1 className="font-serif text-2xl text-oxford mt-3">
+          {isPaused ? 'Story creation is paused' : 'Sign in to create a story'}
+        </h1>
+        <p className="text-sm text-charcoal-light mt-2">
+          {isPaused
+            ? "We're polishing things up. Existing stories are unaffected — please check back in a few minutes."
+            : 'Guest creation is paused right now. Sign in or create a free account to continue.'}
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2 justify-center">
+          {!isPaused && (
+            <>
+              <Link href="/signup" className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-full">
+                Create account
+              </Link>
+              <Link href="/login" className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2 rounded-full">
+                Sign in
+              </Link>
+            </>
+          )}
+          <Link href="/" className="text-sm text-brand-600 font-medium hover:text-brand-700 px-4 py-2">
+            Back to home
+          </Link>
+        </div>
       </div>
     </div>
   )

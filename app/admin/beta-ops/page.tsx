@@ -100,7 +100,10 @@ export default async function BetaOpsPage() {
   }
 
   const betaMode = settingsMap.get('beta_mode_enabled') === true
-  const imagesPaused = betaMode || settingsMap.get('image_generation_enabled') === false
+  const imageGenEnabled = settingsMap.get('image_generation_enabled') !== false
+  const skipImagesEnv = process.env.SKIP_IMAGE_GENERATION === 'true'
+  const imagesPaused = betaMode || !imageGenEnabled || skipImagesEnv
+  const imagesActive = !imagesPaused
   const paymentsEnabled = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true'
 
   return (
@@ -119,7 +122,7 @@ export default async function BetaOpsPage() {
         <h2 className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">Current state</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StateTile label="Beta mode"          on={betaMode}                     onTone="amber" offTone="neutral" />
-          <StateTile label="Images"             on={!imagesPaused}                onTone="green" offTone="amber"   onLabel="Active" offLabel="Paused" />
+          <StateTile label="Images"             on={imagesActive}                 onTone="green" offTone="amber"   onLabel="Active" offLabel="Paused" />
           <StateTile label="Payments"           on={paymentsEnabled}              onTone="green" offTone="neutral" onLabel="Live"   offLabel="Off"    />
           <StateTile label="Story creation"     on={settingsMap.get('story_creation_enabled')        !== false} />
           <StateTile label="Guest creation"     on={settingsMap.get('guest_story_creation_enabled')  !== false} />
@@ -127,6 +130,20 @@ export default async function BetaOpsPage() {
           <StateTile label="Support intake"     on={settingsMap.get('support_tickets_enabled')       !== false} />
           <StateTile label="Guided tours"       on={settingsMap.get('guided_tours_enabled')          !== false} />
         </div>
+
+        {/* Effective image-generation state. The worker uses an AND of
+            three signals; surface all three so flipping the right knob
+            is unambiguous. */}
+        <GlassCard className="mt-3 px-4 py-3" tone={imagesActive ? 'green' : 'amber'}>
+          <p className="text-[11px] uppercase tracking-widest text-adm-muted">Image generation — effective state</p>
+          <p className="text-sm font-semibold text-white mt-1">{imagesActive ? 'Active' : 'Paused'}</p>
+          <p className="text-[11px] text-adm-muted mt-1">
+            Active when:&nbsp;
+            <Flag on={!betaMode}>beta_mode_enabled = false</Flag>&nbsp;·&nbsp;
+            <Flag on={imageGenEnabled}>image_generation_enabled = true</Flag>&nbsp;·&nbsp;
+            <Flag on={!skipImagesEnv}>SKIP_IMAGE_GENERATION env unset</Flag>
+          </p>
+        </GlassCard>
       </section>
 
       {/* ── Readiness checklist ─────────────────────────────────────── */}
@@ -282,6 +299,14 @@ function MetricTile({ label, value, tone = 'neutral' }: { label: string; value: 
       <p className="text-[11px] uppercase tracking-widest text-adm-muted">{label}</p>
       <p className={`text-2xl font-bold mt-1 tabular-nums ${valueColor}`}>{value}</p>
     </GlassCard>
+  )
+}
+
+function Flag({ on, children }: { on: boolean; children: React.ReactNode }) {
+  return (
+    <span className={on ? 'text-emerald-300' : 'text-rose-300'}>
+      {on ? '✓' : '✗'} <span className="font-mono">{children}</span>
+    </span>
   )
 }
 

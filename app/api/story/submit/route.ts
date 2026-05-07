@@ -10,10 +10,15 @@ import { sendSubmissionConfirmationEmail } from '@/lib/services/email'
 import { sendAdminNotification, buildGuestStoryEmail } from '@/lib/services/adminNotifications'
 import { classifyGenre } from '@/lib/services/genre'
 import { synthesizeTheme, synthesizeTraitsLine, mergeIntoCustomNotes } from '@/lib/services/storyFormSynthesis'
+import { gateStoryCreation, gateGuestStoryCreation } from '@/lib/settings/gates'
 import type { SubmitStoryResponse } from '@/types/story'
 
 export async function POST(request: NextRequest) {
   try {
+    // ── 0. Beta-ops gate: master story-creation switch ──────────────────────
+    const blockedAll = await gateStoryCreation()
+    if (blockedAll) return blockedAll
+
     // ── 1. Parse and validate the incoming form data ────────────────────────
     const body = await request.json()
     const language: string = body.language === 'es' ? 'es' : 'en'
@@ -22,6 +27,10 @@ export async function POST(request: NextRequest) {
     // ── 2. Identify the user (authenticated or guest) ───────────────────────
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
+
+    // Beta-ops gate: guest creation switch (only when signed-out).
+    const blockedGuest = await gateGuestStoryCreation(user ?? null)
+    if (blockedGuest) return blockedGuest
 
     // For guests: read an existing guest_token cookie, or create a new one
     const cookieStore = await cookies()

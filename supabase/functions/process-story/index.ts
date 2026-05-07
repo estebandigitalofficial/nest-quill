@@ -804,25 +804,40 @@ Deno.serve(async (req) => {
     // ── Step 2: Generate illustrations via DALL-E 3 ───────────────────────
     await setStatus('generating_images', 'Creating illustrations…', 45)
 
-    // Read beta mode from app_settings at runtime (DB-driven, no redeploy needed)
+    // Read beta mode + image_generation_enabled from app_settings at
+    // runtime (DB-driven, no redeploy needed for either toggle).
+    //
+    // Effective rule:
+    //   images = !SKIP_IMAGES env
+    //         && !beta_mode_enabled
+    //         && image_generation_enabled (defaults to true if missing)
+    //
+    // image_generation_enabled is the explicit operator switch; beta
+    // mode keeps its standalone meaning so a second checkbox isn't
+    // required to pause images during cost-conscious beta windows.
     let betaMode = false
+    let imageGenEnabled = true
     try {
-      const { data: betaRow } = await supabase
+      const { data: rows } = await supabase
         .from('app_settings')
-        .select('value')
-        .eq('key', 'beta_mode_enabled')
-        .single()
-      betaMode = betaRow?.value === true
+        .select('key, value')
+        .in('key', ['beta_mode_enabled', 'image_generation_enabled'])
+      for (const r of (rows ?? [])) {
+        if (r.key === 'beta_mode_enabled') betaMode = r.value === true
+        if (r.key === 'image_generation_enabled') imageGenEnabled = r.value !== false
+      }
     } catch { /* fail open — proceed with real images */ }
 
     let imagesGenerated = 0
     let imagesFailed = 0
 
-    if (SKIP_IMAGES || betaMode) {
-      await log('generate_images', betaMode
-        ? 'Image generation skipped (beta_mode_enabled=true)'
-        : 'Image generation skipped (SKIP_IMAGE_GENERATION=true)'
-      )
+    if (SKIP_IMAGES || betaMode || !imageGenEnabled) {
+      const reason = !imageGenEnabled
+        ? 'image_generation_enabled=false'
+        : betaMode
+          ? 'beta_mode_enabled=true'
+          : 'SKIP_IMAGE_GENERATION=true'
+      await log('generate_images', `Image generation skipped (${reason})`)
     } else {
       const { data: allScenes, error: sceneFetchError } = await supabase
         .from('story_scenes')

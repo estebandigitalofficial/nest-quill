@@ -16,6 +16,22 @@ interface SettingRow {
   value: AnyValue
 }
 
+// Which toggles are wired all the way through to enforcement today.
+// Anything not in this set is shown with a "Display only" badge so the
+// admin knows at a glance that flipping it won't change app behavior
+// yet. Update as new gates ship.
+const ENFORCED_KEYS = new Set([
+  'beta_mode_enabled',
+  'story_creation_enabled',
+  'guest_story_creation_enabled',
+  'learning_tools_enabled',
+  'image_generation_enabled',
+  'support_tickets_enabled',
+  'guided_tours_enabled',
+  'maintenance_banner_enabled',
+  'maintenance_banner_message',
+])
+
 export default function BetaOpsToggles({ initial }: { initial: SettingRow[] }) {
   const [rows, setRows] = useState<SettingRow[]>(initial)
   const [errorKey, setErrorKey] = useState<string | null>(null)
@@ -63,7 +79,14 @@ export default function BetaOpsToggles({ initial }: { initial: SettingRow[] }) {
         return (
           <div key={row.key} className="px-4 py-3 flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-sm text-white">{row.label}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm text-white">{row.label}</p>
+                {ENFORCED_KEYS.has(row.key) ? (
+                  <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Enforced</span>
+                ) : (
+                  <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/5 text-adm-muted border border-white/10">Display</span>
+                )}
+              </div>
               <p className="text-[11px] text-adm-subtle font-mono mt-0.5">{row.key}</p>
             </div>
             {isBool && (

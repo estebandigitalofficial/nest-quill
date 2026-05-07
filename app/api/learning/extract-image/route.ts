@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { gateLearningTools } from '@/lib/settings/gates'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { extractTextFromImage } from '@/lib/learning/imageExtraction'
 
 export async function POST(request: NextRequest) {
+  const blocked = await gateLearningTools()
+  if (blocked) return blocked
   const limited = await checkLearningRateLimit(request, 'extract-image')
   if (limited) return limited
 

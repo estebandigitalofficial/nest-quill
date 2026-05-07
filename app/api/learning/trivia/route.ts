@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { gateLearningTools } from '@/lib/settings/gates'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 import { getSetting } from '@/lib/settings/appSettings'
 
 export async function POST(request: NextRequest) {
+  const blocked = await gateLearningTools()
+  if (blocked) return blocked
   const limited = await checkLearningRateLimit(request, 'trivia')
   if (limited) return limited
 
