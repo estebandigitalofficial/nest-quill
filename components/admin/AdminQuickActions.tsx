@@ -11,7 +11,7 @@ interface ActionItem {
 }
 
 const ACTIONS: ActionItem[] = [
-  { href: '/admin?view=recent-stories', label: 'All stories',    hint: 'Search & filter' },
+  { href: '/admin?view=recent-stories', label: 'Recent stories', hint: 'Last 24 h' },
   { href: '/admin/users',               label: 'Users',           hint: 'Plans & limits' },
   { href: '/admin/sponsors',            label: 'Sponsors',        hint: 'Brand partners' },
   { href: '/admin/settings',            label: 'Settings',        hint: 'Limits & flags' },
