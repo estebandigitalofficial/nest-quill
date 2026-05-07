@@ -3,45 +3,34 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-const NAV_GROUPS = [
+// Sidebar groups for the Command Center. Each group has a small
+// accent dot color so admins can scan the rail by mood/area.
+//
+// Status color language used across the admin:
+//   green  — healthy / nominal
+//   amber  — warning / watch
+//   red    — action / critical
+//   blue   — beta / informational
+//   violet — AI / generation
+//   gold   — billing / revenue
+//
+// Group accents below mirror this language where it makes sense
+// (Operations = blue/beta, Growth = gold, System = white).
+
+interface NavItem { href: string; label: string; exact?: boolean }
+interface NavGroup { label: string; accent: string; items: NavItem[] }
+
+const NAV_GROUPS: NavGroup[] = [
   {
-    label: 'University',
+    label: 'Overview',
+    accent: 'bg-amber-400',
     items: [
-      { href: '/admin/university', label: 'Bright Tale University' },
-    ],
-  },
-  {
-    label: 'Content',
-    items: [
-      { href: '/admin', label: 'Stories', exact: true },
-      { href: '/admin/library', label: 'Library' },
-      { href: '/admin/images', label: 'Images' },
-    ],
-  },
-  {
-    label: 'People',
-    items: [
-      { href: '/admin/users', label: 'Users' },
-      { href: '/admin/guests', label: 'Guests' },
-      { href: '/admin/classrooms', label: 'Classrooms' },
-    ],
-  },
-  {
-    label: 'Partners',
-    items: [
-      { href: '/admin/sponsors', label: 'Sponsors' },
-    ],
-  },
-  {
-    label: 'Writer',
-    items: [
-      { href: '/admin/writer', label: 'Books' },
-      { href: '/admin/writer-config', label: 'AI Writer Config' },
-      { href: '/admin/email-drips', label: 'Email Drips' },
+      { href: '/admin', label: 'Command Center', exact: true },
     ],
   },
   {
     label: 'Operations',
+    accent: 'bg-sky-400',
     items: [
       { href: '/admin/beta-ops', label: 'Beta Ops' },
       { href: '/admin/support',  label: 'Support' },
@@ -49,11 +38,46 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: 'System',
+    label: 'Users & Stories',
+    accent: 'bg-violet-400',
     items: [
-      { href: '/admin/reporting', label: 'Reporting' },
+      { href: '/admin/users',    label: 'Users' },
+      { href: '/admin/guests',   label: 'Guests' },
+      { href: '/admin/library',  label: 'Library' },
+      { href: '/admin/images',   label: 'Images' },
+    ],
+  },
+  {
+    label: 'Learning & Classroom',
+    accent: 'bg-emerald-400',
+    items: [
+      { href: '/admin/classrooms', label: 'Classrooms' },
+      { href: '/admin/university', label: 'Bright Tale University' },
+    ],
+  },
+  {
+    label: 'Growth & Billing',
+    accent: 'bg-yellow-300',
+    items: [
+      { href: '/admin/sponsors',     label: 'Sponsors' },
+      { href: '/admin/reporting',    label: 'Reporting' },
+      { href: '/admin/email-drips',  label: 'Email Drips' },
+    ],
+  },
+  {
+    label: 'Writer',
+    accent: 'bg-fuchsia-400',
+    items: [
+      { href: '/admin/writer',        label: 'Books' },
+      { href: '/admin/writer-config', label: 'AI Writer Config' },
+    ],
+  },
+  {
+    label: 'System',
+    accent: 'bg-white/60',
+    items: [
       { href: '/admin/settings', label: 'Settings' },
-      { href: '/admin/beta', label: 'Beta Mode' },
+      { href: '/admin/beta',     label: 'Beta Mode' },
     ],
   },
 ]
@@ -68,11 +92,18 @@ export default function AdminSidebar() {
 
   return (
     <nav className="py-5 px-3 space-y-5">
+      {/* Brand row — replaces the bare-list look with a clear identity */}
+      <div className="px-2 mb-1">
+        <p className="text-[10px] font-bold text-amber-200 uppercase tracking-[0.18em]">Nest &amp; Quill</p>
+        <p className="text-sm font-semibold text-white mt-0.5">Command Center</p>
+      </div>
+
       {NAV_GROUPS.map(group => (
         <div key={group.label}>
-          <p className="px-2 mb-1 text-[10px] font-bold text-adm-subtle uppercase tracking-widest">
-            {group.label}
-          </p>
+          <div className="px-2 mb-1 flex items-center gap-2">
+            <span aria-hidden className={`w-1.5 h-1.5 rounded-full ${group.accent}`} />
+            <p className="text-[10px] font-bold text-adm-subtle uppercase tracking-widest">{group.label}</p>
+          </div>
           <div className="space-y-0.5">
             {group.items.map(item => {
               const active = isActive(item.href, item.exact)
@@ -86,7 +117,7 @@ export default function AdminSidebar() {
                       : 'text-adm-muted hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  <span className={`w-1 h-3.5 rounded-full shrink-0 ${active ? 'bg-brand-400' : ''}`} />
+                  <span className={`w-1 h-3.5 rounded-full shrink-0 transition-colors ${active ? group.accent : 'bg-transparent'}`} />
                   {item.label}
                 </Link>
               )
