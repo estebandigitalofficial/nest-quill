@@ -26,14 +26,29 @@
     --adm-subtle:  148 163 184;
   }
 
-  /* Admin panel — dark */
+  /* Admin panel — dark
+   *
+   * "Command Center" palette. We deliberately keep the dark family so
+   * existing admin pages (text-white literals on glass tiles, dark
+   * tables, etc.) remain readable, but every channel is warmed up so
+   * the surface reads as a warm slate / editorial command room rather
+   * than a cold dev panel. Numbers below are RGB triplets for the
+   * `<alpha-value>` Tailwind token.
+   *
+   *   bg      — warm near-black with a violet/brown undertone
+   *   surface — warm slate; cards anchor here
+   *   border  — warm violet-leaning border, easier to see than 31/41/55
+   *   text    — parchment cream (NOT pure white)
+   *   muted   — warm cream-gray, comfortably readable
+   *   subtle  — warm taupe; small but not invisible
+   */
   .dark {
-    --adm-bg:      3   7   18;
-    --adm-surface: 17  24  39;
-    --adm-border:  31  41  55;
-    --adm-text:    243 244 246;
-    --adm-muted:   156 163 175;
-    --adm-subtle:  75  85  99;
+    --adm-bg:      28  24  33;
+    --adm-surface: 44  38  52;
+    --adm-border:  72  62  84;
+    --adm-text:    245 240 232;
+    --adm-muted:   198 188 175;
+    --adm-subtle:  132 122 112;
   }
 
   html {
