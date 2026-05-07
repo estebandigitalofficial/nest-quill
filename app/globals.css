@@ -20,22 +20,22 @@
      * .light and .dark below resolve to the same parchment palette so
      * the look stays consistent regardless of OS theme.
      */
-    --adm-bg:      247 240 224;
-    --adm-surface: 253 248 235;
-    --adm-border:  217 202 175;
-    --adm-text:     45  38  28;
-    --adm-muted:   120 105  85;
-    --adm-subtle:  165 148 122;
+    --adm-bg:      241 233 215;
+    --adm-surface: 255 252 245;
+    --adm-border:  207 192 165;
+    --adm-text:     38  32  22;
+    --adm-muted:   110  95  75;
+    --adm-subtle:  155 138 112;
   }
 
   .light,
   .dark {
-    --adm-bg:      247 240 224;
-    --adm-surface: 253 248 235;
-    --adm-border:  217 202 175;
-    --adm-text:     45  38  28;
-    --adm-muted:   120 105  85;
-    --adm-subtle:  165 148 122;
+    --adm-bg:      241 233 215;
+    --adm-surface: 255 252 245;
+    --adm-border:  207 192 165;
+    --adm-text:     38  32  22;
+    --adm-muted:   110  95  75;
+    --adm-subtle:  155 138 112;
   }
 
   html {

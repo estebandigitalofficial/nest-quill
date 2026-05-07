@@ -18,19 +18,18 @@ import type { ReactNode } from 'react'
 
 type Tone = 'neutral' | 'green' | 'amber' | 'red' | 'blue' | 'violet' | 'gold'
 
-// Tones tuned for the parchment Command Center: gentle tinted washes
-// over a cream surface, with borders strong enough to define the
-// card edge but soft enough to stay editorial. Text inside cards
-// uses text-adm-text by default (warm charcoal), so the tinted
-// backgrounds intentionally stay pale.
+// Tones tuned for the parchment Command Center. Cards lift off the
+// page with a soft drop shadow (shadow-md/xl + warm shadow color)
+// plus solid mid-200 borders so card edges register without
+// shouting. Text inside cards uses text-adm-text by default.
 const TONE_RING: Record<Tone, string> = {
-  neutral: 'from-white/80 to-amber-50/40 border-amber-200/70',
-  green:   'from-emerald-100/80 to-emerald-50/40 border-emerald-300/70',
-  amber:   'from-amber-100/80 to-amber-50/40 border-amber-300/70',
-  red:     'from-rose-100/80 to-rose-50/40 border-rose-300/70',
-  blue:    'from-sky-100/80 to-sky-50/40 border-sky-300/70',
-  violet:  'from-violet-100/80 to-violet-50/40 border-violet-300/70',
-  gold:    'from-yellow-100/80 to-amber-50/40 border-yellow-400/70',
+  neutral: 'from-white to-amber-50/60 border-amber-300',
+  green:   'from-emerald-50 to-emerald-100/80 border-emerald-400',
+  amber:   'from-amber-50 to-amber-100/80 border-amber-400',
+  red:     'from-rose-50 to-rose-100/80 border-rose-400',
+  blue:    'from-sky-50 to-sky-100/80 border-sky-400',
+  violet:  'from-violet-50 to-violet-100/80 border-violet-400',
+  gold:    'from-yellow-50 to-amber-100/80 border-yellow-500',
 }
 
 export default function GlassCard({
@@ -43,7 +42,7 @@ export default function GlassCard({
   children: ReactNode
 }) {
   return (
-    <div className={`relative rounded-2xl border bg-gradient-to-br ${TONE_RING[tone]} backdrop-blur-sm shadow-sm ${className}`}>
+    <div className={`relative rounded-2xl border bg-gradient-to-br ${TONE_RING[tone]} shadow-md shadow-amber-900/10 ${className}`}>
       {children}
     </div>
   )

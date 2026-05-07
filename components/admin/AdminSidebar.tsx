@@ -92,17 +92,17 @@ export default function AdminSidebar() {
 
   return (
     <nav className="py-5 px-3 space-y-5">
-      {/* Brand row — replaces the bare-list look with a clear identity */}
+      {/* Brand row — sits on the navy rail; amber lockup */}
       <div className="px-2 mb-1">
-        <p className="text-[10px] font-bold text-amber-700 uppercase tracking-[0.18em]">Nest &amp; Quill</p>
-        <p className="text-sm font-semibold text-adm-text mt-0.5">Command Center</p>
+        <p className="text-[10px] font-bold text-amber-300 uppercase tracking-[0.18em]">Nest &amp; Quill</p>
+        <p className="text-sm font-semibold text-white mt-0.5">Command Center</p>
       </div>
 
       {NAV_GROUPS.map(group => (
         <div key={group.label}>
           <div className="px-2 mb-1 flex items-center gap-2">
             <span aria-hidden className={`w-1.5 h-1.5 rounded-full ${group.accent}`} />
-            <p className="text-[10px] font-bold text-adm-subtle uppercase tracking-widest">{group.label}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{group.label}</p>
           </div>
           <div className="space-y-0.5">
             {group.items.map(item => {
@@ -113,8 +113,8 @@ export default function AdminSidebar() {
                   href={item.href}
                   className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors ${
                     active
-                      ? 'bg-amber-100/80 text-adm-text font-medium'
-                      : 'text-adm-muted hover:text-adm-text hover:bg-amber-50'
+                      ? 'bg-white/10 text-white font-medium'
+                      : 'text-slate-300 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <span className={`w-1 h-3.5 rounded-full shrink-0 transition-colors ${active ? group.accent : 'bg-transparent'}`} />

@@ -206,26 +206,28 @@ export default async function AdminPage({ searchParams }: PageProps) {
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
 
         {/* ── Command Center hero ─────────────────────────────────── */}
-        <header className="relative overflow-hidden rounded-3xl border border-amber-300/60 bg-gradient-to-br from-blue-50 via-amber-50 to-rose-50/60 px-6 py-6">
-          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-amber-300/40 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-blue-300/35 blur-3xl pointer-events-none" />
-          <div className="relative">
-            <p className="text-xs font-semibold text-amber-700 uppercase tracking-widest">Nest &amp; Quill</p>
-            <h1 className="text-2xl font-semibold text-adm-text mt-1">Command Center</h1>
-            <p className="text-sm text-adm-muted mt-1.5 max-w-xl">
+        <header className="relative overflow-hidden rounded-3xl border-2 border-amber-300 bg-gradient-to-br from-blue-100 via-amber-50 to-amber-100 px-6 py-7 shadow-xl shadow-blue-900/15">
+          {/* Cobalt anchor on the left edge — the structural element */}
+          <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-blue-700 via-blue-500 to-amber-500" aria-hidden />
+          <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-amber-300/50 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-12 w-64 h-64 rounded-full bg-blue-400/40 blur-3xl pointer-events-none" />
+          <div className="relative pl-3">
+            <p className="text-[11px] font-bold text-amber-800 uppercase tracking-[0.2em]">Nest &amp; Quill</p>
+            <h1 className="text-3xl font-semibold text-adm-text mt-1">Command Center</h1>
+            <p className="text-sm text-adm-muted mt-2 max-w-xl">
               At-a-glance status for the beta. Alerts, queue health, support, and quick controls are below — no hunting required.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/admin/beta-ops" className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-adm-text text-xs font-semibold px-3 py-1.5 rounded-full transition-colors shadow-sm">
+              <Link href="/admin/beta-ops" className="inline-flex items-center gap-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-full transition-colors shadow-md shadow-blue-900/20">
                 Beta Ops →
               </Link>
-              <Link href="/admin/support" className="inline-flex items-center gap-1.5 bg-adm-surface/80 hover:bg-adm-surface border border-adm-border text-adm-text text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
+              <Link href="/admin/support" className="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50 border border-amber-300 text-adm-text text-xs font-semibold px-3.5 py-1.5 rounded-full transition-colors shadow-sm">
                 Support {urgentTickets > 0 && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-rose-500" />}
               </Link>
-              <Link href="/admin/reporting" className="inline-flex items-center gap-1.5 bg-adm-surface/80 hover:bg-adm-surface border border-adm-border text-adm-text text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
+              <Link href="/admin/reporting" className="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50 border border-amber-300 text-adm-text text-xs font-semibold px-3.5 py-1.5 rounded-full transition-colors shadow-sm">
                 Reporting
               </Link>
-              <Link href="/admin/settings" className="inline-flex items-center gap-1.5 bg-adm-surface/80 hover:bg-adm-surface border border-adm-border text-adm-text text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
+              <Link href="/admin/settings" className="inline-flex items-center gap-1.5 bg-white hover:bg-amber-50 border border-amber-300 text-adm-text text-xs font-semibold px-3.5 py-1.5 rounded-full transition-colors shadow-sm">
                 Settings
               </Link>
             </div>
@@ -806,12 +808,12 @@ function StatCard({ label, value, color, href, active }: {
 }) {
   const valueColor = color === 'green' ? 'text-emerald-700' : color === 'red' ? 'text-rose-700' : color === 'amber' ? 'text-amber-700' : 'text-adm-text'
   const card = (
-    <div className={`rounded-2xl border px-5 py-4 transition-colors backdrop-blur-sm ${
+    <div className={`rounded-2xl border px-5 py-4 transition-all shadow-md shadow-amber-900/5 ${
       active
-        ? 'bg-amber-100 border-amber-400'
+        ? 'bg-amber-100 border-amber-400 shadow-amber-300/40'
         : href
-        ? 'bg-adm-surface/80 border-adm-border hover:border-amber-400 cursor-pointer'
-        : 'bg-adm-surface/80 border-adm-border'
+        ? 'bg-adm-surface border-adm-border hover:border-blue-500 hover:shadow-lg cursor-pointer'
+        : 'bg-adm-surface border-adm-border'
     }`}>
       <p className="text-xs text-adm-muted mb-1">{label}</p>
       <p className={`text-3xl font-bold ${valueColor}`}>{value}</p>

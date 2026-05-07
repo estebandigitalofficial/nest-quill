@@ -82,12 +82,12 @@ export default function AdminAlertStrip(props: AdminAlertProps) {
       {blocks.map((b, i) => (
         <div
           key={i}
-          className={`rounded-2xl border px-4 py-3 ${
+          className={`rounded-2xl border-l-4 border border-l-current px-4 py-3 shadow-md shadow-amber-900/5 ${
             b.tone === 'red'
-              ? 'bg-rose-50 border-rose-300'
+              ? 'bg-rose-50 border-rose-300 border-l-rose-500'
               : b.tone === 'amber'
-              ? 'bg-amber-50 border-amber-300'
-              : 'bg-sky-50 border-sky-300'
+              ? 'bg-amber-50 border-amber-300 border-l-amber-500'
+              : 'bg-sky-50 border-sky-300 border-l-sky-500'
           }`}>
           <div className="flex items-start gap-2">
             <span aria-hidden className={`mt-1 w-2 h-2 rounded-full shrink-0 ${
