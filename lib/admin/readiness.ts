@@ -133,13 +133,47 @@ export async function getReadinessReport(): Promise<ReadinessReport> {
     guidedToursOn,
     betaModeOn,
     learningToolsOn,
+    maintenanceBannerRows,
   ] = await Promise.all([
     isSettingEnabled('story_creation_enabled'),
     isSettingEnabled('support_tickets_enabled'),
     isSettingEnabled('guided_tours_enabled'),
     getSetting<boolean>('beta_mode_enabled', false),
     isSettingEnabled('learning_tools_enabled'),
+    // Direct app_settings read so we can distinguish "row missing" from
+    // "row present but value is false / empty". getSetting() collapses
+    // those into the same fallback, which loses information we need to
+    // decide between pass / warn here.
+    db.from('app_settings')
+      .select('key, value')
+      .in('key', ['maintenance_banner_enabled', 'maintenance_banner_message']),
   ])
+
+  // ── Maintenance banner state ────────────────────────────────────────────
+  const bannerRowsByKey = new Map<string, unknown>()
+  let bannerQueryOk = !maintenanceBannerRows.error
+  for (const row of (maintenanceBannerRows.data ?? []) as { key: string; value: unknown }[]) {
+    bannerRowsByKey.set(row.key, row.value)
+  }
+  // The app_settings table itself missing (42P01) is unusual and the
+  // rest of the page already depends on it — surface as unknown rather
+  // than fail, since it implies a deeper deployment problem we shouldn't
+  // double-report here.
+  if (maintenanceBannerRows.error?.code === '42P01') bannerQueryOk = false
+
+  const bannerEnabledRowExists = bannerRowsByKey.has('maintenance_banner_enabled')
+  const bannerMessageRowExists = bannerRowsByKey.has('maintenance_banner_message')
+  const bannerEnabledRaw = bannerRowsByKey.get('maintenance_banner_enabled')
+  const bannerMessageRaw = bannerRowsByKey.get('maintenance_banner_message')
+  // Tolerate JSONB strings ("true"/"false") the same way isSettingEnabled does.
+  const bannerEnabled =
+    bannerEnabledRaw === true ? true
+    : bannerEnabledRaw === false ? false
+    : typeof bannerEnabledRaw === 'string'
+      ? bannerEnabledRaw.trim().toLowerCase() === 'true'
+      : false
+  const bannerMessage = typeof bannerMessageRaw === 'string' ? bannerMessageRaw.trim() : ''
+  const bannerMessagePresent = bannerMessage.length > 0
 
   // ── Probe schema (parallel) ─────────────────────────────────────────────
   const [
@@ -308,8 +342,27 @@ export async function getReadinessReport(): Promise<ReadinessReport> {
       : warn('failure_classification', 'Failure classification columns exist',
           'One or more of failure_code/failure_stage/retryable is missing — apply 20240055'),
     pass('recovery_actions', 'Recovery actions available', 'AdminRecoveryActions component shipped'),
-    pass('maintenance_banner', 'Maintenance banner system available',
-      'beta_mode_enabled drives the public-facing banner copy'),
+    // Maintenance banner is driven by maintenance_banner_enabled +
+    // maintenance_banner_message — entirely separate from beta_mode_enabled.
+    // SiteHeader renders the banner when enabled === true AND message is
+    // a non-empty string. We mirror that condition here.
+    !bannerQueryOk
+      ? unknown('maintenance_banner', 'Maintenance banner system available',
+          'Could not read maintenance_banner_enabled / maintenance_banner_message')
+      : !bannerEnabledRowExists || !bannerMessageRowExists
+        ? warn('maintenance_banner', 'Maintenance banner system available',
+            `Setting row missing in app_settings: ${[
+              !bannerEnabledRowExists && 'maintenance_banner_enabled',
+              !bannerMessageRowExists && 'maintenance_banner_message',
+            ].filter(Boolean).join(', ')}`)
+        : !bannerEnabled
+          ? pass('maintenance_banner', 'Maintenance banner system available',
+              'Available but off')
+          : bannerMessagePresent
+            ? pass('maintenance_banner', 'Maintenance banner system available',
+                `Active — message: "${bannerMessage.length > 80 ? bannerMessage.slice(0, 80) + '…' : bannerMessage}"`)
+            : warn('maintenance_banner', 'Maintenance banner system available',
+                'Banner is enabled but maintenance_banner_message is empty — set a message or turn the banner off'),
     betaModeOn
       ? pass('image_generation_state', 'Image generation effective state', 'Beta mode → image generation paused (text-only stories)')
       : pass('image_generation_state', 'Image generation effective state', 'Live — images generating'),
