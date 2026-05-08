@@ -32,9 +32,10 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Operations',
     accent: 'bg-sky-400',
     items: [
-      { href: '/admin/beta-ops', label: 'Beta Ops' },
-      { href: '/admin/support',  label: 'Support' },
-      { href: '/admin/tours',    label: 'Tours' },
+      { href: '/admin/beta-ops',        label: 'Beta Ops' },
+      { href: '/admin/beta-readiness',  label: 'Beta Readiness' },
+      { href: '/admin/support',         label: 'Support' },
+      { href: '/admin/tours',           label: 'Tours' },
     ],
   },
   {
