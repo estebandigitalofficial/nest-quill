@@ -66,15 +66,27 @@ async function callOpenAI(messages: object[], model = 'gpt-4o'): Promise<string>
   return json.choices[0].message.content
 }
 
+function deriveAgeBand(childAge?: number): 'young' | 'middle' | 'teen' | 'adult' {
+  const age = Number(childAge)
+  if (!Number.isFinite(age) || age >= 18) return 'adult'
+  if (age >= 12) return 'teen'
+  if (age >= 8) return 'middle'
+  return 'young'
+}
+
 async function generateImage(prompt: string, illustrationStyle: string, config: ConfigMap = {}, childAge?: number): Promise<Uint8Array> {
   const styleHint = config['image_style_' + illustrationStyle]
     ?? FALLBACK_STYLE_HINTS[illustrationStyle]
     ?? FALLBACK_STYLE_HINTS.storybook
-  const isAdult = childAge !== undefined && childAge >= 18
-  const safetySuffix = isAdult
-    ? (config['adult_image_safety_suffix'] ?? 'Artistic illustration, tasteful, no explicit content, no text or words in image.')
-    : (config['image_safety_suffix'] ?? 'Child-safe, no text, no words in image.')
-  const fullPrompt = `${styleHint}. ${prompt}. ${safetySuffix}`
+  const band = deriveAgeBand(childAge)
+  const isAdult = band === 'adult'
+  // Prefer per-band image safety suffix, then fall back to legacy keys
+  const safetySuffix = config[`band_${band}_image_safety_suffix`]
+    ?? (isAdult
+      ? (config['adult_image_safety_suffix'] ?? 'Artistic illustration, tasteful, no explicit content, no text or words in image.')
+      : (config['image_safety_suffix'] ?? 'Child-safe, no text, no words in image.'))
+  const bandImageHint = config[`band_${band}_image_style_hint`] ?? ''
+  const fullPrompt = `${styleHint}. ${prompt}.${bandImageHint ? ' ' + bandImageHint + '.' : ''} ${safetySuffix}`
 
   const res = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
@@ -134,21 +146,16 @@ function buildStoryPrompt(request: Record<string, unknown>, config: ConfigMap = 
   const pageCount = Number(story_length) || 16
   const isLearning = learning_mode === true
   const ageNum = Number(child_age)
-  const isAdult = ageNum >= 18
+  const ageBand = deriveAgeBand(ageNum)
+  const isAdult = ageBand === 'adult'
 
-  // Age bands for non-adult readers. The legacy "child" path applied a single
-  // "2-4 sentences" rule to every reader from 1 through 17, which produced
-  // babyish output for 8-11 and especially for 12+. These bands give the
-  // model band-specific length and complexity guidance while keeping young
-  // readers' pages short and repetitive.
-  type AgeBand = 'young' | 'middle' | 'teen' | 'adult'
-  const ageBand: AgeBand =
-    isAdult ? 'adult' :
-    ageNum >= 12 ? 'teen' :
-    ageNum >= 8  ? 'middle' :
-                   'young'
+  // Helper: read a band-specific config key, falling back to a hardcoded default.
+  function bc(suffix: string, fallback: string): string {
+    return config[`band_${ageBand}_${suffix}`] ?? fallback
+  }
 
-  const AGE_BAND_RULES: Record<Exclude<AgeBand, 'adult'>, { length: string; complexity: string; pacing: string }> = {
+  // Hardcoded fallbacks — only used when the DB config row is missing.
+  const FALLBACK_BAND_RULES: Record<string, { length: string; complexity: string; pacing: string }> = {
     young: {
       length: 'Each page should be 2-3 short sentences.',
       complexity: 'Use very simple, concrete vocabulary that a child can read aloud or hear comfortably. Repeat key phrases and ideas across pages so the lesson sinks in.',
@@ -164,7 +171,13 @@ function buildStoryPrompt(request: Record<string, unknown>, config: ConfigMap = 
       complexity: 'Use mature sentence structures, varied rhythm, and richer vocabulary. Show internal conflict, nuanced choices, and consequences. Keep everything age-appropriate for 13-17 — no explicit content — but do not write down to the reader.',
       pacing: 'Develop emotional stakes. Let scenes have texture, sensory detail, and quieter beats between action. End with resonance rather than a tidy moral.',
     },
+    adult: {
+      length: 'Each page should have 3-6 sentences with rich descriptive prose.',
+      complexity: 'Write with sophisticated vocabulary appropriate for an adult reader. Use literary techniques, complex sentence structures, and nuanced character development.',
+      pacing: 'Use literary pacing — vary scene length, interleave action with reflection. Build tension through subtext and implication, not just plot events.',
+    },
   }
+  const fb = FALLBACK_BAND_RULES[ageBand] ?? FALLBACK_BAND_RULES.young
 
   // Learning-mode explanation depth, scaled by grade band. Independent of the
   // age band above since some learning stories run for younger or older
@@ -208,9 +221,11 @@ This story must naturally weave in educational content about "{learning_topic}" 
     : ''
 }` : ''
 
-  const role = isAdult
-    ? (config['adult_story_role'] ?? 'You are a professional fiction author. You write engaging, well-crafted stories for adult readers. Your writing is sophisticated, nuanced, and tailored to mature audiences.')
-    : (config['story_role'] ?? "You are a professional children's book author. You write warm, age-appropriate stories for young children.")
+  // Band-specific role → legacy role → hardcoded default
+  const role = bc('system_role', '')
+    || (isAdult
+      ? (config['adult_story_role'] ?? 'You are a professional fiction author. You write engaging, well-crafted stories for adult readers. Your writing is sophisticated, nuanced, and tailored to mature audiences.')
+      : (config['story_role'] ?? "You are a professional children's book author. You write warm, age-appropriate stories for young children."))
   const outputFormat = config['story_output_format'] ?? `Your output must be valid JSON matching this exact structure:
 {
   "title": "string — a short, memorable book title",
@@ -227,38 +242,32 @@ This story must naturally weave in educational content about "{learning_topic}" 
   ]
 }`
 
-  // For non-adult readers, prefer band-specific length/complexity rules over
-  // the legacy single-line config defaults. Admin overrides for the legacy
-  // keys still come through; we append the band-specific rule afterwards so
-  // the more specific guidance wins.
-  const bandRules = !isAdult ? AGE_BAND_RULES[ageBand as Exclude<AgeBand, 'adult'>] : null
-
+  // All rules now pull from per-band config keys first, then fall back to
+  // legacy shared keys, then to hardcoded defaults. This means every aspect
+  // of every age band is independently editable from the admin UI.
   const rules = [
     r(config['story_page_rules'] ?? 'Write exactly {page_count} story pages'),
-    r(isAdult
-      ? (config['adult_story_language_rules'] ?? 'Write with sophisticated vocabulary appropriate for an adult reader. Use literary techniques, complex sentence structures, and nuanced character development.')
-      : (config['story_language_rules'] ?? 'Keep language simple and age-appropriate for a {child_age}-year-old')),
-    r(isAdult
-      ? (config['adult_story_sentence_rules'] ?? 'Each page should have 3-6 sentences with rich descriptive prose')
-      : (config['story_sentence_rules'] ?? 'Each page should have an age-appropriate number of sentences (see age-band rule below)')),
-    // Band-specific rules — only for non-adult readers; the adult path already
-    // has rich-prose guidance baked in.
-    ...(bandRules
-      ? [
-          `Age-band length rule: ${bandRules.length}`,
-          `Age-band complexity rule: ${bandRules.complexity}`,
-          `Age-band pacing rule: ${bandRules.pacing}`,
-        ]
-      : []),
+    // Sentence length — band-specific
+    `Age-band length rule: ${r(bc('sentence_rules', fb.length))}`,
+    // Vocabulary / complexity — band-specific
+    `Age-band complexity rule: ${r(bc('vocabulary_rules', fb.complexity))}`,
+    // Pacing / structure — band-specific
+    `Age-band pacing rule: ${r(bc('pacing_rules', fb.pacing))}`,
+    // Tone guidance — band-specific, then legacy
+    r(bc('tone_guidance', '')
+      || (isAdult
+        ? (config['adult_story_tone_rule'] ?? 'Tone: {tone_list}. Write with emotional depth and literary sophistication.')
+        : (config['story_tone_rule'] ?? 'Tone: {tone_list}'))),
+    // Moral / theme handling — band-specific (new, no legacy fallback needed)
+    ...(bc('moral_rules', '') ? [`Moral & theme handling: ${r(bc('moral_rules', ''))}`] : []),
     r(config['story_image_desc_rules'] ?? 'Image descriptions should be vivid, specific, and describe a single scene'),
     r(config['story_illustration_style_rule'] ?? 'The illustration style is {illustration_style} — reflect this in image description language'),
-    r(isAdult
-      ? (config['adult_story_tone_rule'] ?? 'Tone: {tone_list}. Write with emotional depth and literary sophistication.')
-      : (config['story_tone_rule'] ?? 'Tone: {tone_list}')),
     'Do not include page numbers or chapter headings in the text',
-    r(isAdult
-      ? (config['adult_story_ending_rule'] ?? 'End the story with a satisfying, thought-provoking conclusion that resonates emotionally')
-      : (config['story_ending_rule'] ?? 'End the story with a satisfying, uplifting conclusion')),
+    // Ending — band-specific, then legacy
+    r(bc('ending_rules', '')
+      || (isAdult
+        ? (config['adult_story_ending_rule'] ?? 'End the story with a satisfying, thought-provoking conclusion that resonates emotionally')
+        : (config['story_ending_rule'] ?? 'End the story with a satisfying, uplifting conclusion'))),
   ]
 
   const spanishNote = language === 'es'

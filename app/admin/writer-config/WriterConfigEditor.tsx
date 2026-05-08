@@ -14,9 +14,11 @@ interface Section {
   grid?: boolean
 }
 
+/* ── Shared / legacy config sections ─────────────────────────────────── */
+
 const CHILDREN_WRITER: Section = {
-  title: "Children's Writer",
-  subtitle: 'Prompts and rules for generating children\u2019s storybooks (ages 1\u201312).',
+  title: "Children's Writer (Shared)",
+  subtitle: 'Base prompts and rules shared across all children\u2019s age bands. Band-specific overrides (below) take priority.',
   keys: [
     'story_role',
     'story_output_format',
@@ -31,8 +33,8 @@ const CHILDREN_WRITER: Section = {
 }
 
 const ADULT_WRITER: Section = {
-  title: 'Adult Writer',
-  subtitle: 'Prompts and rules for generating stories for adult readers (18+).',
+  title: 'Adult Writer (Shared)',
+  subtitle: 'Base prompts for adult stories. Band-specific overrides in the Adult (18+) tab take priority.',
   keys: [
     'adult_story_role',
     'adult_story_language_rules',
@@ -69,16 +71,50 @@ const IMAGE_STYLES: Section = {
   grid: true,
 }
 
+/* ── Per-age-band config sections ─────────────────────────────────────── */
+
+const BAND_KEYS = [
+  'system_role',
+  'sentence_rules',
+  'vocabulary_rules',
+  'pacing_rules',
+  'tone_guidance',
+  'ending_rules',
+  'moral_rules',
+  'page_count',
+  'image_style_hint',
+  'image_safety_suffix',
+] as const
+
+function bandSection(band: string, label: string, ageRange: string): Section {
+  return {
+    title: `${label} (${ageRange})`,
+    subtitle: `All AI writer settings for ${label.toLowerCase()} readers. These override the shared defaults when generating stories for this age group.`,
+    keys: BAND_KEYS.map((k) => `band_${band}_${k}`),
+  }
+}
+
+const BAND_YOUNG  = bandSection('young',  'Young',  'Ages 1\u20137')
+const BAND_MIDDLE = bandSection('middle', 'Middle', 'Ages 8\u201311')
+const BAND_TEEN   = bandSection('teen',   'Teen',   'Ages 12\u201317')
+const BAND_ADULT  = bandSection('adult',  'Adult',  '18+')
+
+/* ── Tabs ─────────────────────────────────────────────────────────────── */
+
 const TABS = [
-  { label: "Children's", sections: [CHILDREN_WRITER] },
-  { label: 'Adult', sections: [ADULT_WRITER] },
-  { label: 'Learning & Quiz', sections: [LEARNING, QUIZ] },
-  { label: 'Image Styles', sections: [IMAGE_STYLES] },
+  { label: 'Young (1\u20137)',   sections: [BAND_YOUNG] },
+  { label: 'Middle (8\u201311)', sections: [BAND_MIDDLE] },
+  { label: 'Teen (12\u201317)', sections: [BAND_TEEN] },
+  { label: 'Adult (18+)',       sections: [BAND_ADULT] },
+  { label: 'Shared Defaults',   sections: [CHILDREN_WRITER, ADULT_WRITER] },
+  { label: 'Learning & Quiz',   sections: [LEARNING, QUIZ] },
+  { label: 'Image Styles',      sections: [IMAGE_STYLES] },
 ]
 
-/* ── Friendly labels for raw config keys ─────────────────────────────── */
+/* ── Friendly labels for config keys ──────────────────────────────────── */
 
 const KEY_LABELS: Record<string, string> = {
+  // Shared children's
   story_role: 'System role',
   story_output_format: 'Output JSON format',
   story_page_rules: 'Page count rule',
@@ -88,21 +124,43 @@ const KEY_LABELS: Record<string, string> = {
   story_illustration_style_rule: 'Illustration style rule',
   story_tone_rule: 'Tone rule',
   story_ending_rule: 'Ending rule',
+  // Shared adult
   adult_story_role: 'System role',
   adult_story_language_rules: 'Language rules',
   adult_story_sentence_rules: 'Sentences per page',
   adult_story_tone_rule: 'Tone rule',
   adult_story_ending_rule: 'Ending rule',
   adult_image_safety_suffix: 'Image safety suffix',
+  // Learning & quiz
   learning_mode_instructions: 'Learning mode prompt',
   quiz_system_prompt: 'Quiz system prompt',
   quiz_rules: 'Quiz rules',
+  // Image styles
   image_safety_suffix: 'Safety suffix (all images)',
   image_style_watercolor: 'Watercolor',
   image_style_cartoon: 'Cartoon',
   image_style_storybook: 'Classic Storybook',
   image_style_pencil_sketch: 'Pencil Sketch',
   image_style_digital_art: 'Digital Art',
+}
+
+// Auto-generate labels for band keys
+for (const band of ['young', 'middle', 'teen', 'adult']) {
+  const bandLabels: Record<string, string> = {
+    system_role: 'System role',
+    sentence_rules: 'Sentences per page',
+    vocabulary_rules: 'Vocabulary & complexity',
+    pacing_rules: 'Pacing & structure',
+    tone_guidance: 'Tone guidance',
+    ending_rules: 'Ending rules',
+    moral_rules: 'Moral & theme handling',
+    page_count: 'Page count range',
+    image_style_hint: 'Image style hint',
+    image_safety_suffix: 'Image safety suffix',
+  }
+  for (const [suffix, label] of Object.entries(bandLabels)) {
+    KEY_LABELS[`band_${band}_${suffix}`] = label
+  }
 }
 
 /* ── Component ───────────────────────────────────────────────────────── */
