@@ -32,12 +32,12 @@ export async function PATCH(request: Request) {
   for (const { key, value } of updates) {
     const { error } = await db
       .from('ai_writer_config')
-      .update({
+      .upsert({
+        key,
         value,
         updated_by: ctx.userId,
         updated_at: new Date().toISOString(),
-      })
-      .eq('key', key)
+      }, { onConflict: 'key' })
 
     if (error) errors.push(`${key}: ${error.message}`)
   }

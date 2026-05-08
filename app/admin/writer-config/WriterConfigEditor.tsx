@@ -179,17 +179,24 @@ export default function WriterConfigEditor({
   const [showConfirm, setShowConfirm] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
 
-  const hasChanges = initialConfigs.some((c) => values[c.key] !== c.value)
-  const changedCount = initialConfigs.filter((c) => values[c.key] !== c.value).length
+  // Collect all keys referenced by any section so we can detect new keys
+  const allSectionKeys = TABS.flatMap((t) => t.sections.flatMap((s) => s.keys))
+  const originalValues: Record<string, string> = Object.fromEntries(
+    initialConfigs.map((c) => [c.key, c.value])
+  )
+
+  const hasChanges = allSectionKeys.some((k) => (values[k] ?? '') !== (originalValues[k] ?? ''))
+  const changedCount = allSectionKeys.filter((k) => (values[k] ?? '') !== (originalValues[k] ?? '')).length
 
   async function handleSave() {
     setShowConfirm(false)
     setSaving(true)
     setMessage(null)
 
-    const updates = initialConfigs
-      .filter((c) => values[c.key] !== c.value)
-      .map((c) => ({ key: c.key, value: values[c.key] }))
+    // Include both modified existing keys and newly filled keys
+    const updates = allSectionKeys
+      .filter((k) => (values[k] ?? '') !== (originalValues[k] ?? ''))
+      .map((k) => ({ key: k, value: values[k] ?? '' }))
 
     if (updates.length === 0) {
       setMessage({ type: 'success', text: 'No changes to save.' })
@@ -254,9 +261,11 @@ export default function WriterConfigEditor({
           )}>
             {section.keys.map((key) => {
               const config = configMap.get(key)
-              if (!config) return null
-              const isModified = values[key] !== config.value
-              const isLong = (values[key] ?? '').length > 120
+              const currentVal = values[key] ?? ''
+              const originalVal = config?.value ?? ''
+              const isModified = currentVal !== originalVal
+              const isNew = !config
+              const isLong = currentVal.length > 120
 
               return (
                 <div
@@ -270,8 +279,13 @@ export default function WriterConfigEditor({
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-adm-text">
                         {KEY_LABELS[key] ?? key}
+                        {isNew && (
+                          <span className="ml-2 text-[10px] font-semibold bg-blue-900/50 text-blue-400 px-2 py-0.5 rounded-full">
+                            not set
+                          </span>
+                        )}
                       </p>
-                      {config.description && (
+                      {config?.description && (
                         <p className="text-xs text-adm-muted mt-0.5 line-clamp-2">{config.description}</p>
                       )}
                     </div>
