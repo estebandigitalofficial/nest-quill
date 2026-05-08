@@ -22,14 +22,19 @@ export default async function AdminLayout({
     <div className="min-h-screen bg-adm-bg text-adm-text">
 
       {/* ── Header ─────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 border-b border-adm-border bg-adm-bg px-4 sm:px-6 h-14 flex items-center justify-between">
+      {/* Header height steps up at sm so the larger desktop logo
+          (h-12, exactly matches the source's intrinsic 48px height —
+          no upscaling, no blur) sits in a roomy 64px bar. Mobile
+          keeps the compact 56px bar with the original 36px logo so
+          screen real estate is preserved. */}
+      <header className="sticky top-0 z-50 border-b border-adm-border bg-adm-bg px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
         <Link href="/admin" className="flex items-center gap-3 group">
           <Image
             src="https://nestandquill.b-cdn.net/nestandquill%20brand%20start-03.webp"
             alt="Nest & Quill"
             width={160}
             height={48}
-            className="h-9 w-auto brightness-0 invert"
+            className="h-9 sm:h-12 w-auto brightness-0 invert"
             priority
           />
           <span className="hidden md:inline text-[11px] font-semibold uppercase tracking-[0.18em] text-adm-subtle group-hover:text-adm-text transition-colors">
@@ -59,7 +64,8 @@ export default async function AdminLayout({
 
         {/* Left sidebar — flat dark rail. Linear/Vercel style. */}
         <aside className="hidden sm:block w-52 shrink-0 border-r border-adm-border bg-adm-bg">
-          <div className="sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
+          {/* Sidebar is sm+ only, where the header is h-16 (4rem). */}
+          <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
             <AdminSidebar />
           </div>
         </aside>
