@@ -75,7 +75,7 @@ const IMAGE_STYLES: Section = {
 
 const BAND_KEYS = [
   'system_role',
-  'sentence_rules',
+  'words_per_page',
   'vocabulary_rules',
   'pacing_rules',
   'tone_guidance',
@@ -119,7 +119,7 @@ const KEY_LABELS: Record<string, string> = {
   story_output_format: 'Output JSON format',
   story_page_rules: 'Page count rule',
   story_language_rules: 'Language & age rules',
-  story_sentence_rules: 'Sentences per page',
+  story_sentence_rules: 'Length per page (legacy)',
   story_image_desc_rules: 'Image description rules',
   story_illustration_style_rule: 'Illustration style rule',
   story_tone_rule: 'Tone rule',
@@ -127,7 +127,7 @@ const KEY_LABELS: Record<string, string> = {
   // Shared adult
   adult_story_role: 'System role',
   adult_story_language_rules: 'Language rules',
-  adult_story_sentence_rules: 'Sentences per page',
+  adult_story_sentence_rules: 'Length per page (legacy)',
   adult_story_tone_rule: 'Tone rule',
   adult_story_ending_rule: 'Ending rule',
   adult_image_safety_suffix: 'Image safety suffix',
@@ -148,7 +148,7 @@ const KEY_LABELS: Record<string, string> = {
 for (const band of ['young', 'middle', 'teen', 'adult']) {
   const bandLabels: Record<string, string> = {
     system_role: 'System role',
-    sentence_rules: 'Sentences per page',
+    words_per_page: 'Words per page',
     vocabulary_rules: 'Vocabulary & complexity',
     pacing_rules: 'Pacing & structure',
     tone_guidance: 'Tone guidance',

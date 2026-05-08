@@ -12,9 +12,9 @@ INSERT INTO ai_writer_config (key, value, description) VALUES
    'You are a professional children''s picture-book author. You write warm, gentle stories for very young children (ages 1–7). Your language is simple, rhythmic, and comforting.',
    'System role override for young readers (ages 1–7). Leave empty to use the default children''s role.'),
 
-  ('band_young_sentence_rules',
-   'Each page should be 2-3 short sentences.',
-   'How many sentences per page for young readers.'),
+  ('band_young_words_per_page',
+   'Each page should be 20-40 words. Keep sentences very short (5-10 words each).',
+   'Word count target per page for young readers.'),
 
   ('band_young_vocabulary_rules',
    'Use very simple, concrete vocabulary that a child can read aloud or hear comfortably. Repeat key phrases and ideas across pages so the lesson sinks in.',
@@ -58,9 +58,9 @@ INSERT INTO ai_writer_config (key, value, description) VALUES
    'You are a professional children''s book author. You write engaging, imaginative stories for middle-grade readers (ages 8–11). Your writing balances fun with emotional depth.',
    'System role override for middle readers (ages 8–11). Leave empty to use the default children''s role.'),
 
-  ('band_middle_sentence_rules',
-   'Each page should be 4-6 sentences with descriptive scene-setting.',
-   'How many sentences per page for middle readers.'),
+  ('band_middle_words_per_page',
+   'Each page should be 60-100 words. Use descriptive scene-setting with moderate sentence length.',
+   'Word count target per page for middle readers.'),
 
   ('band_middle_vocabulary_rules',
    'Use age-appropriate vocabulary with the occasional richer word in context. Develop the character''s feelings and motivations beyond the surface action.',
@@ -104,9 +104,9 @@ INSERT INTO ai_writer_config (key, value, description) VALUES
    'You are a professional young-adult fiction author. You write compelling, emotionally resonant stories for teenage readers (ages 12–17). Your prose is mature and respectful — never condescending.',
    'System role override for teen readers (ages 12–17). Leave empty to use the default children''s role.'),
 
-  ('band_teen_sentence_rules',
-   'Each page should be 5-8 sentences. Avoid one-or-two-sentence pages — they feel babyish. Use more chapter-like pacing.',
-   'How many sentences per page for teen readers.'),
+  ('band_teen_words_per_page',
+   'Each page should be 100-160 words. Use chapter-like pacing with varied sentence lengths. Avoid very short pages — they feel babyish.',
+   'Word count target per page for teen readers.'),
 
   ('band_teen_vocabulary_rules',
    'Use mature sentence structures, varied rhythm, and richer vocabulary. Show internal conflict, nuanced choices, and consequences. Keep everything age-appropriate for 13-17 — no explicit content — but do not write down to the reader.',
@@ -150,9 +150,9 @@ INSERT INTO ai_writer_config (key, value, description) VALUES
    'You are a professional fiction author. You write engaging, well-crafted stories for adult readers. Your writing is sophisticated, nuanced, and tailored to mature audiences.',
    'System role override for adult readers (18+). Leave empty to use the default adult role.'),
 
-  ('band_adult_sentence_rules',
-   'Each page should have 3-6 sentences with rich descriptive prose.',
-   'How many sentences per page for adult readers.'),
+  ('band_adult_words_per_page',
+   'Each page should be 80-150 words with rich descriptive prose and varied sentence rhythm.',
+   'Word count target per page for adult readers.'),
 
   ('band_adult_vocabulary_rules',
    'Write with sophisticated vocabulary appropriate for an adult reader. Use literary techniques, complex sentence structures, and nuanced character development.',

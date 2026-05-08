@@ -155,24 +155,24 @@ function buildStoryPrompt(request: Record<string, unknown>, config: ConfigMap = 
   }
 
   // Hardcoded fallbacks — only used when the DB config row is missing.
-  const FALLBACK_BAND_RULES: Record<string, { length: string; complexity: string; pacing: string }> = {
+  const FALLBACK_BAND_RULES: Record<string, { wordsPerPage: string; complexity: string; pacing: string }> = {
     young: {
-      length: 'Each page should be 2-3 short sentences.',
+      wordsPerPage: 'Each page should be 20-40 words. Keep sentences very short (5-10 words each).',
       complexity: 'Use very simple, concrete vocabulary that a child can read aloud or hear comfortably. Repeat key phrases and ideas across pages so the lesson sinks in.',
       pacing: 'Move slowly and reinforce. Show clear cause and effect. Make the moral or lesson direct and obvious.',
     },
     middle: {
-      length: 'Each page should be 4-6 sentences with descriptive scene-setting.',
+      wordsPerPage: 'Each page should be 60-100 words. Use descriptive scene-setting with moderate sentence length.',
       complexity: 'Use age-appropriate vocabulary with the occasional richer word in context. Develop the character\'s feelings and motivations beyond the surface action.',
       pacing: 'Build the conflict deliberately. Show the character making choices that drive the resolution. Give the ending room to breathe.',
     },
     teen: {
-      length: 'Each page should be 5-8 sentences. Avoid one-or-two-sentence pages — they feel babyish. Use more chapter-like pacing.',
+      wordsPerPage: 'Each page should be 100-160 words. Use chapter-like pacing with varied sentence lengths. Avoid very short pages — they feel babyish.',
       complexity: 'Use mature sentence structures, varied rhythm, and richer vocabulary. Show internal conflict, nuanced choices, and consequences. Keep everything age-appropriate for 13-17 — no explicit content — but do not write down to the reader.',
       pacing: 'Develop emotional stakes. Let scenes have texture, sensory detail, and quieter beats between action. End with resonance rather than a tidy moral.',
     },
     adult: {
-      length: 'Each page should have 3-6 sentences with rich descriptive prose.',
+      wordsPerPage: 'Each page should be 80-150 words with rich descriptive prose and varied sentence rhythm.',
       complexity: 'Write with sophisticated vocabulary appropriate for an adult reader. Use literary techniques, complex sentence structures, and nuanced character development.',
       pacing: 'Use literary pacing — vary scene length, interleave action with reflection. Build tension through subtext and implication, not just plot events.',
     },
@@ -247,8 +247,8 @@ This story must naturally weave in educational content about "{learning_topic}" 
   // of every age band is independently editable from the admin UI.
   const rules = [
     r(config['story_page_rules'] ?? 'Write exactly {page_count} story pages'),
-    // Sentence length — band-specific
-    `Age-band length rule: ${r(bc('sentence_rules', fb.length))}`,
+    // Words per page — band-specific
+    `Age-band length rule: ${r(bc('words_per_page', fb.wordsPerPage))}`,
     // Vocabulary / complexity — band-specific
     `Age-band complexity rule: ${r(bc('vocabulary_rules', fb.complexity))}`,
     // Pacing / structure — band-specific
