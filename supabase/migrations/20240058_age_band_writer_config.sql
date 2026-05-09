@@ -187,3 +187,5 @@ INSERT INTO ai_writer_config (key, value, description) VALUES
    'Safety suffix appended to every DALL-E prompt for adult readers.')
 
 ON CONFLICT (key) DO NOTHING;
+
+NOTIFY pgrst, 'reload schema';

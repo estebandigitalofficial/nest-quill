@@ -80,11 +80,15 @@ async function generateImage(prompt: string, illustrationStyle: string, config: 
     ?? FALLBACK_STYLE_HINTS.storybook
   const band = deriveAgeBand(childAge)
   const isAdult = band === 'adult'
-  // Prefer per-band image safety suffix, then fall back to legacy keys
+  // Prefer per-band image safety suffix, then fall back to legacy keys.
+  // Use `||` (not `??`) at every level so an admin who clears the field
+  // to an empty string falls through to the next layer instead of
+  // shipping a DALL-E prompt with NO safety suffix on a child-targeted
+  // illustration. The hardcoded final default is the floor.
   const safetySuffix = config[`band_${band}_image_safety_suffix`]
-    ?? (isAdult
-      ? (config['adult_image_safety_suffix'] ?? 'Artistic illustration, tasteful, no explicit content, no text or words in image.')
-      : (config['image_safety_suffix'] ?? 'Child-safe, no text, no words in image.'))
+    || (isAdult
+      ? (config['adult_image_safety_suffix'] || 'Artistic illustration, tasteful, no explicit content, no text or words in image.')
+      : (config['image_safety_suffix'] || 'Child-safe, no text, no words in image.'))
   const bandImageHint = config[`band_${band}_image_style_hint`] ?? ''
   const fullPrompt = `${styleHint}. ${prompt}.${bandImageHint ? ' ' + bandImageHint + '.' : ''} ${safetySuffix}`
 
