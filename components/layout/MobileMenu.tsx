@@ -8,6 +8,7 @@ const BASE_LINKS = [
   { href: '/learning',  label: 'Learning',         flag: null },
   { href: '/homeschool', label: 'Homeschool',      flag: null },
   { href: '/classroom', label: 'Classroom',        flag: 'classroom' },
+  { href: '/writer',    label: 'Writer Studio',    flag: null },
   { href: '/pricing',   label: 'Pricing',          flag: null },
 ]
 

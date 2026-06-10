@@ -47,13 +47,14 @@ export default async function SiteHeader({ right }: Props) {
           />
         </Link>
 
-        <nav className="hidden md:flex items-center gap-5">
-          <Link href="/create" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford transition-colors">Create a Story</Link>
+        <nav className="hidden md:flex items-center gap-4">
+          <Link href="/create" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford transition-colors whitespace-nowrap">Create a Story</Link>
           <LearningDropdown />
           <Link href="/homeschool" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford transition-colors">Homeschool</Link>
           {classroomEnabled && (
             <Link href="/classroom" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford transition-colors">Classroom</Link>
           )}
+          <Link href="/writer" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford transition-colors whitespace-nowrap">Writer Studio</Link>
           <Link href="/pricing" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford transition-colors">Pricing</Link>
         </nav>
 

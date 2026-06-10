@@ -53,6 +53,7 @@ export default async function HomePage() {
         <SamplePreview />
         <Pricing betaMode={betaMode} />
         <SecondaryProducts />
+        <WriterStudio />
         <BottomCTA />
       </main>
 
@@ -434,6 +435,72 @@ function SecondaryProducts() {
               className="inline-flex justify-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-full text-sm transition-colors"
             >
               Explore Homeschool →
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Writer Studio ─────────────────────────────────────────────────────────────
+// An additional, separate writing tool — presented after the learning/classroom/
+// homeschool section and before the final child-story CTA. Child-story messaging
+// stays primary; this is explicitly framed as separate from the story creator.
+
+const WRITER_DOC_TYPES = [
+  'Books',
+  'Manuals',
+  'Handbooks',
+  'SOPs',
+  'Training guides',
+  'Curriculum',
+  'Workbooks',
+  '+ PDF uploads',
+]
+
+function WriterStudio() {
+  return (
+    <section className="bg-white py-24 px-6">
+      <div className="max-w-5xl mx-auto">
+        <div className="bg-parchment border border-parchment-dark rounded-3xl px-6 py-10 sm:px-10 md:px-12 md:py-12">
+          <div className="text-center max-w-2xl mx-auto">
+            <p className="text-xs font-bold text-oxford/60 uppercase tracking-widest mb-3">
+              Also from Nest &amp; Quill
+            </p>
+
+            <h2 className="font-serif text-3xl sm:text-4xl text-oxford mb-3">
+              Writer Studio
+            </h2>
+
+            <p className="text-charcoal-light leading-relaxed">
+              A separate tool for structured, long-form writing. Create books, manuals,
+              handbooks, SOPs, training guides, curriculum, and workbooks. Source
+              documents and PDF uploads are supported for project reference.
+            </p>
+
+            <p className="text-sm text-charcoal-light/80 mt-3">
+              Writer Studio is separate from the children&apos;s story creator.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-2xl mx-auto mt-9 mb-9">
+            {WRITER_DOC_TYPES.map((type) => (
+              <div
+                key={type}
+                className="bg-white border border-parchment-dark rounded-xl px-3 py-2.5 text-center text-xs font-semibold text-oxford"
+              >
+                {type}
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Link
+              href="/writer"
+              className="inline-flex justify-center bg-oxford hover:bg-oxford/90 text-white font-semibold px-8 py-3.5 rounded-full text-base transition-colors active:scale-[0.98]"
+            >
+              Explore Writer Studio →
             </Link>
           </div>
         </div>
