@@ -385,6 +385,36 @@ export interface UserTourProgressRow {
   updated_at: string
 }
 
+// Writer Studio (customer-facing) projects. See lib/writer/projectTypes.ts for
+// the document_type catalog and types/writer.ts (WriterProject) for the
+// app-facing type with literal unions.
+export interface WriterProjectRow {
+  id: string
+  user_id: string
+  title: string
+  document_type: string
+  status: string
+  outline: Json
+  content: Json
+  settings: Json
+  created_at: string
+  updated_at: string
+}
+
+// Source documents attached to a Writer Studio project. See types/writer.ts
+// (WriterProjectFile) for the app-facing type.
+export interface WriterProjectFileRow {
+  id: string
+  project_id: string
+  user_id: string
+  file_name: string
+  file_type: string
+  file_size: number
+  storage_path: string
+  upload_status: string
+  created_at: string
+}
+
 // ─── Supabase Database shape (used by createClient<Database>) ───────────────
 // Must include Views, Functions, Enums, CompositeTypes for correct type inference.
 // Replace this entire file by running `pnpm run types` once Supabase CLI is set up.
@@ -404,6 +434,8 @@ export interface Database {
       guided_tours: { Row: GuidedTourRow; Insert: Partial<GuidedTourRow>; Update: Partial<GuidedTourRow>; Relationships: [] }
       guided_tour_steps: { Row: GuidedTourStepRow; Insert: Partial<GuidedTourStepRow>; Update: Partial<GuidedTourStepRow>; Relationships: [] }
       user_tour_progress: { Row: UserTourProgressRow; Insert: Partial<UserTourProgressRow>; Update: Partial<UserTourProgressRow>; Relationships: [] }
+      writer_projects: { Row: WriterProjectRow; Insert: Partial<WriterProjectRow>; Update: Partial<WriterProjectRow>; Relationships: [] }
+      writer_project_files: { Row: WriterProjectFileRow; Insert: Partial<WriterProjectFileRow>; Update: Partial<WriterProjectFileRow>; Relationships: [] }
     }
     Views: Record<string, never>
     Functions: {

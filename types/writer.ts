@@ -122,3 +122,58 @@ export interface WriterBookWithChapters extends WriterBook {
 export interface WriterChapterWithScenes extends WriterChapter {
   scenes: WriterScene[]
 }
+
+// ──────────────────────────────────────────────────────────────
+// Writer Studio (customer-facing) — distinct from Admin Writer above.
+// Mirrors the public.writer_projects table.
+// ──────────────────────────────────────────────────────────────
+export type WriterProjectDocumentType =
+  | 'book'
+  | 'manual'
+  | 'handbook'
+  | 'sop'
+  | 'training_guide'
+  | 'curriculum'
+  | 'workbook'
+
+export type WriterProjectStatus = 'draft' | 'in_progress' | 'complete' | 'archived'
+
+export interface WriterProject {
+  id: string
+  user_id: string
+  title: string
+  document_type: WriterProjectDocumentType
+  status: WriterProjectStatus
+  /** Ordered structural outline (units/chapters/sections). Shape varies by document_type. */
+  outline: unknown[]
+  /** Generated/authored body content keyed by outline node. Filled by the future writing flow. */
+  content: Record<string, unknown>
+  /** Project-level settings (voice, audience, formatting, etc.). */
+  settings: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+// Source documents attached to a project. Phase 1 stores the file + metadata
+// only; later phases add extraction/processing states.
+export type WriterFileUploadStatus =
+  | 'pending'
+  | 'uploaded'
+  | 'processing'
+  | 'processed'
+  | 'failed'
+
+export interface WriterProjectFile {
+  id: string
+  project_id: string
+  user_id: string
+  file_name: string
+  /** MIME type reported at upload time. */
+  file_type: string
+  /** Size in bytes. */
+  file_size: number
+  /** Path within the writer-project-files storage bucket. */
+  storage_path: string
+  upload_status: WriterFileUploadStatus
+  created_at: string
+}
