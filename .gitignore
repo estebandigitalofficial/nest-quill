@@ -6,6 +6,9 @@ node_modules/
 .next/
 out/
 
+# TypeScript build artifacts
+*.tsbuildinfo
+
 # Environment — NEVER commit real secrets
 .env
 .env.local
