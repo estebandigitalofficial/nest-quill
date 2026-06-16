@@ -41,10 +41,12 @@ export async function GET(
   if (!await checkBookOwner(bookId, ctx)) return adminGuardResponse()
 
   const url = new URL(req.url)
+  const source = url.searchParams.get('source') === 'manuscript' ? 'manuscript' : 'writer'
   const book = await assembleBook(bookId, {
     includeFrontMatter: url.searchParams.get('frontMatter') !== 'false',
     includeBackMatter: url.searchParams.get('backMatter') !== 'false',
     includeCopyright: url.searchParams.get('copyright') !== 'false',
+    source,
   })
 
   const zip = new JSZip()

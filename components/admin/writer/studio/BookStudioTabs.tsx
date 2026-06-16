@@ -13,9 +13,13 @@ type Tab = 'write' | 'studio' | 'export'
 export default function BookStudioTabs({
   book,
   writeContent,
+  hasWriterContent,
+  hasManuscript,
 }: {
   book: WriterBook
   writeContent: React.ReactNode
+  hasWriterContent: boolean
+  hasManuscript: boolean
 }) {
   const [tab, setTab] = useState<Tab>('write')
 
@@ -52,7 +56,7 @@ export default function BookStudioTabs({
       {tab === 'export' && (
         <div className="bg-adm-surface border border-adm-border rounded-xl px-6 py-6">
           <p className="text-xs font-bold text-adm-muted uppercase tracking-widest mb-5">Export Builder</p>
-          <ExportBuilder bookId={book.id} />
+          <ExportBuilder bookId={book.id} hasWriterContent={hasWriterContent} hasManuscript={hasManuscript} />
         </div>
       )}
     </div>

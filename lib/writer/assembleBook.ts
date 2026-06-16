@@ -67,12 +67,14 @@ export async function assembleBook(
     includeFrontMatter?: boolean
     includeBackMatter?: boolean
     includeCopyright?: boolean
+    source?: 'writer' | 'manuscript'
   } = {}
 ): Promise<AssembledBook> {
   const {
     includeFrontMatter = true,
     includeBackMatter = true,
     includeCopyright = true,
+    source = 'writer',
   } = options
 
   const supabase = createAdminClient()
@@ -118,22 +120,33 @@ export async function assembleBook(
     }
   }
 
-  // Chapters — prefer locked content, join scenes in order
-  const assembledChapters: AssembledChapter[] = chapters
-    .map((ch: Record<string, unknown>) => {
-      const scenes = ((ch.writer_scenes as unknown[]) ?? [])
-        .sort((a: unknown, b: unknown) =>
-          (a as { scene_number: number }).scene_number - (b as { scene_number: number }).scene_number
-        )
-        .filter((s: unknown) => (s as { content: string | null }).content)
-        .map((s: unknown) => (s as { content: string }).content)
-      return {
-        number: ch.chapter_number as number,
-        title: ch.title as string,
-        content: scenes.join('\n\n'),
-      }
-    })
-    .filter((ch: AssembledChapter) => ch.content)
+  // Body — either from writer chapters/scenes, or from the source manuscript text.
+  let assembledChapters: AssembledChapter[]
+  if (source === 'manuscript') {
+    // Minimal PDF-to-EPUB: one chapter, title = book title, content = source_text.
+    // No splitting into chapters/scenes — just the raw extracted manuscript text.
+    const sourceText = ((book.source_text as string | null) ?? '').trim()
+    assembledChapters = sourceText
+      ? [{ number: 1, title: book.title, content: sourceText }]
+      : []
+  } else {
+    // Writer content — join scenes (with content) in order, drop empty chapters.
+    assembledChapters = chapters
+      .map((ch: Record<string, unknown>) => {
+        const scenes = ((ch.writer_scenes as unknown[]) ?? [])
+          .sort((a: unknown, b: unknown) =>
+            (a as { scene_number: number }).scene_number - (b as { scene_number: number }).scene_number
+          )
+          .filter((s: unknown) => (s as { content: string | null }).content)
+          .map((s: unknown) => (s as { content: string }).content)
+        return {
+          number: ch.chapter_number as number,
+          title: ch.title as string,
+          content: scenes.join('\n\n'),
+        }
+      })
+      .filter((ch: AssembledChapter) => ch.content)
+  }
 
   return {
     title: book.title,

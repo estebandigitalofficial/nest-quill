@@ -36,6 +36,15 @@ export default function BookPageClient({
   initialMode?: Mode
 }) {
   const [mode, setMode] = useState<Mode>(initialMode)
+
+  // What can this book actually export?
+  const hasWriterContent = bookData.chapters.some(ch =>
+    ch.scenes.some(s => s.content && s.content.trim())
+  )
+  const hasManuscript = !!(book.source_text && book.source_text.trim())
+  // Quick export should never produce an empty EPUB: fall back to the manuscript
+  // when there's no writer content, and hide entirely when there's nothing at all.
+  const quickExportSource = !hasWriterContent && hasManuscript ? '?source=manuscript' : ''
   const [bookStatus, setBookStatus] = useState<WriterBook['status']>(book.status)
   const [sections, setSections] = useState<WriterBookSection[]>([])
   const [focusChapterId, setFocusChapterId] = useState<string | null>(null)
@@ -129,9 +138,9 @@ export default function BookPageClient({
             </button>
           </div>
 
-          {mode === 'edit' && (
+          {mode === 'edit' && (hasWriterContent || hasManuscript) && (
             <a
-              href={`/api/admin/writer/books/${book.id}/export-epub`}
+              href={`/api/admin/writer/books/${book.id}/export-epub${quickExportSource}`}
               className="hidden sm:inline-flex bg-brand-500 hover:bg-brand-600 text-adm-text text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
             >
               Export ePub
@@ -200,7 +209,12 @@ export default function BookPageClient({
             </div>
           </div>
 
-          <BookStudioTabs book={book} writeContent={writeContent} />
+          <BookStudioTabs
+            book={book}
+            writeContent={writeContent}
+            hasWriterContent={hasWriterContent}
+            hasManuscript={hasManuscript}
+          />
         </div>
       )}
     </div>

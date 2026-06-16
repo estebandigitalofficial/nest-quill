@@ -3,6 +3,14 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
+type ConvertPreview = {
+  confidence: 'high' | 'low'
+  warnings: string[]
+  chapterCount: number
+  chapters: { title: string; wordCount: number; excerpt: string }[]
+  droppedPreambleChars: number
+}
+
 export default function BookSourcePanel({
   bookId,
   initialFileName,
@@ -27,6 +35,11 @@ export default function BookSourcePanel({
   const [reviewing, setReviewing] = useState(false)
   const [review, setReview] = useState<string | null>(null)
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [previewing, setPreviewing] = useState(false)
+  const [committing, setCommitting] = useState(false)
+  const [convertPreview, setConvertPreview] = useState<ConvertPreview | null>(null)
+  const [convertError, setConvertError] = useState<string | null>(null)
+  const [convertResult, setConvertResult] = useState<{ chapterCount: number; sceneCount: number } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -124,6 +137,45 @@ export default function BookSourcePanel({
     setReviewing(false)
   }
 
+  async function handleConvertPreview() {
+    setPreviewing(true)
+    setConvertError(null)
+    setConvertResult(null)
+    const res = await fetch(`/api/admin/writer/books/${bookId}/convert-manuscript`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commit: false }),
+    })
+    const json = await res.json()
+    if (!res.ok) {
+      setConvertError(json.error ?? 'Preview failed')
+      setConvertPreview(null)
+    } else {
+      setConvertPreview(json)
+    }
+    setPreviewing(false)
+  }
+
+  async function handleConvertCommit(mode: 'auto' | 'single') {
+    if (!confirm('This will replace any existing chapters and scenes with the imported manuscript text. Your original PDF text is kept, so you can re-import. Continue?')) return
+    setCommitting(true)
+    setConvertError(null)
+    const res = await fetch(`/api/admin/writer/books/${bookId}/convert-manuscript`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commit: true, mode }),
+    })
+    const json = await res.json()
+    if (!res.ok) {
+      setConvertError(json.error ?? 'Conversion failed')
+    } else {
+      setConvertResult({ chapterCount: json.chapterCount, sceneCount: json.sceneCount })
+      setConvertPreview(null)
+      router.refresh()
+    }
+    setCommitting(false)
+  }
+
   return (
     <div className="bg-adm-surface border border-adm-border rounded-xl overflow-hidden">
       <div className="px-5 py-4 flex items-center justify-between gap-4">
@@ -196,6 +248,97 @@ export default function BookSourcePanel({
             </button>
           </div>
           {outlineStatus === 'error' && <p className="text-xs text-red-400">Outline failed — try again</p>}
+        </div>
+      )}
+
+      {/* Convert to Writer Format — faithful transcription (NOT auto-outline) */}
+      {fileName && (
+        <div className="border-t border-adm-border px-5 py-4 space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold text-adm-muted uppercase tracking-widest">Convert to Writer Format</p>
+              <p className="text-xs text-adm-subtle mt-0.5">
+                {convertResult
+                  ? `${convertResult.chapterCount} chapters · ${convertResult.sceneCount} scenes imported`
+                  : 'Faithful import — splits your manuscript into chapters keeping the exact text. No AI rewriting.'}
+              </p>
+            </div>
+            <button
+              onClick={handleConvertPreview}
+              disabled={previewing || committing}
+              className="text-xs font-semibold bg-brand-500 hover:bg-brand-600 text-adm-text px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+            >
+              {previewing ? 'Scanning…' : convertResult ? 'Re-import' : 'Convert to Writer Format →'}
+            </button>
+          </div>
+
+          {convertError && <p className="text-xs text-red-400">{convertError}</p>}
+
+          {/* Preview */}
+          {convertPreview && (
+            <div className="rounded-lg border border-adm-border bg-adm-bg/40 p-3 space-y-3">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
+                    convertPreview.confidence === 'high'
+                      ? 'bg-green-500/15 text-green-400'
+                      : 'bg-amber-500/15 text-amber-400'
+                  }`}
+                >
+                  {convertPreview.confidence === 'high' ? 'Looks good' : 'Low confidence'}
+                </span>
+                <span className="text-xs text-adm-muted">
+                  {convertPreview.chapterCount} chapter{convertPreview.chapterCount === 1 ? '' : 's'} detected
+                </span>
+              </div>
+
+              {convertPreview.warnings.length > 0 && (
+                <ul className="space-y-1">
+                  {convertPreview.warnings.map((w, i) => (
+                    <li key={i} className="text-xs text-amber-400">⚠ {w}</li>
+                  ))}
+                </ul>
+              )}
+
+              {convertPreview.chapters.length > 0 && (
+                <ol className="space-y-1 max-h-48 overflow-y-auto">
+                  {convertPreview.chapters.map((c, i) => (
+                    <li key={i} className="text-xs text-adm-muted flex items-baseline gap-2">
+                      <span className="text-adm-subtle tabular-nums w-5 shrink-0">{i + 1}.</span>
+                      <span className="text-adm-text font-medium truncate">{c.title}</span>
+                      <span className="text-adm-subtle shrink-0">· {c.wordCount.toLocaleString()} words</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {convertPreview.confidence === 'high' && convertPreview.chapterCount > 0 && (
+                  <button
+                    onClick={() => handleConvertCommit('auto')}
+                    disabled={committing}
+                    className="text-xs font-semibold bg-brand-500 hover:bg-brand-600 text-adm-text px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {committing ? 'Importing…' : `Create ${convertPreview.chapterCount} chapters`}
+                  </button>
+                )}
+                <button
+                  onClick={() => handleConvertCommit('single')}
+                  disabled={committing}
+                  className="text-xs font-semibold bg-adm-surface hover:bg-adm-border text-adm-muted px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  Import as one chapter
+                </button>
+                <button
+                  onClick={() => setConvertPreview(null)}
+                  disabled={committing}
+                  className="text-xs font-semibold text-adm-subtle hover:text-adm-muted px-2 py-1.5 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
