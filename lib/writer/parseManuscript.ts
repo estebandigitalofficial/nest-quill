@@ -5,6 +5,11 @@
 // chapters. Each chapter body is a verbatim substring of the source (whitespace
 // trimmed at the edges only). If it cannot confidently find chapters, it says so
 // and the caller falls back to a single-chapter import.
+//
+// Detection runs in two passes:
+//   1. Chapter/Part headings ("Chapter 1", "Chapter One", "Part I").
+//   2. Table-of-Contents fallback for titled chapters (memoir/nonfiction, the
+//      Reedsy default) — only runs when pass 1 finds fewer than 2 chapters.
 
 export interface ParsedChapter {
   title: string
@@ -17,6 +22,12 @@ export interface ManuscriptParseResult {
   warnings: string[]
   /** Text before the first detected chapter (front matter, copyright, TOC) — NOT imported. */
   droppedPreamble: string
+}
+
+interface Heading {
+  start: number // offset of the heading in source_text
+  end: number // offset where the body begins (just after the heading text)
+  title: string
 }
 
 const NUM_WORDS =
@@ -48,13 +59,10 @@ function countWords(s: string): number {
   return t ? t.split(/\s+/).length : 0
 }
 
-export function parseManuscript(sourceText: string): ManuscriptParseResult {
-  const text = sourceText ?? ''
-  const warnings: string[] = []
-
-  // Find all heading positions.
+// ---- Pass 1: explicit Chapter/Part headings ----
+function detectChapterHeadings(text: string): Heading[] {
   const re = new RegExp(HEADING_SOURCE, 'gi')
-  const headings: { start: number; end: number; title: string }[] = []
+  const headings: Heading[] = []
   let m: RegExpExecArray | null
   while ((m = re.exec(text)) !== null) {
     const headingText = m[2]
@@ -62,8 +70,89 @@ export function parseManuscript(sourceText: string): ManuscriptParseResult {
     headings.push({ start, end: start + headingText.length, title: titleCase(headingText) })
     if (re.lastIndex === m.index) re.lastIndex++ // zero-width guard
   }
+  return headings
+}
 
-  // Need at least two headings to trust the structure.
+// ---- Pass 2: Table-of-Contents fallback (titled chapters) ----
+
+// Extract ordered titles from a "Contents …" line. The TOC lists each title
+// followed by its page number, e.g. "The First Silence   1 Learning to Belong   3".
+// We split on the "<title>  <pagenumber>" shape.
+function parseTocTitles(contentsLine: string): string[] {
+  const body = contentsLine.replace(/^\s*contents\b/i, '')
+  const titles: string[] = []
+  const re = /([^\d]+?)\s{2,}\d+/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(body)) !== null) {
+    const t = m[1].trim()
+    if (t) titles.push(t)
+  }
+  return titles
+}
+
+// A page-line begins a chapter when (case-sensitively) it starts with the exact
+// TOC title followed by two or more spaces. Case-sensitivity is deliberate: it
+// excludes ALL-CAPS running headers ("A QUIET LIFE, ON PURPOSE") which are not
+// chapter starts.
+function lineStartsWithTitle(line: string, title: string): boolean {
+  const trimmed = line.replace(/^[ \t]+/, '')
+  if (!trimmed.startsWith(title)) return false
+  return /^[ \t]{2,}/.test(trimmed.slice(title.length))
+}
+
+function detectTocHeadings(text: string): Heading[] {
+  const lines = text.split('\n')
+
+  // Character offset of the start of each line.
+  const offsets: number[] = []
+  let pos = 0
+  for (const l of lines) {
+    offsets.push(pos)
+    pos += l.length + 1 // account for the '\n'
+  }
+
+  const tocIdx = lines.findIndex(l => /^\s*contents\b/i.test(l))
+  if (tocIdx === -1) return []
+
+  const titles = parseTocTitles(lines[tocIdx])
+  if (titles.length < 2) return []
+
+  // Locate each title (in order) at a chapter-start page-line after the TOC.
+  const headings: Heading[] = []
+  let searchFrom = tocIdx + 1
+  for (const title of titles) {
+    let foundLine = -1
+    for (let li = searchFrom; li < lines.length; li++) {
+      if (lineStartsWithTitle(lines[li], title)) {
+        foundLine = li
+        break
+      }
+    }
+    if (foundLine === -1) continue // title never appears as a chapter start — skip it
+
+    const leading = lines[foundLine].length - lines[foundLine].replace(/^[ \t]+/, '').length
+    const start = offsets[foundLine] + leading
+    headings.push({ start, end: start + title.length, title })
+    searchFrom = foundLine + 1
+  }
+
+  return headings
+}
+
+export function parseManuscript(sourceText: string): ManuscriptParseResult {
+  const text = sourceText ?? ''
+  const warnings: string[] = []
+
+  // Pass 1: explicit Chapter/Part headings.
+  let headings = detectChapterHeadings(text)
+
+  // Pass 2: Table-of-Contents fallback for titled chapters.
+  if (headings.length < 2) {
+    const toc = detectTocHeadings(text)
+    if (toc.length >= 2) headings = toc
+  }
+
+  // Neither pass found a usable structure → caller uses single-chapter fallback.
   if (headings.length < 2) {
     return {
       chapters: [],
