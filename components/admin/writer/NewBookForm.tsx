@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { extractPdfText } from '@/lib/writer/extractPdfText'
 
 type AdminUser = { userId: string; displayName: string; role: 'admin' | 'super_admin' }
 
@@ -49,24 +50,10 @@ export default function NewBookForm({
     setPdfStatus('uploading')
     setPdfError(null)
 
-    // Extract text in the browser using PDF.js — avoids serverless parsing issues
+    // Extract text in the browser — paragraph-aware (preserves paragraph breaks).
     let text = ''
     try {
-      const pdfjsLib = await import('pdfjs-dist')
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
-
-      const arrayBuffer = await file.arrayBuffer()
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i)
-        const content = await page.getTextContent()
-        const pageText = content.items
-          .map((item: unknown) => ('str' in (item as object) ? (item as { str: string }).str : ''))
-          .join(' ')
-        text += pageText + '\n'
-      }
-      text = text.trim()
+      text = await extractPdfText(file)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setPdfError(`Could not read PDF: ${msg}`)

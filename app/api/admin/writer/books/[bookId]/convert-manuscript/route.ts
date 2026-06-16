@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin, checkBookOwner, adminGuardResponse } from '@/lib/admin/guard'
-import { parseManuscript, countWords } from '@/lib/writer/parseManuscript'
+import { parseManuscript, countWords, cleanManuscriptText } from '@/lib/writer/parseManuscript'
 
 export const maxDuration = 60
 
@@ -58,7 +58,7 @@ export async function POST(
   // ---- Commit ----
   const chaptersToCreate: { title: string; content: string }[] =
     mode === 'single'
-      ? [{ title: book!.title as string, content: sourceText.trim() }]
+      ? [{ title: book!.title as string, content: cleanManuscriptText(sourceText) }]
       : parsed.chapters.map(c => ({ title: c.title, content: c.content }))
 
   if (chaptersToCreate.length === 0) {

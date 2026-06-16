@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { extractPdfText } from '@/lib/writer/extractPdfText'
 
 type ConvertPreview = {
   confidence: 'high' | 'low'
@@ -49,19 +50,10 @@ export default function BookSourcePanel({
     setUploading(true)
     setUploadError(null)
 
-    // Extract text in browser
+    // Extract text in browser — paragraph-aware (preserves paragraph breaks).
     let text = ''
     try {
-      const pdfjsLib = await import('pdfjs-dist')
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
-      const arrayBuffer = await file.arrayBuffer()
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i)
-        const content = await page.getTextContent()
-        text += content.items.map((item: unknown) => ('str' in (item as object) ? (item as { str: string }).str : '')).join(' ') + '\n'
-      }
-      text = text.trim()
+      text = await extractPdfText(file)
     } catch (err) {
       setUploadError(`Could not read PDF: ${err instanceof Error ? err.message : String(err)}`)
       setUploading(false)
