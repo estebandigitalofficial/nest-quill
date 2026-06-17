@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { WriterBook, WriterBookWithChapters, WriterBookSection } from '@/types/writer'
 import BookStudioTabs from './studio/BookStudioTabs'
@@ -35,7 +36,24 @@ export default function BookPageClient({
   totalWords: number
   initialMode?: Mode
 }) {
+  const router = useRouter()
   const [mode, setMode] = useState<Mode>(initialMode)
+  const [title, setTitle] = useState(book.title)
+  const [titleDraft, setTitleDraft] = useState(book.title)
+  const [editingTitle, setEditingTitle] = useState(false)
+
+  async function saveTitle() {
+    const next = titleDraft.trim()
+    setEditingTitle(false)
+    if (!next || next === title) { setTitleDraft(title); return }
+    setTitle(next)
+    await fetch(`/api/admin/writer/books/${book.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: next }),
+    })
+    router.refresh()
+  }
 
   // What can this book actually export?
   const hasWriterContent = bookData.chapters.some(ch =>
@@ -118,7 +136,7 @@ export default function BookPageClient({
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Link href="/admin/writer" className="text-xs text-adm-muted hover:text-adm-muted shrink-0">← Books</Link>
           <span className="text-gray-700 shrink-0">/</span>
-          <span className="font-semibold text-adm-text truncate text-sm">{book.title}</span>
+          <span className="font-semibold text-adm-text truncate text-sm">{title}</span>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
@@ -184,8 +202,31 @@ export default function BookPageClient({
           {/* Book header */}
           <div className="bg-adm-surface border border-adm-border rounded-xl px-5 sm:px-6 py-5 space-y-2">
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <h1 className="font-serif text-xl sm:text-2xl text-adm-text">{book.title}</h1>
+              <div className="min-w-0">
+                {editingTitle ? (
+                  <input
+                    autoFocus
+                    value={titleDraft}
+                    onChange={e => setTitleDraft(e.target.value)}
+                    onBlur={saveTitle}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') saveTitle()
+                      else if (e.key === 'Escape') { setTitleDraft(title); setEditingTitle(false) }
+                    }}
+                    className="font-serif text-xl sm:text-2xl bg-adm-surface border border-adm-border rounded-lg px-2 py-1 text-adm-text focus:outline-none focus:ring-2 focus:ring-brand-500 w-full"
+                  />
+                ) : (
+                  <h1
+                    onClick={() => { setTitleDraft(title); setEditingTitle(true) }}
+                    title="Click to edit title"
+                    className="group font-serif text-xl sm:text-2xl text-adm-text cursor-text inline-flex items-center gap-2 hover:text-brand-300 transition-colors"
+                  >
+                    {title}
+                    <svg className="opacity-0 group-hover:opacity-100 transition-opacity text-adm-subtle shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                    </svg>
+                  </h1>
+                )}
                 {book.subtitle && <p className="text-adm-muted italic text-sm mt-0.5">{book.subtitle}</p>}
               </div>
               <div className="flex items-center gap-3 shrink-0">
