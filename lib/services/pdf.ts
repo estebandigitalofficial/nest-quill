@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import type { GeneratedStory, StoryScene } from '@/types/database'
+import { PDF_END_TEXT, toWinAnsiSafe } from './pdfText'
 
 // 8 × 8 inch square — standard picture-book format
 const PAGE_SIZE = 576 // points
@@ -28,7 +29,17 @@ export interface PDFGenerationResult {
 
 export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGenerationResult> {
   const t0 = Date.now()
-  const { story, scenes, signedImageUrls, closingMessage, coverImageUrl } = input
+  const { scenes, signedImageUrls, coverImageUrl } = input
+  // Every string drawn with the standard (WinAnsi) fonts passes through
+  // toWinAnsiSafe so one unencodable character can never fail the render.
+  const story: GeneratedStory = {
+    ...input.story,
+    title: toWinAnsiSafe(input.story.title) || 'Untitled',
+    subtitle: input.story.subtitle ? (toWinAnsiSafe(input.story.subtitle) || null) : input.story.subtitle,
+    dedication: input.story.dedication ? (toWinAnsiSafe(input.story.dedication) || null) : input.story.dedication,
+    author_line: toWinAnsiSafe(input.story.author_line) || 'A Nest & Quill Original',
+  }
+  const closingMessage = input.closingMessage ? (toWinAnsiSafe(input.closingMessage) || undefined) : undefined
 
   const doc = await PDFDocument.create()
   const fontSerif = await doc.embedFont(StandardFonts.TimesRoman)
@@ -183,11 +194,11 @@ export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGen
 
       // Text in the bottom 36%
       const textAreaTop = imgY - 10
-      drawPageText(storyPage, scene.page_text, fontSerif, textAreaTop, scene.page_number, scenes.length)
+      drawPageText(storyPage, toWinAnsiSafe(scene.page_text), fontSerif, textAreaTop, scene.page_number, scenes.length)
     } else {
       // No image — center the text vertically
       const textAreaTop = Math.round(PAGE_SIZE * 0.72)
-      drawPageText(storyPage, scene.page_text, fontSerif, textAreaTop, scene.page_number, scenes.length)
+      drawPageText(storyPage, toWinAnsiSafe(scene.page_text), fontSerif, textAreaTop, scene.page_number, scenes.length)
     }
   }
 
@@ -197,7 +208,8 @@ export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGen
   backPage.drawRectangle({ x: 0, y: PAGE_SIZE - 8, width: PAGE_SIZE, height: 8, color: BRAND_GOLD })
   backPage.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: 8, color: BRAND_GOLD })
 
-  const endText = '✦  The End  ✦'
+  // Plain text: the standard fonts cannot encode decorative dingbats.
+  const endText = PDF_END_TEXT
   const endW = fontSerifItalic.widthOfTextAtSize(endText, 20)
   const endY = closingMessage ? PAGE_SIZE * 0.65 : PAGE_SIZE / 2 + 10
   backPage.drawText(endText, {

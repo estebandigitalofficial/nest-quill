@@ -12,6 +12,7 @@ import { appUrl } from '@/lib/utils/appUrl'
 import { createNotification } from '@/lib/notifications/createNotification'
 import { runClaimedOnce } from '@/lib/limits/idempotency'
 import { exportIsCurrent } from '@/lib/services/pdfExports'
+import { INTERNAL_FETCH_REDIRECT, internalUrl } from '@/lib/utils/internalOrigin'
 
 export async function GET(request: NextRequest) {
   try {
@@ -121,13 +122,16 @@ export async function GET(request: NextRequest) {
         } else if (storyRequest.plan_tier !== 'free') {
           // No export yet — trigger PDF assembly in the background (Node.js, no CPU limit).
           // The generate-pdf route is idempotent; concurrent polls won't double-assemble.
-          const generatePdfUrl = appUrl(`/api/story/${requestId}/generate-pdf`)
+          // Internal authenticated call: target THIS deployment's origin directly and
+          // refuse redirects — following the apex→www redirect would drop the bearer.
+          const generatePdfUrl = internalUrl(request, `/api/story/${requestId}/generate-pdf`)
           const pdfSecret = process.env.EDGE_FUNCTION_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY
           after(async () => {
             try {
               const res = await fetch(generatePdfUrl, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${pdfSecret}` },
+                redirect: INTERNAL_FETCH_REDIRECT,
               })
               if (!res.ok) {
                 const body = await res.text().catch(() => '')
