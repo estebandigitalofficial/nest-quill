@@ -12,33 +12,41 @@ const BETA_KEYS = [
   'beta_mode_enabled',
   'story_creation_enabled',
   'guest_story_creation_enabled',
-  'learning_tools_enabled',
   'image_generation_enabled',
   'support_tickets_enabled',
   'guided_tours_enabled',
   'maintenance_banner_enabled',
   'maintenance_banner_message',
-  // Launch scope (Phase 2A): one flag per deferred product area
+] as const
+
+// Phase 2A/2B: public-visibility flags for preserved products — EXPANDED
+// controls, rendered as their own group below the emergency controls.
+const SCOPE_KEYS = [
   'classroom_enabled',
+  'learning_tools_enabled',
+  'publishing_requests_enabled',
   'homeschool_enabled',
   'writer_studio_enabled',
   'extended_audiences_enabled',
 ] as const
+const SCOPE_LABELS: Record<typeof SCOPE_KEYS[number], string> = {
+  classroom_enabled: 'Classroom (public)',
+  learning_tools_enabled: 'Learning Tools (public + wizard Learning mode)',
+  publishing_requests_enabled: 'Publishing requests (public)',
+  homeschool_enabled: 'Homeschool (public)',
+  writer_studio_enabled: 'Writer Studio (public)',
+  extended_audiences_enabled: 'Teen & adult audiences (public wizard)',
+}
 
 const BETA_LABELS: Record<typeof BETA_KEYS[number], string> = {
   beta_mode_enabled: 'Beta mode',
   story_creation_enabled: 'Story creation',
   guest_story_creation_enabled: 'Guest story creation',
-  learning_tools_enabled: 'Learning tools',
   image_generation_enabled: 'Image generation',
   support_tickets_enabled: 'Support intake',
   guided_tours_enabled: 'Guided tours',
   maintenance_banner_enabled: 'Maintenance banner',
   maintenance_banner_message: 'Maintenance banner message',
-  classroom_enabled: 'Classroom (public)',
-  homeschool_enabled: 'Homeschool (public)',
-  writer_studio_enabled: 'Writer Studio (public)',
-  extended_audiences_enabled: 'Teen & adult audiences (public wizard)',
 }
 
 export default async function BetaOpsPage() {
@@ -54,6 +62,11 @@ export default async function BetaOpsPage() {
   const betaSettings = BETA_KEYS.map(k => ({
     key: k,
     label: BETA_LABELS[k],
+    value: settingsMap.get(k) ?? null,
+  }))
+  const scopeSettings = SCOPE_KEYS.map(k => ({
+    key: k,
+    label: SCOPE_LABELS[k],
     value: settingsMap.get(k) ?? null,
   }))
 
@@ -315,6 +328,13 @@ export default async function BetaOpsPage() {
       <section>
         <h2 className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-3">Emergency controls</h2>
         <BetaOpsToggles initial={betaSettings} />
+      </section>
+
+      {/* ── Expanded products (public visibility) ─────────────────── */}
+      <section>
+        <h2 className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-1">Expanded products — public visibility</h2>
+        <p className="text-xs text-adm-subtle mb-3">Preserved systems stay available to admins; these switches decide what the public can see. All off for the children&apos;s-book launch.</p>
+        <BetaOpsToggles initial={scopeSettings} />
       </section>
 
       {/* ── Support visibility ──────────────────────────────────────── */}

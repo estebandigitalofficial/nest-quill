@@ -22,6 +22,8 @@ export default function AdminStoryActions({ requestId, status, totalScenes, miss
   const [genImgMsg, setGenImgMsg] = useState<string | null>(null)
 
   async function handleRequeue() {
+    // Phase 2B safety: restarting the pipeline regenerates text and every illustration.
+    if (!confirm('Force requeue restarts generation from scratch (new text and illustrations, real cost). Continue?')) return
     setRequeue('loading')
     const endpoint = status === 'failed' ? 'retry' : 'force-requeue'
     const res = await fetch(`/api/story/${requestId}/${endpoint}`, { method: 'POST' })
@@ -47,6 +49,8 @@ export default function AdminStoryActions({ requestId, status, totalScenes, miss
   }
 
   async function handleGenerateImages() {
+    // Phase 2B safety: each missing page is a paid image call.
+    if (!confirm('Generate illustrations for every scene without one (paid image calls). Continue?')) return
     setGenImg('loading')
     setGenImgMsg(null)
     const res = await fetch(`/api/admin/stories/${requestId}/generate-images`, { method: 'POST' })

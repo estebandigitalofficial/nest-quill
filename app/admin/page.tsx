@@ -10,6 +10,7 @@ import GlassCard from '@/components/admin/GlassCard'
 import type { StoryRequest } from '@/types/database'
 import { formatAZTimeShort, formatAZTimeOnly } from '@/lib/utils/formatTime'
 import { getSetting } from '@/lib/settings/appSettings'
+import { getLaunchFlags } from '@/lib/launch/flags'
 
 const PROCESSING_STATUSES = ['generating_text', 'generating_images', 'assembling_pdf']
 
@@ -84,6 +85,8 @@ export default async function AdminPage({ searchParams }: PageProps) {
     .limit(30)
 
   // ── Analytics: 24h overview ───────────────────────────────────────────────
+  // Phase 2B: Classroom blocks appear on the CURRENT dashboard only while Classroom is a public product.
+  const launchFlags = await getLaunchFlags()
   const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   const todayStart = (() => { const d = new Date(); d.setUTCHours(0, 0, 0, 0); return d.toISOString() })()
 
@@ -284,9 +287,11 @@ export default async function AdminPage({ searchParams }: PageProps) {
             <SystemTile label="Notifications"
               tone="green"
               value="Live" />
+            {launchFlags.classroom && (
             <SystemTile label="Classroom"
               tone="neutral"
               value={`${activeClassroomCount ?? 0} active`} />
+            )}
           </div>
         </section>
 
@@ -597,7 +602,8 @@ export default async function AdminPage({ searchParams }: PageProps) {
         {/* Classroom + email 2-col grid */}
         <div className="grid md:grid-cols-2 gap-6">
 
-          {/* Classroom snapshot */}
+          {/* Classroom snapshot (Phase 2B: only while Classroom is a public product) */}
+          {launchFlags.classroom && (
           <div>
             <h2 className="text-sm font-semibold text-adm-muted uppercase tracking-widest mb-4">
               Classroom (24 h)
@@ -626,6 +632,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
               )}
             </div>
           </div>
+          )}
 
           {/* Email activity */}
           <div>

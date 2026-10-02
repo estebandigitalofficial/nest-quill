@@ -31,6 +31,8 @@ const ENFORCED_KEYS = new Set([
   'maintenance_banner_enabled',
   'maintenance_banner_message',
   'classroom_enabled',
+  'learning_tools_enabled',
+  'publishing_requests_enabled',
   'homeschool_enabled',
   'writer_studio_enabled',
   'extended_audiences_enabled',

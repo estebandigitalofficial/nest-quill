@@ -57,6 +57,8 @@ type Item = { label: string; hint: string; key?: string; group?: string }
 
 type SectionDef = {
   id: string
+  /** Phase 2B: CURRENT launch controls vs EXPANDED/secondary configuration. */
+  scope?: 'current' | 'expanded'
   label: string
   description: string
   Icon: (props: { className?: string }) => React.ReactElement
@@ -70,7 +72,25 @@ type SectionDef = {
 
 const SECTIONS: SectionDef[] = [
   {
+    id: 'current',
+    scope: 'current',
+    label: 'Launch Controls',
+    description: 'The switches that run the children\'s-book launch. Everything else lives further down.',
+    Icon: FlagIcon,
+    live: true,
+    items: [
+      { label: 'Maintenance Mode',      hint: 'Take the public site offline (admin keeps working)', key: 'maintenance_mode_enabled' },
+      { label: 'Beta Mode',             hint: 'Bypass limits; free-during-beta copy',               key: 'beta_mode_enabled' },
+      { label: 'Image Generation',      hint: 'Illustrations + cover for new stories',              key: 'image_generation_enabled' },
+      { label: 'PDF Downloads',         hint: 'Entitled plans can download the book',                key: 'pdf_download_enabled' },
+      { label: 'Guest story limit',     hint: 'Stories before login is required',                    key: 'guest_story_limit' },
+      { label: 'Free user story limit', hint: 'Cap for free accounts',                               key: 'free_user_story_limit' },
+      { label: 'Stuck-story threshold', hint: 'Minutes before a story is flagged stuck',             key: 'stuck_story_threshold_minutes' },
+    ],
+  },
+  {
     id: 'branding',
+    scope: 'current',
     label: 'Branding & Identity',
     description: 'Logos, colors, contact info — controls the look and feel of the entire site.',
     Icon: PaletteIcon,
@@ -98,6 +118,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: 'notifications',
+    scope: 'current',
     label: 'Notifications',
     description: 'Email alerts for system events.',
     Icon: BellIcon,
@@ -105,6 +126,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: 'plans',
+    scope: 'current',
     label: 'Plans & Limits',
     description: 'Story quotas and tier access controls.',
     Icon: LayersIcon,
@@ -120,6 +142,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: 'flags',
+    scope: 'expanded',
     label: 'Feature Flags',
     description: 'Enable or disable features site-wide.',
     Icon: FlagIcon,
@@ -136,6 +159,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: 'learning',
+    scope: 'expanded',
     label: 'Learning Tools',
     description: 'Learning section modes and defaults.',
     Icon: BookOpenIcon,
@@ -152,6 +176,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: 'site-copy',
+    scope: 'expanded',
     label: 'Site Copy',
     description: 'Editable text across the public site.',
     Icon: FileTextIcon,
@@ -166,6 +191,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: 'email',
+    scope: 'current',
     label: 'Email Settings',
     description: 'Sender identity, copy, and timing.',
     Icon: MailIcon,
@@ -179,6 +205,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: 'publishing',
+    scope: 'expanded',
     label: 'Publishing',
     description: 'Publishing request flow options.',
     Icon: GlobeIcon,
@@ -192,6 +219,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: 'safety',
+    scope: 'expanded',
     label: 'Safety & Guardrails',
     description: 'Content safety and input limits.',
     Icon: ShieldIcon,
@@ -207,6 +235,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: 'maintenance',
+    scope: 'current',
     label: 'Dashboard Tools',
     description: 'System controls and cleanup tools.',
     Icon: WrenchIcon,
@@ -220,6 +249,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: 'payments',
+    scope: 'expanded',
     label: 'Payments & Stripe',
     description: 'Stripe wiring status, environment readiness, and rollout checklist. Read-only for now.',
     Icon: CreditCardIcon,
@@ -475,7 +505,7 @@ export default function SettingsHub({ initialSettings, stripeEnv, betaMode, last
       <nav className="lg:w-56 shrink-0">
         {/* Mobile: horizontal scroll tabs */}
         <div className="flex lg:hidden overflow-x-auto gap-1 pb-2 -mx-1 px-1">
-          {SECTIONS.map(sec => (
+          {[...SECTIONS].sort((a, b) => Number((a.scope ?? 'expanded') === 'expanded') - Number((b.scope ?? 'expanded') === 'expanded')).map(sec => (
             <button
               key={sec.id}
               onClick={() => setActiveId(sec.id)}
@@ -493,7 +523,10 @@ export default function SettingsHub({ initialSettings, stripeEnv, betaMode, last
 
         {/* Desktop: vertical sidebar */}
         <div className="hidden lg:flex flex-col gap-0.5 bg-adm-surface border border-adm-border rounded-xl p-2 sticky top-20">
-          {SECTIONS.map(sec => {
+          {(['current', 'expanded'] as const).map(scope => (
+            <div key={scope} className={scope === 'expanded' ? 'mt-2 pt-2 border-t border-adm-border' : ''}>
+              <p className={`px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] ${scope === 'current' ? 'text-brand-500' : 'text-adm-subtle'}`}>{scope}</p>
+              {SECTIONS.filter(sec => (sec.scope ?? 'expanded') === scope).map(sec => {
             const active = activeId === sec.id
             const sectionHasLive = sec.live || sec.items?.some(i => i.key)
             return (
@@ -514,6 +547,8 @@ export default function SettingsHub({ initialSettings, stripeEnv, betaMode, last
               </button>
             )
           })}
+            </div>
+          ))}
         </div>
       </nav>
 
