@@ -1,6 +1,6 @@
 // Canonical cover asset resolution for every surface that shows a book
 // cover (reader, account/library cards, PDF, admin preview). One asset,
-// stored by the worker at story-images/<request_id>/cover.png, with a
+// stored by the worker at story-images/<request_id>/cover.jpg (legacy: cover.png), with a
 // typographic fallback when it does not exist.
 //
 // Pure helpers only — signing URLs is the caller's job so each surface

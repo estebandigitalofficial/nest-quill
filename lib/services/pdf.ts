@@ -1,6 +1,15 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import type { GeneratedStory, StoryScene } from '@/types/database'
 import { PDF_END_TEXT, toWinAnsiSafe } from './pdfText'
+import { sniffImageFormat } from './imageBytes'
+
+/** Embed by sniffed format (new JPEG assets, legacy PNG assets); unknown bytes are rejected. */
+async function embedImageBytes(doc: PDFDocument, bytes: Uint8Array) {
+  const format = sniffImageFormat(bytes)
+  if (format === 'jpeg') return doc.embedJpg(bytes)
+  if (format === 'png') return doc.embedPng(bytes)
+  throw new Error('Unrecognised image bytes')
+}
 
 // 8 × 8 inch square — standard picture-book format
 const PAGE_SIZE = 576 // points
@@ -53,7 +62,7 @@ export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGen
       const res = await fetch(url)
       if (!res.ok) continue
       const bytes = new Uint8Array(await res.arrayBuffer())
-      const image = await doc.embedPng(bytes).catch(() => doc.embedJpg(bytes))
+      const image = await embedImageBytes(doc, bytes)
       embeddedImages.set(pageNum, image)
     } catch {
       // Skip failed images — page will render without illustration
@@ -75,7 +84,7 @@ export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGen
       const res = await fetch(coverImageUrl)
       if (res.ok) {
         const bytes = new Uint8Array(await res.arrayBuffer())
-        coverArt = await doc.embedPng(bytes).catch(() => doc.embedJpg(bytes))
+        coverArt = await embedImageBytes(doc, bytes)
       }
     } catch {
       coverArt = null // graceful typographic fallback

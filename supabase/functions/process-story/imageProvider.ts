@@ -25,8 +25,39 @@ export const DEFAULT_IMAGE_QUALITY = 'medium'
 /** Square pages and cover, as before; 1024x1024 is a supported GPT Image size. */
 export const DEFAULT_IMAGE_SIZE = '1024x1024'
 
-/** We store and serve PNG; ask the provider for it explicitly. */
-export const IMAGE_OUTPUT_FORMAT = 'png'
+/**
+ * JPEG, not PNG: GPT Image PNGs average ~1.9 MB at 1024x1024, so a 24-page
+ * book's PDF (which embeds the bytes verbatim) exceeded the 50 MiB
+ * book-exports object limit. JPEG at the compression below is a fraction
+ * of that with no visible loss at picture-book size. Existing PNG assets
+ * stay valid: every consumer resolves the stored path and sniffs bytes.
+ */
+export const IMAGE_OUTPUT_FORMAT = 'jpeg'
+
+/** JPEG compression 0-100 (official `output_compression`, jpeg/webp only). Override: PROCESS_STORY_IMAGE_COMPRESSION. */
+export const DEFAULT_IMAGE_COMPRESSION = 85
+
+/** Storage extension + content type for newly generated assets. */
+export const IMAGE_FILE_EXT = 'jpg'
+export const IMAGE_CONTENT_TYPE = 'image/jpeg'
+
+/** Canonical scene asset path for NEW images; legacy rows keep their stored .png path. */
+export function sceneStoragePath(requestId: string, pageNumber: number, ext: string = IMAGE_FILE_EXT): string {
+  return `${requestId}/${pageNumber}.${ext}`
+}
+
+/** Clamp a compression override into 1..100 (100 = no compression). */
+export function normalizeCompression(c: string | number | null | undefined): number {
+  if (c === null || c === undefined || (typeof c === 'string' && c.trim() === '')) return DEFAULT_IMAGE_COMPRESSION
+  const n = typeof c === 'number' ? c : Number(c.trim())
+  if (!Number.isFinite(n)) return DEFAULT_IMAGE_COMPRESSION
+  return Math.min(100, Math.max(1, Math.round(n)))
+}
+
+/** True when a stored asset path is already in the current output format. */
+export function isCurrentFormatPath(path: string | null | undefined): boolean {
+  return typeof path === 'string' && path.toLowerCase().endsWith('.' + IMAGE_FILE_EXT)
+}
 
 export const GPT_IMAGE_QUALITIES = ['low', 'medium', 'high', 'xhigh', 'max', 'auto'] as const
 export const GPT_IMAGE_SIZES = ['1024x1024', '1536x1024', '1024x1536', 'auto'] as const
@@ -53,6 +84,7 @@ export interface ImageRequestOptions {
   model?: string | null
   quality?: string | null
   size?: string | null
+  compression?: string | number | null
 }
 
 export interface ImageRequestBody {
@@ -61,7 +93,8 @@ export interface ImageRequestBody {
   n: 1
   size: string
   quality: string
-  output_format: 'png'
+  output_format: 'jpeg'
+  output_compression: number
   moderation: 'auto'
 }
 
@@ -79,6 +112,7 @@ export function buildImageRequest(prompt: string, opts: ImageRequestOptions = {}
     size: normalizeSize(opts.size),
     quality: normalizeQuality(opts.quality),
     output_format: IMAGE_OUTPUT_FORMAT,
+    output_compression: normalizeCompression(opts.compression),
     moderation: 'auto',
   }
 }
@@ -127,10 +161,29 @@ export function decodeBase64Image(b64: string): Uint8Array {
   return out
 }
 
-/** PNG signature check so a provider glitch never stores a non-image. */
+/** PNG signature check. */
 export function looksLikePng(bytes: Uint8Array): boolean {
   const sig = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
   return bytes.length >= 8 && sig.every((b, i) => bytes[i] === b)
+}
+
+/** JPEG signature check (SOI marker FF D8 FF). */
+export function looksLikeJpeg(bytes: Uint8Array): boolean {
+  return bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
+}
+
+export type ImageFormat = 'png' | 'jpeg'
+
+/** Decide the real format from the bytes, never from a filename or a header claim. */
+export function sniffImageFormat(bytes: Uint8Array): ImageFormat | null {
+  if (looksLikeJpeg(bytes)) return 'jpeg'
+  if (looksLikePng(bytes)) return 'png'
+  return null
+}
+
+/** Storage extension + content type for a sniffed format. */
+export function storageMetaFor(format: ImageFormat): { ext: 'jpg' | 'png'; contentType: 'image/jpeg' | 'image/png' } {
+  return format === 'jpeg' ? { ext: 'jpg', contentType: 'image/jpeg' } : { ext: 'png', contentType: 'image/png' }
 }
 
 /** Max wait we are willing to spend on one 429 before giving the page up to the normal retry/backfill path. */

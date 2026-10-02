@@ -35,9 +35,13 @@ import {
   IMAGES_ENDPOINT,
   buildImageRequest,
   decodeBase64Image,
-  looksLikePng,
   parseImageResponse,
   rateLimitDelayMs,
+  isCurrentFormatPath,
+  sceneStoragePath,
+  sniffImageFormat,
+  storageMetaFor,
+  type ImageFormat,
   type ImageUsage,
 } from './imageProvider.ts'
 import {
@@ -190,6 +194,7 @@ async function callOpenAI(messages: object[], model = TEXT_MODEL, temperature = 
 // secrets below let an operator switch model/quality without a redeploy.
 const IMAGE_MODEL = Deno.env.get('PROCESS_STORY_IMAGE_MODEL')?.trim() || DEFAULT_IMAGE_MODEL
 const IMAGE_QUALITY = Deno.env.get('PROCESS_STORY_IMAGE_QUALITY')?.trim() || null
+const IMAGE_COMPRESSION = Deno.env.get('PROCESS_STORY_IMAGE_COMPRESSION')?.trim() || null
 
 /**
  * Style hint, age-band hint and safety suffix for this request. The safety
@@ -211,7 +216,16 @@ function imageConfigFor(config: ConfigMap, illustrationStyle: string, childAge?:
   return { styleHint, bandImageHint, safetySuffix }
 }
 
-interface GeneratedImage { bytes: Uint8Array; revisedPrompt: string | null; model: string; usage: ImageUsage | null }
+interface GeneratedImage {
+  bytes: Uint8Array
+  revisedPrompt: string | null
+  model: string
+  usage: ImageUsage | null
+  /** Sniffed from the bytes, never assumed. */
+  format: ImageFormat
+  ext: 'jpg' | 'png'
+  contentType: 'image/jpeg' | 'image/png'
+}
 
 /**
  * One Images API call for an already-assembled prompt (see visual.ts →
@@ -222,7 +236,7 @@ interface GeneratedImage { bytes: Uint8Array; revisedPrompt: string | null; mode
  * retry on 429 honours Retry-After within the Edge wall clock.
  */
 async function generateImage(prompt: string): Promise<GeneratedImage> {
-  const body = buildImageRequest(prompt, { model: IMAGE_MODEL, quality: IMAGE_QUALITY })
+  const body = buildImageRequest(prompt, { model: IMAGE_MODEL, quality: IMAGE_QUALITY, compression: IMAGE_COMPRESSION })
   const call = () => fetch(IMAGES_ENDPOINT, {
     method: 'POST',
     headers: {
@@ -247,8 +261,10 @@ async function generateImage(prompt: string): Promise<GeneratedImage> {
 
   const parsed = parseImageResponse(await res.json())
   const bytes = decodeBase64Image(parsed.b64)
-  if (!looksLikePng(bytes)) throw new Error(`Image error: provider returned ${parsed.outputFormat ?? 'unknown'} data, expected png`)
-  return { bytes, revisedPrompt: parsed.revisedPrompt, model: body.model, usage: parsed.usage }
+  const format = sniffImageFormat(bytes)
+  if (!format) throw new Error(`Image error: provider returned unrecognised image data (claimed ${parsed.outputFormat ?? 'unknown'})`)
+  const meta = storageMetaFor(format)
+  return { bytes, revisedPrompt: parsed.revisedPrompt, model: body.model, usage: parsed.usage, format, ext: meta.ext, contentType: meta.contentType }
 }
 
 /**
@@ -312,7 +328,7 @@ async function resolveVisualBible(args: {
 /**
  * Cover stage (Phase 1F). One front-cover image per story, built from the
  * SAME visual bible and plan as the interior, stored at
- * story-images/<id>/cover.png and recorded on generated_stories.
+ * story-images/<id>/cover.<ext> and recorded on generated_stories.
  *
  * Idempotent: a complete cover is always reused; the lease held by the
  * caller guarantees a single generator at a time. Failure is recoverable
@@ -327,6 +343,8 @@ async function runCoverStage(args: {
   plan: unknown
   config: ConfigMap
   skip: boolean
+  /** Backfill only: regenerate a complete cover whose asset is not in the current format. */
+  force?: boolean
   source: 'pipeline' | 'backfill'
   /** True while the caller still holds the story's lease; every cover-state write is gated on it. */
   ownsLease: () => Promise<boolean>
@@ -351,7 +369,7 @@ async function runCoverStage(args: {
     return 'skipped'
   }
 
-  const decision = shouldGenerateCover(gs, args.skip)
+  const decision = args.force && !args.skip && !isCurrentFormatPath(gs.cover_storage_path) ? 'generate' : shouldGenerateCover(gs, args.skip)
   if (decision === 'reuse') {
     await log('cover_reused', 'Existing cover reused', 'info', { source: args.source })
     return 'reused'
@@ -383,10 +401,10 @@ async function runCoverStage(args: {
 
   try {
     const image = await generateImage(built.prompt)
-    const path = coverStoragePath(requestId)
+    const path = coverStoragePath(requestId, image.ext)
     const { error: upErr } = await supabase.storage
       .from('story-images')
-      .upload(path, image.bytes, { contentType: 'image/png', upsert: true })
+      .upload(path, image.bytes, { contentType: image.contentType, upsert: true })
     if (upErr) throw new Error(`Cover upload failed: ${upErr.message}`)
     if (!(await args.ownsLease())) return stale('after generation')
     await supabase.from('generated_stories').update({
@@ -502,11 +520,17 @@ Deno.serve(async (req) => {
   let requestId: string
   let language = 'en'
   let mode: string | undefined
+  // images_only only: also re-render scenes/cover whose stored asset is not
+  // in the current output format (admin re-render, e.g. legacy PNG → JPEG).
+  // Resumable: assets already in the current format are skipped, so a run
+  // cut by the wall clock continues where it stopped. Never used by the pipeline.
+  let forceAll = false
   try {
     const body = await req.json()
     requestId = body.requestId
     language = body.language === 'es' ? 'es' : 'en'
     mode = typeof body.mode === 'string' ? body.mode : undefined
+    forceAll = body.force === true
     if (!requestId && mode !== 'sweep') throw new Error('Missing requestId')
   } catch {
     return new Response('Bad request', { status: 400 })
@@ -751,7 +775,7 @@ Deno.serve(async (req) => {
       .eq('request_id', requestId)
       .order('page_number', { ascending: true })
 
-    const missing = (scenes ?? []).filter(s => s.image_status !== 'complete' || !s.storage_path)
+    const missing = (scenes ?? []).filter(s => s.image_status !== 'complete' || !s.storage_path || (forceAll && !isCurrentFormatPath(s.storage_path)))
     totalScenes = (scenes ?? []).length
     missingCount = missing.length
     const completedBefore = totalScenes - missing.length
@@ -785,10 +809,10 @@ Deno.serve(async (req) => {
           safetySuffix: backfillImageCfg.safetySuffix,
         })
         const image = await generateImage(built.prompt)
-        const path = `${requestId}/${scene.page_number}.png`
+        const path = sceneStoragePath(requestId, scene.page_number as number, image.ext)
         const { error: upErr } = await supabase.storage
           .from('story-images')
-          .upload(path, image.bytes, { contentType: 'image/png', upsert: true })
+          .upload(path, image.bytes, { contentType: image.contentType, upsert: true })
         if (upErr) throw new Error(`Upload failed: ${upErr.message}`)
         await supabase.from('story_scenes')
           .update({
@@ -831,6 +855,7 @@ Deno.serve(async (req) => {
       plan: storyReq.story_plan,
       config: cfgMap,
       skip: false,
+      force: forceAll,
       source: 'backfill',
       ownsLease: backfillOwnsLease,
       log: backfillLog,
@@ -1654,10 +1679,10 @@ Deno.serve(async (req) => {
           const image = await generateImage(built.prompt)
           longestImageMs = Math.max(longestImageMs ?? 0, Date.now() - imageStarted)
 
-          const storagePath = `${requestId}/${scene.page_number}.png`
+          const storagePath = sceneStoragePath(requestId, scene.page_number, image.ext)
           const { error: uploadError } = await supabase.storage
             .from('story-images')
-            .upload(storagePath, image.bytes, { contentType: 'image/png', upsert: true })
+            .upload(storagePath, image.bytes, { contentType: image.contentType, upsert: true })
 
           if (uploadError) {
             throw new Error(`Storage upload failed for page ${scene.page_number}: ${uploadError.message}`)

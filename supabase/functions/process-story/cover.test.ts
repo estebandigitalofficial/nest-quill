@@ -145,7 +145,8 @@ test('14. retry / backfill builds the same cover prompt from the same persisted 
   const a = buildCoverPrompt({ bible: b, plan: makePlan(), tones: ['brave'], safetySuffix: SAFETY })
   const c = buildCoverPrompt({ bible: (persisted as { ok: true; bible: typeof b }).bible, plan: makePlan(), tones: ['brave'], safetySuffix: SAFETY })
   assert.equal(a.prompt, c.prompt)
-  assert.equal(coverStoragePath('abc'), 'abc/cover.png')
+  assert.equal(coverStoragePath('abc'), 'abc/cover.jpg')
+  assert.equal(coverStoragePath('abc', 'png'), 'abc/cover.png')
 })
 
 test('relevant companions: Mateo (half the beats) is on the cover, Grandma is also frequent; a rare character is not', () => {

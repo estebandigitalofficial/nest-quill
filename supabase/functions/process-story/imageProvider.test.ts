@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
+  DEFAULT_IMAGE_COMPRESSION,
   DEFAULT_IMAGE_MODEL,
   DEFAULT_IMAGE_QUALITY,
   DEFAULT_IMAGE_SIZE,
@@ -11,11 +12,17 @@ import {
   MAX_RATE_LIMIT_WAIT_MS,
   buildImageRequest,
   decodeBase64Image,
+  looksLikeJpeg,
   looksLikePng,
+  normalizeCompression,
   normalizeQuality,
   normalizeSize,
   parseImageResponse,
+  isCurrentFormatPath,
   rateLimitDelayMs,
+  sceneStoragePath,
+  sniffImageFormat,
+  storageMetaFor,
 } from './imageProvider.ts'
 import { buildVisualBible, buildImagePrompt, buildCoverPrompt } from './visual.ts'
 
@@ -29,11 +36,19 @@ test('1-3. request shape targets the Images API with the selected GPT Image mode
   assert.equal(IMAGES_ENDPOINT, 'https://api.openai.com/v1/images/generations')
   assert.equal(body.model, 'gpt-image-2.5-flare')
   assert.equal(DEFAULT_IMAGE_MODEL, body.model)
-  assert.deepEqual(Object.keys(body).sort(), ['model', 'moderation', 'n', 'output_format', 'prompt', 'quality', 'size'])
+  assert.deepEqual(Object.keys(body).sort(), ['model', 'moderation', 'n', 'output_compression', 'output_format', 'prompt', 'quality', 'size'])
   assert.ok(!('response_format' in body), 'response_format is rejected by GPT Image models')
   assert.ok(!('style' in body), 'style is dall-e-3 only')
   assert.equal(body.n, 1)
-  assert.equal(body.output_format, 'png')
+  assert.equal(body.output_format, 'jpeg')
+  assert.equal(body.output_compression, DEFAULT_IMAGE_COMPRESSION)
+  assert.equal(DEFAULT_IMAGE_COMPRESSION, 85)
+  assert.equal(normalizeCompression('70'), 70)
+  assert.equal(normalizeCompression(0), 1)
+  assert.equal(normalizeCompression('nope'), 85)
+  assert.equal(normalizeCompression(null), 85)
+  assert.equal(normalizeCompression(''), 85)
+  assert.equal(buildImageRequest('p', { compression: 120 }).output_compression, 100)
   assert.equal(body.prompt, 'a child on a beach')
   assert.ok(!INDEX.includes("'dall-e-3'"), 'index.ts must not name the retired model')
   assert.ok(!/response_format:\s*'(url|b64_json)'/.test(INDEX), 'index.ts must not send response_format to the Images API')
@@ -58,13 +73,39 @@ test('5. size mapping: square default, legacy dall-e-3 sizes map to supported on
   assert.equal(normalizeSize('nonsense'), '1024x1024')
 })
 
-test('6-7. base64 is decoded into real PNG bytes; garbage is rejected', () => {
-  const bytes = decodeBase64Image(PNG_B64)
-  assert.ok(bytes.length > 60)
-  assert.equal(looksLikePng(bytes), true)
+// Minimal JPEG prefix: SOI + APP0/JFIF header (enough for signature detection)
+const JPEG_BYTES = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00])
+const JPEG_B64 = Buffer.from(JPEG_BYTES).toString('base64')
+
+test('6-7. base64 decodes to real bytes; JPEG and legacy PNG are recognised by signature; garbage is rejected', () => {
+  const png = decodeBase64Image(PNG_B64)
+  assert.equal(looksLikePng(png), true)
+  assert.equal(sniffImageFormat(png), 'png')
+  assert.deepEqual(storageMetaFor('png'), { ext: 'png', contentType: 'image/png' })
+  const jpg = decodeBase64Image(JPEG_B64)
+  assert.equal(looksLikeJpeg(jpg), true)
+  assert.equal(sniffImageFormat(jpg), 'jpeg')
+  assert.deepEqual(storageMetaFor('jpeg'), { ext: 'jpg', contentType: 'image/jpeg' })
   assert.throws(() => decodeBase64Image(''), /invalid base64/)
   assert.throws(() => decodeBase64Image('!!not base64!!'), /invalid base64/)
-  assert.equal(looksLikePng(new Uint8Array([1, 2, 3])), false)
+  assert.equal(sniffImageFormat(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9])), null)
+  assert.equal(sniffImageFormat(new Uint8Array(Buffer.from('<html>not an image</html>'))), null)
+})
+
+test('scene and cover storage paths: new assets are .jpg, legacy .png paths remain expressible', () => {
+  assert.equal(sceneStoragePath('req', 7), 'req/7.jpg')
+  assert.equal(sceneStoragePath('req', 7, 'png'), 'req/7.png')
+  assert.ok(!INDEX.includes('.png`'), 'index.ts must not hard-code a .png asset path')
+  assert.ok(!INDEX.includes("contentType: 'image/png'"), 'uploads must use the sniffed content type')
+  assert.equal((INDEX.match(/contentType: image\.contentType/g) ?? []).length, 3, 'pipeline page, backfill page, cover')
+  assert.equal((INDEX.match(/sceneStoragePath\(requestId/g) ?? []).length, 2)
+  assert.match(INDEX, /coverStoragePath\(requestId, image\.ext\)/)
+  // 11. backfill re-render is format-aware and resumable
+  assert.equal(isCurrentFormatPath('req/3.jpg'), true)
+  assert.equal(isCurrentFormatPath('req/3.png'), false)
+  assert.equal(isCurrentFormatPath(null), false)
+  assert.match(INDEX, /forceAll && !isCurrentFormatPath\(s\.storage_path\)/)
+  assert.match(INDEX, /args\.force && !args\.skip && !isCurrentFormatPath\(gs\.cover_storage_path\)/)
 })
 
 test('response parsing: b64_json required, revised_prompt null when absent, usage captured when present', () => {

@@ -441,9 +441,10 @@ export function buildImagePrompt(args: ImagePromptArgs): { prompt: string; meta:
 // interior used. No text is ever requested inside the image: the title,
 // author line and attribution stay application typography (reader + PDF).
 
-export const COVER_FILENAME = 'cover.png'
-export function coverStoragePath(requestId: string): string {
-  return `${requestId}/${COVER_FILENAME}`
+/** New covers are JPEG (see imageProvider.ts); legacy covers keep their stored cover.png path. */
+export const COVER_FILENAME = 'cover.jpg'
+export function coverStoragePath(requestId: string, ext: 'jpg' | 'png' = 'jpg'): string {
+  return `${requestId}/cover.${ext}`
 }
 
 /** Mood + composition direction derived from the parent's tone choices (never from climax/resolution). */
