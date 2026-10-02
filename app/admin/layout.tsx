@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { getAdminContext } from '@/lib/admin/guard'
+import { adminDeniedRedirect } from '@/lib/admin/denied'
+import { createClient } from '@/lib/supabase/server'
 import { getSetting } from '@/lib/settings/appSettings'
 import AdminLogoutButton from '@/components/admin/AdminLogoutButton'
 import AdminSidebar from '@/components/admin/AdminSidebar'
@@ -14,7 +16,14 @@ export default async function AdminLayout({
   children: React.ReactNode
 }) {
   const ctx = await getAdminContext()
-  if (!ctx) redirect('/')
+  if (!ctx) {
+    // Signed-out → login (bypasses Maintenance Mode, returns here);
+    // signed-in but not an admin → public root, as before. Authorization
+    // itself is unchanged: only getAdminContext() grants access.
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    redirect(adminDeniedRedirect(!!user))
+  }
 
   const betaModeEnabled = await getSetting('beta_mode_enabled', false)
 
