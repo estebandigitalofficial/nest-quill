@@ -1,4 +1,5 @@
 import { after } from 'next/server'
+import { storyImagesSummary, type SceneImageFields, type ProcessingLogLike, type StoryImagesState } from '@/lib/story/imageState'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -293,26 +294,36 @@ export async function GET(request: NextRequest) {
     // schedule independent of any browser. Closing the tab cannot stall a
     // book; reopening it cannot speed one up.
 
-    // ── Image-skipped indicator ──────────────────────────────────────────────
-    // The worker skips DALL·E only when image_generation_enabled is false or
-    // the SKIP_IMAGE_GENERATION secret is set (never because of beta mode).
-    // Neither signal is readable here, so for completed stories we infer
-    // "skipped" from every scene lacking a stored image. The reader uses
-    // this to show honest placeholder copy.
+    // ── Story-level image state (Phase 2C) ──────────────────────────────────
+    // Derived from scene rows plus the worker's own log line. The worker
+    // skips images only when image_generation_enabled is false or the
+    // SKIP_IMAGE_GENERATION secret is set (never because of beta mode), and
+    // records "Image generation skipped (...)" when it does. A finished story
+    // with no images and no such line is reported as failed (if attempts
+    // were made) or unknown (legacy) — never as skipped.
+    let imagesState: StoryImagesState | undefined
     let imagesSkipped: boolean | undefined
-    let imagesSkippedReason: 'admin' | undefined
     if (storyRequest.status === 'complete') {
-      const { data: anyImage } = await adminSupabase
-        .from('story_scenes')
-        .select('id')
-        .eq('request_id', requestId)
-        .eq('image_status', 'complete')
-        .limit(1)
-        .maybeSingle()
-      if (!anyImage) {
-        imagesSkipped = true
-        imagesSkippedReason = 'admin'
-      }
+      const [{ data: sceneRows }, { data: skipLogs }] = await Promise.all([
+        adminSupabase
+          .from('story_scenes')
+          .select('image_status, storage_path, last_error, generation_attempts')
+          .eq('request_id', requestId),
+        adminSupabase
+          .from('processing_logs')
+          .select('stage, message')
+          .eq('request_id', requestId)
+          .eq('stage', 'generate_images')
+          .ilike('message', 'Image generation skipped%')
+          .limit(1),
+      ])
+      const summary = storyImagesSummary({
+        storyStatus: storyRequest.status,
+        scenes: (sceneRows ?? []) as SceneImageFields[],
+        logs: (skipLogs ?? []) as ProcessingLogLike[],
+      })
+      imagesState = summary.state
+      imagesSkipped = summary.state === 'skipped'
     }
 
     return NextResponse.json<StoryStatusResponse>({
@@ -325,8 +336,8 @@ export async function GET(request: NextRequest) {
       signedUrl,
       completedAt: storyRequest.completed_at ?? undefined,
       learningMode: storyRequest.learning_mode ?? false,
+      imagesState,
       imagesSkipped,
-      imagesSkippedReason,
     })
   } catch (err) {
     const { message, code, statusCode } = toApiError(err)

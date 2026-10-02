@@ -1,3 +1,4 @@
+import type { StoryImagesState } from '@/lib/story/imageState'
 import type { PlanTier, StoryStatus } from './database'
 
 // ─── Story form data ─────────────────────────────────────────────────────────
@@ -93,14 +94,14 @@ export interface StoryStatusResponse {
   completedAt?: string
   learningMode?: boolean
   /**
-   * True when this story's images are intentionally absent because the worker
-   * skipped DALL·E (image_generation_enabled=false or SKIP_IMAGE_GENERATION).
-   * Lets the reader show an honest "skipped" placeholder instead of the
-   * generic "not available" copy. Beta Mode no longer skips images.
+   * Story-level image state (Phase 2C), present once the story is complete:
+   * 'complete' | 'partial' | 'failed' | 'skipped' (worker logged an
+   * intentional skip) | 'unknown' (legacy run, no evidence) | 'none'.
+   * Failed is never reported as skipped. Beta Mode never skips images.
    */
+  imagesState?: StoryImagesState
+  /** True only when the worker intentionally skipped illustrations (same as imagesState === 'skipped'). */
   imagesSkipped?: boolean
-  /** 'admin' when the operator paused images (flag or worker secret). Beta Mode never skips illustrations. */
-  imagesSkippedReason?: 'admin'
 }
 
 export interface QuizQuestion {

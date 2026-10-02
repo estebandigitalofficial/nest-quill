@@ -64,7 +64,7 @@ const QUIZ: Section = {
 
 const IMAGE_STYLES: Section = {
   title: 'Image Styles',
-  subtitle: 'DALL-E style hints and safety suffix appended to every image prompt.',
+  subtitle: 'Style hints and safety suffix appended to every image prompt.',
   keys: [
     'image_safety_suffix',
     'image_style_watercolor',

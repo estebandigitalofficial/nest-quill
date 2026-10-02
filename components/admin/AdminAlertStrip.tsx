@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import type { ImageGenerationState } from '@/lib/story/imageState'
 
 // Top-of-dashboard banner for issues that need an admin's attention.
 // Renders nothing when nothing's wrong. Each block is self-contained so
@@ -9,6 +10,8 @@ export interface AdminAlertProps {
   failed24h: number
   oldestQueuedMinutes: number | null
   betaMode: boolean
+  /** Effective image-generation state (Phase 2C). Beta Mode never affects images. */
+  imageGeneration?: ImageGenerationState
   sponsorTableMissing: boolean
   /** When > 0, surfaces an "urgent support tickets waiting" alert. */
   urgentSupportTickets?: number
@@ -52,9 +55,19 @@ export default function AdminAlertStrip(props: AdminAlertProps) {
   if (props.betaMode) {
     blocks.push({
       tone: 'blue',
-      title: 'Beta mode active — illustrations paused',
-      body: 'DALL·E generation is skipped to control costs during beta. Stories complete with text only.',
+      title: 'Beta mode active — limits relaxed',
+      body: 'Story limits are bypassed and beta copy is shown. Beta Mode does not affect illustrations; image generation has its own switch in Beta Ops.',
       cta: { href: '/admin/beta', label: 'Beta settings' },
+    })
+  }
+  if (props.imageGeneration && props.imageGeneration.state === 'disabled') {
+    blocks.push({
+      tone: 'amber',
+      title: 'Image generation disabled — new stories complete text-only',
+      body: props.imageGeneration.reason === 'flag'
+        ? 'image_generation_enabled is off. Illustrations and covers are not generated until it is turned back on.'
+        : 'SKIP_IMAGE_GENERATION is set on the worker. Illustrations and covers are not generated until it is unset.',
+      cta: { href: '/admin/beta-ops', label: 'Beta Ops' },
     })
   }
   if (props.sponsorTableMissing) {

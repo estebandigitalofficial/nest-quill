@@ -96,7 +96,7 @@ export default function AdminStoryActions({ requestId, status, totalScenes, miss
           onClick={handleGenerateImages}
           disabled={genImg === 'loading'}
           className="text-xs bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 text-violet-300 px-3 py-1.5 rounded-lg font-medium disabled:opacity-50 transition-colors"
-          title="Generate DALL·E illustrations only for scenes that don't have an image yet."
+          title="Generate illustrations only for scenes that don't have an image yet (paid image calls)."
         >
           {genImg === 'loading' ? 'Generating…' :
            genImg === 'done' ? (genImgMsg ?? 'Done ✓') :

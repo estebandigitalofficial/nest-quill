@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef, type ReactNode } from 'react'
+import { readerPlaceholder, type StoryImagesState } from '@/lib/story/imageState'
 import Link from 'next/link'
 import type { StoryStatusResponse, StoryContentResponse, StoryContentPage, StoryQuizResponse } from '@/types/story'
 import LearningActivities from './learning/LearningActivities'
@@ -152,8 +153,7 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode, header, 
       planTier={status.planTier}
       isAdmin={isAdmin}
       quiz={quiz}
-      imagesSkipped={status.imagesSkipped}
-      imagesSkippedReason={status.imagesSkippedReason}
+      imagesState={status.imagesState}
     />
   )
 }
@@ -239,7 +239,7 @@ type ReaderPage =
   | { kind: 'activities' }
 
 function StoryEbookReader({
-  story, requestId, pdfUrl, planTier, isAdmin, quiz, imagesSkipped, imagesSkippedReason,
+  story, requestId, pdfUrl, planTier, isAdmin, quiz, imagesState,
 }: {
   story: StoryContentResponse
   requestId: string
@@ -247,8 +247,7 @@ function StoryEbookReader({
   planTier?: string
   isAdmin?: boolean
   quiz?: StoryQuizResponse | null
-  imagesSkipped?: boolean
-  imagesSkippedReason?: 'admin'
+  imagesState?: StoryImagesState
 }) {
   const canDownload = planTier !== 'free'
   const backHref = isAdmin ? '/admin' : '/account'
@@ -442,7 +441,7 @@ function StoryEbookReader({
       }}>
         <div style={{ width: '100%', maxWidth: 480, padding: '0 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
           {page.kind === 'cover' && <CoverPage story={story} hasMore={readerPages.length > 1} />}
-          {page.kind === 'story' && <StoryPageContent page={page.page} storyIndex={current} total={storyPages.length} imagesSkippedReason={imagesSkippedReason} />}
+          {page.kind === 'story' && <StoryPageContent page={page.page} storyIndex={current} total={storyPages.length} imagesState={imagesState} />}
           {page.kind === 'end' && <EndPage pdfUrl={pdfUrl} canDownload={canDownload} backHref={backHref} hasQuiz={showActivities} onTakeQuiz={() => go(readerPages.length - 1)} />}
           {page.kind === 'activities' && (
             <LearningActivities
@@ -536,17 +535,16 @@ function CoverPage({ story, hasMore }: { story: StoryContentResponse; hasMore: b
   )
 }
 
-function StoryPageContent({ page, storyIndex, total, imagesSkippedReason }: {
+function StoryPageContent({ page, storyIndex, total, imagesState }: {
   page: StoryContentPage
   storyIndex: number
   total: number
-  imagesSkippedReason?: 'admin'
+  imagesState?: StoryImagesState
 }) {
-  // Placeholder copy when no image. Beta Mode never skips illustrations;
-  // the only operator-driven skip (flag or worker secret) stays neutral.
-  const placeholder =
-    imagesSkippedReason === 'admin' ? 'Illustration skipped'
-    : 'Illustration not available'
+  // Placeholder copy when no image (Phase 2C): "not available for this book"
+  // only when the worker intentionally skipped illustrations; otherwise a
+  // neutral "unavailable". Provider errors never reach the reader.
+  const placeholder = readerPlaceholder(page, imagesState ?? 'unknown') ?? ''
   return (
     <>
       <p style={{ fontSize: 10, color: '#c4b5a0', letterSpacing: '0.1em', alignSelf: 'center' }}>

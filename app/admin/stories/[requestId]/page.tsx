@@ -6,6 +6,7 @@ import AdminRecoveryActions from '@/components/admin/AdminRecoveryActions'
 import type { StoryRequest, GeneratedStory, StoryScene, ProcessingLog } from '@/types/database'
 import { formatAZTime, formatAZTimeOnly } from '@/lib/utils/formatTime'
 import { pickCoverPath } from '@/lib/services/cover'
+import { storyImagesSummary, adminImagesSuffix, adminImagesTitle } from '@/lib/story/imageState'
 
 interface PageProps {
   params: Promise<{ requestId: string }>
@@ -60,11 +61,10 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
   const imagesComplete = scenes.filter(s => s.image_status === 'complete' && s.storage_path).length
   const missingImages = totalScenes - imagesComplete
 
-  // Beta-skip indicator: a completed story with scenes but zero images is
-  // the canonical signature of a beta_mode_enabled / SKIP_IMAGE_GENERATION
-  // run. The header chip uses this to color the row neutrally rather than
-  // flagging it as missing-by-error.
-  const looksLikeBetaSkip = req.status === 'complete' && totalScenes > 0 && imagesComplete === 0
+  // Story-level image state (Phase 2C): complete / partial / pending /
+  // failed / skipped (worker logged an intentional skip) / unknown (legacy
+  // run with no evidence). Never collapses "failed" into "skipped".
+  const imagesSummary = storyImagesSummary({ storyStatus: req.status, scenes, logs })
 
   return (
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
@@ -95,19 +95,19 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
               {totalScenes > 0 && (
                 <span
                   className={`text-xs font-mono px-2 py-0.5 rounded border ${
-                    missingImages === 0
+                    imagesSummary.state === 'complete'
                       ? 'bg-green-500/10 text-green-400 border-green-500/30'
-                      : looksLikeBetaSkip
+                      : imagesSummary.state === 'skipped'
                       ? 'bg-violet-500/10 text-violet-300 border-violet-500/30'
+                      : imagesSummary.state === 'failed'
+                      ? 'bg-red-500/10 text-red-300 border-red-500/30'
+                      : imagesSummary.state === 'unknown'
+                      ? 'bg-adm-bg text-adm-muted border-adm-border'
                       : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
                   }`}
-                  title={
-                    looksLikeBetaSkip
-                      ? 'Completed without illustrations — likely a beta_mode_enabled / SKIP_IMAGE_GENERATION run.'
-                      : "Scenes with image_status='complete' AND storage_path set"
-                  }
+                  title={adminImagesTitle(imagesSummary)}
                 >
-                  Images: {imagesComplete}/{totalScenes}{looksLikeBetaSkip ? ' · beta-skipped' : ''}
+                  Images: {imagesComplete}/{totalScenes}{adminImagesSuffix(imagesSummary)}
                 </span>
               )}
               <AdminStoryActions

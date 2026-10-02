@@ -10,6 +10,7 @@ import GlassCard from '@/components/admin/GlassCard'
 import type { StoryRequest } from '@/types/database'
 import { formatAZTimeShort, formatAZTimeOnly } from '@/lib/utils/formatTime'
 import { getSetting } from '@/lib/settings/appSettings'
+import { imageGenerationState, imageGenerationLabel } from '@/lib/story/imageState'
 import { getLaunchFlags } from '@/lib/launch/flags'
 
 const PROCESSING_STATUSES = ['generating_text', 'generating_images', 'assembling_pdf']
@@ -173,6 +174,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
     { data: oldestQueuedRow },
     { error: sponsorProbeError },
     betaMode,
+    imageGenEnabled,
     { count: openTicketsCount, error: ticketProbeError },
     { count: urgentTicketsCount },
     { count: failedLastHour },
@@ -182,11 +184,16 @@ export default async function AdminPage({ searchParams }: PageProps) {
     // to detect "relation does not exist" without scanning rows.
     adminSupabase.from('sponsors').select('id', { head: true, count: 'exact' }).limit(1),
     getSetting('beta_mode_enabled', false) as Promise<boolean>,
+    getSetting('image_generation_enabled', true) as Promise<boolean>,
     adminSupabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('status', 'open'),
     adminSupabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('priority', 'urgent').not('status', 'in', '(resolved,closed)'),
     adminSupabase.from('story_requests').select('id', { count: 'exact', head: true }).eq('status', 'failed').gte('updated_at', lastHourIso),
   ])
   const activeJobsCount = (queuedCount ?? 0) + (processingCount ?? 0)
+  // Effective image-generation state (Phase 2C). Beta Mode is deliberately
+  // not an input: since Phase 1A it never pauses illustrations.
+  const imageGen = imageGenerationState({ imageGenEnabled: imageGenEnabled !== false, skipEnv: process.env.SKIP_IMAGE_GENERATION === 'true' })
+  const imageGenLabel = imageGenerationLabel(imageGen)
 
   // Stale leases — worker_id set but lease expired. Graceful when
   // the 20240056 migration hasn't applied: the column is missing,
@@ -255,6 +262,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
           failed24h={failedStories24h ?? 0}
           oldestQueuedMinutes={oldestQueuedMinutes}
           betaMode={betaMode}
+          imageGeneration={imageGen}
           sponsorTableMissing={sponsorTableMissing}
           urgentSupportTickets={urgentTickets}
           failedLastHour={failedLastHour ?? 0}
@@ -278,9 +286,9 @@ export default async function AdminPage({ searchParams }: PageProps) {
             <SystemTile label="Beta mode"
               tone={betaMode ? 'amber' : 'neutral'}
               value={betaMode ? 'On' : 'Off'} />
-            <SystemTile label="Images"
-              tone={betaMode ? 'amber' : 'green'}
-              value={betaMode ? 'Paused (beta)' : 'Generating'} />
+            <SystemTile label="Image generation"
+              tone={imageGenLabel.tone}
+              value={imageGenLabel.value} />
             <SystemTile label="Payments"
               tone="neutral"
               value={process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true' ? 'Live' : 'Disabled'} />
@@ -327,15 +335,13 @@ export default async function AdminPage({ searchParams }: PageProps) {
             <StatCard label="Stuck" value={stuckStories.length} color={stuckStories.length > 0 ? 'red' : undefined} />
             <StatCard
               label="Images"
-              value={betaMode ? 0 : 1}
-              color={betaMode ? 'amber' : 'green'}
+              value={imageGen.state === 'active' ? 1 : 0}
+              color={imageGenLabel.tone}
             />
           </div>
-          {betaMode && (
-            <p className="text-[11px] text-amber-300/80 -mt-1 mb-3">
-              Beta mode: image generation is paused (text-only stories).
-            </p>
-          )}
+          <p className={`text-[11px] -mt-1 mb-3 ${imageGen.state === 'active' ? 'text-adm-subtle' : 'text-amber-300/80'}`}>
+            {imageGenLabel.hint}
+          </p>
 
           {/* Stuck story details — only renders when there are stuck stories */}
           {stuckStories.length > 0 && (
