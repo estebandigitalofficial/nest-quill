@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NotFoundError, toApiError } from '@/lib/utils/errors'
+import { COVER_BUCKET, pickCoverPath } from '@/lib/services/cover'
 import type { StoryRequest } from '@/types/database'
 import type { StoryContentResponse } from '@/types/story'
 
@@ -80,6 +81,17 @@ export async function GET(
       })
     }
 
+    // Canonical cover artwork (Phase 1F): one signed URL, or null so the
+    // reader keeps its typographic cover. Never a broken image.
+    const coverPath = pickCoverPath(story as unknown as { cover_status?: string | null; cover_storage_path?: string | null })
+    let coverUrl: string | null = null
+    if (coverPath) {
+      const { data: signedCover } = await adminSupabase.storage
+        .from(COVER_BUCKET)
+        .createSignedUrl(coverPath, 60 * 60 * 24 * 7)
+      coverUrl = signedCover?.signedUrl ?? null
+    }
+
     return NextResponse.json<StoryContentResponse>({
       requestId,
       title: story.title,
@@ -87,6 +99,7 @@ export async function GET(
       authorLine: story.author_line ?? 'A Nest & Quill Original',
       dedication: story.dedication ?? null,
       synopsis: story.synopsis ?? null,
+      coverUrl,
       pages: (scenes ?? []).map((s: Record<string, unknown>) => ({
         pageNumber: s.page_number as number,
         text: s.page_text as string,

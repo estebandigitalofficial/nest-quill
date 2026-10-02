@@ -20,7 +20,11 @@ export default async function HomePage() {
     if (adminCtx) redirect('/admin')
   }
 
-  const betaMode = (await getSetting('beta_mode_enabled', false)) as boolean
+  const [betaMode, imagesPaused] = await Promise.all([
+    getSetting('beta_mode_enabled', false) as Promise<boolean>,
+    // Illustrations are governed by image_generation_enabled, not by beta.
+    getSetting<unknown>('image_generation_enabled', true).then(v => v === false),
+  ])
 
   return (
     <div className="min-h-dvh bg-parchment font-sans flex flex-col">
@@ -48,7 +52,7 @@ export default async function HomePage() {
       />
 
       <main className="flex-1 overflow-y-auto">
-        <Hero betaMode={betaMode} />
+        <Hero betaMode={betaMode} imagesPaused={imagesPaused} />
         <HowItWorks />
         <SamplePreview />
         <Pricing betaMode={betaMode} />
@@ -64,7 +68,7 @@ export default async function HomePage() {
 
 // ── Hero ──────────────────────────────────────────────────────────────────────
 
-function Hero({ betaMode }: { betaMode: boolean }) {
+function Hero({ betaMode, imagesPaused }: { betaMode: boolean; imagesPaused: boolean }) {
   return (
     <section className="bg-brand-50 pt-20 pb-24 px-6 text-center">
       <div className="max-w-4xl mx-auto space-y-7">
@@ -87,9 +91,13 @@ function Hero({ betaMode }: { betaMode: boolean }) {
           Personalized AI storybooks starring your child. Pick a theme,
           tell us about them, and we&apos;ll write a unique book in minutes.
         </p>
-        {betaMode ? (
+        {imagesPaused ? (
           <p className="text-sm text-charcoal-light max-w-md mx-auto">
-            Illustrations are paused during beta to keep stories free — full illustrated books are coming soon.
+            Illustrations are temporarily paused — full illustrated books are coming soon.
+          </p>
+        ) : betaMode ? (
+          <p className="text-sm text-charcoal-light max-w-md mx-auto">
+            Free during beta. Every book is fully illustrated in the style you choose.
           </p>
         ) : (
           <p className="text-sm text-charcoal-light max-w-md mx-auto">

@@ -52,7 +52,7 @@ export default function BetaModeToggle({ initialEnabled }: { initialEnabled: boo
           </p>
           <p className="text-xs text-adm-muted mt-1">
             {enabled
-              ? 'All story limits bypassed (guest, free, and paid). Images and PDFs are simulated. A banner is shown to all users.'
+              ? 'All story limits bypassed (guest, free, and paid). Illustrations and PDFs still follow their own flags. A banner is shown to all users.'
               : 'Normal operation. All limits and AI generation active.'}
           </p>
           {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
@@ -76,7 +76,7 @@ export default function BetaModeToggle({ initialEnabled }: { initialEnabled: boo
             <div>
               <p className="font-semibold text-adm-text text-base">Enable Beta Mode?</p>
               <p className="text-sm text-adm-muted mt-1.5 leading-relaxed">
-                Beta Mode affects all users globally. Story limits will be bypassed and some generation will be simulated until you turn it off.
+                Beta Mode affects all users globally. Story limits will be bypassed until you turn it off; illustrations and PDFs are governed by their own flags.
               </p>
             </div>
             <div className="flex gap-3 pt-1">

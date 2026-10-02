@@ -61,9 +61,12 @@ function planFromAccount(raw: string | null | undefined): PlanTier | null {
 
 export default function StoryWizard({
   betaMode = false,
+  imagesPaused = false,
   accountPlan = null,
 }: {
   betaMode?: boolean
+  /** image_generation_enabled === false; drives the "illustrations paused" note. */
+  imagesPaused?: boolean
   /** profiles.plan_tier for the signed-in user; null/undefined for guests. */
   accountPlan?: string | null
 }) {
@@ -197,7 +200,7 @@ export default function StoryWizard({
   }
 
   return (
-    <WizardConfigContext.Provider value={{ betaMode }}>
+    <WizardConfigContext.Provider value={{ betaMode, imagesPaused }}>
     <FormProvider {...methods}>
       {/* Plan-selected pill — only when ?plan=... preselected the tier and
           we're still on the first visible step. Lets the user jump back to

@@ -1,6 +1,45 @@
 // @ts-nocheck — this file runs in Deno (Supabase Edge Function), not Node. TS server does not know Deno globals.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import {
+  BACKFILL_LEASE_MS,
+  CLAIMABLE_STATUSES,
+  DISPATCH_WAIT_MS,
+  READY_EMAIL_RECOVERY_WINDOW_MS,
+  SWEEP_GRACE_MS,
+  SWEEP_STALE_MS,
+  TIME_BUDGET_MS,
+  coverStartAllowed,
+  type DispatchOutcome,
+  isAuthorizedBearer,
+  isSweepEligible,
+  isSweepStale,
+  monotonicProgress,
+  raceDispatch,
+  readyEmailRecoveryCandidates,
+  shouldSkipImages,
+} from './policy.ts'
+import { buildBookPrompt, buildPlanPrompt, deriveAgeBand, personalizationFieldsUsed } from './prompt.ts'
+import {
+  MAX_STAGE_ATTEMPTS,
+  buildRepairMessages,
+  safeParseJson,
+  sumUsage,
+  toSceneRows,
+  validateBook,
+  validateStoryPlan,
+} from './plan.ts'
+import { assessBookQuality } from './quality.ts'
+import {
+  buildCoverPrompt,
+  buildImagePrompt,
+  buildVisualBible,
+  coverFailureUpdate,
+  coverStoragePath,
+  findPlanPage,
+  shouldGenerateCover,
+  validateVisualBible,
+} from './visual.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -23,10 +62,64 @@ const EXPECTED_TOKEN = Deno.env.get('EDGE_FUNCTION_SECRET') ?? SUPABASE_SERVICE_
 const SKIP_IMAGES = Deno.env.get('SKIP_IMAGE_GENERATION') === 'true'
 const MOCK_PIPELINE = Deno.env.get('MOCK_PIPELINE') === 'true'
 
-// Stop 40 seconds before the 150 s Edge Function hard limit.
-// When the budget is reached the worker releases its claim (worker_id → null)
-// and returns a 200 so the status-poller can re-trigger for the next batch.
-const TIME_BUDGET_MS = 110_000
+// TIME_BUDGET_MS (policy.ts) stops new expensive calls 40 s before the
+// 150 s Edge Function hard limit. When the budget is reached the worker
+// releases its claim (worker_id → null), dispatches a continuation
+// invocation of itself, and returns 200. Nothing in the browser is
+// involved; the scheduled sweep (mode: 'sweep') is the safety net if the
+// chained invocation is ever lost.
+
+// Where this function reaches itself for continuation + sweep dispatch.
+// SUPABASE_URL is injected by the platform (hosted: https://<ref>.supabase.co,
+// local: http://kong:8000). Override with PROCESS_STORY_SELF_URL if needed.
+const SELF_URL = Deno.env.get('PROCESS_STORY_SELF_URL')
+  ?? `${SUPABASE_URL.replace(/\/+$/, '')}/functions/v1/process-story`
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * Fire a new invocation of this function and wait (briefly) until the
+ * request has been accepted. The child invocation is independent: it
+ * claims the row with its own worker id and lease.
+ *
+ * Parent lifetime: the promise handed to EdgeRuntime.waitUntil is the SAME
+ * bounded race the caller awaits — the response or DISPATCH_WAIT_MS,
+ * whichever comes first — so the parent isolate is kept alive for at most
+ * DISPATCH_WAIT_MS after dispatch and never for the child's processing
+ * run. On timeout the request has left this isolate and the outcome is
+ * reported as 'timeout' (ok: true, status 0); if it was in fact lost, the
+ * sweep re-dispatches the released row after SWEEP_GRACE_MS.
+ */
+async function dispatchSelf(body: Record<string, unknown>): Promise<DispatchOutcome> {
+  const responsePromise = fetch(SELF_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${EXPECTED_TOKEN}`,
+    },
+    body: JSON.stringify(body),
+  }).then(r => {
+    // Drop the body immediately; we only care that the request was accepted.
+    r.body?.cancel().catch(() => {})
+    return { ok: r.ok, status: r.status }
+  })
+
+  const bounded = raceDispatch(responsePromise, DISPATCH_WAIT_MS, sleep)
+
+  try {
+    // deno-lint-ignore no-explicit-any
+    const rt = (globalThis as any).EdgeRuntime
+    if (rt && typeof rt.waitUntil === 'function') {
+      rt.waitUntil(bounded.catch(() => {}))
+    }
+  } catch { /* not running on Supabase Edge Runtime */ }
+
+  const outcome = await bounded
+  console.log('[process-story] dispatchSelf', outcome.outcome, outcome.status ?? '', outcome.error ?? '')
+  return outcome
+}
 
 // ── Fallback illustration style → DALL-E style hint map ─────────────────────
 
@@ -42,7 +135,17 @@ type ConfigMap = Record<string, string>
 
 // ── OpenAI helper ─────────────────────────────────────────────────────────────
 
-async function callOpenAI(messages: object[], model = 'gpt-4o'): Promise<string> {
+interface OpenAIUsage { prompt_tokens: number | null; completion_tokens: number | null; total_tokens: number | null }
+interface OpenAIResult { content: string; usage: OpenAIUsage; model: string }
+
+const TEXT_MODEL = 'gpt-4o'
+
+/**
+ * JSON-mode chat completion. Returns the content plus the usage block the
+ * API reports (prompt_tokens / completion_tokens / total_tokens) so each
+ * generation stage can be measured; nulls when the API omits usage.
+ */
+async function callOpenAI(messages: object[], model = TEXT_MODEL, temperature = 0.8): Promise<OpenAIResult> {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -53,7 +156,7 @@ async function callOpenAI(messages: object[], model = 'gpt-4o'): Promise<string>
       model,
       messages,
       response_format: { type: 'json_object' },
-      temperature: 0.8,
+      temperature,
     }),
   })
 
@@ -63,35 +166,47 @@ async function callOpenAI(messages: object[], model = 'gpt-4o'): Promise<string>
   }
 
   const json = await res.json()
-  return json.choices[0].message.content
+  const u = json.usage ?? {}
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
+  return {
+    content: json.choices?.[0]?.message?.content ?? '',
+    usage: { prompt_tokens: num(u.prompt_tokens), completion_tokens: num(u.completion_tokens), total_tokens: num(u.total_tokens) },
+    model: typeof json.model === 'string' ? json.model : model,
+  }
 }
 
-function deriveAgeBand(childAge?: number): 'young' | 'middle' | 'teen' | 'adult' {
-  const age = Number(childAge)
-  if (!Number.isFinite(age) || age >= 18) return 'adult'
-  if (age >= 12) return 'teen'
-  if (age >= 8) return 'middle'
-  return 'young'
-}
 
-async function generateImage(prompt: string, illustrationStyle: string, config: ConfigMap = {}, childAge?: number): Promise<Uint8Array> {
+const IMAGE_MODEL = 'dall-e-3'
+
+/**
+ * Style hint, age-band hint and safety suffix for this request. The safety
+ * suffix uses `||` at every level so an admin who clears a field falls
+ * through to the next layer instead of shipping a child illustration with
+ * NO safety suffix. The hardcoded final default is the floor.
+ */
+function imageConfigFor(config: ConfigMap, illustrationStyle: string, childAge?: number): { styleHint: string; bandImageHint: string; safetySuffix: string } {
   const styleHint = config['image_style_' + illustrationStyle]
     ?? FALLBACK_STYLE_HINTS[illustrationStyle]
     ?? FALLBACK_STYLE_HINTS.storybook
   const band = deriveAgeBand(childAge)
   const isAdult = band === 'adult'
-  // Prefer per-band image safety suffix, then fall back to legacy keys.
-  // Use `||` (not `??`) at every level so an admin who clears the field
-  // to an empty string falls through to the next layer instead of
-  // shipping a DALL-E prompt with NO safety suffix on a child-targeted
-  // illustration. The hardcoded final default is the floor.
   const safetySuffix = config[`band_${band}_image_safety_suffix`]
     || (isAdult
       ? (config['adult_image_safety_suffix'] || 'Artistic illustration, tasteful, no explicit content, no text or words in image.')
       : (config['image_safety_suffix'] || 'Child-safe, no text, no words in image.'))
   const bandImageHint = config[`band_${band}_image_style_hint`] ?? ''
-  const fullPrompt = `${styleHint}. ${prompt}.${bandImageHint ? ' ' + bandImageHint + '.' : ''} ${safetySuffix}`
+  return { styleHint, bandImageHint, safetySuffix }
+}
 
+interface GeneratedImage { bytes: Uint8Array; revisedPrompt: string | null; model: string }
+
+/**
+ * One DALL-E call for an already-assembled prompt (see visual.ts →
+ * buildImagePrompt). Returns the bytes plus the provider's revised_prompt
+ * (DALL-E 3 rewrites prompts; we store it per scene for debugging but never
+ * treat it as authoritative over the visual bible).
+ */
+async function generateImage(prompt: string): Promise<GeneratedImage> {
   const res = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
     headers: {
@@ -99,8 +214,8 @@ async function generateImage(prompt: string, illustrationStyle: string, config: 
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'dall-e-3',
-      prompt: fullPrompt,
+      model: IMAGE_MODEL,
+      prompt,
       n: 1,
       size: '1024x1024',
       quality: 'standard',
@@ -114,7 +229,9 @@ async function generateImage(prompt: string, illustrationStyle: string, config: 
   }
 
   const json = await res.json()
-  const imageUrl = json.data[0].url
+  const imageUrl = json.data?.[0]?.url
+  if (!imageUrl) throw new Error('DALL-E error: no image URL in response')
+  const revisedPrompt = typeof json.data?.[0]?.revised_prompt === 'string' ? json.data[0].revised_prompt : null
 
   // Download immediately — OpenAI signed URLs expire within ~1 hour
   const imageRes = await fetch(imageUrl)
@@ -123,184 +240,174 @@ async function generateImage(prompt: string, illustrationStyle: string, config: 
   }
 
   const buffer = await imageRes.arrayBuffer()
-  return new Uint8Array(buffer)
+  return { bytes: new Uint8Array(buffer), revisedPrompt, model: IMAGE_MODEL }
 }
 
-// ── Story prompt builder ──────────────────────────────────────────────────────
-
-function buildStoryPrompt(request: Record<string, unknown>, config: ConfigMap = {}, language = 'en'): object[] {
-  const {
-    child_name,
-    child_age,
-    child_description,
-    story_theme,
-    story_tone,
-    story_moral,
-    story_length,
-    illustration_style,
-    dedication_text,
-    supporting_characters,
-    learning_mode,
-    learning_subject,
-    learning_grade,
-    learning_topic,
-  } = request
-
-  const toneList = Array.isArray(story_tone) ? story_tone.join(', ') : story_tone
-  const pageCount = Number(story_length) || 16
-  const isLearning = learning_mode === true
-  const ageNum = Number(child_age)
-  const ageBand = deriveAgeBand(ageNum)
-  const isAdult = ageBand === 'adult'
-
-  // Helper: read a band-specific config key, falling back to a hardcoded default.
-  function bc(suffix: string, fallback: string): string {
-    return config[`band_${ageBand}_${suffix}`] ?? fallback
+/**
+ * Resolve the story's visual bible: reuse the persisted one when it
+ * validates, otherwise build it deterministically from the plan + request
+ * (identical output for identical inputs) and persist it when the column
+ * exists. `log` and `supabase` are passed in so both the main pipeline and
+ * the images-only backfill share one code path.
+ */
+async function resolveVisualBible(args: {
+  supabase: ReturnType<typeof createClient>
+  requestId: string
+  row: Record<string, unknown>
+  plan: unknown
+  config: ConfigMap
+  workerId: string | null
+  log: (stage: string, message: string, level?: 'info' | 'warning' | 'error', metadata?: Record<string, unknown>) => Promise<void>
+}) {
+  const { supabase, requestId, row, config } = args
+  const persisted = validateVisualBible(row.visual_bible)
+  if (row.visual_bible && persisted.ok) {
+    await args.log('visual_bible_reused', 'Reusing persisted visual bible', 'info', {
+      supporting_characters: persisted.bible.supporting_characters.length,
+      recurring_objects: persisted.bible.protagonist.recurring_objects.length,
+    })
+    return persisted.bible
   }
 
-  // Hardcoded fallbacks — only used when the DB config row is missing.
-  const FALLBACK_BAND_RULES: Record<string, { wordsPerPage: string; complexity: string; pacing: string }> = {
-    young: {
-      wordsPerPage: 'Each page should be 20-40 words. Keep sentences very short (5-10 words each).',
-      complexity: 'Use very simple, concrete vocabulary that a child can read aloud or hear comfortably. Repeat key phrases and ideas across pages so the lesson sinks in.',
-      pacing: 'Move slowly and reinforce. Show clear cause and effect. Make the moral or lesson direct and obvious.',
-    },
-    middle: {
-      wordsPerPage: 'Each page should be 60-100 words. Use descriptive scene-setting with moderate sentence length.',
-      complexity: 'Use age-appropriate vocabulary with the occasional richer word in context. Develop the character\'s feelings and motivations beyond the surface action.',
-      pacing: 'Build the conflict deliberately. Show the character making choices that drive the resolution. Give the ending room to breathe.',
-    },
-    teen: {
-      wordsPerPage: 'Each page should be 100-160 words. Use chapter-like pacing with varied sentence lengths. Avoid very short pages — they feel babyish.',
-      complexity: 'Use mature sentence structures, varied rhythm, and richer vocabulary. Show internal conflict, nuanced choices, and consequences. Keep everything age-appropriate for 13-17 — no explicit content — but do not write down to the reader.',
-      pacing: 'Develop emotional stakes. Let scenes have texture, sensory detail, and quieter beats between action. End with resonance rather than a tidy moral.',
-    },
-    adult: {
-      wordsPerPage: 'Each page should be 80-150 words with rich descriptive prose and varied sentence rhythm.',
-      complexity: 'Write with sophisticated vocabulary appropriate for an adult reader. Use literary techniques, complex sentence structures, and nuanced character development.',
-      pacing: 'Use literary pacing — vary scene length, interleave action with reflection. Build tension through subtext and implication, not just plot events.',
-    },
+  const pageCount = Number(row.story_length) || 16
+  const planCheck = validateStoryPlan(args.plan, pageCount)
+  const plan = planCheck.ok ? planCheck.plan : null
+  const { styleHint } = imageConfigFor(config, String(row.illustration_style), Number(row.child_age))
+  const bible = buildVisualBible({
+    requestId,
+    childName: String(row.child_name ?? ''),
+    childAge: Number.isFinite(Number(row.child_age)) ? Number(row.child_age) : null,
+    childDescription: (row.child_description as string | null) ?? null,
+    supportingCharactersText: (row.supporting_characters as string | null) ?? null,
+    illustrationStyle: String(row.illustration_style),
+    styleHint,
+    plan,
+    consistencyRules: config['image_consistency_rules'] ?? null,
+  })
+
+  let update = supabase.from('story_requests').update({ visual_bible: bible }).eq('id', requestId)
+  if (args.workerId) update = update.eq('worker_id', args.workerId)
+  const { error } = await update
+  await args.log('visual_bible_created', error
+    ? `Visual bible built (not persisted: ${error.message} — apply migration 20240065)`
+    : 'Visual bible built and persisted', error ? 'warning' : 'info', {
+    from_plan: !!plan,
+    supporting_characters: bible.supporting_characters.length,
+    recurring_objects: bible.protagonist.recurring_objects.length,
+    parent_visual_cue_count: bible.protagonist.parent_visual_cues.length,
+    illustration_style: bible.art_direction.illustration_style,
+    persisted: !error,
+  })
+  return bible
+}
+
+/**
+ * Cover stage (Phase 1F). One front-cover image per story, built from the
+ * SAME visual bible and plan as the interior, stored at
+ * story-images/<id>/cover.png and recorded on generated_stories.
+ *
+ * Idempotent: a complete cover is always reused; the lease held by the
+ * caller guarantees a single generator at a time. Failure is recoverable
+ * and never touches scenes or completion — the book stays complete with
+ * a typographic cover and the admin backfill (or the next run) retries.
+ */
+async function runCoverStage(args: {
+  supabase: ReturnType<typeof createClient>
+  requestId: string
+  row: Record<string, unknown>
+  bible: ReturnType<typeof buildVisualBible>
+  plan: unknown
+  config: ConfigMap
+  skip: boolean
+  source: 'pipeline' | 'backfill'
+  /** True while the caller still holds the story's lease; every cover-state write is gated on it. */
+  ownsLease: () => Promise<boolean>
+  log: (stage: string, message: string, level?: 'info' | 'warning' | 'error', metadata?: Record<string, unknown>) => Promise<void>
+}): Promise<'reused' | 'generated' | 'failed' | 'skipped' | 'stale'> {
+  const { supabase, requestId, row, config, log } = args
+  const stale = async (where: string) => {
+    await log('cover_stale_worker', `Lease no longer held (${where}) — cover state left to the current worker`, 'warning', { source: args.source })
+    return 'stale' as const
   }
-  const fb = FALLBACK_BAND_RULES[ageBand] ?? FALLBACK_BAND_RULES.young
-
-  // Learning-mode explanation depth, scaled by grade band. Independent of the
-  // age band above since some learning stories run for younger or older
-  // readers than the grade level alone would suggest.
-  type GradeBand = 'g1_2' | 'g3_5' | 'g6_8' | 'g9_12' | 'unknown'
-  const gradeNum = Number(learning_grade)
-  const gradeBand: GradeBand =
-    !isLearning || !Number.isFinite(gradeNum) ? 'unknown' :
-    gradeNum <= 2  ? 'g1_2' :
-    gradeNum <= 5  ? 'g3_5' :
-    gradeNum <= 8  ? 'g6_8' :
-                     'g9_12'
-
-  const GRADE_BAND_RULES: Record<Exclude<GradeBand, 'unknown'>, string> = {
-    g1_2:  'Keep the explanation extremely simple. Show one concrete example of the concept. Repeat the key idea more than once across the story.',
-    g3_5:  'Explain the concept clearly with two or three concrete examples woven into the action. Connect it to something the character already knows.',
-    g6_8:  'Explain the concept with reasoning and "why" — show how the character figures it out, not just what it is. Include one nuance or common misconception worth addressing.',
-    g9_12: 'Explore the concept in depth: causes, effects, vocabulary, and at least one connection to a broader idea. Avoid talking down to the reader. Treat them as capable of synthesis.',
+  const { data: gs, error: gsErr } = await supabase
+    .from('generated_stories')
+    .select('id, cover_status, cover_storage_path, cover_attempts')
+    .eq('request_id', requestId)
+    .maybeSingle()
+  if (gsErr) {
+    await log('cover_skipped_schema', `Cover columns unavailable (${gsErr.message}) — apply migration 20240066 to enable covers`, 'warning')
+    return 'skipped'
+  }
+  if (!gs) {
+    await log('cover_skipped', 'No generated story row yet — cover not attempted', 'warning')
+    return 'skipped'
   }
 
-  // Helper to replace placeholders in config values
-  function r(template: string): string {
-    return template
-      .replace(/\{child_age\}/g, String(child_age))
-      .replace(/\{page_count\}/g, String(pageCount))
-      .replace(/\{illustration_style\}/g, String(illustration_style))
-      .replace(/\{tone_list\}/g, String(toneList))
-      .replace(/\{learning_topic\}/g, String(learning_topic ?? ''))
-      .replace(/\{learning_subject\}/g, String(learning_subject ?? ''))
-      .replace(/\{learning_grade\}/g, String(learning_grade ?? ''))
+  const decision = shouldGenerateCover(gs, args.skip)
+  if (decision === 'reuse') {
+    await log('cover_reused', 'Existing cover reused', 'info', { source: args.source })
+    return 'reused'
+  }
+  if (decision === 'skip') {
+    await supabase.from('generated_stories').update({ cover_status: 'skipped' }).eq('id', gs.id)
+    await log('cover_skipped', 'Cover skipped — image generation disabled (typographic cover will be used)', 'info', { source: args.source })
+    return 'skipped'
   }
 
-  const learningSystemNote = isLearning ? `\n\n${r(config['learning_mode_instructions'] ?? `LEARNING MODE ACTIVE:
-This story must naturally weave in educational content about "{learning_topic}" ({learning_subject}, grade {learning_grade}).
-- Introduce the concept early and reinforce it across multiple pages
-- Use age-appropriate vocabulary for a grade {learning_grade} student
-- Show the character applying or discovering the concept — don't just state facts
-- The learning should feel like part of the story, not a lesson bolted on`)}${
-  gradeBand !== 'unknown'
-    ? `\n- Grade-band depth: ${GRADE_BAND_RULES[gradeBand]}`
-    : ''
-}` : ''
+  const attempts = Number(gs.cover_attempts ?? 0) + 1
+  if (!(await args.ownsLease())) return stale('before start')
+  await supabase.from('generated_stories').update({ cover_status: 'generating', cover_attempts: attempts }).eq('id', gs.id)
 
-  // Band-specific role → legacy role → hardcoded default
-  const role = bc('system_role', '')
-    || (isAdult
-      ? (config['adult_story_role'] ?? 'You are a professional fiction author. You write engaging, well-crafted stories for adult readers. Your writing is sophisticated, nuanced, and tailored to mature audiences.')
-      : (config['story_role'] ?? "You are a professional children's book author. You write warm, age-appropriate stories for young children."))
-  const outputFormat = config['story_output_format'] ?? `Your output must be valid JSON matching this exact structure:
-{
-  "title": "string — a short, memorable book title",
-  "subtitle": "string — an optional subtitle (can be empty string)",
-  "author_line": "A Nest & Quill Original",
-  "dedication": "string — a short dedication (only if provided, otherwise empty string)",
-  "synopsis": "string — 2-3 sentence description of the story",
-  "pages": [
-    {
-      "page": 1,
-      "text": "string — the story text for this page (length follows the age-band rule below)",
-      "image_description": "string — a detailed visual description for an illustrator (what to draw on this page)"
-    }
-  ]
-}`
+  const planCheck = validateStoryPlan(args.plan, Number(row.story_length) || 16)
+  const imgCfg = imageConfigFor(config, String(row.illustration_style), Number(row.child_age))
+  const built = buildCoverPrompt({
+    bible: args.bible,
+    plan: planCheck.ok ? planCheck.plan : null,
+    tones: row.story_tone as string[] | string | null,
+    bandImageHint: imgCfg.bandImageHint,
+    safetySuffix: imgCfg.safetySuffix,
+  })
+  await log(args.source === 'backfill' ? 'cover_backfill_started' : 'cover_generation_started', 'Generating cover artwork', 'info', {
+    attempt: attempts,
+    ...built.meta,
+    visual_bible_reused: validateVisualBible(row.visual_bible).ok,
+  })
 
-  // All rules now pull from per-band config keys first, then fall back to
-  // legacy shared keys, then to hardcoded defaults. This means every aspect
-  // of every age band is independently editable from the admin UI.
-  const rules = [
-    r(config['story_page_rules'] ?? 'Write exactly {page_count} story pages'),
-    // Words per page — band-specific
-    `Age-band length rule: ${r(bc('words_per_page', fb.wordsPerPage))}`,
-    // Vocabulary / complexity — band-specific
-    `Age-band complexity rule: ${r(bc('vocabulary_rules', fb.complexity))}`,
-    // Pacing / structure — band-specific
-    `Age-band pacing rule: ${r(bc('pacing_rules', fb.pacing))}`,
-    // Tone guidance — band-specific, then legacy
-    r(bc('tone_guidance', '')
-      || (isAdult
-        ? (config['adult_story_tone_rule'] ?? 'Tone: {tone_list}. Write with emotional depth and literary sophistication.')
-        : (config['story_tone_rule'] ?? 'Tone: {tone_list}'))),
-    // Moral / theme handling — band-specific (new, no legacy fallback needed)
-    ...(bc('moral_rules', '') ? [`Moral & theme handling: ${r(bc('moral_rules', ''))}`] : []),
-    r(config['story_image_desc_rules'] ?? 'Image descriptions should be vivid, specific, and describe a single scene'),
-    r(config['story_illustration_style_rule'] ?? 'The illustration style is {illustration_style} — reflect this in image description language'),
-    'Do not include page numbers or chapter headings in the text',
-    // Ending — band-specific, then legacy
-    r(bc('ending_rules', '')
-      || (isAdult
-        ? (config['adult_story_ending_rule'] ?? 'End the story with a satisfying, thought-provoking conclusion that resonates emotionally')
-        : (config['story_ending_rule'] ?? 'End the story with a satisfying, uplifting conclusion'))),
-  ]
-
-  const spanishNote = language === 'es'
-    ? '\n\nLANGUAGE REQUIREMENT: You MUST write the entire story — all page text, title, subtitle, synopsis, and dedication — in Spanish. All content must be in Spanish only.'
-    : ''
-
-  const systemPrompt = `${role}${learningSystemNote}${spanishNote}\n\n${outputFormat}\n\nRules:\n${rules.map(r => `- ${r}`).join('\n')}`
-
-  const learningUserNote = isLearning
-    ? `- Learning focus: ${learning_topic} (subject: ${learning_subject}, grade ${learning_grade})\n`
-    : ''
-
-  const userPrompt = `Write a ${isAdult ? 'story' : "children's storybook"} with these details:
-
-- Main character: ${child_name}${isAdult ? '' : `, age ${child_age}`}
-${child_description ? `- About ${child_name}: ${child_description}` : ''}
-${supporting_characters ? `- Supporting characters to include: ${supporting_characters}` : ''}
-- Story theme: ${story_theme}
-- Tone: ${toneList}
-${story_moral ? `- Moral or lesson to include: ${story_moral}` : ''}
-${dedication_text ? `- Dedication: ${dedication_text}` : ''}
-${learningUserNote}- Length: exactly ${pageCount} pages
-
-Write the full story now.`
-
-  return [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: userPrompt },
-  ]
+  try {
+    const image = await generateImage(built.prompt)
+    const path = coverStoragePath(requestId)
+    const { error: upErr } = await supabase.storage
+      .from('story-images')
+      .upload(path, image.bytes, { contentType: 'image/png', upsert: true })
+    if (upErr) throw new Error(`Cover upload failed: ${upErr.message}`)
+    if (!(await args.ownsLease())) return stale('after generation')
+    await supabase.from('generated_stories').update({
+      cover_storage_path: path,
+      cover_status: 'complete',
+      cover_model: image.model,
+      cover_revised_prompt: image.revisedPrompt,
+      cover_generated_at: new Date().toISOString(),
+      cover_last_error: null,
+    }).eq('id', gs.id)
+    await log(args.source === 'backfill' ? 'cover_backfill_complete' : 'cover_generation_complete', 'Cover artwork stored', 'info', {
+      attempt: attempts,
+      model: image.model,
+      prompt_length: built.meta.prompt_length,
+      revised_prompt_captured: image.revisedPrompt !== null,
+      storage_path: path,
+    })
+    return 'generated'
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    if (!(await args.ownsLease())) return stale('after failure')
+    await supabase.from('generated_stories').update(coverFailureUpdate(msg, attempts)).eq('id', gs.id)
+    await log('cover_generation_failed', `Cover generation failed (book stays complete with a typographic cover): ${msg.slice(0, 200)}`, 'warning', {
+      attempt: attempts,
+      prompt_length: built.meta.prompt_length,
+      source: args.source,
+    })
+    return 'failed'
+  }
 }
 
 // ── Quiz generator ────────────────────────────────────────────────────────────
@@ -355,8 +462,8 @@ ${quizRules}`,
     },
   ]
 
-  const raw = await callOpenAI(messages)
-  const parsed = JSON.parse(raw)
+  const { content } = await callOpenAI(messages)
+  const parsed = JSON.parse(content)
   return parsed.questions
 }
 
@@ -366,13 +473,23 @@ Deno.serve(async (req) => {
   console.log('[process-story] invoked', req.method, new Date().toISOString())
 
   // ── Auth ──────────────────────────────────────────────────────────────────
-  const token = req.headers.get('Authorization')?.replace('Bearer ', '')
-  if (token !== EXPECTED_TOKEN) {
-    console.warn('[process-story] unauthorized — token mismatch')
+  // Application-level gate for EVERY mode (standard, continue, images_only,
+  // sweep). Gateway JWT verification is disabled for this function
+  // (supabase/config.toml: verify_jwt = false) because callers — the Next.js
+  // app, this function's own continuation dispatch and the pg_cron sweep —
+  // present the shared EDGE_FUNCTION_SECRET, not a Supabase JWT. Nothing
+  // below runs until the bearer matches; an empty/missing expected token
+  // refuses everyone.
+  if (!isAuthorizedBearer(req.headers.get('Authorization'), EXPECTED_TOKEN)) {
+    console.warn('[process-story] unauthorized — bearer rejected')
     return new Response('Unauthorized', { status: 401 })
   }
 
   // ── Parse body ────────────────────────────────────────────────────────────
+  // Modes:
+  //   (none) / 'continue' — process one request (claim → text → images → complete)
+  //   'images_only'       — admin backfill of illustrations on a complete story
+  //   'sweep'             — scheduler entry point: re-dispatch released / expired work
   let requestId: string
   let language = 'en'
   let mode: string | undefined
@@ -381,28 +498,170 @@ Deno.serve(async (req) => {
     requestId = body.requestId
     language = body.language === 'es' ? 'es' : 'en'
     mode = typeof body.mode === 'string' ? body.mode : undefined
-    if (!requestId) throw new Error('Missing requestId')
+    if (!requestId && mode !== 'sweep') throw new Error('Missing requestId')
   } catch {
     return new Response('Bad request', { status: 400 })
   }
 
-  console.log('[process-story] requestId=', requestId, 'mode=', mode ?? 'standard')
+  console.log('[process-story] requestId=', requestId ?? '-', 'mode=', mode ?? 'standard')
 
   // ── Supabase admin client ─────────────────────────────────────────────────
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
+  // ── Sweep (scheduler entry point) ─────────────────────────────────────────
+  // Finds work that no worker currently owns — rows released at the time
+  // budget whose chained invocation was lost, rows whose worker died (lease
+  // expired), and queued rows whose initial trigger never arrived — and
+  // dispatches a fresh invocation for each. Rows with no progress for
+  // SWEEP_STALE_MS are failed with the existing classification so they stay
+  // retryable and visible instead of sitting forever. The claim inside each
+  // dispatched run is still the only thing that grants ownership, so a sweep
+  // racing a live worker is harmless.
+  if (mode === 'sweep') {
+    const nowMs = Date.now()
+    const graceIso = new Date(nowMs - SWEEP_GRACE_MS).toISOString()
+    const { data: rows, error: rowsErr } = await supabase
+      .from('story_requests')
+      .select('id, status, worker_id, worker_lease_expires_at, updated_at')
+      .in('status', ['queued', 'generating_text', 'generating_images'])
+      .lt('updated_at', graceIso)
+      .order('updated_at', { ascending: true })
+      .limit(10)
+
+    if (rowsErr) {
+      return new Response(JSON.stringify({ mode: 'sweep', error: rowsErr.message }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+    }
+
+    let dispatched = 0
+    let autoFailed = 0
+    let skipped = 0
+    const dispatches: Promise<void>[] = []
+
+    for (const row of rows ?? []) {
+      if (isSweepStale(row, nowMs)) {
+        const minutesIdle = Math.round((nowMs - new Date(row.updated_at).getTime()) / 60000)
+        const reason = `No progress in ${row.status} for ${minutesIdle} minutes — auto-failed by sweep.`
+        // Conditional on the same updated_at so we never clobber a worker
+        // that just made progress.
+        const { data: flipped } = await supabase
+          .from('story_requests')
+          .update({
+            status: 'failed',
+            worker_id: null,
+            worker_lease_expires_at: null,
+            last_error: reason,
+            failure_code: 'EDGE_FUNCTION_TIMEOUT',
+            failure_stage: row.status,
+            retryable: true,
+            status_message: 'Generation took too long. Please retry.',
+          })
+          .eq('id', row.id)
+          .eq('updated_at', row.updated_at)
+          .select('id')
+          .maybeSingle()
+        if (flipped) {
+          autoFailed++
+          await supabase.from('processing_logs').insert({
+            request_id: row.id, level: 'warning', stage: 'sweep_auto_failed',
+            message: reason, metadata: { previous_status: row.status, idle_minutes: minutesIdle },
+          })
+        }
+        continue
+      }
+
+      if (!isSweepEligible(row, nowMs)) { skipped++; continue }
+
+      dispatches.push((async () => {
+        const result = await dispatchSelf({ requestId: row.id, mode: 'continue' })
+        dispatched++
+        await supabase.from('processing_logs').insert({
+          request_id: row.id, level: result.ok ? 'info' : 'warning', stage: 'sweep_dispatched',
+          message: result.ok
+            ? `Sweep re-dispatched ${row.status} row (worker=${row.worker_id ? 'lease expired' : 'none'})`
+            : `Sweep dispatch failed: ${result.error ?? `HTTP ${result.status}`}`,
+          metadata: { previous_status: row.status, had_worker: row.worker_id !== null, dispatch: result },
+        })
+      })())
+    }
+
+    await Promise.all(dispatches)
+
+    // Ready-email recovery: a worker that crashed between completion and
+    // its callback (or whose callback failed twice) left a complete story
+    // with no successful ready email. Re-invoke the callback for such rows
+    // so delivery never depends on a browser poll. The callback is
+    // idempotent (delivery_logs check + one-shot claim that is released on
+    // failure), attempts are capped by readyEmailRecoveryCandidates, and
+    // every outcome is logged.
+    let emailRecovered = 0
+    let emailCandidates = 0
+    try {
+      const windowIso = new Date(nowMs - READY_EMAIL_RECOVERY_WINDOW_MS).toISOString()
+      const { data: completeRows } = await supabase
+        .from('story_requests')
+        .select('id, completed_at, user_email')
+        .eq('status', 'complete')
+        .not('user_email', 'is', null)
+        .gt('completed_at', windowIso)
+        .order('completed_at', { ascending: true })
+        .limit(50)
+      const ids = (completeRows ?? []).map(r => r.id)
+      const { data: logs } = ids.length > 0
+        ? await supabase
+          .from('delivery_logs')
+          .select('request_id, channel, status, email_type')
+          .in('request_id', ids)
+          .eq('channel', 'email')
+        : { data: [] }
+      const candidates = readyEmailRecoveryCandidates(completeRows ?? [], logs ?? [], nowMs).slice(0, 5)
+      emailCandidates = candidates.length
+      for (const id of candidates) {
+        let outcome = ''
+        try {
+          const res = await fetch(`${APP_URL}/api/internal/story-completed`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${EXPECTED_TOKEN}` },
+            body: JSON.stringify({ requestId: id }),
+          })
+          const body = await res.json().catch(() => ({}))
+          outcome = res.ok ? String(body.status ?? 'ok') : `HTTP ${res.status}`
+          if (res.ok && body.status === 'sent') emailRecovered++
+        } catch (e) {
+          outcome = e instanceof Error ? e.message : String(e)
+        }
+        await supabase.from('processing_logs').insert({
+          request_id: id, level: outcome === 'sent' || outcome === 'already_sent' || outcome === 'already_claimed' ? 'info' : 'warning',
+          stage: 'sweep_ready_email_recovery',
+          message: `Sweep re-invoked the ready-email callback: ${outcome}`,
+          metadata: { outcome },
+        })
+      }
+    } catch (e) {
+      console.error('[process-story] sweep ready-email recovery error', e instanceof Error ? e.message : String(e))
+    }
+
+    return new Response(
+      JSON.stringify({ mode: 'sweep', scanned: rows?.length ?? 0, dispatched, autoFailed, skipped, emailCandidates, emailRecovered }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+
   // ── Images-only backfill (admin-triggered) ────────────────────────────────
   // Generates illustrations for an already-complete story whose scenes were
-  // skipped (beta mode / SKIP_IMAGE_GENERATION). Reuses generateImage() and
-  // the storage path conventions but does NOT touch generated_stories text,
-  // does NOT regenerate scene prompts, and keeps story_requests.status as
-  // 'complete' throughout. Concurrency is gated by a worker_id atomic claim.
+  // skipped (image_generation_enabled=false / SKIP_IMAGE_GENERATION) or
+  // failed. Reuses generateImage() and the storage path conventions but does
+  // NOT touch generated_stories text, does NOT regenerate scene prompts, and
+  // keeps story_requests.status as 'complete' throughout. Concurrency is
+  // gated by the same lease model as the pipeline: an atomic claim that
+  // accepts a free OR expired lease, a heartbeat per page, and a release in
+  // `finally` that only the owning backfill can perform. A crashed backfill
+  // therefore becomes reclaimable after BACKFILL_LEASE_MS with no manual SQL.
   if (mode === 'images_only') {
     const { data: storyReq, error: reqErr } = await supabase
       .from('story_requests')
-      .select('id, status, illustration_style, child_age, worker_id')
+      .select('*')
       .eq('id', requestId)
       .single()
     if (reqErr || !storyReq) {
@@ -412,34 +671,80 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ message: 'Story is not complete; standard generation flow handles images.' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
     }
 
-    // Atomic claim — accept only when no worker holds the lock. Status stays
-    // 'complete' so the reader and ownership checks are unaffected.
+    // Atomic lease-aware claim — accept when no worker holds the row OR the
+    // previous backfill's lease has expired. Status stays 'complete' so the
+    // reader and ownership checks are unaffected.
     const lockId = crypto.randomUUID()
+    const backfillNowIso = new Date().toISOString()
     const { data: claim } = await supabase
       .from('story_requests')
-      .update({ worker_id: lockId, status_message: 'Generating illustrations…' })
+      .update({
+        worker_id: lockId,
+        worker_lease_expires_at: new Date(Date.now() + BACKFILL_LEASE_MS).toISOString(),
+        worker_heartbeat_at: backfillNowIso,
+        status_message: 'Generating illustrations…',
+      })
       .eq('id', requestId)
-      .is('worker_id', null)
+      .eq('status', 'complete')
+      .or(`worker_id.is.null,worker_lease_expires_at.lt.${backfillNowIso}`)
       .select('id')
       .maybeSingle()
     if (!claim) {
       return new Response(JSON.stringify({ message: 'Another image backfill is already running for this story.' }), { status: 409, headers: { 'Content-Type': 'application/json' } })
     }
 
+    const backfillReclaimed = storyReq.worker_id !== null
     await supabase.from('processing_logs').insert({
-      request_id: requestId, level: 'info', stage: 'admin_image_backfill_start',
-      message: 'admin image backfill started', metadata: { worker_id: lockId },
+      request_id: requestId, level: 'info', stage: backfillReclaimed ? 'admin_image_backfill_reclaimed' : 'admin_image_backfill_start',
+      message: backfillReclaimed ? 'admin image backfill reclaimed an expired backfill lease' : 'admin image backfill started',
+      metadata: { worker_id: lockId, lease_ms: BACKFILL_LEASE_MS },
     })
+
+    // Lease helpers — conditional on our own worker_id so a backfill whose
+    // lease was reclaimed can neither extend nor release the new owner's.
+    const backfillHeartbeat = async () => {
+      await supabase
+        .from('story_requests')
+        .update({ worker_heartbeat_at: new Date().toISOString(), worker_lease_expires_at: new Date(Date.now() + BACKFILL_LEASE_MS).toISOString() })
+        .eq('id', requestId)
+        .eq('worker_id', lockId)
+    }
+    const backfillOwnsLease = async () => {
+      const { data } = await supabase.from('story_requests').select('worker_id').eq('id', requestId).maybeSingle()
+      return data?.worker_id === lockId
+    }
+    const releaseBackfillLease = async (message: string) => {
+      const { data } = await supabase
+        .from('story_requests')
+        .update({ worker_id: null, worker_lease_expires_at: null, status_message: message })
+        .eq('id', requestId)
+        .eq('worker_id', lockId)
+        .select('id')
+        .maybeSingle()
+      return !!data
+    }
+
+    const backfillLog = async (stage: string, message: string, level: 'info' | 'warning' | 'error' = 'info', metadata: Record<string, unknown> = {}) => {
+      await supabase.from('processing_logs').insert({ request_id: requestId, level, stage, message, metadata: { worker_id: lockId, ...metadata } })
+    }
+
+    let generated = 0
+    let failed = 0
+    let coverResult: string = 'skipped'
+    let missingCount = 0
+    let totalScenes = 0
+    try {
 
     // Fetch missing scenes
     const { data: scenes } = await supabase
       .from('story_scenes')
-      .select('id, page_number, image_prompt, image_status, storage_path')
+      .select('id, page_number, image_prompt, image_status, storage_path, generation_attempts')
       .eq('request_id', requestId)
       .order('page_number', { ascending: true })
 
     const missing = (scenes ?? []).filter(s => s.image_status !== 'complete' || !s.storage_path)
-    const totalScenes = (scenes ?? []).length
+    totalScenes = (scenes ?? []).length
+    missingCount = missing.length
     const completedBefore = totalScenes - missing.length
 
     // Fetch ai_writer_config for image style hints
@@ -449,25 +754,48 @@ Deno.serve(async (req) => {
       for (const row of cfgRows ?? []) cfgMap[row.key] = row.value
     } catch (_) { /* fail open */ }
 
-    let generated = 0
-    let failed = 0
+    // Same visual bible and prompt assembly as the main pipeline, so a
+    // backfilled page matches the pages drawn in the original run.
+    const backfillBible = await resolveVisualBible({ supabase, requestId, row: storyReq, plan: storyReq.story_plan, config: cfgMap, workerId: lockId, log: backfillLog })
+    const backfillPlan = validateStoryPlan(storyReq.story_plan, Number(storyReq.story_length) || 16)
+    const backfillImageCfg = imageConfigFor(cfgMap, String(storyReq.illustration_style), Number(storyReq.child_age))
+
     for (const scene of missing) {
+      await backfillHeartbeat()
+      if (!(await backfillOwnsLease())) {
+        await backfillLog('admin_image_backfill_lease_lost', 'Backfill lease reclaimed by another worker — stopping without writing', 'warning')
+        break
+      }
       try {
-        const bytes = await generateImage(
-          scene.image_prompt as string,
-          storyReq.illustration_style as string,
-          cfgMap,
-          Number(storyReq.child_age),
-        )
+        const built = buildImagePrompt({
+          bible: backfillBible,
+          pageNumber: scene.page_number as number,
+          imageDescription: scene.image_prompt as string,
+          planPage: findPlanPage(backfillPlan.ok ? backfillPlan.plan : null, scene.page_number as number),
+          bandImageHint: backfillImageCfg.bandImageHint,
+          safetySuffix: backfillImageCfg.safetySuffix,
+        })
+        const image = await generateImage(built.prompt)
         const path = `${requestId}/${scene.page_number}.png`
         const { error: upErr } = await supabase.storage
           .from('story-images')
-          .upload(path, bytes, { contentType: 'image/png', upsert: true })
+          .upload(path, image.bytes, { contentType: 'image/png', upsert: true })
         if (upErr) throw new Error(`Upload failed: ${upErr.message}`)
         await supabase.from('story_scenes')
-          .update({ storage_path: path, image_status: 'complete' })
+          .update({
+            storage_path: path,
+            image_status: 'complete',
+            image_model: image.model,
+            image_revised_prompt: image.revisedPrompt,
+            generation_attempts: Number(scene.generation_attempts ?? 0) + 1,
+          })
           .eq('id', scene.id)
         generated++
+        await backfillLog('admin_image_backfill_page', `Page ${scene.page_number} illustrated`, 'info', {
+          page_number: scene.page_number,
+          ...built.meta,
+          revised_prompt_captured: image.revisedPrompt !== null,
+        })
         await supabase.from('story_requests').update({
           status_message: `Generating illustrations… (${completedBefore + generated} of ${totalScenes})`,
         }).eq('id', requestId)
@@ -482,24 +810,45 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Release lock; restore the friendly complete message
-    await supabase.from('story_requests')
-      .update({ worker_id: null, status_message: 'Your story is ready!' })
-      .eq('id', requestId)
-
-    await supabase.from('processing_logs').insert({
-      request_id: requestId, level: 'info', stage: 'admin_image_backfill_complete',
-      message: `admin image backfill complete — generated ${generated}/${missing.length}, failed ${failed}`,
-      metadata: { worker_id: lockId, generated, failed, total_scenes: totalScenes },
+    // Cover backfill — same bible, plan and prompt builder as the pipeline,
+    // so an admin-triggered cover matches the interior. Reuses a complete one.
+    await backfillHeartbeat()
+    coverResult = await runCoverStage({
+      supabase,
+      requestId,
+      row: storyReq,
+      bible: backfillBible,
+      plan: storyReq.story_plan,
+      config: cfgMap,
+      skip: false,
+      source: 'backfill',
+      ownsLease: backfillOwnsLease,
+      log: backfillLog,
     })
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      await backfillLog('admin_image_backfill_error', `admin image backfill aborted: ${msg.slice(0, 200)}`, 'error')
+      throw e
+    } finally {
+      // Release the lease (own worker only) on success AND on error; restore
+      // the friendly complete message. A crash that skips even this is
+      // covered by lease expiry.
+      const released = await releaseBackfillLease('Your story is ready!')
+      await supabase.from('processing_logs').insert({
+        request_id: requestId, level: 'info', stage: 'admin_image_backfill_complete',
+        message: `admin image backfill finished — generated ${generated}/${missingCount}, failed ${failed}`,
+        metadata: { worker_id: lockId, generated, failed, total_scenes: totalScenes, lease_released: released },
+      })
+    }
 
     return new Response(JSON.stringify({
       requestId,
       mode: 'images_only',
       generated,
       failed,
-      missingBefore: missing.length,
+      missingBefore: missingCount,
       totalScenes,
+      cover: coverResult,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } })
   }
   // ── End images-only backfill ──────────────────────────────────────────────
@@ -519,7 +868,10 @@ Deno.serve(async (req) => {
   // Cheap pre-check before we attempt the atomic claim: if another worker is
   // visibly mid-pipeline, return immediately. The atomic UPDATE below is the
   // real source of truth — this just saves an extra round trip.
-  const claimableStatuses = ['queued', 'failed', 'generating_images']
+  // generating_text is claimable too: a worker that died mid-text leaves the
+  // row there with an expired lease, and the lease predicate below is what
+  // actually decides whether we may take it over.
+  const claimableStatuses = CLAIMABLE_STATUSES
   if (storyRequest.worker_id !== null && !claimableStatuses.includes(storyRequest.status)) {
     return new Response(
       JSON.stringify({ requestId, skipped: true, reason: 'Already processing' }),
@@ -555,6 +907,13 @@ Deno.serve(async (req) => {
   // every image loop iteration so long runs don't time themselves out.
   const workerId = crypto.randomUUID()
   const LEASE_MS = 2 * 60 * 1000
+  // Lease held across each long text-stage call (plan, then book). Refreshed
+  // between stages; the Edge Function wall-clock limit still bounds a call.
+  const TEXT_STAGE_LEASE_MS = 4 * 60 * 1000
+  // If the plan stage alone used more than this much of the invocation,
+  // hand the book stage to a fresh invocation (plan is checkpointed) rather
+  // than risk the wall-clock limit mid-prose.
+  const TEXT_HANDOFF_MS = 55_000
   const leaseExpiresIso = new Date(Date.now() + LEASE_MS).toISOString()
   const nowIso = new Date().toISOString()
   const reclaiming = storyRequest.worker_id !== null
@@ -568,7 +927,7 @@ Deno.serve(async (req) => {
       status: isResume ? 'generating_images' : 'generating_text',
       ...(!isResume ? { processing_started_at: new Date().toISOString() } : {}),
       status_message: isResume ? 'Resuming illustrations…' : 'Writing your story…',
-      progress_pct: isResume ? Math.max(storyRequest.progress_pct ?? 45, 45) : 10,
+      progress_pct: monotonicProgress(storyRequest.progress_pct, isResume ? 45 : 10),
       last_error: null,
     })
     .eq('id', requestId)
@@ -589,13 +948,26 @@ Deno.serve(async (req) => {
   // Heartbeat — call from inside long stages to refresh the lease.
   // Conditional on worker_id matching ours so a stale worker that
   // tries to extend after being reclaimed is a no-op.
-  async function heartbeat() {
-    const next = new Date(Date.now() + LEASE_MS).toISOString()
+  async function heartbeat(leaseMs: number = LEASE_MS) {
+    const next = new Date(Date.now() + leaseMs).toISOString()
     await supabase
       .from('story_requests')
       .update({ worker_heartbeat_at: new Date().toISOString(), worker_lease_expires_at: next })
       .eq('id', requestId)
       .eq('worker_id', workerId)
+  }
+
+  // True while this invocation still owns the row. Used before writing the
+  // result of a long external call, so a worker whose lease was reclaimed
+  // (and whose row may now belong to another invocation) never overwrites
+  // the live worker's progress.
+  async function stillOwnsLease(): Promise<boolean> {
+    const { data } = await supabase
+      .from('story_requests')
+      .select('worker_id')
+      .eq('id', requestId)
+      .maybeSingle()
+    return data?.worker_id === workerId
   }
 
   // Worker start time — used to enforce the time budget
@@ -627,6 +999,12 @@ Deno.serve(async (req) => {
   function classifyFailure(err: unknown, stage: string): { code: string; stage: string; retryable: boolean } {
     const raw = err instanceof Error ? err.message : String(err)
     const m = raw.toLowerCase()
+
+    // Two-stage text generation: structural validation failed even after
+    // the bounded in-run repair. Model output varies run to run, so these
+    // stay retryable (see lib/limits/retryRules.ts for the ladder).
+    if (m.includes('story plan invalid')) return { code: 'STORY_PLAN_INVALID', stage: 'generating_text', retryable: true }
+    if (m.includes('story text invalid')) return { code: 'STORY_TEXT_INVALID', stage: 'generating_text', retryable: true }
 
     // Hard, non-retryable cases first.
     if (m.includes('invalid') && (m.includes('payload') || m.includes('input') || m.includes('schema'))) {
@@ -775,6 +1153,11 @@ Deno.serve(async (req) => {
     // story holds the minimal shape needed by later steps (title, pages, dedication).
     let story: Record<string, unknown> = {}
     let savedStory: { id: string }
+    // The validated story plan from this run (fresh path). Resumed runs read
+    // the persisted plan from the row instead. Used by the image stage so the
+    // visual bible and per-page continuity come from the same plan the book
+    // was written from.
+    let textPlan: unknown = null
 
     if (isResume) {
       // Reuse the story that was already generated and saved — no OpenAI call.
@@ -793,26 +1176,244 @@ Deno.serve(async (req) => {
         story_id: gs.id,
       })
     } else {
-      // Fresh run — generate story text via GPT-4o.
-      await log('generate_text', 'Calling OpenAI GPT-4o for story text')
+      // Fresh run — two-stage text generation (Phase 1C).
+      //   Stage 1  story plan: outline + one beat per page, validated, then
+      //            checkpointed on story_requests.story_plan
+      //   Stage 2  final book written FROM the plan, validated against the
+      //            same downstream contract (title + pages[{page, text,
+      //            image_description}]) the scenes and reader already use
+      // Each stage gets at most MAX_STAGE_ATTEMPTS model calls (one attempt
+      // plus one bounded repair). Metadata records WHICH personalization
+      // inputs shaped the prompts (field names only) — never the values.
+      const pageCountWanted = Number(storyRequest.story_length) || 16
+      await log('generate_text', 'Starting two-stage text generation (plan → book)', 'info', {
+        personalization_fields_used: personalizationFieldsUsed(storyRequest),
+        page_count: pageCountWanted,
+      })
       const t0 = Date.now()
 
-      const messages = buildStoryPrompt(storyRequest, configMap, language)
-      const rawContent = await callOpenAI(messages)
-      const generatedStory = JSON.parse(rawContent)
-      const generationTimeMs = Date.now() - t0
-
-      if (!generatedStory.pages || !Array.isArray(generatedStory.pages) || generatedStory.pages.length === 0) {
-        throw new Error('OpenAI returned invalid story structure — no pages found')
+      // Shared bounded loop: call → parse → validate → (one repair) → throw.
+      // Returns the validated value plus per-stage usage telemetry.
+      async function generateJsonWithRepair(
+        label: 'story plan' | 'book',
+        messages: { role: string; content: string }[],
+        validate: (raw: unknown, attempt: number) => { ok: true; value: unknown } | { ok: false; errors: string[] },
+        temperature: number,
+      ) {
+        let convo = messages
+        let lastErrors: string[] = []
+        let attempts = 0
+        let model = TEXT_MODEL
+        const acc = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, missing: false }
+        const started = Date.now()
+        while (attempts < MAX_STAGE_ATTEMPTS) {
+          attempts++
+          const res = await callOpenAI(convo, TEXT_MODEL, temperature)
+          model = res.model
+          for (const k of ['prompt_tokens', 'completion_tokens', 'total_tokens'] as const) {
+            if (res.usage[k] === null) acc.missing = true
+            else acc[k] += res.usage[k] as number
+          }
+          const parsed = safeParseJson(res.content)
+          const result = parsed.ok ? validate(parsed.value, attempts) : { ok: false as const, errors: [parsed.error] }
+          if (result.ok) {
+            return {
+              value: result.value,
+              usage: {
+                prompt_tokens: acc.missing ? null : acc.prompt_tokens,
+                completion_tokens: acc.missing ? null : acc.completion_tokens,
+                total_tokens: acc.missing ? null : acc.total_tokens,
+                ms: Date.now() - started,
+                attempts,
+                model,
+              },
+            }
+          }
+          lastErrors = result.errors
+          // Logs carry signal names only (the part before ':'), never the
+          // story text or quoted fragments the repair prompt may contain.
+          const signals = [...new Set(lastErrors.map(e => e.split(':')[0].trim()))].slice(0, 12)
+          await log(
+            label === 'story plan' ? 'plan_repair' : 'book_repair',
+            `${label} failed validation on attempt ${attempts} (${signals.join(', ')})`,
+            'warning',
+            { attempt: attempts, signals, error_count: lastErrors.length, will_retry: attempts < MAX_STAGE_ATTEMPTS },
+          )
+          if (attempts < MAX_STAGE_ATTEMPTS) convo = buildRepairMessages(convo, res.content, lastErrors, label)
+        }
+        // Classified by classifyFailure() as STORY_PLAN_INVALID / STORY_TEXT_INVALID (retryable).
+        throw new Error(`Story ${label === 'story plan' ? 'plan' : 'text'} invalid after ${attempts} attempts: ${lastErrors.slice(0, 6).join('; ')}`)
       }
 
-      story = generatedStory
+      // ── Stage 1: story plan (reuse the checkpoint when a previous run left one) ──
+      await heartbeat(TEXT_STAGE_LEASE_MS)
+      await setStatus('generating_text', 'Planning the story…', 15)
 
-      await log('generate_text', `Story generated: "${story.title}" (${(story.pages as unknown[]).length} pages, ${generationTimeMs}ms)`, 'info', {
+      let plan: Record<string, unknown> & { title: string; pages: unknown[] }
+      let planUsage: Record<string, unknown> | null = null
+      const existingPlan = validateStoryPlan(storyRequest.story_plan, pageCountWanted)
+      if (storyRequest.story_plan && existingPlan.ok) {
+        plan = existingPlan.plan as typeof plan
+        textPlan = plan
+        planUsage = (storyRequest.generation_usage?.plan as Record<string, unknown> | undefined) ?? null
+        await log('plan_reused', 'Reusing checkpointed story plan from a previous run — no plan call made', 'info', {
+          beats: plan.pages.length,
+        })
+      } else {
+        const planGen = await generateJsonWithRepair(
+          'story plan',
+          buildPlanPrompt(storyRequest, configMap, language),
+          (raw) => { const v = validateStoryPlan(raw, pageCountWanted); return v.ok ? { ok: true, value: v.plan } : v },
+          0.7,
+        )
+        if (!(await stillOwnsLease())) {
+          throw new Error('Lease lost during story planning — another worker owns this request')
+        }
+        plan = planGen.value as typeof plan
+        textPlan = plan
+        planUsage = planGen.usage
+        const phaseCounts: Record<string, number> = {}
+        for (const b of plan.pages as { phase: string }[]) phaseCounts[b.phase] = (phaseCounts[b.phase] ?? 0) + 1
+        await log('plan_generated', `Story plan ready: "${plan.title}" (${plan.pages.length} beats)`, 'info', {
+          title: plan.title,
+          beats: plan.pages.length,
+          phases: phaseCounts,
+          usage: planGen.usage,
+        })
+
+        // Checkpoint the plan so an interrupted worker never pays for it twice.
+        // Tolerates the column being absent (migration 20240063 not applied).
+        const { error: planErr } = await supabase
+          .from('story_requests')
+          .update({ story_plan: plan, generation_usage: { plan: planUsage } })
+          .eq('id', requestId)
+          .eq('worker_id', workerId)
+        const planPersisted = !planErr
+        if (planErr) {
+          await log('plan_checkpoint_skipped', `story_plan not persisted (${planErr.message}) — apply migration 20240063 to enable plan checkpoints`, 'warning')
+        }
+
+        // Hand the book stage to a fresh invocation when planning consumed a
+        // large share of this invocation's wall clock. Same mechanism as the
+        // image-loop continuation: release (own worker only) + self-dispatch;
+        // the next run claims, finds the checkpointed plan and skips Stage 1.
+        const elapsedAfterPlan = Date.now() - workerStart
+        if (planPersisted && elapsedAfterPlan > TEXT_HANDOFF_MS) {
+          await supabase
+            .from('story_requests')
+            .update({
+              worker_id: null,
+              worker_lease_expires_at: null,
+              status: 'generating_text',
+              status_message: 'Story planned — writing the pages…',
+              progress_pct: 25,
+            })
+            .eq('id', requestId)
+            .eq('worker_id', workerId)
+          await log('continuation_scheduled', `Plan stage used ${Math.round(elapsedAfterPlan / 1000)}s — handing the book stage to a fresh invocation`)
+          const dispatch = await dispatchSelf({ requestId, language, mode: 'continue' })
+          await log(
+            'continuation_dispatched',
+            dispatch.ok
+              ? `Continuation invocation dispatched${dispatch.status ? ` (HTTP ${dispatch.status})` : ''}`
+              : `Continuation dispatch failed — sweep will retry: ${dispatch.error ?? `HTTP ${dispatch.status}`}`,
+            dispatch.ok ? 'info' : 'warning',
+            { dispatch },
+          )
+          return new Response(
+            JSON.stringify({ requestId, status: 'continuation', stage: 'plan_complete' }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+      }
+
+      // ── Stage 2: final book from the plan ───────────────────────────────
+      await heartbeat(TEXT_STAGE_LEASE_MS)
+      await setStatus('generating_text', 'Writing the pages…', 25)
+
+      // Quality layer (Phase 1D): structural validation stays a hard gate;
+      // deterministic prose signals ride the same bounded repair. On the
+      // final attempt a structurally valid book is accepted even if quality
+      // errors remain, and those are logged as unresolved — never thrown.
+      const bookAgeBand = deriveAgeBand(Number(storyRequest.child_age))
+      let qualityWarnings: string[] = []
+      let qualityUnresolved: string[] = []
+      let qualityRepairRequested = false
+      const bookGen = await generateJsonWithRepair(
+        'book',
+        buildBookPrompt(storyRequest, plan as never, configMap, language),
+        (raw, attempt) => {
+          const v = validateBook(raw, pageCountWanted)
+          if (!v.ok) return v
+          const q = assessBookQuality(v.book, { ageBand: bookAgeBand, pageCount: pageCountWanted })
+          qualityWarnings = q.warnings.map(w => w.code)
+          if (q.errors.length > 0 && attempt < MAX_STAGE_ATTEMPTS) {
+            qualityRepairRequested = true
+            return { ok: false, errors: q.errors.map(e => `${e.code}: ${e.message}`) }
+          }
+          qualityUnresolved = q.errors.map(e => e.code)
+          return { ok: true, value: v.book }
+        },
+        0.8,
+      )
+      const generationTimeMs = Date.now() - t0
+
+      await log(
+        'book_quality',
+        qualityUnresolved.length > 0
+          ? `Book accepted with unresolved quality signals (${qualityUnresolved.join(', ')})`
+          : qualityRepairRequested
+            ? 'Book quality repair succeeded'
+            : qualityWarnings.length > 0
+              ? `Book passed quality gate with warnings (${qualityWarnings.join(', ')})`
+              : 'Book passed quality gate',
+        qualityUnresolved.length > 0 ? 'warning' : 'info',
+        {
+          warnings: qualityWarnings,
+          unresolved: qualityUnresolved,
+          repair_requested: qualityRepairRequested,
+          repair_outcome: qualityRepairRequested ? (qualityUnresolved.length > 0 ? 'unresolved' : 'resolved') : 'not_needed',
+          attempts: bookGen.usage.attempts,
+          age_band: bookAgeBand,
+        },
+      )
+
+      if (!(await stillOwnsLease())) {
+        throw new Error('Lease lost during text generation — another worker owns this request')
+      }
+
+      const book = bookGen.value as { title: string; subtitle: string; author_line: string; dedication: string; synopsis: string; pages: { page: number; text: string; image_description: string }[] }
+      story = {
+        title: book.title,
+        subtitle: book.subtitle,
+        author_line: book.author_line,
+        dedication: book.dedication,
+        synopsis: book.synopsis,
+        pages: book.pages,
+      }
+
+      const stageUsage = { plan: planUsage, book: bookGen.usage }
+      const totals = sumUsage([planUsage, bookGen.usage].filter(Boolean) as never)
+
+      await log('generate_text', `Story generated: "${story.title}" (${book.pages.length} pages, ${generationTimeMs}ms)`, 'info', {
         title: story.title,
-        page_count: (story.pages as unknown[]).length,
+        page_count: book.pages.length,
         generation_time_ms: generationTimeMs,
+        plan_usage: planUsage,
+        book_usage: bookGen.usage,
+        total_prompt_tokens: totals.prompt_tokens,
+        total_completion_tokens: totals.completion_tokens,
       })
+
+      // Per-stage telemetry on the request row (tolerates the column being absent).
+      const { error: usageErr } = await supabase
+        .from('story_requests')
+        .update({ generation_usage: stageUsage })
+        .eq('id', requestId)
+        .eq('worker_id', workerId)
+      if (usageErr) {
+        await log('usage_persist_skipped', `generation_usage not persisted (${usageErr.message}) — apply migration 20240063`, 'warning')
+      }
 
       // Upsert so a re-run after a crash between text-save and scene-insert stays clean
       const { data: gs, error: storyInsertError } = await supabase
@@ -825,7 +1426,9 @@ Deno.serve(async (req) => {
           dedication: story.dedication || null,
           synopsis: story.synopsis || null,
           full_text_json: story.pages,
-          model_used: 'gpt-4o',
+          model_used: bookGen.usage.model ?? TEXT_MODEL,
+          prompt_tokens: totals.prompt_tokens,
+          completion_tokens: totals.completion_tokens,
           generation_time_ms: generationTimeMs,
         }, { onConflict: 'request_id' })
         .select('id')
@@ -840,14 +1443,9 @@ Deno.serve(async (req) => {
       // Delete any scenes from an aborted prior run, then insert fresh ones
       await supabase.from('story_scenes').delete().eq('request_id', requestId)
 
-      const sceneRows = (story.pages as Record<string, unknown>[]).map((page) => ({
-        story_id: savedStory.id,
-        request_id: requestId,
-        page_number: page.page,
-        page_text: page.text,
-        image_prompt: page.image_description,
-        image_status: 'pending',
-      }))
+      // The only path from generation output to what the reader sees —
+      // nothing from the story plan is included (it stays internal).
+      const sceneRows = toSceneRows(book, { storyId: savedStory.id, requestId })
 
       const { error: scenesInsertError } = await supabase
         .from('story_scenes')
@@ -897,50 +1495,65 @@ Deno.serve(async (req) => {
     // ── Step 2: Generate illustrations via DALL-E 3 ───────────────────────
     await setStatus('generating_images', 'Creating illustrations…', 45)
 
-    // Read beta mode + image_generation_enabled from app_settings at
-    // runtime (DB-driven, no redeploy needed for either toggle).
+    // Read image_generation_enabled from app_settings at runtime (DB-driven,
+    // no redeploy needed).
     //
     // Effective rule:
     //   images = !SKIP_IMAGES env
-    //         && !beta_mode_enabled
     //         && image_generation_enabled (defaults to true if missing)
     //
-    // image_generation_enabled is the explicit operator switch; beta
-    // mode keeps its standalone meaning so a second checkbox isn't
-    // required to pause images during cost-conscious beta windows.
-    let betaMode = false
+    // beta_mode_enabled deliberately plays no part here: beta governs limits
+    // and messaging, not whether the product generates its illustrations.
+    // image_generation_enabled is the operator switch for pausing images.
     let imageGenEnabled = true
     try {
       const { data: rows } = await supabase
         .from('app_settings')
         .select('key, value')
-        .in('key', ['beta_mode_enabled', 'image_generation_enabled'])
+        .eq('key', 'image_generation_enabled')
       for (const r of (rows ?? [])) {
-        if (r.key === 'beta_mode_enabled') betaMode = r.value === true
         if (r.key === 'image_generation_enabled') imageGenEnabled = r.value !== false
       }
     } catch { /* fail open — proceed with real images */ }
 
     let imagesGenerated = 0
     let imagesFailed = 0
+    // Longest DALL-E round trip measured in THIS invocation — feeds the
+    // cover's start guard so a slow day never starts a call the hard limit
+    // would kill.
+    let longestImageMs: number | null = null
 
-    if (SKIP_IMAGES || betaMode || !imageGenEnabled) {
-      const reason = !imageGenEnabled
-        ? 'image_generation_enabled=false'
-        : betaMode
-          ? 'beta_mode_enabled=true'
-          : 'SKIP_IMAGE_GENERATION=true'
-      await log('generate_images', `Image generation skipped (${reason})`)
+    const skipImages = shouldSkipImages({ skipEnv: SKIP_IMAGES, imageGenEnabled })
+    if (skipImages.skip) {
+      await log('generate_images', `Image generation skipped (${skipImages.reason})`)
     } else {
       const { data: allScenes, error: sceneFetchError } = await supabase
         .from('story_scenes')
-        .select('id, page_number, image_prompt, image_status, storage_path')
+        .select('id, page_number, image_prompt, image_status, storage_path, generation_attempts')
         .eq('request_id', requestId)
         .order('page_number', { ascending: true })
 
       if (sceneFetchError || !allScenes) {
         throw new Error(`Failed to fetch story scenes: ${sceneFetchError?.message}`)
       }
+
+      // ── Visual bible (once per story, reused by every page / continuation) ──
+      // Fresh runs have the plan in memory; resumed runs read the persisted
+      // plan from the row. Either way the bible is deterministic for the
+      // same inputs, and a persisted bible always wins.
+      const planSource = textPlan ?? storyRequest.story_plan
+      const visualBible = await resolveVisualBible({
+        supabase,
+        requestId,
+        row: storyRequest,
+        plan: planSource,
+        config: configMap,
+        workerId,
+        log,
+      })
+      const planForImagesCheck = validateStoryPlan(planSource, Number(storyRequest.story_length) || 16)
+      const planForImages = planForImagesCheck.ok ? planForImagesCheck.plan : null
+      const imageCfg = imageConfigFor(configMap, String(storyRequest.illustration_style), Number(storyRequest.child_age))
 
       const totalScenes = allScenes.length
       const completedBefore = allScenes.filter(s => s.image_status === 'complete').length
@@ -979,18 +1592,35 @@ Deno.serve(async (req) => {
             }
           )
 
-          // Release the worker claim so the status poller can re-trigger
+          // Release the worker claim so the next invocation can take it.
+          // Conditional on our own worker_id: if we were already reclaimed
+          // (lease expired under us) we must not null out someone else's lock.
           await supabase
             .from('story_requests')
             .update({
               worker_id: null,
+              worker_lease_expires_at: null,
               status: 'generating_images',
               status_message: `Illustrating… (${completedNow} of ${totalScenes} done)`,
               progress_pct: Math.round(45 + (completedNow / totalScenes) * 30),
             })
             .eq('id', requestId)
+            .eq('worker_id', workerId)
 
           await log('continuation_scheduled', `Worker released — next run resumes from page ${scene.page_number}`)
+
+          // Backend-owned continuation: invoke ourselves for the next batch.
+          // The browser is never part of this; the scheduled sweep catches
+          // the rare case where this dispatch is lost.
+          const dispatch = await dispatchSelf({ requestId, language, mode: 'continue' })
+          await log(
+            'continuation_dispatched',
+            dispatch.ok
+              ? `Continuation invocation dispatched${dispatch.status ? ` (HTTP ${dispatch.status})` : ''}`
+              : `Continuation dispatch failed — sweep will retry: ${dispatch.error ?? `HTTP ${dispatch.status}`}`,
+            dispatch.ok ? 'info' : 'warning',
+            { dispatch },
+          )
 
           return new Response(
             JSON.stringify({ requestId, status: 'continuation', imagesGenerated, completedNow, totalScenes }),
@@ -999,18 +1629,25 @@ Deno.serve(async (req) => {
         }
 
         // ── Generate + upload one image ───────────────────────────────────
+        // Prompt = book anchors + characters present + page continuity +
+        // the page's image_description + art direction + safety.
+        const built = buildImagePrompt({
+          bible: visualBible,
+          pageNumber: scene.page_number,
+          imageDescription: scene.image_prompt,
+          planPage: findPlanPage(planForImages, scene.page_number),
+          bandImageHint: imageCfg.bandImageHint,
+          safetySuffix: imageCfg.safetySuffix,
+        })
         try {
-          const imageBytes = await generateImage(
-            scene.image_prompt,
-            storyRequest.illustration_style,
-            configMap,
-            Number(storyRequest.child_age)
-          )
+          const imageStarted = Date.now()
+          const image = await generateImage(built.prompt)
+          longestImageMs = Math.max(longestImageMs ?? 0, Date.now() - imageStarted)
 
           const storagePath = `${requestId}/${scene.page_number}.png`
           const { error: uploadError } = await supabase.storage
             .from('story-images')
-            .upload(storagePath, imageBytes, { contentType: 'image/png', upsert: true })
+            .upload(storagePath, image.bytes, { contentType: 'image/png', upsert: true })
 
           if (uploadError) {
             throw new Error(`Storage upload failed for page ${scene.page_number}: ${uploadError.message}`)
@@ -1018,7 +1655,13 @@ Deno.serve(async (req) => {
 
           await supabase
             .from('story_scenes')
-            .update({ storage_path: storagePath, image_status: 'complete' })
+            .update({
+              storage_path: storagePath,
+              image_status: 'complete',
+              image_model: image.model,
+              image_revised_prompt: image.revisedPrompt,
+              generation_attempts: Number(scene.generation_attempts ?? 0) + 1,
+            })
             .eq('id', scene.id)
 
           imagesGenerated++
@@ -1030,14 +1673,20 @@ Deno.serve(async (req) => {
           await log('generate_images', `Page ${scene.page_number} illustrated`, 'info', {
             page_number: scene.page_number,
             storage_path: storagePath,
+            ...built.meta,
+            revised_prompt_captured: image.revisedPrompt !== null,
           })
         } catch (imgErr) {
           imagesFailed++
           const imgMsg = imgErr instanceof Error ? imgErr.message : String(imgErr)
           console.error(`[process-story] Image failed page ${scene.page_number}:`, imgMsg)
-          await supabase.from('story_scenes').update({ image_status: 'failed' }).eq('id', scene.id)
+          await supabase.from('story_scenes')
+            .update({ image_status: 'failed', last_error: imgMsg.slice(0, 500), generation_attempts: Number(scene.generation_attempts ?? 0) + 1 })
+            .eq('id', scene.id)
           await log('generate_images', `Page ${scene.page_number} image failed: ${imgMsg}`, 'warning', {
             page_number: scene.page_number,
+            prompt_length: built.meta.prompt_length,
+            character_anchor_count: built.meta.character_anchor_count,
           })
         }
       }
@@ -1053,18 +1702,85 @@ Deno.serve(async (req) => {
           total_scenes: totalScenes,
         }
       )
+
+      // ── Cover (Phase 1F): after the page pass, before completion ────────
+      // One more DALL-E call, so it respects the same time budget and
+      // continuation path as the page loop; a resumed run with every page
+      // already drawn lands here directly. Failure is non-fatal (see
+      // runCoverStage) and never blocks completion.
+      const elapsedBeforeCover = Date.now() - workerStart
+      const coverGuard = coverStartAllowed(elapsedBeforeCover, longestImageMs)
+      if (!coverGuard.allowed) {
+        await log('time_budget_reached', `Cover not started at ${Math.round(elapsedBeforeCover / 1000)}s (${coverGuard.reason}, projected ${Math.round(coverGuard.projected_ms / 1000)}s) — handing the cover to a fresh invocation`, 'info', { elapsed_ms: elapsedBeforeCover, stage: 'cover', reason: coverGuard.reason, projected_ms: coverGuard.projected_ms, longest_image_ms: longestImageMs })
+        await supabase
+          .from('story_requests')
+          .update({
+            worker_id: null,
+            worker_lease_expires_at: null,
+            status: 'generating_images',
+            status_message: 'Illustrating the cover…',
+            progress_pct: 78,
+          })
+          .eq('id', requestId)
+          .eq('worker_id', workerId)
+        await log('continuation_scheduled', 'Worker released — next run draws the cover and completes')
+        const dispatch = await dispatchSelf({ requestId, language, mode: 'continue' })
+        await log(
+          'continuation_dispatched',
+          dispatch.ok
+            ? `Continuation invocation dispatched${dispatch.status ? ` (HTTP ${dispatch.status})` : ''}`
+            : `Continuation dispatch failed — sweep will retry: ${dispatch.error ?? `HTTP ${dispatch.status}`}`,
+          dispatch.ok ? 'info' : 'warning',
+          { dispatch },
+        )
+        return new Response(
+          JSON.stringify({ requestId, status: 'continuation', stage: 'cover_pending' }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      await heartbeat()
+      await setStatus('generating_images', 'Illustrating the cover…', 80)
+      await runCoverStage({
+        supabase,
+        requestId,
+        row: storyRequest,
+        bible: visualBible,
+        plan: planSource,
+        config: configMap,
+        skip: false,
+        source: 'pipeline',
+        ownsLease: stillOwnsLease,
+        log,
+      })
     }
 
-    // ── Complete ──────────────────────────────────────────────────────────
-    await supabase
+    // ── Complete (exactly once) ───────────────────────────────────────────
+    // Conditional on still holding the lease and on the row not already
+    // being complete. If another worker finished first (or reclaimed us),
+    // this UPDATE matches nothing and we skip every completion side effect.
+    const { data: completedRow } = await supabase
       .from('story_requests')
       .update({
         status: 'complete',
         status_message: 'Your story is ready!',
         progress_pct: 100,
         completed_at: new Date().toISOString(),
+        worker_id: null,
+        worker_lease_expires_at: null,
       })
       .eq('id', requestId)
+      .eq('worker_id', workerId)
+      .neq('status', 'complete')
+      .select('id')
+      .maybeSingle()
+
+    if (!completedRow) {
+      await log('completion_skipped', 'Completion already recorded by another worker (or lease lost) — no side effects re-run', 'warning')
+      return new Response(
+        JSON.stringify({ requestId, status: 'complete', title: story.title, duplicate: true }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Increment the user's books_generated counter so plan limits are enforced.
     // Uses the same atomic usage_counted flip as status/route.ts so whichever path
@@ -1082,19 +1798,35 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fire completion email via the Next.js internal route (uses sendBookReadyEmail).
-    // The route is idempotent — if the status poller already sent the email it no-ops.
-    // Fire-and-forget: we don't await or fail the pipeline on email errors.
+    // Completion email via the Next.js internal route (uses sendBookReadyEmail).
+    // The route claims a one-shot idempotency key before sending, so this
+    // call and any status-poll fallback can never both send. Awaited with
+    // one retry so a transient failure is logged rather than lost; email
+    // errors never fail the pipeline.
     if (storyRequest.user_email) {
       const notifyUrl = `${APP_URL}/api/internal/story-completed`
-      fetch(notifyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${EXPECTED_TOKEN}`,
-        },
-        body: JSON.stringify({ requestId }),
-      }).catch((err) => console.error('[process-story] story-completed notify failed:', err))
+      let notified = false
+      let lastErr = ''
+      for (let attempt = 1; attempt <= 2 && !notified; attempt++) {
+        try {
+          const res = await fetch(notifyUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${EXPECTED_TOKEN}`,
+            },
+            body: JSON.stringify({ requestId }),
+          })
+          if (res.ok) { notified = true; break }
+          lastErr = `HTTP ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`
+        } catch (err) {
+          lastErr = err instanceof Error ? err.message : String(err)
+        }
+        if (!notified && attempt === 1) await sleep(1500)
+      }
+      if (!notified) {
+        await log('story_completed_notify_failed', `Ready-email callback failed after 2 attempts: ${lastErr}`, 'warning')
+      }
     }
 
     await log('story_completed', `Story complete — ${imagesGenerated} new images this run, ${imagesFailed} failed`)
@@ -1110,10 +1842,15 @@ Deno.serve(async (req) => {
     console.error(`[process-story] requestId=${requestId} error:`, message)
 
     const classified = classifyFailure(err, currentStage)
-    await supabase
+    // Only the worker that still owns the lease may fail the row. A stale
+    // worker whose lease was reclaimed must not overwrite the live worker's
+    // state or trigger a second failure email.
+    const { data: failedRow } = await supabase
       .from('story_requests')
       .update({
         status: 'failed',
+        worker_id: null,
+        worker_lease_expires_at: null,
         last_error: message,
         failure_code: classified.code,
         failure_stage: classified.stage,
@@ -1121,8 +1858,18 @@ Deno.serve(async (req) => {
         status_message: 'Something went wrong — we\'ll look into it.',
       })
       .eq('id', requestId)
+      .eq('worker_id', workerId)
+      .select('id')
+      .maybeSingle()
 
-    await log('pipeline_error', message, 'error', { code: classified.code, stage: classified.stage, retryable: classified.retryable })
+    await log('pipeline_error', message, 'error', { code: classified.code, stage: classified.stage, retryable: classified.retryable, owned_lease: !!failedRow })
+
+    if (!failedRow) {
+      return new Response(
+        JSON.stringify({ requestId, status: 'failed', error: message, staleWorker: true }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Notify the user their story failed — only on first failure (retry_count === 0).
     // Retries re-increment retry_count before re-queuing, so this guard prevents

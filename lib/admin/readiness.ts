@@ -133,6 +133,7 @@ export async function getReadinessReport(): Promise<ReadinessReport> {
     guidedToursOn,
     betaModeOn,
     learningToolsOn,
+    imageGenOn,
     maintenanceBannerRows,
   ] = await Promise.all([
     isSettingEnabled('story_creation_enabled'),
@@ -140,6 +141,7 @@ export async function getReadinessReport(): Promise<ReadinessReport> {
     isSettingEnabled('guided_tours_enabled'),
     getSetting<boolean>('beta_mode_enabled', false),
     isSettingEnabled('learning_tools_enabled'),
+    isSettingEnabled('image_generation_enabled'),
     // Direct app_settings read so we can distinguish "row missing" from
     // "row present but value is false / empty". getSetting() collapses
     // those into the same fallback, which loses information we need to
@@ -363,9 +365,12 @@ export async function getReadinessReport(): Promise<ReadinessReport> {
                 `Active — message: "${bannerMessage.length > 80 ? bannerMessage.slice(0, 80) + '…' : bannerMessage}"`)
             : warn('maintenance_banner', 'Maintenance banner system available',
                 'Banner is enabled but maintenance_banner_message is empty — set a message or turn the banner off'),
-    betaModeOn
-      ? pass('image_generation_state', 'Image generation effective state', 'Beta mode → image generation paused (text-only stories)')
-      : pass('image_generation_state', 'Image generation effective state', 'Live — images generating'),
+    // Beta mode no longer pauses images. The illustrated beta needs the
+    // operator flag on (the worker's SKIP_IMAGE_GENERATION secret is not
+    // visible from here).
+    imageGenOn
+      ? pass('image_generation_state', 'Image generation effective state', 'Live — images generating (beta mode has no effect)')
+      : warn('image_generation_state', 'Image generation effective state', 'image_generation_enabled is off — stories complete text-only. Turn it on in Beta Ops for the illustrated beta'),
   ]
 
   // ── SECTION 4: User Experience Readiness ───────────────────────────────

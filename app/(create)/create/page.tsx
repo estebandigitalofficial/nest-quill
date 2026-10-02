@@ -35,11 +35,12 @@ export default async function CreatePage() {
   const queue = await getQueuePressure()
 
   // Fetch live limits, user profile, and beta mode in parallel
-  const [[guestLimit, freeLimit, betaMode], profileResult] = await Promise.all([
+  const [[guestLimit, freeLimit, betaMode, imageGenSetting], profileResult] = await Promise.all([
     Promise.all([
       getSetting('guest_story_limit', 1),
       getSetting('free_user_story_limit', 2),
       getSetting('beta_mode_enabled', false),
+      getSetting<unknown>('image_generation_enabled', true),
     ]),
     user
       ? createAdminClient()
@@ -115,7 +116,7 @@ export default async function CreatePage() {
         {/* Beta mode notice */}
         {betaMode && (
           <div className="mb-6 text-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
-            Beta Mode active — some features may be simulated.
+            Beta Mode active — story limits are relaxed while we test.
           </div>
         )}
 
@@ -135,7 +136,7 @@ export default async function CreatePage() {
         )}
 
         <Suspense>
-          <StoryWizard betaMode={betaMode as boolean} accountPlan={planTier} />
+          <StoryWizard betaMode={betaMode as boolean} imagesPaused={imageGenSetting === false} accountPlan={planTier} />
         </Suspense>
       </div>
     </div>

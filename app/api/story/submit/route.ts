@@ -9,7 +9,7 @@ import { PlanLimitError, toApiError } from '@/lib/utils/errors'
 import { sendSubmissionConfirmationEmail } from '@/lib/services/email'
 import { sendAdminNotification, buildGuestStoryEmail } from '@/lib/services/adminNotifications'
 import { classifyGenre } from '@/lib/services/genre'
-import { synthesizeTheme, synthesizeTraitsLine, mergeIntoCustomNotes } from '@/lib/services/storyFormSynthesis'
+import { synthesizeTheme, synthesizeTraitsLine, synthesizeStructureLines, mergeIntoCustomNotes } from '@/lib/services/storyFormSynthesis'
 import { gateStoryCreation, gateGuestStoryCreation } from '@/lib/settings/gates'
 import { checkStoryRateLimit, checkQueueGate, hashIp } from '@/lib/limits/rateLimits'
 import { deriveStorySubmissionKey, reserveIdempotencyKey, finalizeIdempotencyKey } from '@/lib/limits/idempotency'
@@ -158,10 +158,16 @@ export async function POST(request: NextRequest) {
     const geoCountry = request.headers.get('x-vercel-ip-country') ?? null
     const geoRegion = request.headers.get('x-vercel-ip-country-region') ?? null
 
-    // Synthesize the new structured selections (traits/setting/conflict/goal)
+    // Synthesize the structured selections (traits/setting/conflict/goal)
     // into the existing string fields so the worker prompt sees them. This
     // keeps the DB schema unchanged and is a no-op when the new fields are
     // absent (legacy clients).
+    //
+    // custom_notes carries labelled lines the worker parses back out
+    // (Character traits / Story conflict / Story goal) followed by the
+    // parent's own note. Conflict and goal travel this way only when the
+    // theme sentence does not already contain them (custom-typed theme),
+    // so a card the parent picked is never silently dropped.
     const synthesizedTheme = synthesizeTheme({
       setting: formData.setting,
       conflict: formData.conflict,
@@ -171,7 +177,12 @@ export async function POST(request: NextRequest) {
       ? formData.storyTheme
       : synthesizedTheme ?? formData.storyTheme
     const traitsLine = synthesizeTraitsLine(formData.traits, formData.customTrait)
-    const finalCustomNotes = mergeIntoCustomNotes(formData.customNotes, [traitsLine]) ?? null
+    const structureLines = synthesizeStructureLines({
+      theme: finalStoryTheme,
+      conflict: formData.conflict,
+      goal: formData.goal,
+    })
+    const finalCustomNotes = mergeIntoCustomNotes(formData.customNotes, [traitsLine, ...structureLines]) ?? null
 
     const { data: storyRequest, error: insertError } = await adminSupabase
       .from('story_requests')

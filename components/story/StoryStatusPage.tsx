@@ -136,7 +136,7 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode, header, 
       <PageShell header={header} footer={footer}>
         {betaMode && (
           <div className="mb-4 text-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
-            Beta Mode active — testing features may be simulated.
+            Beta Mode active — story limits are relaxed while we test.
           </div>
         )}
         <ProcessingView status={status} />
@@ -248,7 +248,7 @@ function StoryEbookReader({
   isAdmin?: boolean
   quiz?: StoryQuizResponse | null
   imagesSkipped?: boolean
-  imagesSkippedReason?: 'beta' | 'admin'
+  imagesSkippedReason?: 'admin'
 }) {
   const canDownload = planTier !== 'free'
   const backHref = isAdmin ? '/admin' : '/account'
@@ -497,8 +497,22 @@ function StoryEbookReader({
 }
 
 function CoverPage({ story, hasMore }: { story: StoryContentResponse; hasMore: boolean }) {
+  // Generated cover artwork (no text baked in) sits above the real title and
+  // author typography. Without artwork the cover stays purely typographic —
+  // never a broken-image placeholder.
+  const artwork = story.coverUrl
   return (
     <div style={{ textAlign: 'center', width: '100%' }}>
+      {artwork && (
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: 18 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={artwork}
+            alt={`Cover illustration for ${story.title}`}
+            style={{ maxHeight: '46vh', maxWidth: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: 16, boxShadow: '0 10px 30px rgba(12,35,64,0.18)', display: 'block' }}
+          />
+        </div>
+      )}
       <p style={{ fontSize: 10, color: '#a8a29e', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 16 }}>
         {story.authorLine}
       </p>
@@ -526,14 +540,12 @@ function StoryPageContent({ page, storyIndex, total, imagesSkippedReason }: {
   page: StoryContentPage
   storyIndex: number
   total: number
-  imagesSkippedReason?: 'beta' | 'admin'
+  imagesSkippedReason?: 'admin'
 }) {
-  // Placeholder copy when no image: prefer the friendliest accurate label.
-  // Beta gets named explicitly so the user understands the cost-control
-  // intent. The admin/SKIP_IMAGE_GENERATION case is rare and stays neutral.
+  // Placeholder copy when no image. Beta Mode never skips illustrations;
+  // the only operator-driven skip (flag or worker secret) stays neutral.
   const placeholder =
-    imagesSkippedReason === 'beta' ? 'Illustration skipped during beta'
-    : imagesSkippedReason === 'admin' ? 'Illustration skipped'
+    imagesSkippedReason === 'admin' ? 'Illustration skipped'
     : 'Illustration not available'
   return (
     <>

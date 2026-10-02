@@ -10,6 +10,8 @@ import type { StoryStatusResponse } from '@/types/story'
 import { getSetting } from '@/lib/settings/appSettings'
 import { appUrl } from '@/lib/utils/appUrl'
 import { createNotification } from '@/lib/notifications/createNotification'
+import { runClaimedOnce } from '@/lib/limits/idempotency'
+import { exportIsCurrent } from '@/lib/services/pdfExports'
 
 export async function GET(request: NextRequest) {
   try {
@@ -88,20 +90,28 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      const [pdfDownloadEnabled, betaMode] = await Promise.all([
-        getSetting('pdf_download_enabled', false),
-        getSetting('beta_mode_enabled', false),
-      ])
+      // PDF availability depends on the pdf_download_enabled flag, the plan
+      // (free tier is skipped inside generate-pdf) and completion state.
+      // beta_mode_enabled is deliberately not consulted: beta governs limits
+      // and messaging, never whether an entitled plan gets its PDF.
+      const pdfDownloadEnabled = await getSetting('pdf_download_enabled', false)
 
-      if (pdfDownloadEnabled && !betaMode) {
+      if (pdfDownloadEnabled) {
         const { data: exportData } = await adminSupabase
           .from('book_exports')
-          .select('storage_path, storage_bucket')
+          .select('id, storage_path, storage_bucket, created_at')
           .eq('request_id', requestId)
           .eq('is_latest', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
           .maybeSingle()
 
-        if (exportData) {
+        // An export older than the story's current completion belongs to a
+        // previous generation of the text: treat it as absent so a
+        // replacement is assembled (generate-pdf demotes the old row).
+        const currentExport = exportIsCurrent(exportData as { created_at: string } | null, storyRequest.completed_at)
+
+        if (exportData && currentExport) {
           const exportRow = exportData as unknown as { storage_path: string; storage_bucket: string }
           const { data: urlData } = await adminSupabase.storage
             .from(exportRow.storage_bucket)
@@ -152,7 +162,11 @@ export async function GET(request: NextRequest) {
           const storyUrl = appUrl(`/story/${requestId}`)
 
           after(async () => {
-            try {
+            // Fallback sender only. The worker's completion callback
+            // (/api/internal/story-completed) is the primary path; the
+            // claim guarantees at most one successful send, and a failed
+            // send releases the claim so the next caller can retry.
+            const run = await runClaimedOnce(`ready_email:${requestId}`, 'ready_email', requestId, async () => {
               const { messageId } = await sendBookReadyEmail({
                 toEmail: storyRequest.user_email,
                 childName: storyRequest.child_name,
@@ -170,7 +184,10 @@ export async function GET(request: NextRequest) {
                   recipient_email: storyRequest.user_email,
                   resend_message_id: messageId,
                 })
-            } catch {
+            })
+            if (run.outcome === 'failed') {
+              const reason = run.error instanceof Error ? run.error.message : String(run.error)
+              console.error('[status] ready email failed', requestId, reason, run.released ? '(claim released)' : '(claim NOT released)')
               await createAdminClient()
                 .from('delivery_logs')
                 .insert({
@@ -178,6 +195,7 @@ export async function GET(request: NextRequest) {
                   channel: 'email',
                   status: 'failed',
                   recipient_email: storyRequest.user_email,
+                  failure_reason: reason,
                 })
             }
           })
@@ -264,128 +282,32 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── Stuck-job auto-fail ──────────────────────────────────────────────────
-    // "Stuck" = no progress within a stage-specific window, NOT total stage
-    // duration. The reference is `updated_at`, which the worker bumps on every
-    // image completion via setStatus() (an UPDATE on story_requests fires the
-    // updated_at trigger). A 16-image run that's making real progress will
-    // touch updated_at every few seconds and never trip these thresholds.
-    //
-    // Thresholds are deliberately generous during beta — rather miss a real
-    // stuck job for a few extra minutes than false-positive a slow-but-progressing
-    // generation. Admins can still force-requeue from the dashboard.
-    const STUCK_MS: Record<string, number> = {
-      // queued auto-fail: catches rows whose initial after() trigger from
-      // /api/story/submit silently failed and that no user has polled
-      // recently. Pairs with the 3-minute fallback re-trigger above —
-      // re-trigger gets the first crack on every poll; auto-fail is the
-      // safety net so stale queued rows can't sit forever.
-      queued:            10 * 60 * 1000,
-      generating_text:    5 * 60 * 1000, // single OpenAI call; updated_at moves only at claim, so this is effectively total stage time
-      generating_images: 20 * 60 * 1000, // no-progress window — every successful image bumps updated_at via setStatus()
-      assembling_pdf:     3 * 60 * 1000, // single render+upload op
-    }
-    const stuckMs = STUCK_MS[storyRequest.status]
-    if (stuckMs) {
-      // updated_at is the canonical "last activity" stamp:
-      //   - generating_text: bumped at claim, then again only when stage flips
-      //   - generating_images: bumped per-image via setStatus()
-      //   - assembling_pdf: bumped when stage flipped
-      // Continuation handoff (worker releases worker_id mid-run) also bumps
-      // updated_at, so a continuation pending re-trigger is not mistaken for stuck.
-      const lastActivityTs = storyRequest.updated_at
-      const ageMs = Date.now() - new Date(lastActivityTs).getTime()
-      if (ageMs > stuckMs) {
-        console.warn('[status] auto-failing stuck request', requestId, storyRequest.status, `no progress for ${Math.round(ageMs / 1000)}s`)
-        const minutesIdle = Math.round(ageMs / 60000)
-        const reason = `No progress in ${storyRequest.status} for ${minutesIdle} minutes — auto-failed.`
-        await adminSupabase
-          .from('story_requests')
-          .update({
-            status: 'failed',
-            worker_id: null,
-            last_error: reason,
-            failure_code: 'EDGE_FUNCTION_TIMEOUT',
-            failure_stage: storyRequest.status,
-            retryable: true,
-            status_message: 'Generation took too long. Please retry.',
-          })
-          .eq('id', requestId)
-          // Only flip if still in the same stuck status with the same
-          // last_activity stamp — avoids racing a worker that just completed
-          // an image (which would have bumped updated_at).
-          .eq('status', storyRequest.status)
-          .eq('updated_at', lastActivityTs)
-        // Reflect the change in the response so the UI shows the failed state immediately.
-        storyRequest.status = 'failed'
-        storyRequest.status_message = 'Generation took too long. Please retry.'
-      }
-    }
-
-    // ── Fallback re-trigger ──────────────────────────────────────────────────
-    // Case 1: queued with no worker for >3 min — original after() trigger likely failed.
-    // Case 2: generating_images with no worker for >60 s — time-budget continuation
-    //   released the worker_id and is waiting for the next run to pick up.
-    // The Edge Function's atomic claim prevents double-processing in both cases.
-    const triggerBaseUrl = process.env.EDGE_FUNCTION_BASE_URL
-    const stalledQueued =
-      storyRequest.status === 'queued' &&
-      storyRequest.worker_id === null &&
-      Date.now() - new Date(storyRequest.created_at).getTime() > 3 * 60 * 1000
-
-    const timeBudgetContinuation =
-      storyRequest.status === 'generating_images' &&
-      storyRequest.worker_id === null &&
-      Date.now() - new Date(storyRequest.updated_at).getTime() > 60 * 1000
-
-    if (triggerBaseUrl && (stalledQueued || timeBudgetContinuation)) {
-      const reason = stalledQueued ? 'stalled queued request' : 'time-budget continuation'
-      console.log('[status] re-triggering', reason, requestId)
-      after(async () => {
-        try {
-          const res = await fetch(`${triggerBaseUrl}/process-story`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${process.env.EDGE_FUNCTION_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-            body: JSON.stringify({ requestId }),
-          })
-          if (!res.ok) {
-            const body = await res.text().catch(() => '')
-            console.error('[status] re-trigger failed', requestId, res.status, body)
-          }
-        } catch (err) {
-          console.error('[status] re-trigger error', requestId, err)
-        }
-      })
-    }
+    // ── Observational only ───────────────────────────────────────────────────
+    // This route no longer advances processing. Stuck detection, auto-fail
+    // and continuation re-dispatch live in the worker's sweep mode
+    // (supabase/functions/process-story, mode: 'sweep'), which runs on a
+    // schedule independent of any browser. Closing the tab cannot stall a
+    // book; reopening it cannot speed one up.
 
     // ── Image-skipped indicator ──────────────────────────────────────────────
-    // The worker skips DALL·E when beta_mode_enabled is on OR the
-    // SKIP_IMAGE_GENERATION secret is set. We can read the app setting from
-    // here directly; the worker secret is invisible to Next.js, so we
-    // *infer* it for completed stories whose every scene lacks a
-    // storage_path. The reader uses these to show honest placeholder copy.
+    // The worker skips DALL·E only when image_generation_enabled is false or
+    // the SKIP_IMAGE_GENERATION secret is set (never because of beta mode).
+    // Neither signal is readable here, so for completed stories we infer
+    // "skipped" from every scene lacking a stored image. The reader uses
+    // this to show honest placeholder copy.
     let imagesSkipped: boolean | undefined
-    let imagesSkippedReason: 'beta' | 'admin' | undefined
+    let imagesSkippedReason: 'admin' | undefined
     if (storyRequest.status === 'complete') {
-      const betaModeOn = (await getSetting('beta_mode_enabled', false)) as boolean
-      if (betaModeOn) {
+      const { data: anyImage } = await adminSupabase
+        .from('story_scenes')
+        .select('id')
+        .eq('request_id', requestId)
+        .eq('image_status', 'complete')
+        .limit(1)
+        .maybeSingle()
+      if (!anyImage) {
         imagesSkipped = true
-        imagesSkippedReason = 'beta'
-      } else {
-        const { data: anyImage } = await adminSupabase
-          .from('story_scenes')
-          .select('id')
-          .eq('request_id', requestId)
-          .eq('image_status', 'complete')
-          .limit(1)
-          .maybeSingle()
-        if (!anyImage) {
-          imagesSkipped = true
-          imagesSkippedReason = 'admin'
-        }
+        imagesSkippedReason = 'admin'
       }
     }
 

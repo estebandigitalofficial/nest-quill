@@ -15,6 +15,8 @@ export interface PDFGenerationInput {
   scenes: StoryScene[]
   // Caller fetches signed URLs from Supabase; pass null for pages without images
   signedImageUrls: Map<number, string>
+  /** Signed URL of the generated cover artwork (Phase 1F). Omit for the typographic cover. */
+  coverImageUrl?: string | null
   closingMessage?: string
 }
 
@@ -26,7 +28,7 @@ export interface PDFGenerationResult {
 
 export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGenerationResult> {
   const t0 = Date.now()
-  const { story, scenes, signedImageUrls, closingMessage } = input
+  const { story, scenes, signedImageUrls, closingMessage, coverImageUrl } = input
 
   const doc = await PDFDocument.create()
   const fontSerif = await doc.embedFont(StandardFonts.TimesRoman)
@@ -48,44 +50,99 @@ export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGen
   }
 
   // ── Cover page ─────────────────────────────────────────────────────────────
+  // With generated artwork (Phase 1F): full-bleed square illustration, the
+  // title in a translucent cream band across the top (the artwork was
+  // prompted to keep that area quiet) and the author line in a band along
+  // the bottom — both as real PDF text, never baked into the image.
+  // Without artwork: the original typographic cover, unchanged.
   const cover = doc.addPage([PAGE_SIZE, PAGE_SIZE])
   cover.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: PAGE_SIZE, color: CREAM })
 
-  // Decorative top bar
-  cover.drawRectangle({ x: 0, y: PAGE_SIZE - 8, width: PAGE_SIZE, height: 8, color: BRAND_GOLD })
-
-  const titleSize = story.title.length > 24 ? 28 : 34
-  const titleLines = wrapText(story.title, fontSerifBold, titleSize, PAGE_SIZE - MARGIN * 2)
-  let coverY = PAGE_SIZE * 0.62
-  for (const line of titleLines) {
-    const w = fontSerifBold.widthOfTextAtSize(line, titleSize)
-    cover.drawText(line, { x: (PAGE_SIZE - w) / 2, y: coverY, size: titleSize, font: fontSerifBold, color: OXFORD })
-    coverY -= titleSize * 1.3
-  }
-
-  if (story.subtitle) {
-    coverY -= 6
-    const subtitleLines = wrapText(story.subtitle, fontSerifItalic, 16, PAGE_SIZE - MARGIN * 2)
-    for (const line of subtitleLines) {
-      const w = fontSerifItalic.widthOfTextAtSize(line, 16)
-      cover.drawText(line, { x: (PAGE_SIZE - w) / 2, y: coverY, size: 16, font: fontSerifItalic, color: GRAY })
-      coverY -= 16 * 1.4
+  let coverArt: Awaited<ReturnType<typeof doc.embedPng>> | null = null
+  if (coverImageUrl) {
+    try {
+      const res = await fetch(coverImageUrl)
+      if (res.ok) {
+        const bytes = new Uint8Array(await res.arrayBuffer())
+        coverArt = await doc.embedPng(bytes).catch(() => doc.embedJpg(bytes))
+      }
+    } catch {
+      coverArt = null // graceful typographic fallback
     }
   }
 
-  // Author line
   const authorText = story.author_line ?? 'A Nest & Quill Original'
-  const authorW = fontSerif.widthOfTextAtSize(authorText, 11)
-  cover.drawText(authorText, {
-    x: (PAGE_SIZE - authorW) / 2,
-    y: MARGIN + 10,
-    size: 11,
-    font: fontSerif,
-    color: GRAY,
-  })
 
-  // Decorative bottom bar
-  cover.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: 8, color: BRAND_GOLD })
+  if (coverArt) {
+    // Full-bleed, aspect-preserving cover (1024² source → 576² page; a
+    // non-square source is scaled to cover and centred, never stretched).
+    const scale = Math.max(PAGE_SIZE / coverArt.width, PAGE_SIZE / coverArt.height)
+    const drawW = coverArt.width * scale
+    const drawH = coverArt.height * scale
+    cover.drawImage(coverArt, { x: (PAGE_SIZE - drawW) / 2, y: (PAGE_SIZE - drawH) / 2, width: drawW, height: drawH })
+
+    const titleSize = story.title.length > 24 ? 26 : 32
+    const titleLines = wrapText(story.title, fontSerifBold, titleSize, PAGE_SIZE - MARGIN * 2)
+    const subtitleLines = story.subtitle ? wrapText(story.subtitle, fontSerifItalic, 14, PAGE_SIZE - MARGIN * 2) : []
+    const bandH = 28 + titleLines.length * titleSize * 1.25 + (subtitleLines.length ? 8 + subtitleLines.length * 14 * 1.4 : 0) + 12
+    cover.drawRectangle({ x: 0, y: PAGE_SIZE - bandH, width: PAGE_SIZE, height: bandH, color: CREAM, opacity: 0.86 })
+    cover.drawRectangle({ x: 0, y: PAGE_SIZE - 6, width: PAGE_SIZE, height: 6, color: BRAND_GOLD })
+    let y = PAGE_SIZE - 28 - titleSize
+    for (const line of titleLines) {
+      const w = fontSerifBold.widthOfTextAtSize(line, titleSize)
+      cover.drawText(line, { x: (PAGE_SIZE - w) / 2, y, size: titleSize, font: fontSerifBold, color: OXFORD })
+      y -= titleSize * 1.25
+    }
+    if (subtitleLines.length) {
+      y -= 2
+      for (const line of subtitleLines) {
+        const w = fontSerifItalic.widthOfTextAtSize(line, 14)
+        cover.drawText(line, { x: (PAGE_SIZE - w) / 2, y, size: 14, font: fontSerifItalic, color: CHARCOAL })
+        y -= 14 * 1.4
+      }
+    }
+
+    const footH = 40
+    cover.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: footH, color: CREAM, opacity: 0.86 })
+    cover.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: 6, color: BRAND_GOLD })
+    const authorW = fontSerif.widthOfTextAtSize(authorText, 11)
+    cover.drawText(authorText, { x: (PAGE_SIZE - authorW) / 2, y: 16, size: 11, font: fontSerif, color: CHARCOAL })
+  } else {
+    // Decorative top bar
+    cover.drawRectangle({ x: 0, y: PAGE_SIZE - 8, width: PAGE_SIZE, height: 8, color: BRAND_GOLD })
+
+    const titleSize = story.title.length > 24 ? 28 : 34
+    const titleLines = wrapText(story.title, fontSerifBold, titleSize, PAGE_SIZE - MARGIN * 2)
+    let coverY = PAGE_SIZE * 0.62
+    for (const line of titleLines) {
+      const w = fontSerifBold.widthOfTextAtSize(line, titleSize)
+      cover.drawText(line, { x: (PAGE_SIZE - w) / 2, y: coverY, size: titleSize, font: fontSerifBold, color: OXFORD })
+      coverY -= titleSize * 1.3
+    }
+
+    if (story.subtitle) {
+      coverY -= 6
+      const subtitleLines = wrapText(story.subtitle, fontSerifItalic, 16, PAGE_SIZE - MARGIN * 2)
+      for (const line of subtitleLines) {
+        const w = fontSerifItalic.widthOfTextAtSize(line, 16)
+        cover.drawText(line, { x: (PAGE_SIZE - w) / 2, y: coverY, size: 16, font: fontSerifItalic, color: GRAY })
+        coverY -= 16 * 1.4
+      }
+    }
+
+    // Author line
+    const authorW = fontSerif.widthOfTextAtSize(authorText, 11)
+    cover.drawText(authorText, {
+      x: (PAGE_SIZE - authorW) / 2,
+      y: MARGIN + 10,
+      size: 11,
+      font: fontSerif,
+      color: GRAY,
+    })
+
+    // Decorative bottom bar
+    cover.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: 8, color: BRAND_GOLD })
+  }
 
   // ── Dedication page ────────────────────────────────────────────────────────
   if (story.dedication) {

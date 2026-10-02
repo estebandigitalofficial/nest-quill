@@ -29,6 +29,11 @@ const CHILDREN_WRITER: Section = {
     'story_illustration_style_rule',
     'story_tone_rule',
     'story_ending_rule',
+    'story_personalization_rules',
+    'story_plan_rules',
+    'story_book_from_plan_rules',
+    'story_prose_craft_rules',
+    'story_image_separation_rules',
   ],
 }
 
@@ -67,6 +72,7 @@ const IMAGE_STYLES: Section = {
     'image_style_storybook',
     'image_style_pencil_sketch',
     'image_style_digital_art',
+    'image_consistency_rules',
   ],
   grid: true,
 }

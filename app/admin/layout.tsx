@@ -45,7 +45,7 @@ export default async function AdminLayout({
           {betaModeEnabled && (
             <Link
               href="/admin/beta-ops"
-              title="Limits are bypassed and some generation may be simulated."
+              title="Story limits are bypassed while Beta Mode is on."
               className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium px-2.5 py-1 rounded-md hover:bg-amber-500/15 transition-colors"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />

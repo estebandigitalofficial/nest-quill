@@ -37,6 +37,11 @@ const RULES: Record<string, RetryRule> = {
   EDGE_FUNCTION_TIMEOUT:    { retryable: true,  maxAttempts: 3, backoff: expBackoff   },
   IMAGE_GENERATION_FAILED:  { retryable: true,  maxAttempts: 3, backoff: expBackoff   },
   OPENAI_ERROR:             { retryable: true,  maxAttempts: 3, backoff: expBackoff   },
+  // Two-stage text generation: the model returned a plan or book that
+  // failed structural validation even after the bounded in-run repair.
+  // Model output is non-deterministic, so a fresh run is worth trying.
+  STORY_PLAN_INVALID:       { retryable: true,  maxAttempts: 3, backoff: quickBackoff },
+  STORY_TEXT_INVALID:       { retryable: true,  maxAttempts: 3, backoff: quickBackoff },
   STORAGE_ERROR:            { retryable: true,  maxAttempts: 3, backoff: expBackoff   },
   PDF_ASSEMBLY_FAILED:      { retryable: true,  maxAttempts: 3, backoff: expBackoff   },
 

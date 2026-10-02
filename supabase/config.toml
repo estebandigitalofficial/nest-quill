@@ -27,3 +27,16 @@ site_url = "http://localhost:3000"
 additional_redirect_urls = ["https://localhost:3000"]
 jwt_expiry = 3600
 enable_signup = true
+
+# ── Edge Functions ────────────────────────────────────────────────────────
+# process-story authorizes EVERY call itself with the shared bearer
+# EDGE_FUNCTION_SECRET (fallback: service-role key) — see
+# isAuthorizedBearer() in supabase/functions/process-story/policy.ts.
+# Its callers (the Next.js app, its own continuation dispatch, the pg_cron
+# sweep in migration 20240062) present that secret, not a Supabase JWT, so
+# the gateway's JWT check is disabled explicitly. Without this block a CLI
+# deploy would apply the default (verify_jwt = true) and reject the sweep
+# and self-dispatch unless the secret happened to be a valid JWT.
+# Equivalent CLI flag: `supabase functions deploy process-story --no-verify-jwt`.
+[functions.process-story]
+verify_jwt = false

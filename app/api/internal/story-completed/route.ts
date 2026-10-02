@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendBookReadyEmail } from '@/lib/services/email'
 import { appUrl } from '@/lib/utils/appUrl'
 import { createNotification } from '@/lib/notifications/createNotification'
+import { runClaimedOnce } from '@/lib/limits/idempotency'
 
 export async function POST(request: NextRequest) {
   // Internal route — verify shared secret (same token used by Edge Function calls)
@@ -63,7 +64,12 @@ export async function POST(request: NextRequest) {
     const childName = (storyReq as unknown as { child_name: string }).child_name
     const toEmail = (storyReq as unknown as { user_email: string }).user_email
 
-    try {
+    // At-most-once guard shared with the status-route fallback sender and
+    // the sweep's recovery pass: whoever holds the claim sends. The claim is
+    // KEPT after a successful send (durable dedupe) and RELEASED after a
+    // failed one, so a transient Resend outage never strands the email —
+    // the worker's retry, the next status poll or the sweep sends it.
+    const run = await runClaimedOnce(`ready_email:${requestId}`, 'ready_email', requestId, async () => {
       const { messageId } = await sendBookReadyEmail({
         toEmail,
         childName,
@@ -79,31 +85,16 @@ export async function POST(request: NextRequest) {
         recipient_email: toEmail,
         resend_message_id: messageId,
       })
+      return messageId
+    })
 
-      // Bell notification — only for logged-in users; guests have no
-      // user_id and therefore no notification feed. Deduped on
-      // (user_id, type, href) so re-invocations don't pile up rows.
-      const userId = (storyReq as unknown as { user_id: string | null }).user_id
-      if (userId) {
-        try {
-          await createNotification({
-            userId,
-            type: 'story_complete',
-            title: 'Your story is ready',
-            body: `${childName}'s story is ready to read.`,
-            href: `/story/${requestId}`,
-            dedupe: true,
-          })
-        } catch (notifErr) {
-          // Notifications are supplementary; never block the email path.
-          console.error('[story-completed] notification failed:', requestId, notifErr)
-        }
-      }
+    if (run.outcome === 'already_claimed') {
+      return NextResponse.json({ requestId, status: 'already_claimed' })
+    }
 
-      return NextResponse.json({ requestId, status: 'sent', messageId })
-    } catch (emailErr) {
-      const message = emailErr instanceof Error ? emailErr.message : String(emailErr)
-      console.error('[story-completed] email failed:', requestId, message)
+    if (run.outcome === 'failed') {
+      const message = run.error instanceof Error ? run.error.message : String(run.error)
+      console.error('[story-completed] email failed:', requestId, message, run.released ? '(claim released)' : '(claim NOT released)')
 
       await adminSupabase.from('delivery_logs').insert({
         request_id: requestId,
@@ -113,8 +104,32 @@ export async function POST(request: NextRequest) {
         failure_reason: message,
       })
 
-      return NextResponse.json({ message }, { status: 500 })
+      return NextResponse.json({ message, claimReleased: run.released }, { status: 500 })
     }
+
+    const messageId = run.result
+
+    // Bell notification — only for logged-in users; guests have no
+    // user_id and therefore no notification feed. Deduped on
+    // (user_id, type, href) so re-invocations don't pile up rows.
+    const userId = (storyReq as unknown as { user_id: string | null }).user_id
+    if (userId) {
+      try {
+        await createNotification({
+          userId,
+          type: 'story_complete',
+          title: 'Your story is ready',
+          body: `${childName}'s story is ready to read.`,
+          href: `/story/${requestId}`,
+          dedupe: true,
+        })
+      } catch (notifErr) {
+        // Notifications are supplementary; never block the email path.
+        console.error('[story-completed] notification failed:', requestId, notifErr)
+      }
+    }
+
+    return NextResponse.json({ requestId, status: 'sent', messageId })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[story-completed] error:', requestId, message)

@@ -41,7 +41,7 @@ export default function StyleStep() {
   const maxPages = planLimits.maxPagesPerBook
 
   const [showMore, setShowMore] = useState(false)
-  const { betaMode } = useWizardConfig()
+  const { imagesPaused } = useWizardConfig()
 
   return (
     <div className="space-y-6">
@@ -50,10 +50,10 @@ export default function StyleStep() {
         <p className="text-sm text-gray-500 mt-1">{s.sub}</p>
       </div>
 
-      {betaMode && (
+      {imagesPaused && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800 leading-relaxed">
-          <strong className="font-semibold">Pick a style for later</strong> — illustrations are paused during beta.
-          Your story keeps the choice and we&apos;ll generate full illustrations once beta ends.
+          <strong className="font-semibold">Pick a style for later</strong> — illustrations are temporarily paused.
+          Your story keeps the choice and we&apos;ll generate full illustrations once they resume.
         </div>
       )}
 

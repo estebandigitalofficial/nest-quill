@@ -3,8 +3,23 @@
 // CHECK on story_requests.story_theme was widened to 280 chars in
 // 20240047_relax_story_theme_check.sql; phrases below are tight regardless
 // to keep the synthesized sentence readable.
+//
+// custom_notes is the carrier for everything that has no column of its own.
+// It is written as labelled lines the worker parses back out
+// (supabase/functions/process-story/prompt.ts → parsePersonalization):
+//
+//   Character traits: brave, curious, quietly stubborn
+//   Story conflict: a fear must be faced and overcome
+//   Story goal: finding the courage inside
+//   <the parent's own note>
+//
+// The structured lines come first so the parent's note is the only thing
+// that can be truncated by the column limit, never the selections.
 
 import type { Setting, Conflict, Goal, Trait } from '@/lib/validators/story-form'
+
+/** story_requests.custom_notes CHECK (char_length <= 600) — 20240001. */
+export const CUSTOM_NOTES_DB_LIMIT = 600
 
 const SETTING_PHRASES: Record<Setting, string> = {
   jungle: 'a lush jungle of hidden paths and curious creatures',
@@ -15,7 +30,7 @@ const SETTING_PHRASES: Record<Setting, string> = {
   city: 'a bustling city of streets, parks, and neighbors',
 }
 
-const CONFLICT_PHRASES: Record<Conflict, string> = {
+export const CONFLICT_PHRASES: Record<Conflict, string> = {
   lost_something:    'something important must be found',
   save_someone:      'someone needs help and only the hero can save them',
   solve_mystery:     'a mystery must be unraveled clue by clue',
@@ -30,7 +45,7 @@ const CONFLICT_PHRASES: Record<Conflict, string> = {
   learn_a_truth:     'a hidden truth must come to light',
 }
 
-const GOAL_PHRASES: Record<Goal, string> = {
+export const GOAL_PHRASES: Record<Goal, string> = {
   learn_lesson:        'learning a lesson along the way',
   complete_mission:    'finishing the mission no matter what',
   help_others:         'helping others and making a difference',
@@ -95,30 +110,59 @@ export function synthesizeTheme(s: StructuredSelections): string | null {
 }
 
 /**
- * Trait phrase, e.g. "Main character is brave, curious, and creative." A
- * single user-typed customTrait gets appended to the list when present.
- * Returns null when neither traits nor a custom trait were provided.
+ * Labelled traits line, e.g. "Character traits: brave, curious, quietly stubborn".
+ * A single user-typed customTrait is appended when present. Returns null when
+ * neither traits nor a custom trait were provided.
  */
 export function synthesizeTraitsLine(traits?: readonly string[], customTrait?: string | null): string | null {
   const labels: string[] = []
   for (const t of traits ?? []) {
     if (t in TRAIT_LABELS) labels.push(TRAIT_LABELS[t as Trait])
   }
-  const custom = customTrait?.trim()
+  const custom = customTrait?.replace(/\s+/g, ' ').trim()
   if (custom) labels.push(custom.toLowerCase().slice(0, 40))
   if (labels.length === 0) return null
-  if (labels.length === 1) return `Main character is ${labels[0]}.`
-  if (labels.length === 2) return `Main character is ${labels[0]} and ${labels[1]}.`
-  return `Main character is ${labels.slice(0, -1).join(', ')}, and ${labels[labels.length - 1]}.`
+  return `Character traits: ${labels.join(', ')}`
 }
 
 /**
- * Append non-empty extras to an existing customNotes string without
- * clobbering it. Caller passes the current text + a list of additions.
+ * Labelled conflict / goal lines for selections that are NOT already
+ * expressed in the final theme sentence. When the wizard synthesized the
+ * theme from the cards, the phrases are inside the theme and nothing is
+ * returned; when the parent typed a custom theme, the cards they also
+ * picked would otherwise be lost, so they travel here.
  */
-export function mergeIntoCustomNotes(existing: string | null | undefined, additions: (string | null | undefined)[]): string | undefined {
-  const lines = [existing?.trim(), ...additions.map(a => a?.trim())]
+export function synthesizeStructureLines(args: { theme: string | null | undefined; conflict?: string; goal?: string }): string[] {
+  const theme = (args.theme ?? '').toLowerCase()
+  const lines: string[] = []
+  const conflictPhrase = args.conflict ? CONFLICT_PHRASES[args.conflict as Conflict] : undefined
+  const goalPhrase = args.goal ? GOAL_PHRASES[args.goal as Goal] : undefined
+  if (conflictPhrase && !theme.includes(conflictPhrase.toLowerCase())) lines.push(`Story conflict: ${conflictPhrase}`)
+  if (goalPhrase && !theme.includes(goalPhrase.toLowerCase())) lines.push(`Story goal: ${goalPhrase}`)
+  return lines
+}
+
+/**
+ * Assemble custom_notes: structured lines first, then the parent's note,
+ * within the column limit. Only the note's tail can ever be cut, and only
+ * in the extreme case of a maximum-length note plus every selection.
+ */
+export function mergeIntoCustomNotes(
+  existing: string | null | undefined,
+  additions: (string | null | undefined)[],
+  limit = CUSTOM_NOTES_DB_LIMIT,
+): string | undefined {
+  const structured = additions
+    .map(a => a?.trim())
     .filter((s): s is string => !!s && s.length > 0)
-  if (lines.length === 0) return undefined
-  return lines.join('\n').slice(0, 500)
+  const note = existing?.trim() ?? ''
+
+  const head = structured.join('\n')
+  if (!head && !note) return undefined
+  if (!note) return head.slice(0, limit)
+  if (!head) return note.slice(0, limit)
+
+  const room = limit - head.length - 1
+  if (room <= 0) return head.slice(0, limit)
+  return `${head}\n${note.slice(0, room).trimEnd()}`
 }

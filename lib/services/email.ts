@@ -23,12 +23,13 @@ export async function sendBookReadyEmail(
 ): Promise<{ messageId: string }> {
   const { toEmail, childName, storyTitle, downloadUrl } = options
 
-  // Beta-aware disclaimer: when beta_mode_enabled is on, illustrations are
-  // intentionally skipped. The email shouldn't imply they were generated.
-  const betaMode = await getSetting('beta_mode_enabled', false).catch(() => false) as boolean
-  const betaNote = betaMode
+  // Honest disclaimer: only when the operator has paused image generation
+  // (image_generation_enabled = false) do we tell the reader illustrations
+  // were skipped. Beta Mode on its own no longer affects illustrations.
+  const imagesPaused = await getSetting<unknown>('image_generation_enabled', true).catch(() => true) === false
+  const betaNote = imagesPaused
     ? `<p style="margin:16px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#777;line-height:1.6;font-style:italic;">
-         Illustrations are paused during beta to keep stories free —
+         Illustrations are currently paused —
          your story includes the full text and saved illustration style for when generation resumes.
        </p>`
     : ''

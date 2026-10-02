@@ -178,6 +178,14 @@ export interface GeneratedStory {
   completion_tokens: number | null
   generation_time_ms: number | null
   created_at: string
+  // Phase 1F illustrated cover (migration 20240066); optional until applied
+  cover_storage_path?: string | null
+  cover_status?: 'generating' | 'complete' | 'failed' | 'skipped' | null
+  cover_model?: string | null
+  cover_revised_prompt?: string | null
+  cover_attempts?: number | null
+  cover_last_error?: string | null
+  cover_generated_at?: string | null
 }
 
 export interface StoryScene {

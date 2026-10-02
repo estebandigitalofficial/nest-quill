@@ -156,7 +156,9 @@ export default async function BetaOpsPage() {
   const betaMode = settingsMap.get('beta_mode_enabled') === true
   const imageGenEnabled = settingsMap.get('image_generation_enabled') !== false
   const skipImagesEnv = process.env.SKIP_IMAGE_GENERATION === 'true'
-  const imagesPaused = betaMode || !imageGenEnabled || skipImagesEnv
+  // Beta mode no longer pauses images; only the operator flag and the
+  // worker secret do.
+  const imagesPaused = !imageGenEnabled || skipImagesEnv
   const imagesActive = !imagesPaused
   const paymentsEnabled = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true'
 
@@ -193,9 +195,9 @@ export default async function BetaOpsPage() {
           <p className="text-sm font-semibold text-adm-text mt-1">{imagesActive ? 'Active' : 'Paused'}</p>
           <p className="text-[11px] text-adm-muted mt-1">
             Active when:&nbsp;
-            <Flag on={!betaMode}>beta_mode_enabled = false</Flag>&nbsp;·&nbsp;
             <Flag on={imageGenEnabled}>image_generation_enabled = true</Flag>&nbsp;·&nbsp;
             <Flag on={!skipImagesEnv}>SKIP_IMAGE_GENERATION env unset</Flag>
+            &nbsp;· beta mode has no effect on images
           </p>
         </GlassCard>
       </section>
@@ -215,9 +217,9 @@ export default async function BetaOpsPage() {
                    hint={sponsorTableMissing ? 'Apply migration 20240044_sponsors.sql' : 'OK'} />
             <Check ok={!webhookTableMissing}  label="stripe_webhook_events table deployed"
                    hint={webhookTableMissing ? 'Apply migration 20240048_stripe_webhook_events.sql' : 'OK'} />
-            <Check ok={imagesPaused === betaMode || (betaMode && imagesPaused)}
-                   label="Image generation paused while in beta"
-                   hint={betaMode && !imagesPaused ? 'Beta is on but image_generation_enabled is true — flip it off below' : 'Aligned'} />
+            <Check ok={imagesActive}
+                   label="Illustrations generating (required for the illustrated beta)"
+                   hint={imagesActive ? 'Active' : skipImagesEnv ? 'SKIP_IMAGE_GENERATION is set on the worker — unset it' : 'image_generation_enabled is off — turn it on below'} />
             <Check ok={!paymentsEnabled} label="Payments disabled during beta"
                    hint={paymentsEnabled ? 'NEXT_PUBLIC_PAYMENTS_ENABLED is true — disable in Vercel env before launch' : 'Off'} />
           </ul>

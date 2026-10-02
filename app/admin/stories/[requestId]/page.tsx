@@ -5,6 +5,7 @@ import AdminStoryActions from '@/components/admin/AdminStoryActions'
 import AdminRecoveryActions from '@/components/admin/AdminRecoveryActions'
 import type { StoryRequest, GeneratedStory, StoryScene, ProcessingLog } from '@/types/database'
 import { formatAZTime, formatAZTimeOnly } from '@/lib/utils/formatTime'
+import { pickCoverPath } from '@/lib/services/cover'
 
 interface PageProps {
   params: Promise<{ requestId: string }>
@@ -29,8 +30,10 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
   const scenes = (scenesResult.data ?? []) as unknown as StoryScene[]
   const logs = (logsResult.data ?? []) as unknown as ProcessingLog[]
 
-  // Sign image URLs for scenes that have a storage_path
-  const paths = scenes.filter(s => s.storage_path).map(s => s.storage_path as string)
+  // Sign image URLs for scenes that have a storage_path, plus the canonical
+  // cover artwork (Phase 1F) when one exists.
+  const coverPath = pickCoverPath(story)
+  const paths = [...scenes.filter(s => s.storage_path).map(s => s.storage_path as string), ...(coverPath ? [coverPath] : [])]
   const signedMap: Record<string, string> = {}
   if (paths.length > 0) {
     const { data: signed } = await supabase.storage
@@ -232,6 +235,11 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
         {story && (
           <Section title="Generated story">
             <div className="space-y-3 mb-4">
+              {coverPath && signedMap[coverPath] && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={signedMap[coverPath]} alt="Generated cover artwork" className="w-40 h-40 rounded-xl object-cover border border-adm-border" />
+              )}
+              <Field label="Cover" value={story.cover_status ? `${story.cover_status}${story.cover_attempts ? ` · ${story.cover_attempts} attempt${story.cover_attempts === 1 ? '' : 's'}` : ''}${story.cover_last_error ? ` · ${story.cover_last_error}` : ''}` : 'typographic (no artwork)'} mono />
               <Field label="Title" value={story.title} />
               {story.subtitle && <Field label="Subtitle" value={story.subtitle} />}
               <Field label="Author line" value={story.author_line} />

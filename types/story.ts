@@ -94,13 +94,13 @@ export interface StoryStatusResponse {
   learningMode?: boolean
   /**
    * True when this story's images are intentionally absent because the worker
-   * skipped DALL·E (beta mode or SKIP_IMAGE_GENERATION). Lets the reader
-   * show a friendly "skipped during beta" placeholder instead of the
-   * generic "not available" copy.
+   * skipped DALL·E (image_generation_enabled=false or SKIP_IMAGE_GENERATION).
+   * Lets the reader show an honest "skipped" placeholder instead of the
+   * generic "not available" copy. Beta Mode no longer skips images.
    */
   imagesSkipped?: boolean
-  /** 'beta' when beta_mode_enabled is on, 'admin' when SKIP_IMAGE_GENERATION worker secret is set, else undefined. */
-  imagesSkippedReason?: 'beta' | 'admin'
+  /** 'admin' when the operator paused images (flag or worker secret). Beta Mode never skips illustrations. */
+  imagesSkippedReason?: 'admin'
 }
 
 export interface QuizQuestion {
@@ -132,6 +132,8 @@ export interface StoryContentResponse {
   authorLine: string
   dedication: string | null
   synopsis: string | null
+  /** Signed URL of the generated front-cover artwork (no text in the image), or null for the typographic cover. */
+  coverUrl: string | null
   pages: StoryContentPage[]
 }
 

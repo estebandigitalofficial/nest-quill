@@ -17,6 +17,7 @@
 // Never import from a client component.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { runClaimed, type ClaimResult, type ClaimStore, type ClaimedRun } from './claimLifecycle'
 
 const WINDOW_MINUTES = 15
 
@@ -124,6 +125,65 @@ export async function reserveIdempotencyKey(key: string, scope = 'story_submit')
   }
 
   return { isDuplicate: false, requestId: null, keyRowId: (inserted?.id as number | null) ?? null, statusCode: 0 }
+}
+
+/**
+ * One-shot claim for a side effect that must happen at most once per key
+ * (ready email, PDF assembly). Relies on the UNIQUE index on
+ * idempotency_keys.key: the first caller's INSERT succeeds ('claimed');
+ * every concurrent or later caller gets 23505 ('duplicate').
+ *
+ * Rows are written with a far-future expires_at so the claim is durable
+ * (the submit-path reads filter on expiry; this helper never reads).
+ *
+ * If the table is missing (migration 20240056 not applied) or the insert
+ * fails for an unknown reason we answer 'unavailable': the caller proceeds
+ * (fail open — a transient outage must never silently suppress the user's
+ * ready email or PDF) but has no claim to release afterwards.
+ */
+export async function claimOnceDetailed(key: string, scope: string, requestId?: string): Promise<ClaimResult> {
+  const db = createAdminClient()
+  const farFuture = new Date(Date.now() + 10 * 365 * 24 * 60 * 60_000).toISOString()
+  const { error } = await db
+    .from('idempotency_keys')
+    .insert({ key, scope, request_id: requestId ?? null, status_code: 200, expires_at: farFuture })
+  if (!error) return 'claimed'
+  if (error.code === '23505') return 'duplicate'
+  if (error.code === '42P01') return 'unavailable'
+  console.error('[idempotency.claimOnce]', { key, scope, error })
+  return 'unavailable'
+}
+
+/** Boolean view of claimOnceDetailed: true = proceed with the side effect. */
+export async function claimOnce(key: string, scope: string, requestId?: string): Promise<boolean> {
+  return (await claimOnceDetailed(key, scope, requestId)) !== 'duplicate'
+}
+
+/**
+ * Reopen a claim after its side effect FAILED so a later attempt can retry.
+ * Scoped to key AND scope so it can never remove another operation's row.
+ * Best-effort: a missing table or transient error is logged, not thrown.
+ */
+export async function releaseClaim(key: string, scope: string): Promise<void> {
+  const db = createAdminClient()
+  const { error } = await db.from('idempotency_keys').delete().eq('key', key).eq('scope', scope)
+  if (error && error.code !== '42P01') {
+    console.error('[idempotency.releaseClaim]', { key, scope, error })
+    throw new Error(`releaseClaim failed: ${error.message}`)
+  }
+}
+
+/** idempotency_keys as a ClaimStore for runClaimedOnce. */
+export function supabaseClaimStore(): ClaimStore {
+  return { claim: claimOnceDetailed, release: releaseClaim }
+}
+
+/**
+ * Claim → run the side effect → keep the claim on success, release it on
+ * failure. The retryable form of claimOnce; see lib/limits/claimLifecycle.ts.
+ */
+export function runClaimedOnce<T>(key: string, scope: string, requestId: string | undefined, effect: () => Promise<T>): Promise<ClaimedRun<T>> {
+  return runClaimed(supabaseClaimStore(), key, scope, requestId, effect)
 }
 
 /**

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getAdminContext } from '@/lib/admin/guard'
 import { getSetting } from '@/lib/settings/appSettings'
 import BetaModeToggle from './BetaModeToggle'
@@ -14,7 +15,7 @@ export default async function AdminBetaPage() {
       <div>
         <h1 className="text-xl font-semibold text-adm-text">Beta Mode</h1>
         <p className="text-sm text-adm-muted mt-1">
-          Cost-safe testing mode. Bypasses limits and skips expensive AI operations.
+          Public-beta switch. Bypasses story limits and shows beta messaging. It does not change what the product generates.
         </p>
       </div>
 
@@ -25,7 +26,7 @@ export default async function AdminBetaPage() {
           <ul className="space-y-1 text-xs text-amber-300/80">
             <li>• This affects all users globally — not just your account.</li>
             <li>• All story creation limits are bypassed (guest, free, and paid).</li>
-            <li>• Image and PDF generation is simulated — no DALL-E or PDF costs.</li>
+            <li>• Illustrations and PDFs are NOT affected — control those with Image generation and PDF Download.</li>
             <li>• A beta banner is visible to all users on the create and story pages.</li>
             <li>• Turn it off when you&apos;re done testing.</li>
           </ul>
@@ -63,11 +64,19 @@ export default async function AdminBetaPage() {
               <span className="text-green-500 mt-0.5">✓</span>
               Completion emails — sent as normal
             </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-0.5">✓</span>
+              Illustrations — generated whenever <code className="text-[11px] bg-adm-text/5 px-1 rounded">image_generation_enabled</code> is on
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-0.5">✓</span>
+              PDFs — assembled for entitled plans whenever <code className="text-[11px] bg-adm-text/5 px-1 rounded">pdf_download_enabled</code> is on
+            </li>
           </ul>
         </div>
 
         <div className="bg-adm-surface rounded-2xl border border-adm-border px-5 py-5 space-y-3">
-          <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">Simulated (skipped)</p>
+          <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">Changed by beta</p>
           <ul className="space-y-2 text-sm text-adm-muted">
             <li className="flex items-start gap-2">
               <span className="text-amber-400 mt-0.5">~</span>
@@ -75,11 +84,11 @@ export default async function AdminBetaPage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-amber-400 mt-0.5">~</span>
-              DALL-E image generation skipped — placeholder images used
+              Public copy switches to &ldquo;free during beta&rdquo;; prices hidden on plan cards
             </li>
             <li className="flex items-start gap-2">
               <span className="text-amber-400 mt-0.5">~</span>
-              PDF generation skipped — no export assembled
+              To pause illustration or PDF spend, use <Link href="/admin/beta-ops" className="text-sky-300 hover:underline">Beta Ops</Link> — not this switch
             </li>
           </ul>
         </div>
@@ -92,9 +101,9 @@ export default async function AdminBetaPage() {
         <ol className="list-decimal list-inside space-y-2 text-sm text-adm-muted">
           <li>Enable beta mode above.</li>
           <li>Create a story as any user — limits won&apos;t block you.</li>
-          <li>The story generates with real GPT-4o text but placeholder illustrations.</li>
-          <li>No DALL-E or PDF costs are incurred.</li>
-          <li>Disable beta mode when done — limits and generation resume immediately.</li>
+          <li>The story generates exactly as it would for a customer: real text, real illustrations, real PDF for entitled plans.</li>
+          <li>To run a cost-free test, turn off Image generation in Beta Ops first (text-only stories, honest placeholders).</li>
+          <li>Disable beta mode when done — limits resume immediately.</li>
         </ol>
         <p className="text-xs text-adm-subtle mt-3">
           Beta mode is global — it applies to all users and all story creation while enabled.
