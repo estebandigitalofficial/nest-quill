@@ -77,7 +77,9 @@ const SECTIONS: SectionDef[] = [
     label: 'Launch Controls',
     description: 'The switches that run the children\'s-book launch. Everything else lives further down.',
     Icon: FlagIcon,
-    live: true,
+    // Keyed rows render through renderGroupedItems; `live` is reserved for the
+    // Notifications and Payments panels.
+    live: false,
     items: [
       { label: 'Maintenance Mode',      hint: 'Take the public site offline (admin keeps working)', key: 'maintenance_mode_enabled' },
       { label: 'Beta Mode',             hint: 'Bypass limits; free-during-beta copy',               key: 'beta_mode_enabled' },
