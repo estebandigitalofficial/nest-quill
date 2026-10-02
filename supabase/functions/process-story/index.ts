@@ -304,6 +304,7 @@ async function resolveVisualBible(args: {
     childAge: Number.isFinite(Number(row.child_age)) ? Number(row.child_age) : null,
     childDescription: (row.child_description as string | null) ?? null,
     supportingCharactersText: (row.supporting_characters as string | null) ?? null,
+    customNotes: (row.custom_notes as string | null) ?? null,
     illustrationStyle: String(row.illustration_style),
     styleHint,
     plan,

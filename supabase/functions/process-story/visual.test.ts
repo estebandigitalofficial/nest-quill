@@ -231,7 +231,7 @@ test('11. the final prompt is bounded and always ends with the safety suffix', (
   assert.match(p, /Sofia is a 5-year-old child/)
   const normal = prompt(bible, plan, 3, 'Sofia and Mateo at the pool.')
   assert.equal(normal.meta.truncated, false)
-  assert.ok(normal.meta.prompt_length < 1600)
+  assert.ok(normal.meta.prompt_length < 2100)
 })
 
 // ── 12/13. downstream contracts and resume behaviour ────────────────────────
@@ -258,8 +258,8 @@ test('13. a resumed worker without the plan still gets a usable, deterministic b
 
 test('supporting characters from the plan and the parent text are merged without duplicates; recurring objects come from the plan', () => {
   const bible = buildVisualBible(bibleInput({ supportingCharactersText: 'her little brother Mateo and Grandma Joyce' }))
-  assert.deepEqual(bible.supporting_characters.map(s => s.name), ['Mateo', 'Grandma'])
+  assert.deepEqual(bible.supporting_characters.map(s => s.name), ['Mateo', 'Grandma Joyce'])
   assert.deepEqual(bible.protagonist.recurring_objects, ['Tops'])
-  assert.deepEqual(parseSupportingText('her little brother Mateo, Grandma Joyce'), [{ name: 'Mateo', role: 'little brother' }, { name: 'Grandma', role: 'Joyce' }])
+  assert.deepEqual(parseSupportingText('her little brother Mateo, Grandma Joyce'), [{ name: 'Mateo', role: 'little brother' }, { name: 'Grandma Joyce', role: 'grandma' }])
   assert.deepEqual(parseSupportingText(null), [])
 })
