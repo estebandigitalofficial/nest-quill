@@ -31,6 +31,16 @@ import {
 } from './plan.ts'
 import { assessBookQuality } from './quality.ts'
 import {
+  DEFAULT_IMAGE_MODEL,
+  IMAGES_ENDPOINT,
+  buildImageRequest,
+  decodeBase64Image,
+  looksLikePng,
+  parseImageResponse,
+  rateLimitDelayMs,
+  type ImageUsage,
+} from './imageProvider.ts'
+import {
   buildCoverPrompt,
   buildImagePrompt,
   buildVisualBible,
@@ -121,7 +131,7 @@ async function dispatchSelf(body: Record<string, unknown>): Promise<DispatchOutc
   return outcome
 }
 
-// ── Fallback illustration style → DALL-E style hint map ─────────────────────
+// ── Fallback illustration style → image-model style hint map ─────────────────────
 
 const FALLBACK_STYLE_HINTS: Record<string, string> = {
   watercolor: 'soft watercolor illustration, gentle washes of color, children\'s picture book style',
@@ -176,7 +186,10 @@ async function callOpenAI(messages: object[], model = TEXT_MODEL, temperature = 
 }
 
 
-const IMAGE_MODEL = 'dall-e-3'
+// Image provider settings live in imageProvider.ts (one place); the worker
+// secrets below let an operator switch model/quality without a redeploy.
+const IMAGE_MODEL = Deno.env.get('PROCESS_STORY_IMAGE_MODEL')?.trim() || DEFAULT_IMAGE_MODEL
+const IMAGE_QUALITY = Deno.env.get('PROCESS_STORY_IMAGE_QUALITY')?.trim() || null
 
 /**
  * Style hint, age-band hint and safety suffix for this request. The safety
@@ -198,49 +211,44 @@ function imageConfigFor(config: ConfigMap, illustrationStyle: string, childAge?:
   return { styleHint, bandImageHint, safetySuffix }
 }
 
-interface GeneratedImage { bytes: Uint8Array; revisedPrompt: string | null; model: string }
+interface GeneratedImage { bytes: Uint8Array; revisedPrompt: string | null; model: string; usage: ImageUsage | null }
 
 /**
- * One DALL-E call for an already-assembled prompt (see visual.ts →
- * buildImagePrompt). Returns the bytes plus the provider's revised_prompt
- * (DALL-E 3 rewrites prompts; we store it per scene for debugging but never
- * treat it as authoritative over the visual bible).
+ * One Images API call for an already-assembled prompt (see visual.ts →
+ * buildImagePrompt / buildCoverPrompt). GPT Image models return base64
+ * PNG directly (no URL round trip, no `response_format`). revised_prompt is
+ * a dall-e-3-only field, so it is null here unless the provider adds it;
+ * it is never treated as authoritative over the visual bible. One bounded
+ * retry on 429 honours Retry-After within the Edge wall clock.
  */
 async function generateImage(prompt: string): Promise<GeneratedImage> {
-  const res = await fetch('https://api.openai.com/v1/images/generations', {
+  const body = buildImageRequest(prompt, { model: IMAGE_MODEL, quality: IMAGE_QUALITY })
+  const call = () => fetch(IMAGES_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${OPENAI_API_KEY}`,
     },
-    body: JSON.stringify({
-      model: IMAGE_MODEL,
-      prompt,
-      n: 1,
-      size: '1024x1024',
-      quality: 'standard',
-      response_format: 'url',
-    }),
+    body: JSON.stringify(body),
   })
+
+  let res = await call()
+  const wait = rateLimitDelayMs(res.status, res.headers.get('retry-after'))
+  if (wait !== null) {
+    await res.body?.cancel().catch(() => {})
+    await sleep(wait)
+    res = await call()
+  }
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`DALL-E error ${res.status}: ${err}`)
+    throw new Error(`Image error ${res.status}: ${err}`)
   }
 
-  const json = await res.json()
-  const imageUrl = json.data?.[0]?.url
-  if (!imageUrl) throw new Error('DALL-E error: no image URL in response')
-  const revisedPrompt = typeof json.data?.[0]?.revised_prompt === 'string' ? json.data[0].revised_prompt : null
-
-  // Download immediately — OpenAI signed URLs expire within ~1 hour
-  const imageRes = await fetch(imageUrl)
-  if (!imageRes.ok) {
-    throw new Error(`Failed to download image from OpenAI URL: ${imageRes.status}`)
-  }
-
-  const buffer = await imageRes.arrayBuffer()
-  return { bytes: new Uint8Array(buffer), revisedPrompt, model: IMAGE_MODEL }
+  const parsed = parseImageResponse(await res.json())
+  const bytes = decodeBase64Image(parsed.b64)
+  if (!looksLikePng(bytes)) throw new Error(`Image error: provider returned ${parsed.outputFormat ?? 'unknown'} data, expected png`)
+  return { bytes, revisedPrompt: parsed.revisedPrompt, model: body.model, usage: parsed.usage }
 }
 
 /**
@@ -394,6 +402,7 @@ async function runCoverStage(args: {
       model: image.model,
       prompt_length: built.meta.prompt_length,
       revised_prompt_captured: image.revisedPrompt !== null,
+      ...(image.usage ? { image_tokens: image.usage.total_tokens ?? image.usage.output_tokens } : {}),
       storage_path: path,
     })
     return 'generated'
@@ -795,6 +804,7 @@ Deno.serve(async (req) => {
           page_number: scene.page_number,
           ...built.meta,
           revised_prompt_captured: image.revisedPrompt !== null,
+          ...(image.usage ? { image_tokens: image.usage.total_tokens ?? image.usage.output_tokens } : {}),
         })
         await supabase.from('story_requests').update({
           status_message: `Generating illustrations… (${completedBefore + generated} of ${totalScenes})`,
@@ -1492,7 +1502,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Step 2: Generate illustrations via DALL-E 3 ───────────────────────
+    // ── Step 2: Generate illustrations via the Images API ───────────────────────
     await setStatus('generating_images', 'Creating illustrations…', 45)
 
     // Read image_generation_enabled from app_settings at runtime (DB-driven,
@@ -1518,7 +1528,7 @@ Deno.serve(async (req) => {
 
     let imagesGenerated = 0
     let imagesFailed = 0
-    // Longest DALL-E round trip measured in THIS invocation — feeds the
+    // Longest image-call round trip measured in THIS invocation — feeds the
     // cover's start guard so a slow day never starts a call the hard limit
     // would kill.
     let longestImageMs: number | null = null
@@ -1574,7 +1584,7 @@ Deno.serve(async (req) => {
         await heartbeat()
 
         // ── Time budget check ─────────────────────────────────────────────
-        // Evaluated BEFORE each DALL-E call so we never start an image we
+        // Evaluated BEFORE each image call so we never start an image we
         // cannot finish within the Edge Function wall-clock limit.
         const elapsed = Date.now() - workerStart
         if (elapsed >= TIME_BUDGET_MS) {
@@ -1675,6 +1685,7 @@ Deno.serve(async (req) => {
             storage_path: storagePath,
             ...built.meta,
             revised_prompt_captured: image.revisedPrompt !== null,
+            ...(image.usage ? { image_tokens: image.usage.total_tokens ?? image.usage.output_tokens } : {}),
           })
         } catch (imgErr) {
           imagesFailed++
@@ -1704,7 +1715,7 @@ Deno.serve(async (req) => {
       )
 
       // ── Cover (Phase 1F): after the page pass, before completion ────────
-      // One more DALL-E call, so it respects the same time budget and
+      // One more image call, so it respects the same time budget and
       // continuation path as the page loop; a resumed run with every page
       // already drawn lands here directly. Failure is non-fatal (see
       // runCoverStage) and never blocks completion.
