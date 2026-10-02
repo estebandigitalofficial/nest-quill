@@ -55,6 +55,18 @@ export function leaseIsFree(row: Pick<SweepRow, 'worker_id' | 'worker_lease_expi
 }
 
 /**
+ * The SQL twin of leaseIsFree(): the PostgREST `.or()` filter every
+ * ownership acquisition (pipeline claim, images-only backfill claim) must
+ * use. A row is claimable when no worker holds it, OR the holder never
+ * stamped a lease (legacy rows completed before the lease system, which a
+ * `lt` test alone treats as locked forever), OR the lease has expired.
+ * Live leases stay protected; the atomic UPDATE still decides the winner.
+ */
+export function claimableOrFilter(nowIso: string): string {
+  return `worker_id.is.null,worker_lease_expires_at.is.null,worker_lease_expires_at.lt.${nowIso}`
+}
+
+/**
  * Sweep may re-dispatch this row: it is in a resumable status, nobody holds
  * a live lease, and it has been untouched for at least the grace window.
  */

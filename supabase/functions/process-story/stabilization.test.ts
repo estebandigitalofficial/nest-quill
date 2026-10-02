@@ -10,6 +10,7 @@ import {
   HARD_LIMIT_MS,
   READY_EMAIL_MAX_FAILED,
   TIME_BUDGET_MS,
+  claimableOrFilter,
   coverStartAllowed,
   isAuthorizedBearer,
   isSweepEligible,
@@ -254,4 +255,53 @@ test('M1. ready-email recovery picks complete stories without a successful send,
     { request_id: 'g', channel: 'email', status: 'sent', email_type: 'admin_story_completed' },
   ]
   assert.deepEqual(readyEmailRecoveryCandidates(rows, logs, NOW), ['a', 'f', 'g'])
+})
+
+// ── LEGACY LOCK COMPATIBILITY ───────────────────────────────────────────────
+
+/** Evaluate the PostgREST or-filter the way PostgREST does, clause by clause. */
+function matchesClaimFilter(filter: string, row: Row, nowIso: string): boolean {
+  return filter.split(',').some(clause => {
+    if (clause === 'worker_id.is.null') return row.worker_id === null
+    if (clause === 'worker_lease_expires_at.is.null') return row.worker_lease_expires_at === null
+    if (clause.startsWith('worker_lease_expires_at.lt.')) {
+      const bound = clause.slice('worker_lease_expires_at.lt.'.length)
+      return row.worker_lease_expires_at !== null && row.worker_lease_expires_at < bound
+    }
+    throw new Error(`unexpected clause ${clause}`)
+  })
+}
+
+test('LEGACY 1-4,7. the SQL claim filter agrees with leaseIsFree for every ownership state', () => {
+  const nowIso = iso(0)
+  const filter = claimableOrFilter(nowIso)
+  assert.equal(filter, `worker_id.is.null,worker_lease_expires_at.is.null,worker_lease_expires_at.lt.${nowIso}`)
+  const cases: Array<[Row, boolean, string]> = [
+    [{ status: 'complete', worker_id: null, worker_lease_expires_at: null }, true, '1. no worker'],
+    [{ status: 'complete', worker_id: 'w1', worker_lease_expires_at: iso(60_000) }, false, '2. live lease'],
+    [{ status: 'complete', worker_id: 'w1', worker_lease_expires_at: iso(-1) }, true, '3. expired lease'],
+    [{ status: 'complete', worker_id: 'legacy', worker_lease_expires_at: null }, true, '4. legacy worker with no lease stamp'],
+    [{ status: 'generating_images', worker_id: 'w1', worker_lease_expires_at: iso(120_000) }, false, '7. modern live pipeline lease'],
+    [{ status: 'generating_images', worker_id: 'w1', worker_lease_expires_at: iso(-120_000) }, true, '7. modern expired pipeline lease'],
+  ]
+  for (const [row, expected, label] of cases) {
+    assert.equal(matchesClaimFilter(filter, row, nowIso), expected, `filter: ${label}`)
+    assert.equal(leaseIsFree(row, NOW), expected, `policy: ${label}`)
+  }
+  const index = read('supabase/functions/process-story/index.ts')
+  assert.equal((index.match(/\.or\(claimableOrFilter\(/g) ?? []).length, 2, 'pipeline claim and backfill claim use the shared filter')
+  assert.ok(!/worker_lease_expires_at\.lt\.\$\{/.test(index), 'no hand-written lease predicate remains')
+})
+
+test('LEGACY 5-6. with the compatible filter, concurrency and stale-owner protection are unchanged', () => {
+  const nowIso = iso(0)
+  const filter = claimableOrFilter(nowIso)
+  // legacy row: first backfill claims and stamps a lease; a concurrent second cannot
+  const row: Row = { status: 'complete', worker_id: 'legacy', worker_lease_expires_at: null }
+  assert.equal(matchesClaimFilter(filter, row, nowIso), true)
+  row.worker_id = 'b1'; row.worker_lease_expires_at = iso(BACKFILL_LEASE_MS)
+  assert.equal(matchesClaimFilter(filter, row, nowIso), false, '6. second concurrent backfill refused')
+  // stale owner cannot release the newer owner
+  assert.equal(ownsLease(row, 'legacy'), false)
+  assert.equal(ownsLease(row, 'b1'), true)
 })

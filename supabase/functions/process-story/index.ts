@@ -5,6 +5,7 @@ import {
   BACKFILL_LEASE_MS,
   CLAIMABLE_STATUSES,
   DISPATCH_WAIT_MS,
+  claimableOrFilter,
   READY_EMAIL_RECOVERY_WINDOW_MS,
   SWEEP_GRACE_MS,
   SWEEP_STALE_MS,
@@ -719,7 +720,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', requestId)
       .eq('status', 'complete')
-      .or(`worker_id.is.null,worker_lease_expires_at.lt.${backfillNowIso}`)
+      .or(claimableOrFilter(backfillNowIso))
       .select('id')
       .maybeSingle()
     if (!claim) {
@@ -966,8 +967,9 @@ Deno.serve(async (req) => {
       last_error: null,
     })
     .eq('id', requestId)
-    // Accept rows where there's no worker, OR the lease has expired.
-    .or(`worker_id.is.null,worker_lease_expires_at.lt.${nowIso}`)
+    // Accept rows where there's no worker, OR the holder never stamped a
+    // lease (legacy rows), OR the lease has expired — see claimableOrFilter.
+    .or(claimableOrFilter(nowIso))
     .in('status', claimableStatuses)
     .select('id')
     .maybeSingle()
