@@ -100,7 +100,7 @@ test('5-6. "black cat with one white paw" stays species=cat, colour black, marki
   assert.ok(pepper.identity?.markings.includes('black'))
   assert.ok(pepper.identity?.markings.includes('one white paw'))
   const anchor = supportingAnchor(pepper)
-  assert.match(anchor, /Pepper is a black cat \(a CAT, never any other kind of animal\) with one white paw/)
+  assert.match(anchor, /Pepper is a (?:small )?black cat \(a CAT, never any other kind of animal\) with one white paw/)
   assert.ok(!/\bdog\b/.test(anchor))
 })
 

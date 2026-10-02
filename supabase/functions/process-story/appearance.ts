@@ -30,9 +30,26 @@ export interface Appearance {
   favourite_colour: string | null
   /** Non-human identity when the text names a species. */
   species: string | null
-  /** Colour words and markings attached to an animal ("black", "one white paw"). */
+  /** Colour words and markings attached to an animal ("black", "one white paw", "bent tail"). */
   markings: string[]
+  /** Explicit build/height/size words ("tall", "stocky", "small"). Optional: absent in bibles persisted before 1H.1. */
+  build?: string | null
+  /** Carried identity items that belong to THIS character ("walking stick", "fishing rod"); never story-level recurring objects. Optional. */
+  props?: string[]
 }
+
+/** "a"/"an" by sound, not spelling: an orange cat, a black cat, an 8-year-old, a unicorn, an hour. */
+export function indefinite(phrase: string): string {
+  const w = phrase.trim().toLowerCase()
+  if (!w) return 'a'
+  if (/^(8|11|18|80|800)\b/.test(w)) return 'an'
+  if (/^\d/.test(w)) return 'a'
+  if (/^(hour|honest|heir|honou?r)/.test(w)) return 'an'
+  if (/^(uni|use|usu|eu|one|once|ewe|ukulele|utensil|u-)/.test(w)) return 'a'
+  return /^[aeiou]/.test(w) ? 'an' : 'a'
+}
+
+export const withArticle = (phrase: string) => `${indefinite(phrase)} ${phrase.trim()}`
 
 export const COLOUR_WORDS = ['red', 'yellow', 'green', 'blue', 'orange', 'purple', 'teal', 'pink', 'lilac', 'violet', 'turquoise', 'navy', 'gold', 'golden', 'silver', 'grey', 'gray', 'black', 'white', 'brown', 'tan', 'cream', 'beige', 'ginger', 'auburn', 'blond', 'blonde', 'dark', 'light', 'pale', 'olive', 'copper', 'chestnut', 'tabby', 'calico', 'tortoiseshell', 'brindle']
 const COLOUR_RE = new RegExp(`\\b(${COLOUR_WORDS.join('|')})\\b`, 'i')
@@ -55,7 +72,7 @@ export function detectSpecies(text: string): string | null {
   return null
 }
 
-const MARKING_RE = /\b((?:one|two|four|a|with)\s+)?(?:white|black|brown|grey|gray|ginger|orange|golden|cream|pink|spotted|striped|patched|fluffy|curly|floppy|pointy|crooked|long|short|bushy)\s+(?:paws?|socks?|patch(?:es)?|spots?|stripes?|ears?|tails?|nose|beak|belly|chest|muzzle|face|mane|feathers?|fur|coat|whiskers|wings?|collar)\b/gi
+const MARKING_RE = /\b((?:one|two|three|four|a|with)\s+)?(?:white|black|brown|grey|gray|ginger|orange|golden|cream|pink|spotted|striped|patched|fluffy|curly|floppy|pointy|crooked|bent|kinked|stubby|curled|ragged|torn|notched|missing|droopy|scruffy|shaggy|silky|long|short|bushy|tufted)\s+(?:paws?|socks?|patch(?:es)?|spots?|stripes?|ears?|tails?|nose|beak|belly|chest|muzzle|face|mane|feathers?|fur|coat|whiskers|wings?|collar|eye|eyes|legs?|horns?|crest|fins?|shell)\b/gi
 
 const GARMENT_SLOTS: Array<[RegExp, GarmentFact['slot']]> = [
   [/\b(raincoat|rain coat|coat|jacket|anorak|parka|windbreaker|hoodie|cardigan|cloak|cape|poncho|blazer|overcoat|duffle)\b/i, 'outerwear'],
@@ -68,13 +85,16 @@ const GARMENT_SLOTS: Array<[RegExp, GarmentFact['slot']]> = [
 ]
 
 const HAIR_RE = /\b(hair|braids?|plaits?|pigtails?|ponytail|bun|curls|curly|afro|bob|bangs|fringe|mohawk|buzz ?cut|dreadlocks|locs|twists|cornrows|topknot|cowlick)\b/i
-const HAIR_ACCESSORY_RE = /\b(ribbons?|bows?|headbands?|hair ?clips?|scrunchies?|barrettes?|hair ?ties?|bobbles?|flower in (?:her|his|their) hair)\b/i
-const FEATURE_RE = /\b(freckles?|dimples?|gap-?toothed|missing (?:front )?tooth|gappy smile|scar|birthmark|mole|big ears|round face|rosy cheeks|chubby cheeks|button nose|snub nose|bushy eyebrows|moustache|mustache|beard|goatee|stubble|wrinkles|laugh lines|braces)\b/i
+const HAIR_ACCESSORY_RE = /\b(ribbons?|bows?|beads?|hair ?beads|headbands?|hair ?clips?|hairclips?|scrunchies?|barrettes?|hair ?ties?|bobbles?|hair ?bands?|bandana|flower in (?:her|his|their) hair)\b/i
+const FEATURE_RE = /\b(freckles?|dimples?|gap-?toothed|(?:chipped|missing|crooked|wobbly|loose) (?:front |baby )?(?:tooth|teeth)|gappy smile|buck teeth|scar|birthmark|mole|big ears|sticking-out ears|round face|rosy cheeks|chubby cheeks|button nose|snub nose|bushy eyebrows|moustache|mustache|beard|goatee|stubble|wrinkles|laugh lines|braces|eye ?patch|hearing aids?|bandage|plaster cast|cast on (?:her|his|their) arm|wheelchair)\b/i
+const BUILD_RE = /\b(very tall|tall|short|small|tiny|little|big|large|stocky|lanky|round|plump|skinny|thin|slim|broad-shouldered|broad|muscular|wiry|hunched|stooped|chubby|tubby|sturdy|petite)\b/i
+const PROP_RE = /\b(walking stick|walking cane|cane|crutch(?:es)?|umbrella|pipe|fishing rod|fishing net|net|basket|lantern|torch|flashlight|map|notebook|sketchbook|book|teddy(?: bear)?|blanket|wand|sword|shield|bow and arrows?|guitar|ukulele|violin|drum|flute|whistle|camera|binoculars|telescope|magnifying glass|compass|trowel|spade|shovel|broom|watering can|toolbox|hammer|skateboard|scooter|kite|ball|football|balloon|bucket|jar|lunchbox|suitcase|trolley|wagon|cart)\b/i
 const EYES_RE = /\b(brown|blue|green|hazel|grey|gray|dark|amber|black)\s+eyes\b/i
 const SKIN_RE = /\b((?:dark|light|deep|warm|medium|pale|fair|olive|tan|tanned|brown|black|golden|copper|rich|bronze|ebony|caramel)[- ]?(?:brown|black|golden)?\s+skin(?:\s+tone)?|skin tone[^,.;]*)\b/i
 const GLASSES_RE = /\b(glasses|spectacles|specs)\b/i
 const FAVOURITE_RE = /\b(?:favou?rite colou?r (?:is )?|loves? the colou?r |obsessed with the colou?r |colou?r )(\w+)/i
 
+const OBJECT_CUE_RE = /\b(favou?rite (?:thing|object|toy|possession)|lucky (?:object|charm|thing)|never goes anywhere without|always carries|always has|carries|treasured?|special|beloved|magic(?:al)?|named|called)\b/i
 const ARTICLE_RE = /^(?:(?:a|an|the|her|his|their|its|my|our|some|with|wearing|wears|always wears|always in|in|and|who has|has|have)\s+)+/i
 
 export function clausesOf(text: string): string[] {
@@ -113,6 +133,13 @@ export function parseAppearance(text: string | null | undefined, opts: ParseOpti
   } else {
     out.species = detectSpecies(whole)
   }
+  out.build = null
+  out.props = []
+  // an animal's size word inside its species clause ("small orange cat") is its build
+  if (out.species) {
+    const sized = whole.match(/\b(tiny|small|little|big|large|huge|plump|skinny|scruffy|fluffy|sturdy|stocky|lanky|chubby)\b(?=\s+(?:[\w-]+\s+){0,3}(?:cat|kitten|dog|puppy|rabbit|bunny|parrot|bird|owl|duck|fox|bear|horse|pony|turtle|fish|hamster|mouse|frog|dragon|robot|unicorn|dinosaur|monster)\b)/i)
+    if (sized) out.build = sized[1].toLowerCase()
+  }
   const skin = whole.match(SKIN_RE)
   if (skin) out.skin = normalizePhrase(skin[1])
   const eyes = whole.match(EYES_RE)
@@ -139,6 +166,10 @@ export function parseAppearance(text: string | null | undefined, opts: ParseOpti
       out.garments.push({ phrase, slot: slot[1] })
       continue
     }
+    // a carried identity item ("walking stick", "fishing rod") belongs to this character
+    if (PROP_RE.test(raw) && !OBJECT_CUE_RE.test(raw)) { out.props!.push(phrase.replace(/^(?:carries|carrying|holds|holding|leans on|uses|with)\s+/i, '')); continue }
+    // a bare build/size word ("tall", "stocky") — only as its own clause so "tall ship" never counts
+    if (!out.build && BUILD_RE.test(raw) && raw.trim().split(/\s+/).length <= 3 && !COLOUR_RE.test(raw)) { out.build = phrase; continue }
     // animal body colour clause: "small black cat" → marking "black"
     if (out.species && COLOUR_RE.test(raw) && !GENERIC_CLAUSE_RE.test(raw)) {
       const c = raw.match(COLOUR_RE)![1].toLowerCase()
@@ -147,13 +178,14 @@ export function parseAppearance(text: string | null | undefined, opts: ParseOpti
   }
   // de-duplicate while preserving order
   const uniq = (xs: string[]) => xs.filter((x, i) => xs.indexOf(x) === i)
-  out.hair = uniq(out.hair); out.hair_accessories = uniq(out.hair_accessories); out.features = uniq(out.features); out.markings = uniq(out.markings)
+  out.hair = uniq(out.hair); out.hair_accessories = uniq(out.hair_accessories); out.features = uniq(out.features); out.markings = uniq(out.markings); out.props = uniq(out.props ?? [])
   return out
 }
 
-/** Human-readable, order-stable summary of the explicit facts (no invention). */
+/** Human-readable, order-stable summary of the explicit facts (no invention). Props are rendered separately ("carrying …"). */
 export function appearanceSummary(a: Appearance): string[] {
   const parts: string[] = []
+  if (a.build && !a.species) parts.push(a.build)
   if (a.skin) parts.push(a.skin)
   if (a.hair.length) parts.push(a.hair.join(', '))
   if (a.hair_accessories.length) parts.push(a.hair_accessories.join(', '))
@@ -244,7 +276,6 @@ export function sameCharacter(a: string, b: string): boolean {
 
 const OBJECT_NOUNS = ['compass', 'whistle', 'bucket', 'spade', 'kite', 'scooter', 'bike', 'bicycle', 'teddy', 'teddy bear', 'bear', 'bunny', 'blanket', 'blankie', 'doll', 'robot', 'truck', 'car', 'train', 'ball', 'book', 'map', 'torch', 'flashlight', 'lantern', 'lamp', 'key', 'locket', 'necklace', 'bracelet', 'ring', 'hat', 'cap', 'scarf', 'backpack', 'satchel', 'bag', 'umbrella', 'wand', 'sword', 'shield', 'crown', 'telescope', 'binoculars', 'camera', 'notebook', 'pencil', 'crayon', 'paintbrush', 'guitar', 'drum', 'flute', 'violin', 'frog', 'dinosaur', 'rocket', 'boat', 'ship', 'canoe', 'sled', 'skateboard', 'surfboard', 'jar', 'box', 'suitcase', 'basket', 'bottle', 'cup', 'mug', 'spoon', 'wooden spoon', 'shell', 'stone', 'pebble', 'feather', 'leaf', 'flower', 'seed', 'coin', 'medal', 'badge', 'glasses', 'watch', 'clock', 'bell', 'balloon', 'puzzle', 'cards', 'marble', 'marbles', 'yo-yo', 'slingshot', 'net', 'rope', 'stick', 'walking stick', 'cane', 'broom', 'pillow', 'quilt', 'mask', 'goggles', 'helmet', 'toy', 'plush']
 const OBJECT_RE = new RegExp(`\\b(${OBJECT_NOUNS.map(n => n.replace(/[-\\s]/g, '[-\\\\s]')).sort((a, b) => b.length - a.length).join('|')})\\b`, 'i')
-const OBJECT_CUE_RE = /\b(favou?rite (?:thing|object|toy|possession)|lucky (?:object|charm|thing)|never goes anywhere without|always carries|always has|carries|treasured?|special|beloved|magic(?:al)?|named|called)\b/i
 
 /**
  * Explicit physical objects the parent named as important (family notes,
@@ -258,7 +289,7 @@ export function extractExplicitObjects(text: string | null | undefined, knownNam
   for (const sentence of text.replace(/\s+/g, ' ').split(/(?<=[.!?;])\s+/)) {
     if (!OBJECT_RE.test(sentence)) continue
     const cued = OBJECT_CUE_RE.test(sentence)
-    const m = sentence.match(new RegExp(`((?:\\b[\\w'-]+\\s+){0,3})(${OBJECT_RE.source.slice(3, -3)})(\\s+(?:named|called)\\s+[A-Z][\\w'-]+)?`, 'i'))
+    const m = sentence.match(new RegExp(`((?:\\b[\\w'-]+\\s+){0,3})(\\b(?:${OBJECT_RE.source.slice(3, -3)})\\b)(\\s+(?:named|called)\\s+[A-Z][\\w'-]+)?`, 'i'))
     if (!m) continue
     let phrase = `${m[1] ?? ''}${m[2]}${m[3] ?? ''}`.trim()
     // drop leading verbs / articles / stop words but keep the adjectives the parent used ("old brass compass")
@@ -266,7 +297,10 @@ export function extractExplicitObjects(text: string | null | undefined, knownNam
     if (!phrase || lowerNames.includes(phrase.toLowerCase())) continue
     if (!cued && !/\b(named|called)\b/i.test(sentence)) continue
     const key = phrase.toLowerCase()
-    if (!out.some(o => o.toLowerCase() === key)) out.push(phrase)
+    // containment de-duplication: "red tin bucket named Rumble" absorbs "red tin bucket"
+    const idx = out.findIndex(o => o.toLowerCase().includes(key) || key.includes(o.toLowerCase()))
+    if (idx === -1) out.push(phrase)
+    else if (key.length > out[idx].length) out[idx] = phrase
   }
   return out.slice(0, 3)
 }

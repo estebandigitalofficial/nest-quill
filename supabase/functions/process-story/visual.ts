@@ -30,6 +30,7 @@ import {
   parseAppearance,
   parseSupportingEntries,
   sameCharacter,
+  withArticle,
 } from './appearance.ts'
 
 export const VISUAL_BIBLE_VERSION = 2
@@ -226,7 +227,7 @@ export interface VisualBibleInput {
   consistencyRules?: string | null
 }
 
-const INVENTED_TOPS = ['a {c} t-shirt', 'a {c} jumper', 'a {c} striped top']
+const INVENTED_TOPS = ['{c} t-shirt', '{c} jumper', '{c} striped top']
 const INVENTED_BOTTOMS = ['blue trousers', 'dark shorts', 'corduroy trousers']
 const INVENTED_FOOTWEAR = ['white trainers', 'brown boots', 'blue wellies']
 
@@ -242,7 +243,7 @@ export function buildOutfit(app: Appearance, fallbackOutfit: string, colour: str
   const invented: string[] = []
   const hasTop = slots.has('top') || slots.has('outerwear') || slots.has('full')
   const hasBottom = slots.has('bottom') || slots.has('full')
-  if (!hasTop) invented.push(pick(INVENTED_TOPS, seed, salt + '-top').replace('{c}', colour))
+  if (!hasTop) invented.push(withArticle(pick(INVENTED_TOPS, seed, salt + '-top').replace('{c}', colour)))
   if (!hasBottom) invented.push(pick(INVENTED_BOTTOMS, seed, salt + '-bottom'))
   if (!slots.has('footwear')) invented.push(pick(INVENTED_FOOTWEAR, seed, salt + '-feet'))
   const canonical = [...explicit, ...invented].join(', ')
@@ -265,17 +266,18 @@ function supportingVisual(name: string, rawRole: string, app: Appearance, colour
   const role = /^(a|an|the|his|her|their|[A-Z][a-z]+'s)\b/i.test(rawRole.trim()) || !rawRole.trim() ? rawRole.trim() : `the ${rawRole.trim()}`
   const r = role.toLowerCase()
   const identity = identityFor(app, r)
-  const looks = appearanceSummary(app)
-  const withLooks = (base: string) => (looks.length ? `${base}, ${looks.join(', ')}` : base)
+  const looks = appearanceSummary({ ...app, build: null })
+  const propsText = app.props?.length ? `, carrying ${app.props.join(' and ')}` : ''
+  const withLooks = (base: string) => `${looks.length ? `${base}, ${looks.join(', ')}` : base}${propsText}`
 
   if (identity.kind === 'animal' && identity.species) {
     const colourWords = identity.markings.filter(m => !/\s/.test(m))
     const detail = identity.markings.filter(m => /\s/.test(m))
-    const head = `a ${[...colourWords, identity.species].join(' ')}`
-    const base = `${head} (a ${identity.species.toUpperCase()}, never any other kind of animal)${detail.length ? ` with ${detail.join(' and ')}` : ''}`
+    const head = withArticle([app.build ?? '', ...colourWords, identity.species].filter(Boolean).join(' '))
+    const base = `${head} (${withArticle(identity.species.toUpperCase())}, never any other kind of animal)${detail.length ? ` with ${detail.join(' and ')}` : ''}`
     // Only pets that plausibly wear one get an invented collar; birds, fish and wild animals get nothing invented.
     const wearsCollar = /^(cat|dog|rabbit|horse|hamster|guinea pig|goat|sheep|pig|cow)$/.test(identity.species)
-    const outfit = app.garments.length || wearsCollar ? buildOutfit(app, `a ${colour} collar`, colour, seed, name) : { explicit: [], invented: [], canonical: '' }
+    const outfit = app.garments.length || wearsCollar ? buildOutfit(app, withArticle(`${colour} collar`), colour, seed, name) : { explicit: [], invented: [], canonical: '' }
     return { visual_description: withLooks(base), canonical_outfit: outfit.canonical, identity, outfit: { explicit: outfit.explicit, invented: outfit.invented } }
   }
   if (identity.kind === 'creature' && identity.species) {
@@ -284,12 +286,13 @@ function supportingVisual(name: string, rawRole: string, app: Appearance, colour
   }
   if (/\b(brother|sister|cousin|friend|classmate|neighbou?r|toddler|baby|twin)\b/.test(r)) {
     const younger = /\b(little|younger|baby|toddler)\b/.test(r)
-    const outfit = buildOutfit(app, pick([`a ${colour} t-shirt with shorts`, `a ${colour} striped top with full-length dungarees`, `a ${colour} hoodie with trousers`], seed, name), colour, seed, name)
+    const outfit = buildOutfit(app, pick([withArticle(`${colour} t-shirt with shorts`), withArticle(`${colour} striped top with full-length dungarees`), withArticle(`${colour} hoodie with trousers`)], seed, name), colour, seed, name)
     return { visual_description: withLooks(`${younger ? 'a smaller, younger child' : 'a child about the same age'} who is ${role}`), canonical_outfit: outfit.canonical, identity, outfit: { explicit: outfit.explicit, invented: outfit.invented } }
   }
   const adultRole = /\b(mum|mom|mother|dad|father|grandma|grandmother|nana|granny|grandpa|grandfather|abuela|abuelo|teacher|aunt|auntie|uncle|tio|tia|captain|keeper|guard|librarian|coach|doctor|nurse|babysitter)\b/.test(r)
-  const outfit = buildOutfit(app, pick(adultRole ? [`a ${colour} cardigan`, `a ${colour} jacket`, `a ${colour} apron over a plain shirt`] : [`a ${colour} jacket`], seed, name), colour, seed, name)
-  return { visual_description: withLooks(adultRole ? `an adult who is ${role}` : (role || 'a supporting character')), canonical_outfit: outfit.canonical, identity, outfit: { explicit: outfit.explicit, invented: outfit.invented } }
+  const outfit = buildOutfit(app, pick(adultRole ? [withArticle(`${colour} cardigan`), withArticle(`${colour} jacket`), withArticle(`${colour} apron over a plain shirt`)] : [withArticle(`${colour} jacket`)], seed, name), colour, seed, name)
+  const adultHead = app.build ? withArticle(`${app.build} adult`) : 'an adult'
+  return { visual_description: withLooks(adultRole ? `${adultHead} who is ${role}` : (role || 'a supporting character')), canonical_outfit: outfit.canonical, identity, outfit: { explicit: outfit.explicit, invented: outfit.invented } }
 }
 
 /** Parse the parent's free-text supporting characters into name/role pairs (kept for callers; the builder uses the richer entries). */
@@ -341,6 +344,8 @@ export function buildVisualBible(input: VisualBibleInput): VisualBible {
   const explicitObjects = extractExplicitObjects(`${input.customNotes ?? ''} ${input.childDescription ?? ''}`, [name, ...supporting.map(s => s.name)])
   const planObjects = recurringProperNouns(input.plan, nameTokens).filter(o => !explicitObjects.some(e => e.toLowerCase().includes(o.toLowerCase())))
   const recurring = [...explicitObjects, ...planObjects].slice(0, 3)
+  // a hero prop that is also the story's recurring object stays global only
+  app.props = (app.props ?? []).filter(pr => !recurring.some(r => r.toLowerCase().includes(pr.toLowerCase()) || pr.toLowerCase().includes(r.toLowerCase())))
   const art = ART_BY_STYLE[input.illustrationStyle] ?? ART_BY_STYLE.storybook
 
   return {
@@ -415,12 +420,15 @@ export function protagonistAnchor(b: VisualBible): string {
   const p = b.protagonist
   const parts: string[] = []
   const species = p.identity?.species
+  const build = p.appearance?.build ?? null
   const who = species
-    ? `a ${[...(p.identity?.markings ?? []).filter(m => !/\s/.test(m)), species].join(' ')} (a ${species.toUpperCase()}, never any other kind of animal)${p.approximate_age ? `, ${p.approximate_age} years old` : ''}`
-    : (p.approximate_age ? `${/^(8|11|18)$/.test(String(p.approximate_age)) ? 'an' : 'a'} ${p.approximate_age}-year-old child` : 'the main character')
+    ? `${withArticle([build ?? '', ...(p.identity?.markings ?? []).filter(m => !/\s/.test(m)), species].filter(Boolean).join(' '))} (${withArticle(species.toUpperCase())}, never any other kind of animal)${p.approximate_age ? `, ${p.approximate_age} years old` : ''}`
+    : (p.approximate_age ? withArticle(`${build ? `${build} ` : ''}${p.approximate_age}-year-old child`) : (build ? withArticle(`${build} main character`) : 'the main character'))
   parts.push(`${p.name} is ${who}`)
-  if (p.parent_visual_cues.length) parts.push(`with ${p.parent_visual_cues.join(', ')}`)
+  const cues = p.parent_visual_cues.filter(c => c !== build)
+  if (cues.length) parts.push(`with ${cues.join(', ')}`)
   parts.push(`wearing ${p.canonical_outfit}`)
+  if (p.appearance?.props?.length) parts.push(`carrying ${p.appearance.props.join(' and ')}`)
   if (p.recurring_objects.length) parts.push(`(always with: ${p.recurring_objects.join(', ')})`)
   return `${parts.join(' ')}; keep ${p.name}'s face, hair, build and outfit identical to every other page of this book`
 }
@@ -568,16 +576,37 @@ export function coverMoodFromTones(tones: readonly string[] | string | null | un
   return { mood: 'warm curiosity', composition: 'the hero clearly centred in the story world, inviting the reader in' }
 }
 
-/** Supporting characters that matter to the whole story (present in ≥ 40% of beats), max two. */
-export function relevantSupportingForCover(bible: VisualBible, plan: StoryPlan | null): VisualSupporting[] {
+export const MAX_COVER_COMPANIONS = 2
+
+/**
+ * Supporting characters anchored on the cover, max two: those present in
+ * ≥ 40% of beats, plus any character the cover text itself names (premise,
+ * setting) — a named character must never reach the image model without
+ * its canonical anchor. Ranked by beat frequency when more than two qualify.
+ */
+export function relevantSupportingForCover(bible: VisualBible, plan: StoryPlan | null, coverText = ''): VisualSupporting[] {
   if (!plan || plan.pages.length === 0) return []
   const n = plan.pages.length
   return bible.supporting_characters
-    .map(s => ({ s, hits: plan.pages.filter(p => nameRe(s.name).test(`${p.beat} ${p.continuity}`)).length }))
-    .filter(x => x.hits / n >= 0.4)
+    .map(s => ({ s, hits: plan.pages.filter(p => nameRe(s.name).test(`${p.beat} ${p.continuity}`)).length, named: coverText ? nameRe(s.name).test(coverText) : false }))
+    .filter(x => x.hits / n >= 0.4 || x.named)
     .sort((a, b) => b.hits - a.hits)
-    .slice(0, 2)
+    .slice(0, MAX_COVER_COMPANIONS)
     .map(x => x.s)
+}
+
+/**
+ * Remove every mention of supporting characters that are NOT anchored from
+ * cover text, replacing the name with a neutral role so the sentence still
+ * reads but no un-anchored figure is requested.
+ */
+export function scrubUnanchoredNames(text: string, unanchored: VisualSupporting[]): string {
+  let out = text
+  for (const s of unanchored) {
+    const role = s.role && /^[a-z\s'-]+$/i.test(s.role) && s.role.split(/\s+/).length <= 3 ? `her ${s.role.replace(/^(?:her|his|their|the)\s+/i, '')}` : 'a companion'
+    out = out.replace(new RegExp(`\\b${s.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:'s)?\\b`, 'gi'), m => (/'s$/i.test(m) ? `${role}'s` : role))
+  }
+  return out
 }
 
 export const COVER_NO_TEXT_RULE =
@@ -612,10 +641,13 @@ export function buildCoverPrompt(args: CoverPromptArgs): { prompt: string; meta:
   const b = args.bible
   const max = args.maxChars ?? MAX_IMAGE_PROMPT_CHARS
   const { mood, composition } = coverMoodFromTones(args.tones)
-  const companions = relevantSupportingForCover(b, args.plan)
+  const rawPremise = (args.plan?.premise ?? '').trim()
+  const rawSetting = (args.plan?.setting ?? b.setting.core_environment ?? '').trim()
+  const companions = relevantSupportingForCover(b, args.plan, `${rawPremise} ${rawSetting}`)
+  const unanchored = b.supporting_characters.filter(s => !companions.includes(s))
   const anchors = [protagonistAnchor(b), ...companions.map(supportingAnchor)]
-  const premise = (args.plan?.premise ?? '').trim()
-  const setting = (args.plan?.setting ?? b.setting.core_environment ?? '').trim()
+  const premise = scrubUnanchoredNames(rawPremise, unanchored)
+  const setting = scrubUnanchoredNames(rawSetting, unanchored)
   const arcStart = (args.plan?.emotional_arc ?? '').split(/→|->|,|;/)[0]?.trim() ?? ''
   const objects = b.protagonist.recurring_objects
 
