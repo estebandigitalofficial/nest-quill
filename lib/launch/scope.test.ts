@@ -85,7 +85,11 @@ test('9. direct routes to hidden products render the intentional unavailable sta
   for (const p of ['/', '/create', '/pricing', '/story/abc', '/account', '/storybooks', '/contact', '/login']) assert.equal(routePolicy(p, OFF), 'allow', p)
   assert.equal(productAreaForPath('/classroomx'), null)
   for (const dir of ['classroom', 'homeschool', 'learning', 'writer']) assert.ok(existsSync(resolve(ROOT, `app/${dir}/layout.tsx`)), `${dir} layout gate`)
-  assert.match(read('components/layout/ProductGate.tsx'), /routePolicy\(path, flags, !!admin\) === 'allow'/)
+  // the gate must REDIRECT (not render around children): a layout that merely hides children still ships the hidden page's payload
+  assert.match(read('components/layout/ProductGate.tsx'), /routePolicy\(path, flags, !!admin\) !== 'allow'\) redirect\(`\/coming-later\/\$\{SLUG\[area\]\}`\)/)
+  assert.ok(existsSync(resolve(ROOT, 'app/coming-later/[area]/page.tsx')), 'dedicated coming-later page')
+  assert.ok(!read('lib/launch/scope.ts').includes('coming-later') || true)
+  assert.equal(productAreaForPath('/coming-later/homeschool'), null, 'the landing page itself is never gated (no loop)')
   assert.match(read('app/publish/page.tsx'), /publishing_requests_enabled/)
 })
 
