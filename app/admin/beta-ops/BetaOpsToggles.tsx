@@ -30,6 +30,10 @@ const ENFORCED_KEYS = new Set([
   'guided_tours_enabled',
   'maintenance_banner_enabled',
   'maintenance_banner_message',
+  'classroom_enabled',
+  'homeschool_enabled',
+  'writer_studio_enabled',
+  'extended_audiences_enabled',
 ])
 
 export default function BetaOpsToggles({ initial }: { initial: SettingRow[] }) {

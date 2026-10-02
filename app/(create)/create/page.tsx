@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import StoryWizard from '@/components/story/wizard/StoryWizard'
 import { getSetting } from '@/lib/settings/appSettings'
+import { getLaunchFlags } from '@/lib/launch/flags'
 import { isSettingEnabled } from '@/lib/settings/gates'
 import { getQueuePressure } from '@/lib/limits/rateLimits'
 
@@ -35,6 +36,7 @@ export default async function CreatePage() {
   const queue = await getQueuePressure()
 
   // Fetch live limits, user profile, and beta mode in parallel
+  const flags = await getLaunchFlags()
   const [[guestLimit, freeLimit, betaMode, imageGenSetting], profileResult] = await Promise.all([
     Promise.all([
       getSetting('guest_story_limit', 1),
@@ -136,7 +138,7 @@ export default async function CreatePage() {
         )}
 
         <Suspense>
-          <StoryWizard betaMode={betaMode as boolean} imagesPaused={imageGenSetting === false} accountPlan={planTier} />
+          <StoryWizard betaMode={betaMode as boolean} imagesPaused={imageGenSetting === false} learningModeEnabled={flags.learningTools} extendedAudiences={flags.extendedAudiences} accountPlan={planTier} />
         </Suspense>
       </div>
     </div>

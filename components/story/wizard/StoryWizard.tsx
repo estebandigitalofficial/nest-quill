@@ -62,11 +62,17 @@ function planFromAccount(raw: string | null | undefined): PlanTier | null {
 export default function StoryWizard({
   betaMode = false,
   imagesPaused = false,
+  learningModeEnabled = false,
+  extendedAudiences = false,
   accountPlan = null,
 }: {
   betaMode?: boolean
   /** image_generation_enabled === false; drives the "illustrations paused" note. */
   imagesPaused?: boolean
+  /** Launch scope (Phase 2A): show the Story/Learning mode toggle and honour ?mode=learning. */
+  learningModeEnabled?: boolean
+  /** Launch scope (Phase 2A): offer teen/adult audiences in the child step. */
+  extendedAudiences?: boolean
   /** profiles.plan_tier for the signed-in user; null/undefined for guests. */
   accountPlan?: string | null
 }) {
@@ -105,11 +111,11 @@ export default function StoryWizard({
 
   // Auto-enable learning mode when ?mode=learning is in the URL
   useEffect(() => {
-    if (searchParams.get('mode') === 'learning') {
+    if (learningModeEnabled && searchParams.get('mode') === 'learning') {
       setLearningMode(true)
       setValue('learningMode', true)
     }
-  }, [searchParams, setValue])
+  }, [searchParams, setValue, learningModeEnabled])
 
   const STEPS = learningMode ? LEARNING_STEPS : STANDARD_STEPS
   const STEP_FIELDS = learningMode ? LEARNING_FIELDS : STANDARD_FIELDS
@@ -200,7 +206,7 @@ export default function StoryWizard({
   }
 
   return (
-    <WizardConfigContext.Provider value={{ betaMode, imagesPaused }}>
+    <WizardConfigContext.Provider value={{ betaMode, imagesPaused, learningModeEnabled, extendedAudiences }}>
     <FormProvider {...methods}>
       {/* Plan-selected pill — only when ?plan=... preselected the tier and
           we're still on the first visible step. Lets the user jump back to
@@ -223,7 +229,7 @@ export default function StoryWizard({
 
       {/* Mode toggle — shown on the first visible step (step 0 by default,
           step 1 when a plan was preselected via ?plan=...). */}
-      {step === firstVisibleStep && (
+      {step === firstVisibleStep && learningModeEnabled && (
         <div data-tour-id="mode-toggle" className="flex items-center bg-gray-100 rounded-2xl p-1 mb-2">
           {planPreselected && (
             <span className="sr-only">What would you like to create?</span>

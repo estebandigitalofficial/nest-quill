@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { mobileTabHrefs, type LaunchFlags } from '@/lib/launch/scope'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -80,8 +81,11 @@ const ACCOUNT_TAB = {
   ),
 }
 
-export default function MobileTabBar() {
+export default function MobileTabBar({ flags }: { flags: LaunchFlags }) {
   const pathname = usePathname()
+  // Launch scope (Phase 2A): tabs for hidden product areas are not rendered.
+  const allowed = new Set(mobileTabHrefs(flags))
+  const tabs = TABS.filter(t => allowed.has(t.href))
   // SSR/first-paint default is /login; resolves to the role destination
   // once the supabase session is read on the client. No hydration mismatch
   // because the initial state matches the server-rendered HTML.
@@ -113,7 +117,7 @@ export default function MobileTabBar() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex items-stretch h-14">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const active = isActive(tab.href)
           return (
             <Link

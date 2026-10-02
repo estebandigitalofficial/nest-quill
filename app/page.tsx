@@ -8,6 +8,8 @@ import SiteHeader from '@/components/layout/SiteHeader'
 import PlanCard from '@/components/pricing/PlanCard'
 import { getAdminContext } from '@/lib/admin/guard'
 import { getSetting } from '@/lib/settings/appSettings'
+import { getLaunchFlags } from '@/lib/launch/flags'
+import { homepageSections, type LaunchFlags } from '@/lib/launch/scope'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -20,10 +22,11 @@ export default async function HomePage() {
     if (adminCtx) redirect('/admin')
   }
 
-  const [betaMode, imagesPaused] = await Promise.all([
+  const [betaMode, imagesPaused, flags] = await Promise.all([
     getSetting('beta_mode_enabled', false) as Promise<boolean>,
     // Illustrations are governed by image_generation_enabled, not by beta.
     getSetting<unknown>('image_generation_enabled', true).then(v => v === false),
+    getLaunchFlags(),
   ])
 
   return (
@@ -56,8 +59,9 @@ export default async function HomePage() {
         <HowItWorks />
         <SamplePreview />
         <Pricing betaMode={betaMode} />
-        <SecondaryProducts />
-        <WriterStudio />
+        {/* Launch scope (Phase 2A): deferred products appear only when their flags are on. */}
+        {homepageSections(flags).secondaryProducts && <SecondaryProducts flags={flags} />}
+        {homepageSections(flags).writerStudio && <WriterStudio />}
         <BottomCTA />
       </main>
 
@@ -309,7 +313,7 @@ function Pricing({ betaMode }: { betaMode: boolean }) {
 
 // ── Secondary products ────────────────────────────────────────────────────────
 
-function SecondaryProducts() {
+function SecondaryProducts({ flags }: { flags: LaunchFlags }) {
   return (
     <section className="bg-oxford py-24 px-6 relative overflow-hidden">
       <div className="absolute -top-32 -right-32 w-96 h-96 bg-indigo-900/25 rounded-full blur-3xl pointer-events-none" />
@@ -332,7 +336,7 @@ function SecondaryProducts() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-5">
-          <div className="bg-white/8 border border-white/15 rounded-2xl p-7 flex flex-col">
+          {flags.learningTools && (<div className="bg-white/8 border border-white/15 rounded-2xl p-7 flex flex-col">
             <div className="mb-5">
               <div className="inline-block bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-4">
                 Learning Tools
@@ -368,9 +372,8 @@ function SecondaryProducts() {
             >
               Explore Learning Tools →
             </Link>
-          </div>
-
-          <div className="bg-white/8 border border-white/15 rounded-2xl p-7 flex flex-col">
+          </div>)}
+          {flags.classroom && (<div className="bg-white/8 border border-white/15 rounded-2xl p-7 flex flex-col">
             <div className="mb-5">
               <div className="inline-block bg-white/10 border border-white/15 text-white/80 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-4">
                 For Educators
@@ -406,9 +409,8 @@ function SecondaryProducts() {
             >
               Try Classroom free →
             </Link>
-          </div>
-
-          <div className="bg-white/8 border border-white/15 rounded-2xl p-7 flex flex-col">
+          </div>)}
+          {flags.homeschool && (<div className="bg-white/8 border border-white/15 rounded-2xl p-7 flex flex-col">
             <div className="mb-5">
               <div className="inline-block bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-4">
                 Homeschool
@@ -444,7 +446,7 @@ function SecondaryProducts() {
             >
               Explore Homeschool →
             </Link>
-          </div>
+          </div>)}
         </div>
       </div>
     </section>

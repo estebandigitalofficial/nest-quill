@@ -1,8 +1,11 @@
 import OpenAI from 'openai'
 import { NextRequest } from 'next/server'
 import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, getActiveGuardrails } from '@/lib/utils/learningGuardrails'
+import { getLaunchFlags } from '@/lib/launch/flags'
 
-const SYSTEM_PROMPT_BASE = `You are the Nest & Quill assistant — a warm, friendly helper for a personalized AI-powered children's storybook service. You help in two ways:
+// Launch scope (Phase 2A): the assistant describes only what is publicly available.
+function systemPromptBase(classroomEnabled: boolean): string {
+  return `You are the Nest & Quill assistant — a warm, friendly helper for a personalized AI-powered children's storybook service. You help in two ways:
 
 STORY CREATION HELP: Help parents brainstorm and craft the perfect story for their child.
 - Suggest creative themes (adventure, friendship, bravery, curiosity, kindness, bedtime, etc.)
@@ -26,13 +29,13 @@ Pricing (currently all free during beta — payments coming soon):
 - Single Story: $7.99 one-time — 24 pages, all illustration styles, full PDF, dedication page
 - Story Pack: $9.99/mo (or $99/yr) — 3 stories/month, 24 pages each, full PDF
 - Story Pro (most popular): $24.99/mo (or $249/yr) — 10 stories/month, 32 pages, priority processing
-- Educator: $59/mo — 40 stories/month, classroom management (contact us)
-
+${classroomEnabled ? '- Educator: $59/mo — 40 stories/month, classroom management (contact us)\n' : '- Educator plans, Classroom, Homeschool, Learning Tools and Writer Studio are not available yet; today Nest & Quill offers personalized children\'s books only. Say so plainly if asked.\n'}
 Illustration styles: Watercolor, Cartoon, Storybook (classic painted fairy-tale), Pencil Sketch, Digital Art.
 Free plan: Watercolor only. All paid plans: all 5 styles.
 
 Keep responses warm, concise (2–4 sentences unless more detail is needed), and family-friendly.
 If someone wants to create a story now, direct them to /create.`
+}
 
 let _openai: OpenAI | null = null
 function getOpenAI() {
@@ -61,7 +64,8 @@ export async function POST(req: NextRequest) {
   const language: string = body.language ?? 'en'
   const messages = body.messages.slice(-20) // any[] — passed directly to OpenAI SDK
 
-  const { neutralityRule, politicalClarificationEnabled } = await getActiveGuardrails()
+  const [{ neutralityRule, politicalClarificationEnabled }, flags] = await Promise.all([getActiveGuardrails(), getLaunchFlags()])
+  const SYSTEM_PROMPT_BASE = systemPromptBase(flags.classroom)
 
   // Classify the latest user message and short-circuit before calling AI if needed
   if (politicalClarificationEnabled) {

@@ -1,17 +1,19 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { getSetting } from '@/lib/settings/appSettings'
+import { getLaunchFlags } from '@/lib/launch/flags'
+import { footerLinks } from '@/lib/launch/scope'
 import MobileTabBar from './MobileTabBar'
 
 export default async function SiteFooter() {
-  const [classroomEnabled, footerLogoUrl] = await Promise.all([
-    getSetting('classroom_enabled', true),
+  const [flags, footerLogoUrl] = await Promise.all([
+    getLaunchFlags(),
     getSetting('branding_footer_logo_url', 'https://nestandquill.b-cdn.net/nestandquill%20brand%20start-03.webp'),
   ])
   return (
     <>
     {/* Mobile bottom tab bar */}
-    <MobileTabBar />
+    <MobileTabBar flags={flags} />
     {/* Spacer so content isn't hidden behind the tab bar on mobile */}
     <div className="h-14 md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} />
 
@@ -33,14 +35,10 @@ export default async function SiteFooter() {
         </div>
         <p className="order-first sm:order-none">© {new Date().getFullYear()} Bright Tale Books</p>
         <div className="flex items-center justify-center gap-3 md:gap-3 whitespace-nowrap">
-          <Link href="/create" className="hover:text-white/90 transition-colors">Create</Link>
-          <Link href="/learning" className="hover:text-white/90 transition-colors">Learning</Link>
-          <Link href="/homeschool" className="hover:text-white/90 transition-colors">Homeschool</Link>
-          {classroomEnabled && <Link href="/classroom" className="hover:text-white/90 transition-colors">Classroom</Link>}
-          <Link href="/pricing" className="hover:text-white/90 transition-colors">Pricing</Link>
-          <Link href="/contact" className="hover:text-white/90 transition-colors">Contact</Link>
-          <Link href="/privacy" className="hover:text-white/90 transition-colors">Privacy</Link>
-          <Link href="/terms" className="hover:text-white/90 transition-colors">Terms</Link>
+          {/* Launch scope (Phase 2A): gated link set from lib/launch/scope */}
+          {footerLinks(flags).map(l => (
+            <Link key={l.href} href={l.href} className="hover:text-white/90 transition-colors">{l.label}</Link>
+          ))}
         </div>
       </div>
     </footer>

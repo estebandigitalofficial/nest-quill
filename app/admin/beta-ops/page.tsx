@@ -18,6 +18,11 @@ const BETA_KEYS = [
   'guided_tours_enabled',
   'maintenance_banner_enabled',
   'maintenance_banner_message',
+  // Launch scope (Phase 2A): one flag per deferred product area
+  'classroom_enabled',
+  'homeschool_enabled',
+  'writer_studio_enabled',
+  'extended_audiences_enabled',
 ] as const
 
 const BETA_LABELS: Record<typeof BETA_KEYS[number], string> = {
@@ -30,6 +35,10 @@ const BETA_LABELS: Record<typeof BETA_KEYS[number], string> = {
   guided_tours_enabled: 'Guided tours',
   maintenance_banner_enabled: 'Maintenance banner',
   maintenance_banner_message: 'Maintenance banner message',
+  classroom_enabled: 'Classroom (public)',
+  homeschool_enabled: 'Homeschool (public)',
+  writer_studio_enabled: 'Writer Studio (public)',
+  extended_audiences_enabled: 'Teen & adult audiences (public wizard)',
 }
 
 export default async function BetaOpsPage() {

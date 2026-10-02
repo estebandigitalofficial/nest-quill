@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { WIZARD_PLANS } from '@/lib/plans/config'
+import { getLaunchFlags } from '@/lib/launch/flags'
 import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 import PlanCard from '@/components/pricing/PlanCard'
@@ -9,9 +10,10 @@ export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Pricing — Nest & Quill' }
 
 export default async function PricingPage() {
-  const [betaMode, imagesPaused] = await Promise.all([
+  const [betaMode, imagesPaused, flags] = await Promise.all([
     getSetting('beta_mode_enabled', false) as Promise<boolean>,
     getSetting<unknown>('image_generation_enabled', true).then(v => v === false),
+    getLaunchFlags(),
   ])
 
   return (
@@ -38,7 +40,8 @@ export default async function PricingPage() {
           ))}
         </div>
 
-        {/* Classroom callout */}
+        {/* Classroom callout — launch scope (Phase 2A): only while Classroom is public */}
+        {flags.classroom && (
         <div className="bg-oxford rounded-2xl px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="space-y-3">
             <div>
@@ -72,12 +75,13 @@ export default async function PricingPage() {
             </Link>
           </div>
         </div>
+        )}
 
         {/* FAQ */}
         <div className="max-w-2xl mx-auto space-y-6">
           <h2 className="font-serif text-2xl text-oxford text-center">Common questions</h2>
           <div className="space-y-4">
-            {FAQ.map((item) => (
+            {FAQ.filter(item => !item.area || flags[item.area]).map((item) => (
               <div key={item.q} className="border-b border-parchment-dark pb-4">
                 <p className="font-medium text-oxford text-sm mb-1">{item.q}</p>
                 <p className="text-sm text-charcoal-light leading-relaxed">{item.a}</p>
@@ -92,7 +96,9 @@ export default async function PricingPage() {
   )
 }
 
-const FAQ = [
+type FaqItem = { q: string; a: string; area?: 'classroom' }
+
+const FAQ: FaqItem[] = [
   {
     q: 'Can I try it before paying?',
     a: 'Yes — the Free plan lets you create one 8-page story at no cost, no credit card required.',
@@ -100,6 +106,7 @@ const FAQ = [
   {
     q: 'Is Classroom free for teachers?',
     a: 'Yes — all classroom tools are free: creating a class, sharing join codes, assigning learning tools, and tracking student progress. Paid educator plans with bulk story creation are coming soon.',
+    area: 'classroom' as const,
   },
   {
     q: 'What\'s included in the PDF download?',

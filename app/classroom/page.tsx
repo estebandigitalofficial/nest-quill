@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 }
 
 export default async function ClassroomPage() {
-  const classroomEnabled = await getSetting('classroom_enabled', true)
+  const classroomEnabled = await getSetting('classroom_enabled', false)
   if (!classroomEnabled) return <ClassroomDisabled />
 
   const supabase = await createClient()

@@ -2,19 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { mobileMenuLinks, type LaunchFlags } from '@/lib/launch/scope'
 
-const BASE_LINKS = [
-  { href: '/create',     label: 'Create a story',  flag: null },
-  { href: '/learning',  label: 'Learning',         flag: null },
-  { href: '/homeschool', label: 'Homeschool',      flag: null },
-  { href: '/classroom', label: 'Classroom',        flag: 'classroom' },
-  { href: '/writer',    label: 'Writer Studio',    flag: null },
-  { href: '/pricing',   label: 'Pricing',          flag: null },
-]
-
-export default function MobileMenu({ classroomEnabled }: { classroomEnabled: boolean }) {
+export default function MobileMenu({ flags }: { flags: LaunchFlags }) {
   const [open, setOpen] = useState(false)
-  const NAV_LINKS = BASE_LINKS.filter(l => l.flag !== 'classroom' || classroomEnabled)
+  // Launch scope (Phase 2A): same gated set as the desktop header.
+  const NAV_LINKS = mobileMenuLinks(flags)
   const close = () => setOpen(false)
 
   return (

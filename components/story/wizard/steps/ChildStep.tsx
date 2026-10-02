@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react'
 import { useFormContext } from 'react-hook-form'
 import type { StoryFormValues } from '@/lib/validators/story-form'
 import { AGE_TIERS, type AgeTier } from '@/lib/validators/story-form'
+import { useWizardConfig } from '../WizardContext'
 import { cn } from '@/lib/utils/cn'
 import { useLanguage } from '@/lib/i18n/context'
 import { AgeTierCard } from '../cards'
@@ -44,6 +45,9 @@ export default function ChildStep() {
   } = useFormContext<StoryFormValues>()
 
   const selectedAge = watch('childAge')
+  // Launch scope (Phase 2A): children only unless extended audiences are on.
+  const { extendedAudiences } = useWizardConfig()
+  const tiers = extendedAudiences ? AGE_TIERS : AGE_TIERS.filter(t => t === 'child')
   const adultConsent = watch('adultConsent')
   const ageTier = (watch('ageTier') ?? deriveTier(selectedAge)) as AgeTier | undefined
   const isAdult = ageTier === 'adult'
@@ -102,10 +106,11 @@ export default function ChildStep() {
         </p>
       </div>
 
-      {/* Age tier */}
+      {/* Age tier — hidden when only the child audience is offered */}
+      {tiers.length > 1 && (
       <Field label="Audience" required>
         <div data-tour-id="audience-tier" className="grid grid-cols-3 gap-2">
-          {AGE_TIERS.map(tier => (
+          {tiers.map(tier => (
             <div key={tier} data-tour-id={`audience-card-${tier}`}>
               <AgeTierCard
                 tier={tier}
@@ -116,6 +121,7 @@ export default function ChildStep() {
           ))}
         </div>
       </Field>
+      )}
 
       <Field label={isAdult ? c.adultName : c.name} error={errors.childName?.message} required>
         <input

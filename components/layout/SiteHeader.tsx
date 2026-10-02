@@ -5,6 +5,8 @@ import LearningDropdown from './LearningDropdown'
 import MobileMenu from './MobileMenu'
 import UserControls from './UserControls'
 import { getSetting } from '@/lib/settings/appSettings'
+import { getLaunchFlags } from '@/lib/launch/flags'
+import { navLinks } from '@/lib/launch/scope'
 
 interface Props {
   right?: ReactNode
@@ -15,8 +17,8 @@ export default async function SiteHeader({ right }: Props) {
   // imported into both server and client pages (e.g. /contact is a client
   // page) and pulling next/headers via the cookie-bound supabase server
   // client breaks those builds. UserControls fetches the user itself.
-  const [classroomEnabled, headerLogoUrl, maintenanceEnabled, maintenanceMessage] = await Promise.all([
-    getSetting('classroom_enabled', true),
+  const [flags, headerLogoUrl, maintenanceEnabled, maintenanceMessage] = await Promise.all([
+    getLaunchFlags(),
     getSetting('branding_header_logo_url', 'https://nestandquill.b-cdn.net/Nest%20and%20Quill%20Full%20Color.webp'),
     getSetting<boolean>('maintenance_banner_enabled', false),
     getSetting<string>('maintenance_banner_message', ''),
@@ -47,21 +49,20 @@ export default async function SiteHeader({ right }: Props) {
           />
         </Link>
 
+        {/* Launch scope (Phase 2A): links come from lib/launch/scope so hidden
+            product areas never appear until their flag is on. */}
         <nav className="hidden md:flex items-center gap-4">
-          <Link href="/create" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford transition-colors whitespace-nowrap">Create a Story</Link>
-          <LearningDropdown />
-          <Link href="/homeschool" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford transition-colors">Homeschool</Link>
-          {classroomEnabled && (
-            <Link href="/classroom" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford transition-colors">Classroom</Link>
-          )}
-          <Link href="/writer" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford transition-colors whitespace-nowrap">Writer Studio</Link>
-          <Link href="/pricing" className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford transition-colors">Pricing</Link>
+          {navLinks(flags).map(l => (
+            l.href === '/learning'
+              ? <LearningDropdown key={l.href} />
+              : <Link key={l.href} href={l.href} className="text-sm text-charcoal-light dark:text-charcoal hover:text-oxford transition-colors whitespace-nowrap">{l.label}</Link>
+          ))}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
           {right && <div className="flex items-center gap-3 sm:gap-4">{right}</div>}
           <UserControls />
-          <MobileMenu classroomEnabled={classroomEnabled} />
+          <MobileMenu flags={flags} />
         </div>
       </div>
     </header>
