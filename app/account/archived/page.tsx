@@ -9,6 +9,14 @@ import SiteFooter from '@/components/layout/SiteFooter'
 import StoryList from '@/components/account/StoryList'
 import { loadThumbs } from '@/components/account/loadThumbs'
 import { PAGE_SIZE } from '@/components/account/pageSize'
+import { getServerLang } from '@/lib/i18n/server'
+import { getDictionary } from '@/lib/i18n'
+import type { Metadata } from 'next'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getServerLang()
+  return { title: getDictionary(lang).meta.pages.archived }
+}
 
 export default async function ArchivedStoriesPage() {
   const supabase = await createClient()
@@ -36,6 +44,8 @@ export default async function ArchivedStoriesPage() {
     rows.length < PAGE_SIZE || !lastRow
       ? null
       : (lastRow.archived_at as string | null) ?? null
+  const lang = await getServerLang()
+  const a = getDictionary(lang).account
 
   return (
     <div className="h-dvh bg-parchment flex flex-col">
@@ -45,7 +55,7 @@ export default async function ArchivedStoriesPage() {
             Nest &amp; Quill
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/account" className="text-sm text-charcoal-light hover:text-oxford">← Back to my stories</Link>
+            <Link href="/account" className="text-sm text-charcoal-light hover:text-oxford">{a.backToStories}</Link>
             <LogoutButton />
           </div>
         </div>
@@ -54,18 +64,16 @@ export default async function ArchivedStoriesPage() {
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-6 py-10 space-y-6">
           <div>
-            <h2 className="font-serif text-xl text-oxford">Archived stories</h2>
-            <p className="text-sm text-charcoal-light mt-1">
-              Hidden from your main list but not deleted. Restore any story to put it back.
-            </p>
+            <h2 className="font-serif text-xl text-oxford">{a.archivedTitle}</h2>
+            <p className="text-sm text-charcoal-light mt-1">{a.archivedSub}</p>
           </div>
 
           {rows.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-12 text-center space-y-2">
-              <p className="font-serif text-lg text-oxford">Nothing archived</p>
-              <p className="text-sm text-gray-500">Stories you archive from your dashboard will appear here.</p>
+              <p className="font-serif text-lg text-oxford">{a.nothingArchived}</p>
+              <p className="text-sm text-gray-500">{a.nothingArchivedSub}</p>
               <Link href="/account" className="inline-block mt-2 text-sm text-brand-600 font-medium hover:text-brand-700">
-                ← Back to your stories
+                {a.backToYourStories}
               </Link>
             </div>
           ) : (
@@ -74,6 +82,7 @@ export default async function ArchivedStoriesPage() {
               initialNextCursor={initialNextCursor}
               mode="restore"
               archivedView
+              lang={lang}
             />
           )}
         </div>

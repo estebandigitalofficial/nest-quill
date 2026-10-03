@@ -52,8 +52,7 @@ export default function StyleStep() {
 
       {imagesPaused && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800 leading-relaxed">
-          <strong className="font-semibold">Pick a style for later</strong> — illustrations are temporarily paused.
-          Your story keeps the choice and we&apos;ll generate full illustrations once they resume.
+          <strong className="font-semibold">{s.pausedTitle}</strong> {s.pausedBody}
         </div>
       )}
 
@@ -65,7 +64,7 @@ export default function StyleStep() {
 
         <div data-tour-id="style-cards" className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {STYLE_ORDER.map((style, i) => {
-            const { label, description } = ILLUSTRATION_STYLES[style]
+            const { label, description } = t.wizard.cards.styles[style] ?? ILLUSTRATION_STYLES[style]
             const locked = i >= availableStyleCount
             const active = selectedStyle === style
             return (
@@ -133,11 +132,11 @@ export default function StyleStep() {
       {/* Optional custom note — primary remaining text input */}
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-gray-700">
-          Custom note <span className="text-gray-400 font-normal">(optional)</span>
+          {s.customNote} <span className="text-gray-400 font-normal">{s.optional}</span>
         </label>
         <textarea
           rows={2}
-          placeholder="Anything else to weave in — favorite toy, family inside joke, etc."
+          placeholder={s.customNotePlaceholder}
           {...register('customNotes')}
           className={cn(inputClass(!!errors.customNotes), 'resize-none')}
         />
@@ -151,7 +150,7 @@ export default function StyleStep() {
         type="button"
         onClick={() => setShowMore(v => !v)}
         className="text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">
-        {showMore ? '▲ Hide extra options' : '▼ More options (dedication, author, closing)'}
+        {showMore ? s.moreHide : s.moreShow}
       </button>
 
       {showMore && (
@@ -159,15 +158,15 @@ export default function StyleStep() {
           {planLimits.canAddDedication ? (
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-gray-700">
-                Dedication <span className="text-gray-400 font-normal">(optional)</span>
+                {s.dedication} <span className="text-gray-400 font-normal">{s.optional}</span>
               </label>
               <textarea
                 rows={2}
-                placeholder="e.g. For Sofia, who makes every day magical. — Mum & Dad"
+                placeholder={s.dedicationPlaceholder}
                 {...register('dedicationText')}
                 className={cn(inputClass(!!errors.dedicationText), 'resize-none')}
               />
-              <p className="text-xs text-gray-400">Printed on the first page.</p>
+              <p className="text-xs text-gray-400">{s.dedicationHint}</p>
               {errors.dedicationText && (
                 <p className="text-xs text-red-500">{errors.dedicationText.message}</p>
               )}
@@ -175,26 +174,26 @@ export default function StyleStep() {
           ) : (
             <div className="rounded-xl border border-dashed border-gray-200 px-4 py-3 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-500">Dedication page</p>
-                <p className="text-xs text-gray-400">Available on Story Pro and above</p>
+                <p className="text-sm font-medium text-gray-500">{s.dedicationLockedTitle}</p>
+                <p className="text-xs text-gray-400">{s.dedicationLockedSub}</p>
               </div>
               <span className="text-xs font-semibold text-brand-500 bg-brand-50 px-2.5 py-1 rounded-full">
-                Upgrade
+                {s.locked}
               </span>
             </div>
           )}
 
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-gray-700">
-              Author name <span className="text-gray-400 font-normal">(optional)</span>
+              {s.author} <span className="text-gray-400 font-normal">{s.optional}</span>
             </label>
             <input
               type="text"
-              placeholder="e.g. Mom & Dad, Grandma Joyce"
+              placeholder={s.authorPlaceholder}
               {...register('authorName')}
               className={inputClass(!!errors.authorName)}
             />
-            <p className="text-xs text-gray-400">Printed on the cover. Leave blank for &ldquo;A Nest &amp; Quill Original&rdquo;.</p>
+            <p className="text-xs text-gray-400">{s.authorHint}</p>
             {errors.authorName && (
               <p className="text-xs text-red-500">{errors.authorName.message}</p>
             )}
@@ -202,15 +201,15 @@ export default function StyleStep() {
 
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-gray-700">
-              Closing page message <span className="text-gray-400 font-normal">(optional)</span>
+              {s.closing} <span className="text-gray-400 font-normal">{s.optional}</span>
             </label>
             <textarea
               rows={2}
-              placeholder="e.g. You are braver than you know, and loved more than you'll ever understand."
+              placeholder={s.closingPlaceholder}
               {...register('closingMessage')}
               className={cn(inputClass(!!errors.closingMessage), 'resize-none')}
             />
-            <p className="text-xs text-gray-400">A personal note printed on the final page.</p>
+            <p className="text-xs text-gray-400">{s.closingHint}</p>
             {errors.closingMessage && (
               <p className="text-xs text-red-500">{errors.closingMessage.message}</p>
             )}

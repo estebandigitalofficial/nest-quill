@@ -123,12 +123,17 @@ export function storyImagesSummary(input: {
 
 // ── Copy ────────────────────────────────────────────────────────────────────
 
+const PLACEHOLDER_COPY = {
+  en: { skipped: 'Illustrations are not available for this book.', unavailable: 'Illustration unavailable.' },
+  es: { skipped: 'Las ilustraciones no están disponibles para este libro.', unavailable: 'Ilustración no disponible.' },
+} as const
+
 /** Customer-facing placeholder for a page without an image. Never includes provider errors. */
-export function readerPlaceholder(page: { imageUrl?: string | null; imageStatus?: string | null }, story: StoryImagesState): string | null {
+export function readerPlaceholder(page: { imageUrl?: string | null; imageStatus?: string | null }, story: StoryImagesState, lang: 'en' | 'es' = 'en'): string | null {
   if (page.imageUrl) return null
-  if (story === 'skipped') return 'Illustrations are not available for this book.'
-  if (page.imageStatus === 'failed') return 'Illustration unavailable.'
-  return 'Illustration unavailable.'
+  const copy = PLACEHOLDER_COPY[lang] ?? PLACEHOLDER_COPY.en
+  if (story === 'skipped') return copy.skipped
+  return copy.unavailable
 }
 
 /** Admin chip suffix for the story detail header. */

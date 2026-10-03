@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const { data: storyReq, error: reqErr } = await adminSupabase
       .from('story_requests')
-      .select('user_email, child_name, status, user_id')
+      .select('user_email, child_name, status, user_id, locale')
       .eq('id', requestId)
       .single()
 
@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
         storyTitle,
         downloadUrl: storyUrl,
         requestId,
+        lang: (storyReq as unknown as { locale?: string }).locale === 'es' ? 'es' : 'en',
       })
 
       await adminSupabase.from('delivery_logs').insert({

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { mobileTabHrefs, type LaunchFlags } from '@/lib/launch/scope'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/lib/i18n/context'
 
 // Role-aware destination for the bottom-right Account tab. Logged-out
 // users get /login; signed-in users go to their role's home so the tab
@@ -83,6 +84,11 @@ const ACCOUNT_TAB = {
 
 export default function MobileTabBar({ flags }: { flags: LaunchFlags }) {
   const pathname = usePathname()
+  const { t } = useLanguage()
+  // Launch-tab labels follow the site language; hidden-product tabs keep
+  // their English label (they never render while their flag is off).
+  const tabLabel = (href: string, fallback: string) =>
+    href === '/' ? t.nav.tabs.home : href === '/create' ? t.nav.tabs.create : fallback
   // Launch scope (Phase 2A): tabs for hidden product areas are not rendered.
   const allowed = new Set(mobileTabHrefs(flags))
   const tabs = TABS.filter(t => allowed.has(t.href))
@@ -131,7 +137,7 @@ export default function MobileTabBar({ flags }: { flags: LaunchFlags }) {
                 {tab.icon}
               </span>
               <span className="text-[10px] font-medium tracking-wide">
-                {tab.label}
+                {tabLabel(tab.href, tab.label)}
               </span>
             </Link>
           )
@@ -150,7 +156,7 @@ export default function MobileTabBar({ flags }: { flags: LaunchFlags }) {
                 {ACCOUNT_TAB.icon}
               </span>
               <span className="text-[10px] font-medium tracking-wide">
-                {ACCOUNT_TAB.label}
+                {t.nav.tabs.account}
               </span>
             </Link>
           )

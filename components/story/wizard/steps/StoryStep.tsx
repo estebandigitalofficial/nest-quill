@@ -129,11 +129,11 @@ export default function StoryStep() {
     <div className="space-y-7">
       <div>
         <h2 className="text-xl font-serif text-gray-900">{s.heading}</h2>
-        <p className="text-sm text-gray-500 mt-1">Pick a theme, then add details. Almost no typing.</p>
+        <p className="text-sm text-gray-500 mt-1">{s.sub}</p>
       </div>
 
       {/* Theme cards (internal field name stays `setting` for back-compat) */}
-      <Section label="Pick a theme" required hint="Choose where the story takes place.">
+      <Section label={s.themeLabel} required hint={s.themeHint}>
         <div data-tour-id="theme-cards" className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {SETTINGS.map(set => (
             <div key={set} data-tour-id={`theme-card-${set}`}>
@@ -160,7 +160,7 @@ export default function StoryStep() {
             'mt-3 text-xs font-semibold transition-colors',
             showCustomTheme ? 'text-brand-600' : 'text-gray-500 hover:text-gray-700'
           )}>
-          + Or describe a custom theme
+          {s.themeCustom}
         </button>
         {showCustomTheme && (
           <input
@@ -173,7 +173,7 @@ export default function StoryStep() {
         )}
         {!showCustomTheme && selectedSetting && (
           <p className="text-[11px] text-gray-400 italic">
-            {SETTING_META[selectedSetting].description}
+            {(t.wizard.cards.settings[selectedSetting] ?? SETTING_META[selectedSetting]).description}
           </p>
         )}
         {errors.storyTheme && (
@@ -182,7 +182,7 @@ export default function StoryStep() {
       </Section>
 
       {/* Traits */}
-      <Section label="Character traits" hint="Pick up to 3.">
+      <Section label={s.traitsLabel} hint={s.traitsHint}>
         <div data-tour-id="traits-chips" className="flex flex-wrap gap-2">
           {TRAITS.map(tr => {
             const active = selectedTraits.includes(tr)
@@ -196,7 +196,7 @@ export default function StoryStep() {
               type="button"
               onClick={() => setShowCustomTrait(true)}
               className="px-3.5 py-1.5 rounded-full text-sm font-medium border border-dashed border-gray-300 text-gray-500 hover:border-brand-300 hover:text-brand-600 transition-colors">
-              + Add your own
+              {s.addOwn}
             </button>
           )}
         </div>
@@ -206,7 +206,7 @@ export default function StoryStep() {
               type="text"
               maxLength={40}
               autoFocus
-              placeholder="e.g. quietly stubborn"
+              placeholder={s.customTraitPlaceholder}
               {...register('customTrait')}
               className={inputClass(!!errors.customTrait)}
             />
@@ -217,7 +217,7 @@ export default function StoryStep() {
                 setShowCustomTrait(false)
               }}
               className="text-xs text-gray-400 hover:text-gray-600 px-2">
-              Remove
+              {s.remove}
             </button>
           </div>
         )}
@@ -227,7 +227,7 @@ export default function StoryStep() {
       </Section>
 
       {/* Conflict */}
-      <Section label="What happens?" hint="The challenge that drives the story.">
+      <Section label={s.conflictLabel} hint={s.conflictHint}>
         <div data-tour-id="conflict-section" className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {CONFLICTS.map(cf => (
             <ConflictCard key={cf} conflict={cf} active={selectedConflict === cf} onClick={() => selectConflict(cf)} />
@@ -236,7 +236,7 @@ export default function StoryStep() {
       </Section>
 
       {/* Goal */}
-      <Section label="What's the goal?" hint="How the journey ends.">
+      <Section label={s.goalLabel} hint={s.goalHint}>
         <div data-tour-id="goal-section" className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {GOALS.map(g => (
             <GoalCard key={g} goal={g} active={selectedGoal === g} onClick={() => selectGoal(g)} />
@@ -270,7 +270,7 @@ export default function StoryStep() {
                     ? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
                     : 'border-gray-200 bg-white text-gray-600 hover:border-brand-300'
                 )}
-                title={adultLocked ? 'Adult tier required' : undefined}>
+                title={adultLocked ? s.adultLocked : undefined}>
                 {/* Use i18n label when present, else prettify */}
                 {(s.tones as Record<string, string>)[tone] ?? prettifyTone(tone)}
                 {ADULT_ONLY.has(tone) && (
@@ -284,7 +284,7 @@ export default function StoryStep() {
           <p className="text-xs text-red-500">{errors.storyTone.message}</p>
         )}
         {!adultGated && ageTier === 'adult' && !learningMode && (
-          <p className="text-[11px] text-amber-600">Confirm 18+ consent in the previous step to unlock adult-only tones.</p>
+          <p className="text-[11px] text-amber-600">{s.adultHint}</p>
         )}
       </Section>
     </div>

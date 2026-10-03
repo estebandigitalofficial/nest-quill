@@ -1,6 +1,7 @@
 import { Resend } from 'resend'
 import { getSetting } from '@/lib/settings/appSettings'
 import { appUrl, getAppUrl } from '@/lib/utils/appUrl'
+import { getDictionary, fill, resolveLang, type Lang } from '@/lib/i18n'
 
 let _resend: Resend | null = null
 function getResend(): Resend {
@@ -16,12 +17,17 @@ export interface SendBookEmailOptions {
   storyTitle: string
   downloadUrl: string
   requestId: string
+  /** Customer language (the request's persisted locale). Defaults to English. */
+  lang?: Lang
 }
 
 export async function sendBookReadyEmail(
   options: SendBookEmailOptions
 ): Promise<{ messageId: string }> {
   const { toEmail, childName, storyTitle, downloadUrl } = options
+  const lang = resolveLang(options.lang)
+  const t = getDictionary(lang).email
+  const r = t.ready
 
   // Honest disclaimer: only when the operator has paused image generation
   // (image_generation_enabled = false) do we tell the reader illustrations
@@ -29,17 +35,16 @@ export async function sendBookReadyEmail(
   const imagesPaused = await getSetting<unknown>('image_generation_enabled', true).catch(() => true) === false
   const betaNote = imagesPaused
     ? `<p style="margin:16px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#777;line-height:1.6;font-style:italic;">
-         Illustrations are currently paused —
-         your story includes the full text and saved illustration style for when generation resumes.
+         ${r.imagesPaused}
        </p>`
     : ''
 
   const html = `<!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Your story is ready!</title>
+  <title>${fill(r.subject, { name: childName })}</title>
 </head>
 <body style="margin:0;padding:0;background:#F8F5EC;font-family:Georgia,serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8F5EC;padding:40px 16px;">
@@ -61,16 +66,15 @@ export async function sendBookReadyEmail(
             <td style="background:#ffffff;border-radius:16px;border:1px solid #e8e0d5;padding:40px 36px;">
 
               <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:28px;font-weight:700;color:#1a1a1a;line-height:1.2;">
-                ${childName}'s story<br/>is ready! ✨
+                ${fill(r.title, { name: childName })}
               </p>
 
               <p style="margin:16px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px;color:#555;line-height:1.6;">
-                Your personalized storybook <strong style="color:#1a1a1a;">"${storyTitle}"</strong> has been
-                created and is waiting for you.
+                ${fill(r.body, { title: storyTitle })}
               </p>
 
               <p style="margin:12px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;color:#777;line-height:1.6;">
-                Tap the button below to read it online or download your PDF.
+                ${r.hint}
               </p>
 
               <!-- CTA button -->
@@ -79,7 +83,7 @@ export async function sendBookReadyEmail(
                   <td style="background:#C99700;border-radius:10px;">
                     <a href="${downloadUrl}"
                        style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.1px;">
-                      Read ${childName}'s story →
+                      ${fill(r.cta, { name: childName })}
                     </a>
                   </td>
                 </tr>
@@ -91,7 +95,7 @@ export async function sendBookReadyEmail(
               <hr style="border:none;border-top:1px solid #ede8e0;margin:32px 0;" />
 
               <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#aaa;line-height:1.6;">
-                If the button doesn't work, copy and paste this link into your browser:<br/>
+                ${t.linkFallback}<br/>
                 <a href="${downloadUrl}" style="color:#C99700;word-break:break-all;">${downloadUrl}</a>
               </p>
 
@@ -102,8 +106,8 @@ export async function sendBookReadyEmail(
           <tr>
             <td style="padding-top:24px;text-align:center;">
               <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:#bbb;">
-                You're receiving this because you created a story at Nest &amp; Quill.<br/>
-                © ${new Date().getFullYear()} Nest &amp; Quill. All rights reserved.
+                ${t.footer}<br/>
+                © ${new Date().getFullYear()} Nest &amp; Quill. ${t.rights}
               </p>
             </td>
           </tr>
@@ -119,7 +123,7 @@ export async function sendBookReadyEmail(
   const { data, error } = await resend.emails.send({
     from: 'Nest & Quill by Bright Tale Books <stories@nestandquill.com>',
     to: toEmail,
-    subject: `${childName}'s story is ready! 📖`,
+    subject: fill(r.subject, { name: childName }),
     html,
   })
 
@@ -133,16 +137,20 @@ export async function sendBookReadyEmail(
 export async function sendSubmissionConfirmationEmail(
   toEmail: string,
   childName: string,
-  requestId: string
+  requestId: string,
+  langInput: Lang | string = 'en'
 ): Promise<void> {
   const storyUrl = appUrl(`/story/${requestId}`)
+  const lang = resolveLang(langInput)
+  const t = getDictionary(lang).email
+  const s = t.submitted
 
   const html = `<!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>We're creating ${childName}'s story</title>
+  <title>${fill(s.subject, { name: childName })}</title>
 </head>
 <body style="margin:0;padding:0;background:#F8F5EC;font-family:Georgia,serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8F5EC;padding:40px 16px;">
@@ -164,16 +172,15 @@ export async function sendSubmissionConfirmationEmail(
             <td style="background:#ffffff;border-radius:16px;border:1px solid #e8e0d5;padding:40px 36px;">
 
               <p style="margin:0 0 8px;font-family:Georgia,serif;font-size:26px;font-weight:700;color:#1a1a1a;line-height:1.2;">
-                We're writing<br/>${childName}'s story! 🖊️
+                ${fill(s.title, { name: childName })}
               </p>
 
               <p style="margin:16px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px;color:#555;line-height:1.6;">
-                We've got everything we need and are busy crafting a unique story just for ${childName}.
-                This usually takes a few minutes.
+                ${fill(s.body, { name: childName })}
               </p>
 
               <p style="margin:12px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;color:#777;line-height:1.6;">
-                You can check the progress anytime — we'll also send you another email when it's done.
+                ${s.hint}
               </p>
 
               <table cellpadding="0" cellspacing="0" style="margin-top:28px;">
@@ -181,7 +188,7 @@ export async function sendSubmissionConfirmationEmail(
                   <td style="background:#C99700;border-radius:10px;">
                     <a href="${storyUrl}"
                        style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">
-                      Check progress →
+                      ${s.cta}
                     </a>
                   </td>
                 </tr>
@@ -200,8 +207,8 @@ export async function sendSubmissionConfirmationEmail(
           <tr>
             <td style="padding-top:24px;text-align:center;">
               <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:#bbb;">
-                You're receiving this because you created a story at Nest &amp; Quill.<br/>
-                © ${new Date().getFullYear()} Nest &amp; Quill. All rights reserved.
+                ${t.footer}<br/>
+                © ${new Date().getFullYear()} Nest &amp; Quill. ${t.rights}
               </p>
             </td>
           </tr>
@@ -217,7 +224,7 @@ export async function sendSubmissionConfirmationEmail(
   const { error } = await resend.emails.send({
     from: 'Nest & Quill by Bright Tale Books <stories@nestandquill.com>',
     to: toEmail,
-    subject: `We're creating ${childName}'s story! 🖊️`,
+    subject: fill(s.subject, { name: childName }),
     html,
   })
 
@@ -231,9 +238,10 @@ export async function sendSubmissionConfirmationEmail(
 const APP_URL = getAppUrl()
 const FROM = 'Nest & Quill by Bright Tale Books <stories@nestandquill.com>'
 
-function emailShell(bodyContent: string): string {
+function emailShell(bodyContent: string, lang: Lang = 'en', footerText?: string): string {
+  const t = getDictionary(lang).email
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -257,8 +265,8 @@ function emailShell(bodyContent: string): string {
         <tr>
           <td style="padding-top:20px;text-align:center;">
             <p style="margin:0;font-size:11px;color:#bbb;line-height:1.6;">
-              You're receiving this from Nest &amp; Quill because you created an account or story.<br/>
-              © ${new Date().getFullYear()} Nest &amp; Quill. All rights reserved.
+              ${footerText ?? t.welcome.footer}<br/>
+              © ${new Date().getFullYear()} Nest &amp; Quill. ${t.rights}
             </p>
           </td>
         </tr>
@@ -525,36 +533,34 @@ export async function sendDripEmailFromTemplate(
 
 // ── Welcome email ─────────────────────────────────────────────────────────────
 
-export async function sendWelcomeEmail(toEmail: string): Promise<void> {
+export async function sendWelcomeEmail(toEmail: string, langInput: Lang | string = 'en'): Promise<void> {
   const createUrl = `${APP_URL}/create`
+  const lang = resolveLang(langInput)
+  const w = getDictionary(lang).email.welcome
   const html = emailShell(`
     <h1 style="margin:0 0 12px;font-size:26px;color:#0C2340;line-height:1.2;">
-      Welcome to Nest &amp; Quill 🪺
+      ${w.title}
     </h1>
     <p style="margin:0 0 16px;font-size:15px;color:#2E2E2E;line-height:1.7;">
-      We're so glad you're here. Nest &amp; Quill creates personalized, illustrated
-      storybooks starring your child — written and illustrated by AI in minutes.
+      ${w.intro}
     </p>
     <p style="margin:0 0 8px;font-size:15px;color:#2E2E2E;line-height:1.7;">
-      Here's what you can do:
+      ${w.what}
     </p>
     <ul style="margin:0 0 20px;padding-left:20px;font-size:15px;color:#2E2E2E;line-height:1.9;">
-      <li>Create a story starring your child — free, no credit card needed</li>
-      <li>Choose from 5 illustration styles (watercolor, cartoon, and more)</li>
-      <li>Add a personal dedication, supporting characters, and a closing message</li>
-      <li>Download a beautiful PDF to read, print, or share</li>
+      ${w.items.map(item => `<li>${item}</li>`).join('\n      ')}
     </ul>
-    ${ctaButton('Create your first story →', createUrl)}
+    ${ctaButton(w.cta, createUrl)}
     <p style="margin:24px 0 0;font-size:13px;color:#4a4a4a;line-height:1.6;">
-      Your first story is completely free. It only takes about two minutes.
+      ${w.outro}
     </p>
-  `)
+  `, lang, w.footer)
 
   const resend = getResend()
   const { error } = await resend.emails.send({
     from: FROM,
     to: toEmail,
-    subject: 'Welcome to Nest & Quill 🪺',
+    subject: w.subject,
     html,
   })
   if (error) throw new Error(`Resend error (welcome): ${error.message}`)

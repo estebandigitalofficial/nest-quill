@@ -183,6 +183,7 @@ export async function GET(request: NextRequest) {
                 storyTitle,
                 downloadUrl: storyUrl,
                 requestId,
+                lang: (storyRequest as unknown as { locale?: string }).locale === 'es' ? 'es' : 'en',
               })
 
               await createAdminClient()

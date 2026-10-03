@@ -18,7 +18,7 @@ export async function POST(
 
     const { data: req } = await supabase
       .from('story_requests')
-      .select('id, user_email, child_name, status')
+      .select('id, user_email, child_name, status, locale')
       .eq('id', requestId)
       .single()
 
@@ -43,6 +43,7 @@ export async function POST(
       storyTitle: story?.title ?? `${req.child_name}'s Story`,
       downloadUrl: appUrl(`/story/${requestId}`),
       requestId,
+      lang: (req as unknown as { locale?: string }).locale === 'es' ? 'es' : 'en',
     })
 
     return NextResponse.json({ ok: true })

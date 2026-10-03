@@ -8,25 +8,19 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/lib/i18n/context'
 
-// Slug values match the API's VALID_CATEGORIES set exactly. Labels
-// can be tweaked freely; values must stay stable so existing tickets
-// keep their categorization.
-const CATEGORIES: { value: string; label: string }[] = [
-  { value: 'story_issue',           label: 'Story issue' },
-  { value: 'account_login',         label: 'Account / login' },
-  { value: 'classroom_educator',    label: 'Classroom / educator' },
-  { value: 'billing_pricing',       label: 'Billing / pricing' },
-  { value: 'sponsor_rewards',       label: 'Sponsor / rewards' },
-  { value: 'guided_tour_confusion', label: 'Guided tour confusion' },
-  { value: 'bug_report',            label: 'Bug report' },
-  { value: 'other',                 label: 'Other' },
-]
+// Slug values match the API's VALID_CATEGORIES set exactly. The launch
+// product offers the customer-relevant subset; classroom / sponsor / tour
+// categories belong to hidden products and are not offered publicly.
+const CATEGORY_VALUES = ['story_issue', 'account_login', 'billing_pricing', 'bug_report', 'other'] as const
 
 const inputClass =
   'w-full rounded-lg border border-parchment-dark px-3.5 py-2.5 text-sm text-charcoal bg-white placeholder:text-charcoal-light/40 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-oxford/30'
 
 export default function ContactForm() {
+  const { t } = useLanguage()
+  const c = t.contact
   const [form, setForm] = useState({ name: '', email: '', subject: '', category: 'other', message: '' })
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
@@ -79,13 +73,13 @@ export default function ContactForm() {
       // While we're hardening the contact pipeline we also surface
       // the diagnostic code + the operator recovery hint so production
       // failures are self-describing without DevTools spelunking.
-      const baseMsg = json.error ?? json.message ?? 'Something went wrong. Please try again.'
+      const baseMsg = json.error ?? json.message ?? c.generic
       const codeSuffix = json.code ? ` (code: ${json.code})` : ''
       const recoverySuffix = json.recovery ? `\n\nFix: ${json.recovery}` : ''
       setErrorMsg(baseMsg + codeSuffix + recoverySuffix)
       setStatus('error')
     } catch {
-      setErrorMsg("Couldn't reach the server. Check your connection and try again.")
+      setErrorMsg(c.network)
       setStatus('error')
     }
   }
@@ -93,13 +87,11 @@ export default function ContactForm() {
   if (status === 'sent') {
     return (
       <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-12 text-center space-y-4">
-        <h1 className="font-serif text-2xl text-oxford">Message sent!</h1>
-        <p className="text-sm text-charcoal-light max-w-xs mx-auto">
-          Thanks for reaching out. We typically reply within one business day.
-        </p>
+        <h1 className="font-serif text-2xl text-oxford">{c.sentTitle}</h1>
+        <p className="text-sm text-charcoal-light max-w-xs mx-auto">{c.sentBody}</p>
         {refId && (
           <p className="text-xs text-charcoal-light">
-            Reference: <span className="font-mono text-oxford">#{refId}</span>
+            {c.reference} <span className="font-mono text-oxford">#{refId}</span>
           </p>
         )}
         <button
@@ -110,41 +102,39 @@ export default function ContactForm() {
           }}
           className="text-sm text-brand-600 font-medium hover:text-brand-700"
         >
-          Send another message
+          {c.another}
         </button>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-10 space-y-6">
+    <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-5 sm:px-8 py-8 sm:py-10 space-y-6">
       <div>
-        <h1 className="font-serif text-3xl text-oxford mb-1">Get in touch</h1>
-        <p className="text-charcoal-light text-sm">
-          We&apos;d love to hear from you. We typically respond within one business day.
-        </p>
+        <h1 className="font-serif text-3xl text-oxford mb-1">{c.title}</h1>
+        <p className="text-charcoal-light text-sm">{c.sub}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-charcoal">Name</label>
+            <label className="block text-sm font-medium text-charcoal">{c.name}</label>
             <input
               type="text"
               value={form.name}
               onChange={e => set('name', e.target.value)}
-              placeholder="Your name"
+              placeholder={c.namePlaceholder}
               className={inputClass}
             />
           </div>
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-charcoal">Email</label>
+            <label className="block text-sm font-medium text-charcoal">{c.email}</label>
             <input
               type="email"
               required
               value={form.email}
               onChange={e => set('email', e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t.auth.emailPlaceholder}
               className={inputClass}
             />
           </div>
@@ -152,35 +142,35 @@ export default function ContactForm() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-charcoal">Category</label>
+            <label className="block text-sm font-medium text-charcoal">{c.category}</label>
             <select
               value={form.category}
               onChange={e => set('category', e.target.value)}
               className={inputClass}
             >
-              {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+              {CATEGORY_VALUES.map(v => <option key={v} value={v}>{c.categories[v] ?? v}</option>)}
             </select>
           </div>
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-charcoal">Subject</label>
+            <label className="block text-sm font-medium text-charcoal">{c.subject}</label>
             <input
               type="text"
               value={form.subject}
               onChange={e => set('subject', e.target.value)}
-              placeholder="Short summary"
+              placeholder={c.subjectPlaceholder}
               className={inputClass}
             />
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-charcoal">Message</label>
+          <label className="block text-sm font-medium text-charcoal">{c.message}</label>
           <textarea
             required
             rows={5}
             value={form.message}
             onChange={e => set('message', e.target.value)}
-            placeholder="Tell us what's on your mind…"
+            placeholder={c.messagePlaceholder}
             className={inputClass + ' resize-none'}
           />
         </div>
@@ -194,7 +184,7 @@ export default function ContactForm() {
           disabled={status === 'sending'}
           className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-semibold py-3 rounded-xl transition-colors"
         >
-          {status === 'sending' ? 'Sending…' : 'Send message'}
+          {status === 'sending' ? c.sending : c.send}
         </button>
       </form>
     </div>

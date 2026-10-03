@@ -3,9 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/lib/i18n/context'
+import { authErrorMessage } from '@/lib/i18n/authErrors'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
+  const { t } = useLanguage()
+  const a = t.auth
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -31,11 +35,12 @@ export default function ResetPasswordPage() {
     const code = new URLSearchParams(window.location.search).get('code')
     if (code) {
       supabase.auth.exchangeCodeForSession(code).catch(() => {
-        setError('This reset link is invalid or has expired. Please request a new one.')
+        setError(a.reset.invalid)
       })
     }
 
     return () => subscription.unsubscribe()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -43,11 +48,11 @@ export default function ResetPasswordPage() {
     setError(null)
 
     if (password !== confirm) {
-      setError('Passwords do not match.')
+      setError(a.reset.mismatch)
       return
     }
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
+      setError(a.reset.short)
       return
     }
 
@@ -57,7 +62,7 @@ export default function ResetPasswordPage() {
     setLoading(false)
 
     if (error) {
-      setError(error.message)
+      setError(authErrorMessage(t, error.message))
       return
     }
 
@@ -68,16 +73,16 @@ export default function ResetPasswordPage() {
   if (!ready) {
     return (
       <div className="w-full max-w-sm">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 text-center space-y-3">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 sm:px-8 py-8 sm:py-10 text-center space-y-3">
           {error ? (
             <>
               <p className="text-sm text-red-500">{error}</p>
               <a href="/forgot-password" className="text-sm text-brand-600 font-medium hover:text-brand-700">
-                Request a new reset link
+                {a.reset.requestNew}
               </a>
             </>
           ) : (
-            <p className="text-sm text-gray-500">Verifying your reset link…</p>
+            <p className="text-sm text-gray-500">{a.reset.verifying}</p>
           )}
         </div>
       </div>
@@ -86,36 +91,38 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="w-full max-w-sm">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 space-y-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 sm:px-8 py-8 sm:py-10 space-y-6">
         <div>
-          <h1 className="font-serif text-2xl text-gray-900">Set new password</h1>
-          <p className="text-sm text-gray-500 mt-1">Choose a strong password for your account.</p>
+          <h1 className="font-serif text-2xl text-gray-900">{a.reset.title}</h1>
+          <p className="text-sm text-gray-500 mt-1">{a.reset.sub}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">New password</label>
+            <label className="block text-sm font-medium text-gray-700" htmlFor="reset-password">{a.reset.newPassword}</label>
             <input
+              id="reset-password"
               type="password"
               required
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className={inputClass}
-              placeholder="At least 8 characters"
+              placeholder={a.signup.passwordPlaceholder}
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Confirm password</label>
+            <label className="block text-sm font-medium text-gray-700" htmlFor="reset-confirm">{a.reset.confirmPassword}</label>
             <input
+              id="reset-confirm"
               type="password"
               required
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               className={inputClass}
-              placeholder="Repeat your password"
+              placeholder={a.reset.confirmPlaceholder}
             />
           </div>
 
@@ -128,7 +135,7 @@ export default function ResetPasswordPage() {
             disabled={loading}
             className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-semibold py-3 rounded-xl transition-colors"
           >
-            {loading ? 'Saving…' : 'Update password'}
+            {loading ? a.reset.submitting : a.reset.submit}
           </button>
         </form>
       </div>

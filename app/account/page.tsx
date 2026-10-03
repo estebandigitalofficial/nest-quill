@@ -10,6 +10,14 @@ import SiteFooter from '@/components/layout/SiteFooter'
 import StoryList from '@/components/account/StoryList'
 import { loadThumbs } from '@/components/account/loadThumbs'
 import { PAGE_SIZE } from '@/components/account/pageSize'
+import { getServerLang } from '@/lib/i18n/server'
+import { getDictionary, fill } from '@/lib/i18n'
+import type { Metadata } from 'next'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getServerLang()
+  return { title: getDictionary(lang).meta.pages.account }
+}
 
 export default async function AccountPage() {
   const supabase = await createClient()
@@ -49,6 +57,10 @@ export default async function AccountPage() {
 
   const planTier = (user.user_metadata?.plan_tier as PlanTier) ?? 'free'
   const plan = PLAN_CONFIG[planTier]
+  const lang = await getServerLang()
+  const t = getDictionary(lang)
+  const a = t.account
+  const planName = (t.pricing.plans as Record<string, { name: string }>)[planTier]?.name ?? plan.displayName
 
   return (
     <div className="h-dvh bg-parchment flex flex-col">
@@ -58,8 +70,9 @@ export default async function AccountPage() {
             Nest &amp; Quill
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/create" className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-full transition-colors">
-              Create a story →
+            <Link href="/create" className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-3 sm:px-4 py-2 rounded-full transition-colors whitespace-nowrap">
+              <span className="sm:hidden">{t.nav.createShort}</span>
+              <span className="hidden sm:inline">{a.createCta}</span>
             </Link>
             <LogoutButton />
           </div>
@@ -68,43 +81,43 @@ export default async function AccountPage() {
 
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6 flex items-center justify-between">
-            <div>
-              <p className="text-xs text-charcoal-light uppercase tracking-widest font-semibold mb-1">Account</p>
-              <p className="text-oxford font-medium">{user.email}</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 sm:px-6 py-5 sm:py-6 flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-xs text-charcoal-light uppercase tracking-widest font-semibold mb-1">{a.title}</p>
+              <p className="text-oxford font-medium truncate">{user.email}</p>
             </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-400 mb-1">Current plan</p>
+            <div className="text-right shrink-0">
+              <p className="text-xs text-gray-400 mb-1">{a.currentPlan}</p>
               <span className="inline-block bg-brand-100 text-brand-700 text-xs font-semibold px-3 py-1 rounded-full">
-                {plan.displayName}
+                {planName}
               </span>
             </div>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-serif text-xl text-oxford">Your stories</h2>
+              <h2 className="font-serif text-xl text-oxford">{a.yourStories}</h2>
               <div className="flex items-center gap-4">
                 {(archivedCount ?? 0) > 0 && (
                   <Link href="/account/archived" className="text-sm text-gray-500 hover:text-oxford font-medium">
-                    Archived ({archivedCount})
+                    {fill(a.archived, { n: archivedCount ?? 0 })}
                   </Link>
                 )}
-                <Link href="/create" className="text-sm text-brand-600 font-medium hover:text-brand-700">
-                  + New story
+                <Link href="/create" className="text-sm text-brand-600 font-medium hover:text-brand-700 whitespace-nowrap">
+                  {a.newStory}
                 </Link>
               </div>
             </div>
 
             {rows.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-12 text-center space-y-3">
-                <p className="font-serif text-lg text-oxford">No stories yet</p>
-                <p className="text-sm text-gray-500">Create your first personalized storybook.</p>
+                <p className="font-serif text-lg text-oxford">{a.noneTitle}</p>
+                <p className="text-sm text-gray-500">{a.noneSub}</p>
                 <Link
                   href="/create"
                   className="inline-block mt-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
                 >
-                  Create a story →
+                  {a.createCta}
                 </Link>
               </div>
             ) : (
@@ -113,6 +126,7 @@ export default async function AccountPage() {
                 initialNextCursor={initialNextCursor}
                 mode="archive"
                 archivedView={false}
+                lang={lang}
               />
             )}
           </div>

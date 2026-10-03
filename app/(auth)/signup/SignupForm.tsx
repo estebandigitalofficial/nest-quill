@@ -5,22 +5,21 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { appUrl } from '@/lib/utils/appUrl'
+import { useLanguage } from '@/lib/i18n/context'
+import { authErrorMessage } from '@/lib/i18n/authErrors'
 
 type Role = 'parent' | 'educator' | 'student'
-
-const ROLES: { value: Role; label: string; desc: string }[] = [
-  { value: 'parent', label: 'Parent / Family', desc: 'Create stories for my child' },
-  { value: 'educator', label: 'Educator', desc: 'Assign learning tools to my class' },
-  { value: 'student', label: 'Student', desc: 'Complete assignments from my teacher' },
-]
+const ALL_ROLES: Role[] = ['parent', 'educator', 'student']
 
 export default function SignupForm({ allowedRoles }: { allowedRoles: Role[] }) {
   const searchParams = useSearchParams()
+  const { t } = useLanguage()
+  const a = t.auth
   // Launch scope (Phase 2A): educator/student roles belong to the deferred
   // Classroom product; a ?role= for a hidden role falls back to parent.
   const requested = searchParams.get('role') as Role | null
   const initialRole: Role = requested && allowedRoles.includes(requested) ? requested : 'parent'
-  const roles = ROLES.filter(r => allowedRoles.includes(r.value))
+  const roles = ALL_ROLES.filter(r => allowedRoles.includes(r))
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -35,7 +34,7 @@ export default function SignupForm({ allowedRoles }: { allowedRoles: Role[] }) {
     setLoading(true)
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
+      setError(a.signup.passwordShort)
       setLoading(false)
       return
     }
@@ -54,7 +53,7 @@ export default function SignupForm({ allowedRoles }: { allowedRoles: Role[] }) {
     })
 
     if (error) {
-      setError(error.message)
+      setError(authErrorMessage(t, error.message))
       setLoading(false)
       return
     }
@@ -65,16 +64,16 @@ export default function SignupForm({ allowedRoles }: { allowedRoles: Role[] }) {
   if (done) {
     return (
       <div className="w-full max-w-sm">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 text-center space-y-4">
-          <h2 className="font-serif text-xl text-oxford">Check your email</h2>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 sm:px-8 py-8 sm:py-10 text-center space-y-4">
+          <h2 className="font-serif text-xl text-oxford">{a.signup.checkTitle}</h2>
           <p className="text-sm text-charcoal-light">
-            We sent a confirmation link to{' '}
-            <span className="font-medium text-oxford">{email}</span>.
-            Click it to activate your account.
+            {a.signup.checkBody1}{' '}
+            <span className="font-medium text-oxford break-all">{email}</span>.{' '}
+            {a.signup.checkBody2}
           </p>
           <p className="text-xs text-gray-400">
-            Already confirmed?{' '}
-            <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700">Sign in</Link>
+            {a.signup.confirmed}{' '}
+            <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700">{a.signup.signIn}</Link>
           </p>
         </div>
       </div>
@@ -83,21 +82,21 @@ export default function SignupForm({ allowedRoles }: { allowedRoles: Role[] }) {
 
   return (
     <div className="w-full max-w-sm">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 space-y-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 sm:px-8 py-8 sm:py-10 space-y-6">
         <div>
-          <h1 className="font-serif text-2xl text-oxford">Create an account</h1>
-          <p className="text-sm text-charcoal-light mt-1">Free to join. No credit card required.</p>
+          <h1 className="font-serif text-2xl text-oxford">{a.signup.title}</h1>
+          <p className="text-sm text-charcoal-light mt-1">{a.signup.sub}</p>
         </div>
 
         {/* Role selector — only when more than one role is offered */}
         {roles.length > 1 && (
         <div className="space-y-2">
-          <p className="text-sm font-medium text-charcoal">I am a…</p>
+          <p className="text-sm font-medium text-charcoal">{a.signup.iAm}</p>
           <div className="grid grid-cols-3 gap-2">
             {roles.map(r => (
-              <button key={r.value} type="button" onClick={() => setRole(r.value)}
-                className={`flex flex-col items-center gap-1 px-2 py-3 rounded-xl border-2 text-center transition-all ${role === r.value ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                <span className={`text-[11px] font-semibold leading-tight ${role === r.value ? 'text-brand-700' : 'text-gray-600'}`}>{r.label}</span>
+              <button key={r} type="button" onClick={() => setRole(r)}
+                className={`flex flex-col items-center gap-1 px-2 py-3 rounded-xl border-2 text-center transition-all ${role === r ? 'border-brand-500 bg-brand-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                <span className={`text-[11px] font-semibold leading-tight ${role === r ? 'text-brand-700' : 'text-gray-600'}`}>{a.signup.roles[r] ?? r}</span>
               </button>
             ))}
           </div>
@@ -106,29 +105,29 @@ export default function SignupForm({ allowedRoles }: { allowedRoles: Role[] }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-charcoal">Email</label>
-            <input type="email" required autoComplete="email" value={email}
+            <label className="block text-sm font-medium text-charcoal" htmlFor="signup-email">{a.email}</label>
+            <input id="signup-email" type="email" required autoComplete="email" value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={inputClass} placeholder="you@example.com" />
+              className={inputClass} placeholder={a.emailPlaceholder} />
           </div>
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-charcoal">Password</label>
-            <input type="password" required autoComplete="new-password" value={password}
+            <label className="block text-sm font-medium text-charcoal" htmlFor="signup-password">{a.password}</label>
+            <input id="signup-password" type="password" required autoComplete="new-password" value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={inputClass} placeholder="At least 8 characters" />
+              className={inputClass} placeholder={a.signup.passwordPlaceholder} />
           </div>
 
           {error && <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
 
           <button type="submit" disabled={loading}
             className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-semibold py-3 rounded-xl transition-colors">
-            {loading ? 'Creating account…' : 'Create account'}
+            {loading ? a.signup.submitting : a.signup.submit}
           </button>
         </form>
 
         <p className="text-center text-sm text-charcoal-light">
-          Already have an account?{' '}
-          <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700">Sign in</Link>
+          {a.signup.haveAccount}{' '}
+          <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700">{a.signup.signIn}</Link>
         </p>
       </div>
     </div>

@@ -4,9 +4,12 @@ import SiteHeader from '@/components/layout/SiteHeader'
 import SiteFooter from '@/components/layout/SiteFooter'
 import { getAdminContext } from '@/lib/admin/guard'
 import { getSetting } from '@/lib/settings/appSettings'
+import { getServerLang } from '@/lib/i18n/server'
+import { getDictionary } from '@/lib/i18n'
 
-export const metadata: Metadata = {
-  title: 'Your Story — Nest & Quill',
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getServerLang()
+  return { title: getDictionary(lang).meta.pages.story }
 }
 
 export default async function StoryPage({

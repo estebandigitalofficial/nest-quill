@@ -71,9 +71,9 @@ export default function ChatWidget() {
       }
     } catch {
       setLoading(false)
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' }])
+      setMessages(prev => [...prev, { role: 'assistant', content: t.chat.error }])
     }
-  }, [input, loading, messages, lang])
+  }, [input, loading, messages, lang, t.chat.error])
 
   function handleKey(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
@@ -86,8 +86,8 @@ export default function ChatWidget() {
     <>
       {/* Panel */}
       {open && (
-        <div className="bottom-28 sm:bottom-[84px]" style={{
-          position: 'fixed', right: 20, zIndex: 50,
+        <div className="bottom-[calc(150px+env(safe-area-inset-bottom))] md:bottom-[84px]" style={{
+          position: 'fixed', right: 16, zIndex: 50,
           width: 360, maxWidth: 'calc(100vw - 32px)',
           background: '#F8F5EC',
           borderRadius: 20,
@@ -109,7 +109,7 @@ export default function ChatWidget() {
             <button
               onClick={() => setOpen(false)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(248,245,236,0.6)', padding: 4, display: 'flex', lineHeight: 0 }}
-              aria-label="Close chat"
+              aria-label={t.chat.close}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -184,7 +184,7 @@ export default function ChatWidget() {
                 transition: 'opacity 0.15s',
                 flexShrink: 0,
               }}
-              aria-label="Send"
+              aria-label={t.chat.send}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"/>
@@ -198,17 +198,16 @@ export default function ChatWidget() {
       {/* Toggle button */}
       <button
         onClick={() => setOpen(o => !o)}
-        className={`chat-btn bottom-8 right-3 sm:bottom-[68px] sm:right-5 ls:bottom-14`}
+        className={`chat-btn bottom-[calc(56px+env(safe-area-inset-bottom))] right-0 w-[76px] h-[76px] sm:w-[120px] sm:h-[120px] md:bottom-[68px] md:right-5 ls:bottom-14`}
         style={{
-          position: 'fixed', zIndex: 50,
-          width: 120, height: 120,
+          position: 'fixed', zIndex: 45,
           background: 'transparent',
           border: 'none',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.55)) drop-shadow(0 4px 16px rgba(0,0,0,0.3))',
           lineHeight: 0,
         }}
-        aria-label={open ? 'Close chat' : 'Chat with us'}
+        aria-label={open ? t.chat.close : t.chat.open}
       >
         {open ? (
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0C2340" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -221,7 +220,7 @@ export default function ChatWidget() {
             alt="Nest & Quill"
             width={120}
             height={120}
-            style={{ objectFit: 'contain' }}
+            style={{ objectFit: 'contain', width: '100%', height: '100%' }}
           />
         )}
       </button>

@@ -7,6 +7,7 @@
 
 import Image from 'next/image'
 import { cn } from '@/lib/utils/cn'
+import { useLanguage } from '@/lib/i18n/context'
 import type {
   AgeTier,
   Trait,
@@ -26,7 +27,8 @@ export const AGE_TIER_META: Record<AgeTier, { label: string; sub: string }> = {
 export function AgeTierCard({
   tier, active, onClick,
 }: { tier: AgeTier; active: boolean; onClick: () => void }) {
-  const meta = AGE_TIER_META[tier]
+  const { t } = useLanguage()
+  const meta = t.wizard.cards.ageTier[tier] ?? AGE_TIER_META[tier]
   return (
     <button
       type="button"
@@ -70,6 +72,7 @@ export const TRAIT_LABELS: Record<Trait, string> = {
 export function TraitChip({
   trait, active, disabled, onClick,
 }: { trait: Trait; active: boolean; disabled?: boolean; onClick: () => void }) {
+  const { t } = useLanguage()
   return (
     <button
       type="button"
@@ -83,7 +86,7 @@ export function TraitChip({
           ? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
           : 'border-gray-200 bg-white text-gray-600 hover:border-brand-300'
       )}>
-      {TRAIT_LABELS[trait]}
+      {t.wizard.cards.traits[trait] ?? TRAIT_LABELS[trait]}
     </button>
   )
 }
@@ -250,7 +253,9 @@ export const SETTING_META: Record<Setting, ThemePalette> = {
 export function SettingCard({
   setting, active, onClick,
 }: { setting: Setting; active: boolean; onClick: () => void }) {
+  const { t } = useLanguage()
   const meta = SETTING_META[setting]
+  const copy = t.wizard.cards.settings[setting] ?? meta
   const bgUrl = themeBgUrl(setting)
   return (
     <button
@@ -278,8 +283,8 @@ export function SettingCard({
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
       <div className="relative p-3 h-full flex flex-col justify-end">
-        <p className="text-white font-semibold text-sm drop-shadow">{meta.label}</p>
-        <p className="text-white/85 text-[11px] leading-tight drop-shadow-sm">{meta.description}</p>
+        <p className="text-white font-semibold text-sm drop-shadow">{copy.label}</p>
+        <p className="text-white/85 text-[11px] leading-tight drop-shadow-sm">{copy.description}</p>
       </div>
       {active && (
         <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white text-brand-600 flex items-center justify-center text-xs font-bold shadow">
@@ -309,7 +314,8 @@ export const CONFLICT_META: Record<Conflict, { label: string; sub: string }> = {
 export function ConflictCard({
   conflict, active, onClick,
 }: { conflict: Conflict; active: boolean; onClick: () => void }) {
-  const meta = CONFLICT_META[conflict]
+  const { t } = useLanguage()
+  const meta = t.wizard.cards.conflicts[conflict] ?? CONFLICT_META[conflict]
   return (
     <button
       type="button"
@@ -343,7 +349,8 @@ export const GOAL_META: Record<Goal, { label: string; sub: string }> = {
 export function GoalCard({
   goal, active, onClick,
 }: { goal: Goal; active: boolean; onClick: () => void }) {
-  const meta = GOAL_META[goal]
+  const { t } = useLanguage()
+  const meta = t.wizard.cards.goals[goal] ?? GOAL_META[goal]
   return (
     <button
       type="button"
@@ -379,6 +386,7 @@ export function StyleCard({
   locked?: boolean
   onClick: () => void
 }) {
+  const { t } = useLanguage()
   return (
     <button
       type="button"
@@ -399,7 +407,7 @@ export function StyleCard({
       </div>
       {locked && (
         <span className="absolute top-2 right-2 text-[10px] font-semibold text-gray-500 bg-white/90 px-1.5 py-0.5 rounded-full">
-          Upgrade
+          {t.wizard.cards.upgrade}
         </span>
       )}
       {active && !locked && (

@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     if (user.email && user.created_at) {
       const ageMs = Date.now() - new Date(user.created_at).getTime()
       if (ageMs < 24 * 60 * 60 * 1000) {
-        sendWelcomeEmail(user.email).catch(() => {})
+        sendWelcomeEmail(user.email, cookieStore.get('nq_lang')?.value === 'es' ? 'es' : 'en').catch(() => {})
 
         const accountType = (user.user_metadata?.account_type as string | undefined) ?? 'parent'
         const { subject, html } = buildNewUserEmail({ email: user.email, accountType })

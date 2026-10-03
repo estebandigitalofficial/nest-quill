@@ -19,7 +19,7 @@ export async function POST(
 
     const { data, error } = await adminSupabase
       .from('story_requests')
-      .select('id, status')
+      .select('id, status, locale')
       .eq('id', requestId)
       .single()
 
@@ -55,7 +55,7 @@ export async function POST(
             'Content-Type': 'application/json',
             Authorization: `Bearer ${process.env.EDGE_FUNCTION_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY}`,
           },
-          body: JSON.stringify({ requestId }),
+          body: JSON.stringify({ requestId, language: (data as { locale?: string }).locale === 'es' ? 'es' : 'en' }),
         })
       } catch (err) {
         console.error('Failed to trigger force-requeue pipeline for request', requestId, err)

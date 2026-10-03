@@ -5,6 +5,8 @@ import { readerPlaceholder, type StoryImagesState } from '@/lib/story/imageState
 import Link from 'next/link'
 import type { StoryStatusResponse, StoryContentResponse, StoryContentPage, StoryQuizResponse } from '@/types/story'
 import LearningActivities from './learning/LearningActivities'
+import { useLanguage } from '@/lib/i18n/context'
+import { fill, type Dictionary, type Lang } from '@/lib/i18n'
 
 // Header / footer are pre-rendered as server elements by the parent server
 // page and passed as ReactNode props. We deliberately do NOT import them
@@ -24,6 +26,8 @@ interface StoryStatusPageProps {
 }
 
 export default function StoryStatusPage({ requestId, isAdmin, betaMode, header, footer }: StoryStatusPageProps) {
+  const { lang, t } = useLanguage()
+  const st = t.status
   const [status, setStatus] = useState<StoryStatusResponse | null>(null)
   const [story, setStory] = useState<StoryContentResponse | null>(null)
   const [quiz, setQuiz] = useState<StoryQuizResponse | null>(null)
@@ -36,22 +40,21 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode, header, 
     try {
       const res = await fetch(`/api/story/status?requestId=${requestId}`)
       if (res.status === 404) {
-        setError('Story not found. This link may be invalid or has expired.')
+        setError(st.notFound)
         return true
       }
       if (!res.ok) {
-        const json = await res.json().catch(() => ({}))
-        setError(json.message ?? 'Failed to load status.')
+        setError(st.loadFailed)
         return true
       }
       const data: StoryStatusResponse = await res.json()
       setStatus(data)
       return TERMINAL_STATUSES.includes(data.status)
     } catch {
-      setError('Could not reach the server.')
+      setError(st.network)
       return true
     }
-  }, [requestId])
+  }, [requestId, st.notFound, st.loadFailed, st.network])
 
   const fetchStory = useCallback(async () => {
     const res = await fetch(`/api/story/${requestId}`)
@@ -90,8 +93,7 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode, header, 
     setRetryError(null)
     const res = await fetch(`/api/story/${requestId}/retry`, { method: 'POST' })
     if (!res.ok) {
-      const json = await res.json().catch(() => ({}))
-      setRetryError(json.message ?? 'Could not retry. Please try again.')
+      setRetryError(st.retryFailed)
       setRetrying(false)
       return
     }
@@ -100,18 +102,16 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode, header, 
     setRetrying(false)
   }
 
-  if (error) return <ErrorView message={error} header={header} footer={footer} />
-  if (!status) return <LoadingShell header={header} footer={footer} />
+  if (error) return <ErrorView message={error} header={header} footer={footer} t={t} />
+  if (!status) return <LoadingShell header={header} footer={footer} t={t} />
 
   if (status.status === 'failed') {
     return (
       <PageShell header={header} footer={footer}>
         <div className="text-center space-y-4 py-8">
           <p className="text-xl font-bold text-red-500">!</p>
-          <h2 className="text-xl font-serif text-gray-900">Something went wrong</h2>
-          <p className="text-sm text-gray-500 max-w-sm mx-auto">
-            We ran into a problem generating this story.
-          </p>
+          <h2 className="text-xl font-serif text-gray-900">{st.failedTitle}</h2>
+          <p className="text-sm text-gray-500 max-w-sm mx-auto">{st.failedBody}</p>
           {retryError && (
             <p className="text-sm text-red-500 bg-red-50 rounded-lg px-4 py-2 max-w-sm mx-auto">{retryError}</p>
           )}
@@ -121,10 +121,10 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode, header, 
               disabled={retrying}
               className="bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors"
             >
-              {retrying ? 'Retrying…' : 'Retry this story'}
+              {retrying ? st.retrying : st.retry}
             </button>
             <Link href="/create" className="bg-white border border-gray-200 text-gray-700 hover:border-gray-300 text-sm font-semibold px-6 py-3 rounded-xl transition-colors">
-              Start a new story
+              {st.newStory}
             </Link>
           </div>
         </div>
@@ -137,10 +137,10 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode, header, 
       <PageShell header={header} footer={footer}>
         {betaMode && (
           <div className="mb-4 text-center text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
-            Beta Mode active — story limits are relaxed while we test.
+            {st.betaNotice}
           </div>
         )}
-        <ProcessingView status={status} />
+        <ProcessingView status={status} t={t} />
       </PageShell>
     )
   }
@@ -155,6 +155,8 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode, header, 
       isAdmin={isAdmin}
       quiz={quiz}
       imagesState={status.imagesState}
+      t={t}
+      lang={lang}
     />
   )
 }
@@ -177,28 +179,27 @@ function PageShell({ header, footer, children }: { header: ReactNode; footer: Re
   )
 }
 
-function LoadingShell({ header, footer }: { header: ReactNode; footer: ReactNode }) {
+function LoadingShell({ header, footer, t }: { header: ReactNode; footer: ReactNode; t: Dictionary }) {
   return (
     <PageShell header={header} footer={footer}>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-12 text-center">
         <div className="w-8 h-8 border-2 border-brand-300 border-t-brand-500 rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-sm text-gray-400">Loading your story…</p>
+        <p className="text-sm text-gray-400">{t.status.loading}</p>
       </div>
     </PageShell>
   )
 }
 
-function ErrorView({ message, header, footer }: { message: string; header: ReactNode; footer: ReactNode }) {
+function ErrorView({ message, header, footer, t }: { message: string; header: ReactNode; footer: ReactNode; t: Dictionary }) {
   return (
     <div className="h-dvh bg-parchment flex flex-col">
       {header}
       <div className="flex-1 overflow-y-auto flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-10 text-center max-w-sm w-full space-y-4">
-          <p className="text-xl font-bold text-gray-400">Oops</p>
-          <h2 className="text-lg font-serif text-oxford">Oops</h2>
+          <h2 className="text-lg font-serif text-oxford">{t.status.oops}</h2>
           <p className="text-sm text-charcoal-light">{message}</p>
           <Link href="/create" className="inline-block text-sm font-semibold text-brand-600 hover:text-brand-700 underline underline-offset-2">
-            Start a new story
+            {t.status.newStory}
           </Link>
         </div>
       </div>
@@ -207,24 +208,28 @@ function ErrorView({ message, header, footer }: { message: string; header: React
   )
 }
 
-function ProcessingView({ status }: { status: StoryStatusResponse }) {
+function ProcessingView({ status, t }: { status: StoryStatusResponse; t: Dictionary }) {
+  const st = t.status
   const pct = Math.max(5, status.progressPct ?? 0)
+  // The worker writes its progress text in English; the reader shows a
+  // localized stage line instead so both languages read naturally.
+  const stage = st.stages[status.status] ?? status.statusMessage
   return (
-    <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-10 text-center space-y-6">
-      <div className="text-xl font-bold text-brand-500 animate-pulse">Creating...</div>
+    <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-6 sm:px-8 py-10 text-center space-y-6">
+      <div className="text-xl font-bold text-brand-500 animate-pulse">{st.creating}</div>
       <div>
         <h2 className="text-2xl font-serif text-oxford mb-1">
-          {status.childName ? `Creating ${status.childName}'s story…` : 'Creating your story…'}
+          {status.childName ? fill(st.creatingFor, { name: status.childName }) : st.creatingYours}
         </h2>
-        <p className="text-sm text-charcoal-light">This usually takes about a minute.</p>
+        <p className="text-sm text-charcoal-light">{st.takesMinute}</p>
       </div>
       <div className="space-y-2">
         <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
           <div className="bg-brand-500 h-2.5 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
         </div>
-        <p className="text-xs text-gray-400">{status.statusMessage}</p>
+        <p className="text-xs text-gray-400">{stage}</p>
       </div>
-      <p className="text-xs text-gray-300">This page will update automatically — no need to refresh.</p>
+      <p className="text-xs text-gray-300">{st.autoUpdate}</p>
     </div>
   )
 }
@@ -240,7 +245,7 @@ type ReaderPage =
   | { kind: 'activities' }
 
 function StoryEbookReader({
-  story, requestId, pdfUrl, planTier, pdfEntitled, isAdmin, quiz, imagesState,
+  story, requestId, pdfUrl, planTier, pdfEntitled, isAdmin, quiz, imagesState, t, lang,
 }: {
   story: StoryContentResponse
   requestId: string
@@ -251,10 +256,13 @@ function StoryEbookReader({
   isAdmin?: boolean
   quiz?: StoryQuizResponse | null
   imagesState?: StoryImagesState
+  t: Dictionary
+  lang: Lang
 }) {
+  const r = t.reader
   const canDownload = typeof pdfEntitled === 'boolean' ? pdfEntitled : planTier !== 'free'
   const backHref = isAdmin ? '/admin' : '/account'
-  const backLabel = isAdmin ? 'Admin dashboard' : 'My stories'
+  const backLabel = isAdmin ? r.backAdmin : r.backMine
   // Show the activity picker on any learning story whose quiz has loaded —
   // even if some non-quiz activity types fail to generate, the picker handles
   // its own per-tab fallback. Non-learning stories skip this slot entirely.
@@ -396,7 +404,7 @@ function StoryEbookReader({
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              Download PDF
+              {r.downloadPdf}
             </a>
           )}
         </div>
@@ -443,9 +451,9 @@ function StoryEbookReader({
         transition: `opacity ${TRANSITION_MS}ms ease, transform ${TRANSITION_MS}ms cubic-bezier(0.4,0,0.2,1)`,
       }}>
         <div style={{ width: '100%', maxWidth: 480, padding: '0 28px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-          {page.kind === 'cover' && <CoverPage story={story} hasMore={readerPages.length > 1} />}
-          {page.kind === 'story' && <StoryPageContent page={page.page} storyIndex={current} total={storyPages.length} imagesState={imagesState} />}
-          {page.kind === 'end' && <EndPage pdfUrl={pdfUrl} canDownload={canDownload} backHref={backHref} hasQuiz={showActivities} onTakeQuiz={() => go(readerPages.length - 1)} />}
+          {page.kind === 'cover' && <CoverPage story={story} hasMore={readerPages.length > 1} t={t} />}
+          {page.kind === 'story' && <StoryPageContent page={page.page} storyIndex={current} total={storyPages.length} imagesState={imagesState} t={t} lang={lang} />}
+          {page.kind === 'end' && <EndPage pdfUrl={pdfUrl} canDownload={canDownload} backHref={backHref} hasQuiz={showActivities} onTakeQuiz={() => go(readerPages.length - 1)} t={t} />}
           {page.kind === 'activities' && (
             <LearningActivities
               requestId={requestId}
@@ -468,19 +476,19 @@ function StoryEbookReader({
         transition: 'opacity 0.4s, transform 0.4s',
       }}>
         <div style={{ height: 20, background: 'linear-gradient(to top, #F8F5EC, transparent)' }} />
-        <div style={{ background: '#F8F5EC', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 20px 20px', gap: 8 }}>
+        <div style={{ background: '#F8F5EC', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 16px calc(16px + env(safe-area-inset-bottom))', gap: 8 }}>
           <div style={{ display: 'flex', gap: 6 }}>
             <button
               onClick={() => go(0)} disabled={current === 0 || animating}
               style={{ fontSize: 11, fontWeight: 500, padding: '8px 12px', borderRadius: 8, border: '1px solid #e7e5e4', color: current === 0 ? '#d6d3d1' : '#78716c', background: 'transparent', cursor: current === 0 ? 'default' : 'pointer', transition: 'color 0.2s' }}
             >
-              ↩ Start
+              {r.start}
             </button>
             <button
               onClick={() => go(current - 1)} disabled={current === 0 || animating}
               style={{ fontSize: 11, fontWeight: 500, padding: '8px 12px', borderRadius: 8, border: '1px solid #e7e5e4', color: current === 0 ? '#d6d3d1' : '#78716c', background: 'transparent', cursor: current === 0 ? 'default' : 'pointer', transition: 'color 0.2s' }}
             >
-              ← Prev
+              {r.prev}
             </button>
           </div>
           <span style={{ fontSize: 10, color: '#a8a29e', letterSpacing: '0.05em' }}>
@@ -490,7 +498,7 @@ function StoryEbookReader({
             onClick={() => go(current + 1)} disabled={current === readerPages.length - 1 || animating}
             style={{ fontSize: 11, fontWeight: 500, padding: '8px 16px', borderRadius: 8, border: '1px solid #e7e5e4', color: current === readerPages.length - 1 ? '#d6d3d1' : '#78716c', background: 'transparent', cursor: current === readerPages.length - 1 ? 'default' : 'pointer', transition: 'color 0.2s' }}
           >
-            Next →
+            {r.next}
           </button>
         </div>
       </div>
@@ -498,7 +506,7 @@ function StoryEbookReader({
   )
 }
 
-function CoverPage({ story, hasMore }: { story: StoryContentResponse; hasMore: boolean }) {
+function CoverPage({ story, hasMore, t }: { story: StoryContentResponse; hasMore: boolean; t: Dictionary }) {
   // Generated cover artwork (no text baked in) sits above the real title and
   // author typography. Without artwork the cover stays purely typographic —
   // never a broken-image placeholder.
@@ -510,7 +518,7 @@ function CoverPage({ story, hasMore }: { story: StoryContentResponse; hasMore: b
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={artwork}
-            alt={`Cover illustration for ${story.title}`}
+            alt={fill(t.reader.coverAlt, { title: story.title })}
             style={{ maxHeight: '46vh', maxWidth: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: 16, boxShadow: '0 10px 30px rgba(12,35,64,0.18)', display: 'block' }}
           />
         </div>
@@ -532,22 +540,24 @@ function CoverPage({ story, hasMore }: { story: StoryContentResponse; hasMore: b
         </p>
       )}
       {hasMore && (
-        <p style={{ fontSize: 11, color: '#c4b5a0', marginTop: 40 }}>Tap or swipe to begin →</p>
+        <p style={{ fontSize: 11, color: '#c4b5a0', marginTop: 40 }}>{t.reader.tapSwipe}</p>
       )}
     </div>
   )
 }
 
-function StoryPageContent({ page, storyIndex, total, imagesState }: {
+function StoryPageContent({ page, storyIndex, total, imagesState, t, lang }: {
   page: StoryContentPage
   storyIndex: number
   total: number
   imagesState?: StoryImagesState
+  t: Dictionary
+  lang: Lang
 }) {
   // Placeholder copy when no image (Phase 2C): "not available for this book"
   // only when the worker intentionally skipped illustrations; otherwise a
   // neutral "unavailable". Provider errors never reach the reader.
-  const placeholder = readerPlaceholder(page, imagesState ?? 'unknown') ?? ''
+  const placeholder = readerPlaceholder(page, imagesState ?? 'unknown', lang) ?? ''
   return (
     <>
       <p style={{ fontSize: 10, color: '#c4b5a0', letterSpacing: '0.1em', alignSelf: 'center' }}>
@@ -559,7 +569,7 @@ function StoryPageContent({ page, storyIndex, total, imagesState }: {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={page.imageUrl}
-            alt={`Illustration for page ${page.pageNumber}`}
+            alt={fill(t.reader.pageAlt, { n: page.pageNumber })}
             style={{ maxHeight: '42vh', maxWidth: '100%', objectFit: 'contain', borderRadius: 14, display: 'block' }}
           />
         </div>
@@ -576,11 +586,12 @@ function StoryPageContent({ page, storyIndex, total, imagesState }: {
   )
 }
 
-function EndPage({ pdfUrl, canDownload, backHref, hasQuiz, onTakeQuiz }: { pdfUrl?: string; canDownload: boolean; backHref: string; hasQuiz?: boolean; onTakeQuiz?: () => void }) {
+function EndPage({ pdfUrl, canDownload, backHref, hasQuiz, onTakeQuiz, t }: { pdfUrl?: string; canDownload: boolean; backHref: string; hasQuiz?: boolean; onTakeQuiz?: () => void; t: Dictionary }) {
+  const r = t.reader
   return (
     <div style={{ textAlign: 'center', width: '100%' }}>
       <p style={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: '1.6rem', color: '#a8a29e', marginBottom: 36 }}>
-        ✦ The End ✦
+        {r.theEnd}
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
         {hasQuiz && (
@@ -588,7 +599,7 @@ function EndPage({ pdfUrl, canDownload, backHref, hasQuiz, onTakeQuiz }: { pdfUr
             onClick={onTakeQuiz}
             style={{ fontSize: 13, fontWeight: 600, color: 'white', background: '#4f46e5', padding: '10px 24px', borderRadius: 12, border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
-            Practice activities →
+            {r.practice}
           </button>
         )}
         {pdfUrl && canDownload && (
@@ -600,7 +611,7 @@ function EndPage({ pdfUrl, canDownload, backHref, hasQuiz, onTakeQuiz }: { pdfUr
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            Download PDF
+            {r.downloadPdf}
           </a>
         )}
         {!canDownload && (
@@ -608,20 +619,20 @@ function EndPage({ pdfUrl, canDownload, backHref, hasQuiz, onTakeQuiz }: { pdfUr
             href="/pricing"
             style={{ fontSize: 13, fontWeight: 600, color: '#C99700', background: '#fff8f0', border: '1.5px solid #f5d9b0', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
-            Upgrade to download PDF
+            {r.upgradePdf}
           </Link>
         )}
         <Link
           href={backHref}
           style={{ fontSize: 13, fontWeight: 600, color: 'white', background: (pdfUrl && canDownload) ? '#78716c' : hasQuiz ? '#78716c' : '#C99700', padding: '10px 24px', borderRadius: 12, textDecoration: 'none', display: 'inline-block' }}
         >
-          {backHref === '/admin' ? 'Back to dashboard →' : 'View in my account →'}
+          {backHref === '/admin' ? r.backDashboard : r.viewAccount}
         </Link>
         <Link
           href="/create"
           style={{ fontSize: 13, color: '#a8a29e', textDecoration: 'underline', textUnderlineOffset: 3 }}
         >
-          Create another story
+          {r.another}
         </Link>
       </div>
     </div>

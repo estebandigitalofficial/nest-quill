@@ -4,8 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { appUrl } from '@/lib/utils/appUrl'
+import { useLanguage } from '@/lib/i18n/context'
+import { authErrorMessage } from '@/lib/i18n/authErrors'
 
 export default function ForgotPasswordPage() {
+  const { t } = useLanguage()
+  const a = t.auth
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -24,7 +28,7 @@ export default function ForgotPasswordPage() {
     setLoading(false)
 
     if (error) {
-      setError(error.message)
+      setError(authErrorMessage(t, error.message))
       return
     }
 
@@ -34,19 +38,19 @@ export default function ForgotPasswordPage() {
   if (submitted) {
     return (
       <div className="w-full max-w-sm">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 space-y-4 text-center">
-          <h1 className="font-serif text-2xl text-gray-900">Check your email</h1>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 sm:px-8 py-8 sm:py-10 space-y-4 text-center">
+          <h1 className="font-serif text-2xl text-gray-900">{a.forgot.sentTitle}</h1>
           <p className="text-sm text-gray-500 leading-relaxed">
-            We sent a password reset link to <strong className="text-gray-700">{email}</strong>.
-            Check your inbox and follow the link to set a new password.
+            {a.forgot.sentBody1} <strong className="text-gray-700 break-all">{email}</strong>.{' '}
+            {a.forgot.sentBody2}
           </p>
           <p className="text-xs text-gray-400 pt-2">
-            Didn&apos;t get it? Check your spam folder or{' '}
+            {a.forgot.noMail}{' '}
             <button
               onClick={() => setSubmitted(false)}
               className="text-brand-600 hover:text-brand-700 font-medium"
             >
-              try again
+              {a.forgot.tryAgain}
             </button>
             .
           </p>
@@ -57,25 +61,24 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="w-full max-w-sm">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 space-y-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 sm:px-8 py-8 sm:py-10 space-y-6">
         <div>
-          <h1 className="font-serif text-2xl text-gray-900">Reset your password</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Enter your email and we&apos;ll send you a reset link.
-          </p>
+          <h1 className="font-serif text-2xl text-gray-900">{a.forgot.title}</h1>
+          <p className="text-sm text-gray-500 mt-1">{a.forgot.sub}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label className="block text-sm font-medium text-gray-700" htmlFor="forgot-email">{a.email}</label>
             <input
+              id="forgot-email"
               type="email"
               required
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={inputClass}
-              placeholder="you@example.com"
+              placeholder={a.emailPlaceholder}
             />
           </div>
 
@@ -88,13 +91,13 @@ export default function ForgotPasswordPage() {
             disabled={loading}
             className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-semibold py-3 rounded-xl transition-colors"
           >
-            {loading ? 'Sending…' : 'Send reset link'}
+            {loading ? a.forgot.submitting : a.forgot.submit}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-500">
           <Link href="/login" className="text-brand-600 font-medium hover:text-brand-700">
-            ← Back to sign in
+            {a.forgot.back}
           </Link>
         </p>
       </div>

@@ -113,7 +113,7 @@ export async function POST(
             'Content-Type': 'application/json',
             Authorization: `Bearer ${process.env.EDGE_FUNCTION_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY}`,
           },
-          body: JSON.stringify({ requestId }),
+          body: JSON.stringify({ requestId, language: (storyRequest as unknown as { locale?: string }).locale === 'es' ? 'es' : 'en' }),
         })
       } catch (err) {
         console.error('Failed to trigger retry pipeline for request', requestId, err)

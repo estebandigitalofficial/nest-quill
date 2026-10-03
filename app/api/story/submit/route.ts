@@ -26,7 +26,10 @@ export async function POST(request: NextRequest) {
 
     // ── 1. Parse and validate the incoming form data ────────────────────────
     const body = await request.json()
-    const language: string = body.language === 'es' ? 'es' : 'en'
+    // Story language = the site language the wizard was in (defaults to
+    // English). Persisted on the row as `locale` so retries, sweep recovery
+    // and emails all know it without the browser.
+    const language: 'en' | 'es' = body.language === 'es' ? 'es' : 'en'
     const formData = validateStoryForm(body)
 
     // ── 2. Identify the user (authenticated or guest) ───────────────────────
@@ -207,6 +210,7 @@ export async function POST(request: NextRequest) {
         closing_message: formData.closingMessage ?? null,
         custom_notes: finalCustomNotes,
         user_email: formData.userEmail,
+        locale: language,
         learning_mode: formData.learningMode ?? false,
         learning_subject: formData.learningSubject ?? null,
         learning_grade: formData.learningGrade ?? null,
@@ -271,7 +275,7 @@ export async function POST(request: NextRequest) {
 
     after(async () => {
       try {
-        await sendSubmissionConfirmationEmail(formData.userEmail, formData.childName, requestId)
+        await sendSubmissionConfirmationEmail(formData.userEmail, formData.childName, requestId, language)
       } catch (err) {
         console.error('Failed to send submission confirmation email', requestId, err)
       }

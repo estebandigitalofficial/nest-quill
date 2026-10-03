@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Tour, TourStep } from '@/lib/tours/types'
 import GuideQuill from './GuideQuill'
+import { useLanguage } from '@/lib/i18n/context'
 
 interface Props {
   tourKey: string
@@ -24,6 +25,10 @@ interface Props {
 const GUEST_DISMISS_PREFIX = 'nq:tour:dismissed:'
 
 export default function TourRunner({ tourKey, forceReplay = false }: Props) {
+  // Tour steps are authored in English (guided_tour_steps). The tour is an
+  // English-only overlay for now, so it never starts on the Spanish site.
+  const { lang } = useLanguage()
+  const englishOnly = lang !== 'en'
   const [tour, setTour] = useState<Tour | null>(null)
   const [active, setActive] = useState(false)
   const [stepIdx, setStepIdx] = useState(0)
@@ -37,6 +42,7 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
   // Fetch the tour and decide whether to start.
   useEffect(() => {
     cancelledRef.current = false
+    if (englishOnly) return
     fetch(`/api/tours/${tourKey}`)
       .then(r => r.ok ? r.json() : null)
       .then((data: { tour: Tour | null; progress: { completed: boolean; skipped: boolean; last_step: number } | null } | null) => {
@@ -77,7 +83,7 @@ export default function TourRunner({ tourKey, forceReplay = false }: Props) {
       .catch(() => { /* swallow — tour is non-essential */ })
 
     return () => { cancelledRef.current = true }
-  }, [tourKey, forceReplay])
+  }, [tourKey, forceReplay, englishOnly])
 
   const step: TourStep | null = useMemo(() => {
     if (!tour || !active) return null

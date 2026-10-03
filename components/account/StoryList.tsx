@@ -6,6 +6,8 @@
 
 import { useState } from 'react'
 import StoryRow from './StoryRow'
+import { useLanguage } from '@/lib/i18n/context'
+import type { Lang } from '@/lib/i18n'
 
 interface Story {
   id: string
@@ -28,9 +30,13 @@ interface Props {
   mode: 'archive' | 'restore'
   /** which API list to paginate */
   archivedView: boolean
+  /** Server-resolved language (the client context takes over after hydration). */
+  lang?: Lang
 }
 
 export default function StoryList({ initialRows, initialNextCursor, mode, archivedView }: Props) {
+  const { t } = useLanguage()
+  const a = t.account
   const [rows, setRows] = useState<RowEntry[]>(initialRows)
   const [cursor, setCursor] = useState<string | null>(initialNextCursor)
   const [loading, setLoading] = useState(false)
@@ -47,7 +53,7 @@ export default function StoryList({ initialRows, initialNextCursor, mode, archiv
     setLoading(false)
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))
-      setError(body.message ?? 'Could not load older stories.')
+      setError(body.message ?? a.loadFailed)
       return
     }
     const data = (await res.json()) as { rows: RowEntry[]; nextCursor: string | null }
@@ -84,12 +90,12 @@ export default function StoryList({ initialRows, initialNextCursor, mode, archiv
             onClick={loadMore}
             disabled={loading}
             className="text-sm font-semibold text-brand-600 hover:text-brand-700 disabled:opacity-50 transition-colors px-4 py-2 rounded-lg border border-gray-200 hover:border-brand-300 bg-white">
-            {loading ? 'Loading…' : 'Load older stories'}
+            {loading ? a.loading : a.loadOlder}
           </button>
         </div>
       ) : (
         rows.length > 0 && (
-          <p className="text-center text-xs text-gray-400 pt-2">You&apos;ve reached the end.</p>
+          <p className="text-center text-xs text-gray-400 pt-2">{a.end}</p>
         )
       )}
     </div>

@@ -1,7 +1,6 @@
 'use client'
 
-const STANDARD_LABELS = ['Plan', 'Child', 'Story', 'Style', 'Review']
-const LEARNING_LABELS = ['Plan', 'Child', 'Story', 'Learning', 'Style', 'Review']
+import { useLanguage } from '@/lib/i18n/context'
 
 export default function WizardProgress({
   currentStep,
@@ -10,10 +9,14 @@ export default function WizardProgress({
   currentStep: number
   totalSteps?: number
 }) {
-  const labels = totalSteps === 6 ? LEARNING_LABELS : STANDARD_LABELS
+  const { t } = useLanguage()
+  const p = t.wizard.progress
+  const labels = totalSteps === 6
+    ? [p.plan, p.child, p.story, p.learning, p.style, p.review]
+    : [p.plan, p.child, p.story, p.style, p.review]
 
   return (
-    <nav aria-label="Form steps" className="mb-8">
+    <nav aria-label={p.aria} className="mb-8">
       <ol className="flex items-center justify-between relative">
         <li className="absolute inset-x-0 top-4 h-0.5 bg-gray-200 -z-10" aria-hidden="true">
           <div

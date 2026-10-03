@@ -59,7 +59,9 @@ test('5-6. pricing shows the four launch choices and Educator is never selectabl
   assert.ok(!/educator/.test(wizard.split('\n').slice(0, 6).join('\n')), 'WIZARD_PLANS excludes educator')
   const pricing = read('app/pricing/page.tsx')
   assert.match(pricing, /\{flags\.classroom && \(/)
-  assert.match(pricing, /FAQ\.filter\(item => !item\.area \|\| flags\[item\.area\]\)/)
+  // FAQ copy now lives in the localized dictionary; no hidden-product FAQ item exists in either language.
+  assert.match(pricing, /p\.faq\.items\.map\(/)
+  assert.doesNotMatch(pricing, /Classroom free for teachers/)
   assert.match(read('app/api/chat/route.ts'), /classroomEnabled \?/)
 })
 

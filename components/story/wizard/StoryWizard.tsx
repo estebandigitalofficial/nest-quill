@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { useForm, FormProvider } from 'react-hook-form'
+import { useForm, FormProvider, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { storyFormSchema, type StoryFormValues } from '@/lib/validators/story-form'
+import { buildStoryFormSchema, type StoryFormValues } from '@/lib/validators/story-form'
 import { cn } from '@/lib/utils/cn'
 import { useLanguage } from '@/lib/i18n/context'
+import { errorMessage } from '@/lib/i18n'
 import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
 import type { LaunchTier as PlanTier } from '@/lib/entitlements/policy'
 import WizardProgress from './WizardProgress'
@@ -94,8 +95,17 @@ export default function StoryWizard({
   const [planPreselected, setPlanPreselected] = useState(!!initialPlan)
   const [learningMode, setLearningMode] = useState(false)
 
+  // Validation messages follow the site language. The resolver identity is
+  // stable; it reads the latest schema through a ref so switching languages
+  // mid-wizard re-validates in the new language without re-mounting the form.
+  const schema = useMemo(() => buildStoryFormSchema(t.validation), [t.validation])
+  const schemaRef = useRef(schema)
+  schemaRef.current = schema
+  const resolverRef = useRef<Resolver<StoryFormValues>>((values, context, options) =>
+    zodResolver(schemaRef.current)(values, context, options) as ReturnType<Resolver<StoryFormValues>>)
+
   const methods = useForm<StoryFormValues>({
-    resolver: zodResolver(storyFormSchema),
+    resolver: resolverRef.current,
     defaultValues: {
       planTier: initialPlan ?? 'free',
       storyLength: Math.min((initialPlan ? PLAN_CONFIG[initialPlan].limits.maxPagesPerBook : 8), 16) as 8 | 16 | 24 | 32,
@@ -182,7 +192,9 @@ export default function StoryWizard({
       if (!res.ok) {
         setError('root', {
           type: json.code === 'ACCOUNT_REQUIRED' ? 'ACCOUNT_REQUIRED' : json.requiresSignup ? 'GUEST_LIMIT_EXCEEDED' : (json.code ?? 'error'),
-          message: json.message ?? 'Something went wrong. Please try again.',
+          // Known codes get localized copy; an unknown server message is shown
+          // only in English (it is English), otherwise the generic line.
+          message: errorMessage(lang, json.code, json.message),
         })
         return
       }
@@ -199,9 +211,7 @@ export default function StoryWizard({
 
       router.push(`/story/${json.requestId}`)
     } catch {
-      setError('root', {
-        message: 'Could not reach the server. Check your connection and try again.',
-      })
+      setError('root', { message: t.wizard.errors.network })
     }
   }
 
@@ -214,15 +224,15 @@ export default function StoryWizard({
       {planPreselected && step === firstVisibleStep && (
         <div className="flex items-center justify-between bg-brand-50 border border-brand-200 rounded-xl px-4 py-2.5 mb-2">
           <p className="text-xs text-brand-700">
-            <span className="font-semibold">{preselectFromAccount ? 'Current plan:' : 'Plan selected:'}</span>{' '}
-            {PLAN_CONFIG[currentPlan].displayName}
+            <span className="font-semibold">{preselectFromAccount ? t.wizard.currentPlan : t.wizard.planSelected}</span>{' '}
+            {t.pricing.plans[currentPlan]?.name ?? PLAN_CONFIG[currentPlan].displayName}
           </p>
           <button
             type="button"
             onClick={showPlanPicker}
-            className="text-xs font-semibold text-brand-600 hover:text-brand-700 underline underline-offset-2"
+            className="text-xs font-semibold text-brand-600 hover:text-brand-700 underline underline-offset-2 whitespace-nowrap"
           >
-            Change plan
+            {t.wizard.changePlan}
           </button>
         </div>
       )}
@@ -279,51 +289,51 @@ export default function StoryWizard({
         {errors.root && (
           errors.root.type === 'GUEST_LIMIT_EXCEEDED' ? (
             <div className="rounded-xl border border-brand-200 bg-brand-50 px-5 py-4 text-center space-y-2">
-              <p className="text-sm font-semibold text-oxford">You&apos;ve used your free story</p>
-              <p className="text-xs text-charcoal-light">Create a free account to get 2 stories.</p>
-              <div className="flex justify-center gap-2 mt-1">
+              <p className="text-sm font-semibold text-oxford">{t.wizard.errors.guestLimitTitle}</p>
+              <p className="text-xs text-charcoal-light">{t.wizard.errors.guestLimitBody}</p>
+              <div className="flex flex-wrap justify-center gap-2 mt-1">
                 <Link
                   href="/signup"
                   className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"
                 >
-                  Create account →
+                  {t.wizard.errors.createAccount}
                 </Link>
                 <Link
                   href="/login"
                   className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-5 py-2 rounded-full transition-colors"
                 >
-                  Sign in
+                  {t.wizard.errors.signIn}
                 </Link>
               </div>
             </div>
           ) : errors.root.type === 'ACCOUNT_REQUIRED' ? (
             <div className="text-center bg-brand-50 border border-brand-200 rounded-xl px-5 py-4 space-y-2">
-              <p className="text-sm font-semibold text-oxford">Paid plans need an account</p>
+              <p className="text-sm font-semibold text-oxford">{t.wizard.errors.accountRequiredTitle}</p>
               <p className="text-xs text-charcoal-light">{errors.root.message}</p>
               <div className="flex flex-wrap gap-2 justify-center mt-1">
                 <Link
                   href="/signup"
                   className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"
                 >
-                  Create account →
+                  {t.wizard.errors.createAccount}
                 </Link>
                 <Link
                   href="/login"
                   className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-5 py-2 rounded-full transition-colors"
                 >
-                  Sign in
+                  {t.wizard.errors.signIn}
                 </Link>
               </div>
             </div>
           ) : errors.root.type === 'PLAN_LIMIT_EXCEEDED' ? (
             <div className="rounded-xl border border-brand-200 bg-brand-50 px-5 py-4 text-center space-y-2">
-              <p className="text-sm font-semibold text-oxford">You&apos;ve reached your free limit</p>
-              <p className="text-xs text-charcoal-light">Upgrade to create more personalized storybooks.</p>
+              <p className="text-sm font-semibold text-oxford">{t.wizard.errors.planLimitTitle}</p>
+              <p className="text-xs text-charcoal-light">{t.wizard.errors.planLimitBody}</p>
               <Link
                 href="/pricing"
                 className="inline-block mt-1 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"
               >
-                See plans →
+                {t.wizard.errors.seePlans}
               </Link>
             </div>
           ) : (
@@ -371,9 +381,7 @@ export default function StoryWizard({
         </div>
 
         {step === 0 && (
-          <p className="text-center text-xs text-gray-400">
-            Try 1 story without an account · Free accounts get 2 stories
-          </p>
+          <p className="text-center text-xs text-gray-400">{t.wizard.tryLine}</p>
         )}
       </form>
     </FormProvider>

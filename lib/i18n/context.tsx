@@ -1,38 +1,46 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-import { translations, type Lang } from './translations'
+import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
+import { getDictionary, LANG_COOKIE, LANG_COOKIE_MAX_AGE, resolveLang, htmlLang, type Dictionary, type Lang } from './index'
 
 interface LanguageCtx {
   lang: Lang
   setLang: (l: Lang) => void
-  t: typeof translations['en']
+  t: Dictionary
 }
 
 const Ctx = createContext<LanguageCtx>({
   lang: 'en',
   setLang: () => {},
-  t: translations.en,
+  t: getDictionary('en'),
 })
 
-const STORAGE_KEY = 'nq_lang'
+const STORAGE_KEY = LANG_COOKIE
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>('en')
+/**
+ * The server reads the cookie and passes `initialLang`, so the first paint
+ * is already in the right language (no flash, no hydration mismatch).
+ * Switching writes the cookie, mirrors it to localStorage for older tabs,
+ * updates <html lang>, and refreshes server components in place.
+ */
+export function LanguageProvider({ children, initialLang = 'en' }: { children: ReactNode; initialLang?: Lang }) {
+  const router = useRouter()
+  const [lang, setLangState] = useState<Lang>(resolveLang(initialLang))
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as Lang | null
-    if (stored === 'en' || stored === 'es') setLangState(stored)
-  }, [])
-
-  function setLang(l: Lang) {
-    setLangState(l)
-    localStorage.setItem(STORAGE_KEY, l)
-    document.cookie = `${STORAGE_KEY}=${l};path=/;max-age=31536000;SameSite=Lax`
-  }
+  const setLang = useCallback((l: Lang) => {
+    const next = resolveLang(l)
+    setLangState(next)
+    try {
+      localStorage.setItem(STORAGE_KEY, next)
+    } catch { /* storage may be unavailable */ }
+    document.cookie = `${LANG_COOKIE}=${next};path=/;max-age=${LANG_COOKIE_MAX_AGE};SameSite=Lax`
+    document.documentElement.lang = htmlLang(next)
+    router.refresh()
+  }, [router])
 
   return (
-    <Ctx.Provider value={{ lang, setLang, t: translations[lang] }}>
+    <Ctx.Provider value={{ lang, setLang, t: getDictionary(lang) }}>
       {children}
     </Ctx.Provider>
   )

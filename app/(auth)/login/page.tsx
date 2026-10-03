@@ -5,11 +5,15 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Suspense } from 'react'
+import { useLanguage } from '@/lib/i18n/context'
+import { authErrorMessage } from '@/lib/i18n/authErrors'
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nextParam = searchParams.get('next')
+  const { t } = useLanguage()
+  const a = t.auth
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -24,7 +28,7 @@ function LoginForm() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError(error.message)
+      setError(authErrorMessage(t, error.message))
       setLoading(false)
       return
     }
@@ -47,34 +51,36 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-sm">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-10 space-y-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 sm:px-8 py-8 sm:py-10 space-y-6">
         <div>
-          <h1 className="font-serif text-2xl text-oxford">Welcome back</h1>
-          <p className="text-sm text-charcoal-light mt-1">Sign in to your Nest &amp; Quill account.</p>
+          <h1 className="font-serif text-2xl text-oxford">{a.login.title}</h1>
+          <p className="text-sm text-charcoal-light mt-1">{a.login.sub}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-charcoal">Email</label>
+            <label className="block text-sm font-medium text-charcoal" htmlFor="login-email">{a.email}</label>
             <input
+              id="login-email"
               type="email"
               required
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={inputClass}
-              placeholder="you@example.com"
+              placeholder={a.emailPlaceholder}
             />
           </div>
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-charcoal">Password</label>
+              <label className="block text-sm font-medium text-charcoal" htmlFor="login-password">{a.password}</label>
               <Link href="/forgot-password" className="text-xs text-brand-600 hover:text-brand-700">
-                Forgot password?
+                {a.login.forgot}
               </Link>
             </div>
             <input
+              id="login-password"
               type="password"
               required
               autoComplete="current-password"
@@ -94,14 +100,14 @@ function LoginForm() {
             disabled={loading}
             className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-semibold py-3 rounded-xl transition-colors"
           >
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? a.login.submitting : a.login.submit}
           </button>
         </form>
 
         <p className="text-center text-sm text-charcoal-light">
-          Don&apos;t have an account?{' '}
+          {a.login.noAccount}{' '}
           <Link href="/signup" className="text-brand-600 font-medium hover:text-brand-700">
-            Sign up
+            {a.login.signUp}
           </Link>
         </p>
       </div>

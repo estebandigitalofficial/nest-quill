@@ -108,7 +108,7 @@ export default function ChildStep() {
 
       {/* Age tier — hidden when only the child audience is offered */}
       {tiers.length > 1 && (
-      <Field label="Audience" required>
+      <Field label={c.audience} required>
         <div data-tour-id="audience-tier" className="grid grid-cols-3 gap-2">
           {tiers.map(tier => (
             <div key={tier} data-tour-id={`audience-card-${tier}`}>
@@ -163,7 +163,7 @@ export default function ChildStep() {
         type="button"
         onClick={() => setShowMore(v => !v)}
         className="text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">
-        {showMore ? '▲ Hide optional details' : '▼ More about them (optional)'}
+        {showMore ? c.moreHide : c.moreShow}
       </button>
 
       {showMore && (
@@ -182,13 +182,13 @@ export default function ChildStep() {
           </Field>
 
           <Field
-            label="Supporting characters"
+            label={c.supporting}
             error={errors.supportingCharacters?.message}
-            hint="Siblings, friends, pets, or anyone else to weave in."
+            hint={c.supportingHint}
           >
             <textarea
               rows={2}
-              placeholder="e.g. Her little brother Max, and Luna the tabby cat"
+              placeholder={c.supportingPlaceholder}
               {...register('supportingCharacters')}
               className={cn(inputClass(!!errors.supportingCharacters), 'resize-none')}
             />
@@ -198,8 +198,8 @@ export default function ChildStep() {
 
       {/* Adult consent modal */}
       {showConsentModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl px-8 py-6 max-w-md mx-4 space-y-4">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[70] px-4">
+          <div className="bg-white rounded-2xl px-6 sm:px-8 py-6 max-w-md w-full space-y-4">
             <h3 className="text-lg font-semibold text-gray-900">{c.consentTitle}</h3>
             <p className="text-sm text-gray-600 leading-relaxed">{c.consentBody}</p>
             <label data-tour-id="adult-consent" className="flex items-start gap-3 cursor-pointer">

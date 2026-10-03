@@ -20,6 +20,7 @@ import type { AgeTier, Trait, Setting, Conflict, Goal } from '@/lib/validators/s
 export default function ReviewStep() {
   const { t } = useLanguage()
   const r = t.wizard.review
+  const cards = t.wizard.cards
   const {
     register,
     watch,
@@ -29,19 +30,21 @@ export default function ReviewStep() {
   const values = watch()
   const plan = PLAN_CONFIG[values.planTier ?? 'free']
   const styleInfo = values.illustrationStyle
-    ? ILLUSTRATION_STYLES[values.illustrationStyle]
+    ? (cards.styles[values.illustrationStyle] ?? ILLUSTRATION_STYLES[values.illustrationStyle])
     : null
   const themeMeta = values.setting ? SETTING_META[values.setting as Setting] : null
+  const themeLabel = values.setting ? (cards.settings[values.setting]?.label ?? themeMeta?.label) : null
   const traitChips: string[] = [
-    ...((values.traits ?? []).map(tr => TRAIT_LABELS[tr as Trait] ?? tr)),
+    ...((values.traits ?? []).map(tr => cards.traits[tr] ?? TRAIT_LABELS[tr as Trait] ?? tr)),
     ...(values.customTrait ? [values.customTrait] : []),
   ]
-  const toneChips = values.storyTone?.map(prettifyTone) ?? []
+  const toneChips = values.storyTone?.map(tone => t.wizard.story.tones[tone] ?? prettifyTone(tone)) ?? []
+  const planName = t.pricing.plans[values.planTier ?? 'free']?.name ?? plan.displayName
 
   return (
     <div data-tour-id="review-summary" className="space-y-6">
       <div>
-        <h2 className="text-xl font-serif text-gray-900">Here's the story you built</h2>
+        <h2 className="text-xl font-serif text-gray-900">{r.heading}</h2>
         <p className="text-sm text-gray-500 mt-1">{r.sub}</p>
       </div>
 
@@ -67,8 +70,8 @@ export default function ReviewStep() {
           })()}
           <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
           <div className="relative h-full flex flex-col justify-end p-4">
-            <p className="text-xs uppercase tracking-wider text-white/80">Theme</p>
-            <p className="text-white font-serif text-lg drop-shadow">{themeMeta.label}</p>
+            <p className="text-xs uppercase tracking-wider text-white/80">{r.theme}</p>
+            <p className="text-white font-serif text-lg drop-shadow">{themeLabel}</p>
             {values.storyTheme && (
               <p className="text-white/90 text-xs mt-0.5 line-clamp-2 drop-shadow">{values.storyTheme}</p>
             )}
@@ -76,7 +79,7 @@ export default function ReviewStep() {
         </div>
       ) : values.storyTheme ? (
         <div className="rounded-2xl border border-gray-100 bg-gradient-to-br from-amber-50 to-rose-50 p-4">
-          <p className="text-[11px] uppercase tracking-wider text-gray-500">Theme</p>
+          <p className="text-[11px] uppercase tracking-wider text-gray-500">{r.theme}</p>
           <p className="text-gray-900 font-serif text-base mt-1 leading-snug">{values.storyTheme}</p>
         </div>
       ) : null}
@@ -84,13 +87,13 @@ export default function ReviewStep() {
       {/* Chip grid: traits / conflict / goal / tone */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {traitChips.length > 0 && (
-          <ChipGroup label="Character traits" items={traitChips} />
+          <ChipGroup label={r.traits} items={traitChips} />
         )}
         {values.conflict && (
-          <ChipGroup label="Conflict" items={[CONFLICT_META[values.conflict as Conflict].label]} highlight />
+          <ChipGroup label={r.conflict} items={[cards.conflicts[values.conflict]?.label ?? CONFLICT_META[values.conflict as Conflict].label]} highlight />
         )}
         {values.goal && (
-          <ChipGroup label="Goal" items={[GOAL_META[values.goal as Goal].label]} highlight />
+          <ChipGroup label={r.goal} items={[cards.goals[values.goal]?.label ?? GOAL_META[values.goal as Goal].label]} highlight />
         )}
         {toneChips.length > 0 && (
           <ChipGroup label={r.labels.tone} items={toneChips} />
@@ -99,10 +102,10 @@ export default function ReviewStep() {
 
       {/* Compact details card */}
       <div className="bg-gray-50 rounded-2xl border border-gray-100 divide-y divide-gray-100 text-sm">
-        <Row label={r.labels.plan} value={plan.displayName} />
-        <Row label="Audience" value={values.ageTier ? AGE_TIER_META[values.ageTier as AgeTier].label : (values.childAge && values.childAge >= 18 ? 'Adult (18+)' : 'Child')} />
-        <Row label={values.childAge && values.childAge >= 18 ? 'Name' : r.labels.child} value={values.childName ?? '—'} />
-        <Row label={r.labels.age} value={values.childAge ? (values.childAge >= 18 ? 'Adult (18+)' : `~${values.childAge} ${t.common.years}`) : '—'} />
+        <Row label={r.labels.plan} value={planName} />
+        <Row label={r.audience} value={values.ageTier ? (cards.ageTier[values.ageTier as AgeTier]?.label ?? AGE_TIER_META[values.ageTier as AgeTier].label) : (values.childAge && values.childAge >= 18 ? r.adult : r.childAudience)} />
+        <Row label={values.childAge && values.childAge >= 18 ? r.name : r.labels.child} value={values.childName ?? '—'} />
+        <Row label={r.labels.age} value={values.childAge ? (values.childAge >= 18 ? r.adult : `~${values.childAge} ${t.common.years}`) : '—'} />
         {values.childDescription && (
           <Row label={r.labels.description} value={values.childDescription} />
         )}
@@ -116,7 +119,7 @@ export default function ReviewStep() {
           <Row label={r.labels.characters} value={truncate(values.supportingCharacters, 80)} />
         )}
         {values.customNotes && (
-          <Row label="Custom note" value={truncate(values.customNotes, 100)} />
+          <Row label={r.customNote} value={truncate(values.customNotes, 100)} />
         )}
       </div>
 

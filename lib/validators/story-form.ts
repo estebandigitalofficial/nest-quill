@@ -96,94 +96,151 @@ export type Setting = (typeof SETTINGS)[number]
 export type Conflict = (typeof CONFLICTS)[number]
 export type Goal = (typeof GOALS)[number]
 
-export const storyFormSchema = z.object({
-  // ── Plan ──────────────────────────────────────────────────────────────────
+/**
+ * Validation messages. The server validates with the English set (API error
+ * text); the wizard builds the same schema with the visitor's language so
+ * inline messages follow the site language.
+ */
+export interface StoryFormMessages {
+  childName: string
+  childNameMax: string
+  childAge: string
+  childDescriptionMax: string
+  storyThemeMin: string
+  storyThemeMax: string
+  storyToneMin: string
+  storyToneMax: string
+  storyToneUnknown: string
+  storyLength: string
+  storyMoralMax: string
+  illustrationStyle: string
+  dedicationMax: string
+  supportingMax: string
+  authorMax: string
+  closingMax: string
+  notesMax: string
+  topicMax: string
+  traitsMax: string
+  customTraitMax: string
+  email: string
+  adultTonesLearning: string
+  adultTonesConsent: string
+}
+
+export const STORY_FORM_MESSAGES_EN: StoryFormMessages = {
+  childName: "Please enter the child's name",
+  childNameMax: 'Name must be 80 characters or less',
+  childAge: 'Please select an age group',
+  childDescriptionMax: 'Description must be 400 characters or less',
+  storyThemeMin: 'Please choose or describe a theme',
+  storyThemeMax: 'Theme must be 280 characters or less',
+  storyToneMin: 'Please choose at least one tone',
+  storyToneMax: 'Choose up to 3 tones',
+  storyToneUnknown: 'Unknown tone selected',
+  storyLength: 'Please choose a story length',
+  storyMoralMax: 'Must be 120 characters or less',
+  illustrationStyle: 'Please choose an illustration style',
+  dedicationMax: 'Dedication must be 300 characters or less',
+  supportingMax: 'Must be 300 characters or less',
+  authorMax: 'Must be 80 characters or less',
+  closingMax: 'Must be 200 characters or less',
+  notesMax: 'Notes must be 500 characters or less',
+  topicMax: 'Topic must be 200 characters or less',
+  traitsMax: 'Pick up to 3 traits',
+  customTraitMax: 'Keep custom trait short',
+  email: 'Please enter a valid email address',
+  adultTonesLearning: 'Adult tones are not available for learning stories.',
+  adultTonesConsent: 'Adult-only tones require the Adult (18+) tier and consent.',
+}
+
+export function buildStoryFormSchema(m: StoryFormMessages = STORY_FORM_MESSAGES_EN) {
+  return z.object({
+  // ── Plan (intent only — the server resolves the entitlement) ──────────────
   planTier: z.enum(PLAN_TIERS).default('free'),
 
   // ── Child details ─────────────────────────────────────────────────────────
   childName: z
     .string()
-    .min(1, "Please enter the child's name")
-    .max(80, 'Name must be 80 characters or less')
+    .min(1, m.childName)
+    .max(80, m.childNameMax)
     .trim(),
 
   childAge: z
-    .number({ required_error: 'Please select an age group', invalid_type_error: 'Please select an age group' })
+    .number({ required_error: m.childAge, invalid_type_error: m.childAge })
     .int()
     .min(1)
     .max(99),
 
   childDescription: z
     .string()
-    .max(400, 'Description must be 400 characters or less')
+    .max(400, m.childDescriptionMax)
     .trim()
     .optional(),
 
   // ── Story details ─────────────────────────────────────────────────────────
   // Theme supports either a free-form user phrase or a synthesized sentence
   // built from theme + conflict + goal. 280 char ceiling matches the DB
-  // CHECK constraint relaxed in 20240047_relax_story_theme_check.sql and
-  // gives synthesis comfortable headroom without truncation.
+  // CHECK constraint relaxed in 20240047_relax_story_theme_check.sql.
   storyTheme: z
     .string()
-    .min(3, 'Please choose or describe a theme')
-    .max(280, 'Theme must be 280 characters or less')
+    .min(3, m.storyThemeMin)
+    .max(280, m.storyThemeMax)
     .trim(),
 
   storyTone: z
     .array(z.string())
-    .min(1, 'Please choose at least one tone')
-    .max(3, 'Choose up to 3 tones')
+    .min(1, m.storyToneMin)
+    .max(3, m.storyToneMax)
     .refine(
       (tones) => tones.every(t => (STORY_TONES as readonly string[]).includes(t)),
-      { message: 'Unknown tone selected' }
+      { message: m.storyToneUnknown }
     ),
 
   storyLength: z
     .number()
     .refine(
       (val): val is 8 | 16 | 24 | 32 => STORY_LENGTHS.includes(val as 8 | 16 | 24 | 32),
-      { message: 'Please choose a story length' }
+      { message: m.storyLength }
     ),
 
   storyMoral: z
     .string()
-    .max(120, 'Must be 120 characters or less')
+    .max(120, m.storyMoralMax)
     .trim()
     .optional(),
 
   // ── Style & extras ────────────────────────────────────────────────────────
   illustrationStyle: z.enum(ILLUSTRATION_STYLES, {
-    errorMap: () => ({ message: 'Please choose an illustration style' }),
+    errorMap: () => ({ message: m.illustrationStyle }),
   }),
 
   dedicationText: z
     .string()
-    .max(300, 'Dedication must be 300 characters or less')
+    .max(300, m.dedicationMax)
     .trim()
     .optional(),
 
   supportingCharacters: z
     .string()
-    .max(300, 'Must be 300 characters or less')
+    .max(300, m.supportingMax)
     .trim()
     .optional(),
 
   authorName: z
     .string()
-    .max(80, 'Must be 80 characters or less')
+    .max(80, m.authorMax)
     .trim()
     .optional(),
 
   closingMessage: z
     .string()
-    .max(200, 'Must be 200 characters or less')
+    .max(200, m.closingMax)
     .trim()
     .optional(),
 
   customNotes: z
     .string()
-    .max(500, 'Notes must be 500 characters or less')
+    .max(500, m.notesMax)
     .trim()
     .optional(),
 
@@ -196,14 +253,14 @@ export const storyFormSchema = z.object({
 
   learningTopic: z
     .string()
-    .max(200, 'Topic must be 200 characters or less')
+    .max(200, m.topicMax)
     .trim()
     .optional(),
 
   // ── Structured selections (all optional — derived for the prompt) ────────
   ageTier: z.enum(AGE_TIERS).optional(),
-  traits: z.array(z.enum(TRAITS)).max(3, 'Pick up to 3 traits').optional(),
-  customTrait: z.string().max(40, 'Keep custom trait short').trim().optional(),
+  traits: z.array(z.enum(TRAITS)).max(3, m.traitsMax).optional(),
+  customTrait: z.string().max(40, m.customTraitMax).trim().optional(),
   setting: z.enum(SETTINGS).optional(),
   conflict: z.enum(CONFLICTS).optional(),
   goal: z.enum(GOALS).optional(),
@@ -214,7 +271,7 @@ export const storyFormSchema = z.object({
   // ── Delivery ──────────────────────────────────────────────────────────────
   userEmail: z
     .string()
-    .email('Please enter a valid email address')
+    .email(m.email)
     .toLowerCase()
     .trim(),
 }).superRefine((data, ctx) => {
@@ -227,18 +284,22 @@ export const storyFormSchema = z.object({
       ctx.addIssue({
         path: ['storyTone'],
         code: z.ZodIssueCode.custom,
-        message: 'Adult tones are not available for learning stories.',
+        message: m.adultTonesLearning,
       })
     }
     if (data.ageTier !== 'adult' || data.adultConsent !== true) {
       ctx.addIssue({
         path: ['storyTone'],
         code: z.ZodIssueCode.custom,
-        message: 'Adult-only tones require the Adult (18+) tier and consent.',
+        message: m.adultTonesConsent,
       })
     }
   }
 })
+}
+
+/** The server-side (English) schema. */
+export const storyFormSchema = buildStoryFormSchema(STORY_FORM_MESSAGES_EN)
 
 export type StoryFormValues = z.infer<typeof storyFormSchema>
 

@@ -10,6 +10,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useLanguage } from '@/lib/i18n/context'
 
 interface Props {
   requestId: string
@@ -18,12 +19,14 @@ interface Props {
 
 export default function StoryRowActions({ requestId, mode }: Props) {
   const router = useRouter()
+  const { t } = useLanguage()
+  const a = t.account
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function go() {
     if (mode === 'archive') {
-      const ok = window.confirm('Archive this story? You can restore it later from your archived list.')
+      const ok = window.confirm(a.confirmArchive)
       if (!ok) return
     }
     setBusy(true)
@@ -32,7 +35,7 @@ export default function StoryRowActions({ requestId, mode }: Props) {
     setBusy(false)
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))
-      setError(body.message ?? 'Something went wrong.')
+      setError(body.message ?? a.actionFailed)
       return
     }
     router.refresh()
@@ -49,9 +52,9 @@ export default function StoryRowActions({ requestId, mode }: Props) {
             ? 'text-[11px] font-semibold text-gray-400 hover:text-red-500 disabled:opacity-50 transition-colors'
             : 'text-[11px] font-semibold text-brand-600 hover:text-brand-700 disabled:opacity-50 transition-colors'
         }
-        aria-label={mode === 'archive' ? 'Archive story' : 'Restore story'}
+        aria-label={mode === 'archive' ? a.archiveAria : a.restoreAria}
       >
-        {busy ? '…' : mode === 'archive' ? 'Archive' : 'Restore'}
+        {busy ? '…' : mode === 'archive' ? a.archive : a.restore}
       </button>
       {error && <span className="text-[10px] text-red-500">{error}</span>}
     </div>

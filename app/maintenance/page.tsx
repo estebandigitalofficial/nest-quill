@@ -1,16 +1,21 @@
 import type { Metadata } from 'next'
+import { getServerLang } from '@/lib/i18n/server'
+import { getDictionary } from '@/lib/i18n'
 
-export const metadata: Metadata = { title: 'Down for Maintenance — Nest & Quill' }
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getServerLang()
+  return { title: getDictionary(lang).meta.pages.maintenance }
+}
 
-export default function MaintenancePage() {
+export default async function MaintenancePage() {
+  const lang = await getServerLang()
+  const m = getDictionary(lang).maintenance
   return (
     <div className="h-dvh bg-parchment flex items-center justify-center px-6">
       <div className="max-w-sm text-center space-y-4">
         <p className="text-4xl">🔧</p>
-        <h1 className="font-serif text-2xl text-oxford">Down for Maintenance</h1>
-        <p className="text-sm text-charcoal-light leading-relaxed">
-          We&apos;re currently making improvements. Please check back soon.
-        </p>
+        <h1 className="font-serif text-2xl text-oxford">{m.title}</h1>
+        <p className="text-sm text-charcoal-light leading-relaxed">{m.body}</p>
       </div>
     </div>
   )

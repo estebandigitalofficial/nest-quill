@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { hasUnread, type Notification } from '@/lib/notifications/types'
+import { useLanguage } from '@/lib/i18n/context'
 
 type Menu = 'notifications' | 'help' | 'settings' | null
 
@@ -22,6 +23,8 @@ export default function UserControls() {
   const [open, setOpen] = useState<Menu>(null)
   const router = useRouter()
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const { t, lang } = useLanguage()
+  const m = t.nav.userMenu
 
   // Self-fetching keeps SiteHeader cookie-free so it can be imported from both
   // server and client pages. Renders nothing for logged-out users.
@@ -69,7 +72,7 @@ export default function UserControls() {
         return r.json() as Promise<{ notifications: Notification[]; unreadCount: number }>
       })
       .then((data) => { if (!cancelled) setNotifications(data.notifications) })
-      .catch(() => { if (!cancelled) setNotifError("Couldn't load notifications.") })
+      .catch(() => { if (!cancelled) setNotifError(m.notificationsError) })
     return () => { cancelled = true }
   }, [user, open === 'notifications'])
 
@@ -138,25 +141,25 @@ export default function UserControls() {
 
   return (
     <div ref={wrapperRef} className="flex items-center gap-1 relative">
-      <IconButton label={unread ? 'Notifications (unread)' : 'Notifications'} active={open === 'notifications'} onClick={() => toggle('notifications')}>
+      <IconButton label={unread ? m.notificationsUnread : m.notifications} active={open === 'notifications'} onClick={() => toggle('notifications')}>
         <BellIcon />
         {unread && (
           <span aria-hidden className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-500 ring-2 ring-parchment" />
         )}
       </IconButton>
-      <IconButton label="Help" active={open === 'help'} onClick={() => toggle('help')}>
+      <IconButton label={m.help} active={open === 'help'} onClick={() => toggle('help')}>
         <HelpIcon />
       </IconButton>
-      <IconButton label="Account menu" active={open === 'settings'} onClick={() => toggle('settings')}>
+      <IconButton label={m.accountMenu} active={open === 'settings'} onClick={() => toggle('settings')}>
         <UserIcon />
       </IconButton>
 
       {open === 'notifications' && (
-        <Dropdown title="Notifications">
+        <Dropdown title={m.notifications}>
           {notifError ? (
             <p className="px-4 py-6 text-sm text-red-500 text-center">{notifError}</p>
           ) : notifications.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-charcoal-light text-center">No notifications yet.</p>
+            <p className="px-4 py-6 text-sm text-charcoal-light text-center">{m.noNotifications}</p>
           ) : (
             <ul role="list" className="max-h-80 overflow-y-auto">
               {notifications.map((n) => (
@@ -185,42 +188,42 @@ export default function UserControls() {
       )}
 
       {open === 'help' && (
-        <Dropdown title="Help & support">
-          {tourAvailable && (
+        <Dropdown title={m.helpTitle}>
+          {tourAvailable && lang === 'en' && (
             <DropdownLink href="/create?replayTour=create_story_wizard" onClick={() => setOpen(null)}>
-              Replay story-wizard tour
+              {m.replayTour}
             </DropdownLink>
           )}
-          <DropdownLink href="/contact" onClick={() => setOpen(null)}>Contact support</DropdownLink>
-          <DropdownLink href="/pricing" onClick={() => setOpen(null)}>Plans &amp; pricing</DropdownLink>
-          <DropdownLink href="/privacy" onClick={() => setOpen(null)}>Privacy</DropdownLink>
-          <DropdownLink href="/terms" onClick={() => setOpen(null)}>Terms</DropdownLink>
+          <DropdownLink href="/contact" onClick={() => setOpen(null)}>{m.contactSupport}</DropdownLink>
+          <DropdownLink href="/pricing" onClick={() => setOpen(null)}>{m.plans}</DropdownLink>
+          <DropdownLink href="/privacy" onClick={() => setOpen(null)}>{m.privacy}</DropdownLink>
+          <DropdownLink href="/terms" onClick={() => setOpen(null)}>{m.terms}</DropdownLink>
         </Dropdown>
       )}
 
       {open === 'settings' && (
-        <Dropdown title={email ?? 'Account'}>
+        <Dropdown title={email ?? t.nav.account}>
           {showClassroomLink ? (
             <DropdownLink href={isEducator ? '/classroom/educator' : '/classroom/student'} onClick={() => setOpen(null)}>
               {isEducator ? 'My classes' : 'My dashboard'}
             </DropdownLink>
           ) : (
             <>
-              <DropdownLink href="/account" onClick={() => setOpen(null)}>My stories</DropdownLink>
+              <DropdownLink href="/account" onClick={() => setOpen(null)}>{m.myStories}</DropdownLink>
               {showArchivedLink && (
-                <DropdownLink href="/account/archived" onClick={() => setOpen(null)}>Archived stories</DropdownLink>
+                <DropdownLink href="/account/archived" onClick={() => setOpen(null)}>{m.archived}</DropdownLink>
               )}
             </>
           )}
           {isAdmin && (
-            <DropdownLink href="/admin" onClick={() => setOpen(null)}>Admin dashboard</DropdownLink>
+            <DropdownLink href="/admin" onClick={() => setOpen(null)}>{m.admin}</DropdownLink>
           )}
           <div className="border-t border-gray-100 my-1" />
           <button
             type="button"
             onClick={handleSignOut}
             className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors">
-            Sign out
+            {m.signOut}
           </button>
         </Dropdown>
       )}
