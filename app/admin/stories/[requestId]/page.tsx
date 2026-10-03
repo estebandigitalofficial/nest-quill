@@ -151,6 +151,11 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
             <Field label="Child age" value={String(req.child_age)} />
             <Field label="Email" value={req.user_email} />
             <Field label="Plan" value={req.plan_tier} mono />
+            <Field
+              label="Entitlement"
+              value={`${req.entitlement_source ?? 'legacy (pre-entitlement row)'}${req.pdf_entitled ? ' · PDF entitled' : req.entitlement_source ? ' · no PDF' : ' · PDF by legacy label rule'}${req.entitlement_ref ? ` · ref ${req.entitlement_ref.slice(0, 8)}…` : ''}${req.entitlement_released_at ? ' · Free slot released' : ''}`}
+              mono
+            />
             <Field label="Theme" value={req.story_theme} />
             <Field label="Tone" value={req.story_tone?.join(', ') || '—'} />
             <Field label="Moral" value={req.story_moral ?? '—'} />
