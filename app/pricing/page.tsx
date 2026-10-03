@@ -60,7 +60,7 @@ export default async function PricingPage() {
             </div>
           </div>
           <div className="shrink-0">
-            <Link href="/classroom" className="inline-block bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-6 py-3 rounded-full transition-colors whitespace-nowrap">
+            <Link href="/classroom" className="inline-block bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-6 py-3 rounded-full transition-colors whitespace-nowrap">
               Try Classroom free →
             </Link>
           </div>

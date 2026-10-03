@@ -15,7 +15,7 @@ export default async function NotFound() {
       <div className="flex flex-col sm:flex-row gap-3">
         <Link
           href="/"
-          className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors"
+          className="bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-6 py-3 rounded-xl transition-colors"
         >
           {n.home}
         </Link>

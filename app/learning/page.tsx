@@ -499,7 +499,7 @@ export default async function LearningPage() {
               </div>
               <Link
                 href="/create?mode=learning"
-                className="shrink-0 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors whitespace-nowrap"
+                className="shrink-0 bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-5 py-2.5 rounded-full transition-colors whitespace-nowrap"
               >
                 Create a Learning Story →
               </Link>

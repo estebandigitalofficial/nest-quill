@@ -223,7 +223,7 @@ export default function ChildStep() {
                 data-tour-id="adult-consent-confirm"
                 onClick={handleConsentConfirm}
                 disabled={!consentChecked}
-                className="text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg transition-colors">
+                className="text-sm font-semibold text-oxford bg-brand-500 hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 rounded-lg transition-colors">
                 {c.consentContinue}
               </button>
             </div>

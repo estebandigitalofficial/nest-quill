@@ -294,7 +294,7 @@ export default function StoryWizard({
               <div className="flex flex-wrap justify-center gap-2 mt-1">
                 <Link
                   href="/signup"
-                  className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"
+                  className="bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-5 py-2 rounded-full transition-colors"
                 >
                   {t.wizard.errors.createAccount}
                 </Link>
@@ -313,7 +313,7 @@ export default function StoryWizard({
               <div className="flex flex-wrap gap-2 justify-center mt-1">
                 <Link
                   href="/signup"
-                  className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"
+                  className="bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-5 py-2 rounded-full transition-colors"
                 >
                   {t.wizard.errors.createAccount}
                 </Link>
@@ -331,7 +331,7 @@ export default function StoryWizard({
               <p className="text-xs text-charcoal-light">{t.wizard.errors.planLimitBody}</p>
               <Link
                 href="/pricing"
-                className="inline-block mt-1 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"
+                className="inline-block mt-1 bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-5 py-2 rounded-full transition-colors"
               >
                 {t.wizard.errors.seePlans}
               </Link>
@@ -373,7 +373,7 @@ export default function StoryWizard({
               data-tour-id="wizard-next"
               type="button"
               onClick={handleNext}
-              className="flex-1 py-3.5 px-6 rounded-xl font-semibold text-white text-base bg-brand-500 hover:bg-brand-600 active:scale-[0.99] transition-all"
+              className="flex-1 py-3.5 px-6 rounded-xl font-semibold text-oxford text-base bg-brand-500 hover:bg-brand-600 active:scale-[0.99] transition-all"
             >
               {t.wizard.next}
             </button>

@@ -16,7 +16,7 @@ export default function HomeschoolPage() {
         right={
           <Link
             href="/learning"
-            className="bg-brand-500 hover:bg-brand-600 text-white text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full transition-colors whitespace-nowrap"
+            className="bg-brand-500 hover:bg-brand-600 text-oxford text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full transition-colors whitespace-nowrap"
           >
             Try Learning Tools →
           </Link>

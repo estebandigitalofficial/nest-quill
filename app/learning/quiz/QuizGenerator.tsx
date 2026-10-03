@@ -387,7 +387,7 @@ export default function QuizGenerator({ assignmentId, initialTopic, initialGrade
             className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-colors">Retake Quiz</button>
           <button onClick={handleReset} className="w-full py-3.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors">Try a New Topic</button>
           {!assignmentId && (
-            <Link href="/create?mode=learning" className="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm text-center transition-colors block">Turn this into a Learning Story →</Link>
+            <Link href="/create?mode=learning" className="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-oxford font-semibold text-sm text-center transition-colors block">Turn this into a Learning Story →</Link>
           )}
         </div>
       </div>

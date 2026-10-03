@@ -92,7 +92,7 @@ export default async function ClassroomPage() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
               <Link
                 href={isLoggedIn ? '/classroom/activate?role=educator' : '/signup?role=educator'}
-                className="bg-brand-500 hover:bg-brand-600 text-white font-semibold px-7 py-3.5 rounded-full text-base transition-all active:scale-[0.98] shadow-md shadow-brand-900/30"
+                className="bg-brand-500 hover:bg-brand-600 text-oxford font-semibold px-7 py-3.5 rounded-full text-base transition-all active:scale-[0.98] shadow-md shadow-brand-900/30"
               >
                 Create a free classroom →
               </Link>
@@ -432,7 +432,7 @@ export default async function ClassroomPage() {
             </p>
             <Link
               href={isLoggedIn ? '/classroom/activate?role=educator' : '/signup?role=educator'}
-              className="inline-block bg-brand-500 hover:bg-brand-600 text-white font-semibold px-8 py-3.5 rounded-full text-base transition-colors shadow-lg"
+              className="inline-block bg-brand-500 hover:bg-brand-600 text-oxford font-semibold px-8 py-3.5 rounded-full text-base transition-colors shadow-lg"
             >
               Create a free classroom →
             </Link>

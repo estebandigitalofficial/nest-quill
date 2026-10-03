@@ -81,7 +81,7 @@ export function TraitChip({
       className={cn(
         'px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all',
         active
-          ? 'border-brand-500 bg-brand-500 text-white'
+          ? 'border-brand-500 bg-brand-500 text-oxford'
           : disabled
           ? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
           : 'border-gray-200 bg-white text-gray-600 hover:border-brand-300'
@@ -411,7 +411,7 @@ export function StyleCard({
         </span>
       )}
       {active && !locked && (
-        <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-brand-500 text-white flex items-center justify-center text-xs font-bold">
+        <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-brand-500 text-oxford flex items-center justify-center text-xs font-bold">
           ✓
         </span>
       )}

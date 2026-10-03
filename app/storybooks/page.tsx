@@ -19,7 +19,7 @@ export default async function StorybooksPage() {
         right={
           <Link
             href="/create"
-            className="bg-brand-500 hover:bg-brand-600 text-white text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full transition-colors whitespace-nowrap"
+            className="bg-brand-500 hover:bg-brand-600 text-oxford text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full transition-colors whitespace-nowrap"
           >
             Create a story →
           </Link>
@@ -49,7 +49,7 @@ export default async function StorybooksPage() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
               <Link
                 href="/create"
-                className="bg-brand-500 hover:bg-brand-600 text-white font-semibold px-7 py-3.5 rounded-full text-base transition-all active:scale-[0.98] shadow-md shadow-brand-200"
+                className="bg-brand-500 hover:bg-brand-600 text-oxford font-semibold px-7 py-3.5 rounded-full text-base transition-all active:scale-[0.98] shadow-md shadow-brand-200"
               >
                 Create your story free →
               </Link>

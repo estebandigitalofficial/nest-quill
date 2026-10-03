@@ -120,7 +120,7 @@ export default function SignupForm({ allowedRoles }: { allowedRoles: Role[] }) {
           {error && <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
 
           <button type="submit" disabled={loading}
-            className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-semibold py-3 rounded-xl transition-colors">
+            className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-oxford font-semibold py-3 rounded-xl transition-colors">
             {loading ? a.signup.submitting : a.signup.submit}
           </button>
         </form>

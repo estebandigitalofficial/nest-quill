@@ -95,7 +95,7 @@ export default async function WriterStudioPage() {
                   </p>
                   <Link
                     href="/writer/new"
-                    className="inline-block mt-5 bg-brand-500 hover:bg-brand-600 text-white font-semibold px-6 py-3 rounded-full text-sm transition-colors"
+                    className="inline-block mt-5 bg-brand-500 hover:bg-brand-600 text-oxford font-semibold px-6 py-3 rounded-full text-sm transition-colors"
                   >
                     Create your first project →
                   </Link>
