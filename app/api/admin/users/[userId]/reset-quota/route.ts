@@ -1,29 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { getAdminContext } from '@/lib/admin/guard'
-import { AuthError, NotFoundError, toApiError } from '@/lib/utils/errors'
+import { NextResponse } from 'next/server'
 
-export async function POST(
-  _request: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
-) {
-  try {
-    const adminCtx = await getAdminContext()
-    if (!adminCtx) throw new AuthError('Admin access required')
-
-    const { userId } = await params
-    const supabase = createAdminClient()
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ books_generated: 0 })
-      .eq('id', userId)
-
-    if (error) throw new NotFoundError('User')
-
-    return NextResponse.json({ ok: true })
-  } catch (err) {
-    const { message, code, statusCode } = toApiError(err)
-    return NextResponse.json({ message, code }, { status: statusCode })
-  }
+// POST /api/admin/users/[id]/reset-quota — RETIRED.
+//
+// This route used to duplicate /reset-usage (both zeroed books_generated).
+// Commercial entitlement state now has explicit routes:
+//   /reset-usage           → legacy books_generated counter only
+//   /reset-free-allowance  → profiles.free_books_used (the two Free books)
+//   /grant                 → complimentary purchase / period
+// Answering 410 keeps any stale client from silently changing state.
+export async function POST() {
+  return NextResponse.json(
+    { message: 'reset-quota is retired. Use reset-usage (legacy counter) or reset-free-allowance (Free books).', code: 'ROUTE_RETIRED' },
+    { status: 410 },
+  )
 }

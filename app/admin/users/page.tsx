@@ -97,7 +97,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
 
   let query = adminSupabase
     .from('profiles')
-    .select('id, email, plan_tier, books_generated, books_limit, is_admin')
+    .select('id, email, plan_tier, books_generated, books_limit, free_books_used, is_admin')
     .limit(100)
 
   if (q) query = query.ilike('email', `%${q}%`)
@@ -240,6 +240,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                               currentPlan={user.plan_tier}
                               booksGenerated={user.books_generated}
                               booksLimit={user.books_limit}
+                              freeBooksUsed={Number((user as { free_books_used?: number }).free_books_used ?? 0)}
                             />
                             <AdminUserActions
                               userId={user.id}

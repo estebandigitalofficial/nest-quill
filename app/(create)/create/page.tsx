@@ -47,7 +47,7 @@ export default async function CreatePage() {
     user
       ? createAdminClient()
           .from('profiles')
-          .select('plan_tier, books_generated, is_admin')
+          .select('plan_tier, free_books_used, is_admin')
           .eq('id', user.id)
           .single()
       : Promise.resolve({ data: null }),
@@ -55,7 +55,7 @@ export default async function CreatePage() {
 
   const profile = 'data' in profileResult ? profileResult.data : null
   const planTier     = profile?.plan_tier     ?? 'free'
-  const booksGenerated = profile?.books_generated ?? 0
+  const booksGenerated = Number((profile as { free_books_used?: number } | null)?.free_books_used ?? 0)
   const isAdmin      = profile?.is_admin      ?? false
 
   const isGuest = !user

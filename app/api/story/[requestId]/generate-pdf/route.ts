@@ -5,6 +5,7 @@ import { runClaimedOnce } from '@/lib/limits/idempotency'
 import { COVER_BUCKET, pickCoverPath } from '@/lib/services/cover'
 import { exportIsCurrent, idsToDemote, pdfClaimKey } from '@/lib/services/pdfExports'
 import type { GeneratedStory, StoryScene } from '@/types/database'
+import { pdfEntitledFor } from '@/lib/entitlements/policy'
 
 export async function POST(
   request: NextRequest,
@@ -23,7 +24,7 @@ export async function POST(
   try {
     const { data: storyReq, error: reqErr } = await adminSupabase
       .from('story_requests')
-      .select('plan_tier, closing_message, status, completed_at')
+      .select('plan_tier, closing_message, status, completed_at, entitlement_source, pdf_entitled')
       .eq('id', requestId)
       .single()
 
@@ -49,9 +50,10 @@ export async function POST(
       return NextResponse.json({ requestId, status: 'already_exists' })
     }
 
-    // Free tier has no downloadable PDF
-    if (storyReq.plan_tier === 'free') {
-      return NextResponse.json({ requestId, status: 'skipped_free_tier' })
+    // Authoritative PDF entitlement (snapshot for new rows, legacy label rule
+    // for rows that predate the entitlement model). Never the bare label.
+    if (!pdfEntitledFor(storyReq as unknown as { entitlement_source?: string | null; pdf_entitled?: boolean | null; plan_tier?: string | null })) {
+      return NextResponse.json({ requestId, status: 'not_entitled' })
     }
 
     // Only assemble for a finished story.

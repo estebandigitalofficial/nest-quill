@@ -1,11 +1,13 @@
 import type { PlanConfig, PlanLimits } from '@/types/plans'
 import type { PlanTier } from '@/types/database'
+import { TIER_CAPS, type LaunchTier } from '@/lib/entitlements/policy'
 
 /**
- * PLAN CONFIGURATION — single source of truth for every limit in the app.
+ * PLAN CONFIGURATION — display catalogue for pricing UI, wizard and admin.
  *
- * Used by: pricing UI, story wizard, submission API, admin dashboard.
- * To change a limit — edit here only.
+ * Enforcement does NOT read this file. Capabilities (pages, styles,
+ * dedication, PDF, period allowance) come from lib/entitlements/policy.ts;
+ * the four launch tiers below mirror those caps so copy cannot drift.
  */
 export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
   free: {
@@ -15,18 +17,18 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
     priceMonthly: 0,
     cta: 'Get started free',
     limits: {
-      booksPerMonth: 1,
-      maxPagesPerBook: 8,
-      maxIllustrations: 8,
-      canAddDedication: false,
-      canDownloadPdf: false,
+      booksPerMonth: 2,
+      maxPagesPerBook: TIER_CAPS.free.maxPages,
+      maxIllustrations: TIER_CAPS.free.maxPages,
+      canAddDedication: TIER_CAPS.free.dedication,
+      canDownloadPdf: TIER_CAPS.free.pdf,
       canOrderPrint: false,
-      illustrationStyleCount: 1,
+      illustrationStyleCount: TIER_CAPS.free.styles.length,
     },
     features: [
-      '1 story to try — no card needed',
+      '2 stories to try — no card needed',
       'Up to 8 pages',
-      '1 illustration style',
+      'Watercolor illustration style',
       'Read & share online',
       'Email delivery',
     ],
@@ -41,16 +43,16 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
     ctaBeta: 'Try free during beta',
     limits: {
       booksPerMonth: 1,
-      maxPagesPerBook: 24,
-      maxIllustrations: 24,
-      canAddDedication: true,
-      canDownloadPdf: true,
+      maxPagesPerBook: TIER_CAPS.single.maxPages,
+      maxIllustrations: TIER_CAPS.single.maxPages,
+      canAddDedication: TIER_CAPS.single.dedication,
+      canDownloadPdf: TIER_CAPS.single.pdf,
       canOrderPrint: false,
-      illustrationStyleCount: 5,
+      illustrationStyleCount: TIER_CAPS.single.styles.length,
     },
     features: [
       '1 story, yours to keep',
-      'Up to 24 pages',
+      'Up to 16 pages',
       'All illustration styles',
       'Full PDF download',
       'Dedication page',
@@ -67,13 +69,13 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
     cta: 'Get started',
     ctaBeta: 'Try free during beta',
     limits: {
-      booksPerMonth: 3,
-      maxPagesPerBook: 24,
-      maxIllustrations: 24,
-      canAddDedication: true,
-      canDownloadPdf: true,
+      booksPerMonth: TIER_CAPS.story_pack.periodAllowance ?? 3,
+      maxPagesPerBook: TIER_CAPS.story_pack.maxPages,
+      maxIllustrations: TIER_CAPS.story_pack.maxPages,
+      canAddDedication: TIER_CAPS.story_pack.dedication,
+      canDownloadPdf: TIER_CAPS.story_pack.pdf,
       canOrderPrint: false,
-      illustrationStyleCount: 5,
+      illustrationStyleCount: TIER_CAPS.story_pack.styles.length,
     },
     features: [
       '3 stories/month',
@@ -81,7 +83,6 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
       'All illustration styles',
       'Full PDF download',
       'Dedication page',
-      'Unused stories roll over (up to 2)',
     ],
   },
 
@@ -95,21 +96,20 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
     ctaBeta: 'Try free during beta',
     isPopular: true,
     limits: {
-      booksPerMonth: 10,
-      maxPagesPerBook: 32,
-      maxIllustrations: 32,
-      canAddDedication: true,
-      canDownloadPdf: true,
+      booksPerMonth: TIER_CAPS.story_pro.periodAllowance ?? 6,
+      maxPagesPerBook: TIER_CAPS.story_pro.maxPages,
+      maxIllustrations: TIER_CAPS.story_pro.maxPages,
+      canAddDedication: TIER_CAPS.story_pro.dedication,
+      canDownloadPdf: TIER_CAPS.story_pro.pdf,
       canOrderPrint: true,
-      illustrationStyleCount: 5,
+      illustrationStyleCount: TIER_CAPS.story_pro.styles.length,
     },
     features: [
-      '10 stories/month',
+      '6 stories/month',
       'Up to 32 pages each',
       'All illustration styles',
       'Full PDF download',
       'Dedication page',
-      'Priority processing',
       'Print ordering (coming soon)',
     ],
   },
@@ -158,4 +158,4 @@ export function resolvePageCount(requestedLength: number, tier: PlanTier): numbe
 }
 
 /** Plans shown in the story wizard plan selector (educator handled separately). */
-export const WIZARD_PLANS: PlanTier[] = ['free', 'single', 'story_pack', 'story_pro']
+export const WIZARD_PLANS: LaunchTier[] = ['free', 'single', 'story_pack', 'story_pro']

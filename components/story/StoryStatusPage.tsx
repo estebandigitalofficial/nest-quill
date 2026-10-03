@@ -151,6 +151,7 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode, header, 
       requestId={requestId}
       pdfUrl={status.signedUrl}
       planTier={status.planTier}
+      pdfEntitled={status.pdfEntitled}
       isAdmin={isAdmin}
       quiz={quiz}
       imagesState={status.imagesState}
@@ -239,17 +240,19 @@ type ReaderPage =
   | { kind: 'activities' }
 
 function StoryEbookReader({
-  story, requestId, pdfUrl, planTier, isAdmin, quiz, imagesState,
+  story, requestId, pdfUrl, planTier, pdfEntitled, isAdmin, quiz, imagesState,
 }: {
   story: StoryContentResponse
   requestId: string
   pdfUrl?: string
   planTier?: string
+  /** Authoritative; the label is only a fallback for responses from older deployments. */
+  pdfEntitled?: boolean
   isAdmin?: boolean
   quiz?: StoryQuizResponse | null
   imagesState?: StoryImagesState
 }) {
-  const canDownload = planTier !== 'free'
+  const canDownload = typeof pdfEntitled === 'boolean' ? pdfEntitled : planTier !== 'free'
   const backHref = isAdmin ? '/admin' : '/account'
   const backLabel = isAdmin ? 'Admin dashboard' : 'My stories'
   // Show the activity picker on any learning story whose quiz has loaded —

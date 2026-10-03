@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
+import { releaseFreeReservationIfTerminal } from '@/lib/entitlements/freeRelease'
 
 export async function POST(
   _req: NextRequest,
@@ -31,6 +32,15 @@ export async function POST(
     })
     .eq('id', requestId)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // FREE-only: this is a terminal state, so give a Free slot back once.
+  // Paid entitlements stay consumed; support resolves those cases.
+  const { data: row } = await db
+    .from('story_requests')
+    .select('entitlement_source, user_id, status, usage_counted, entitlement_released_at, failure_code, retryable, retry_count, retry_after')
+    .eq('id', requestId)
+    .maybeSingle()
+  if (row) await releaseFreeReservationIfTerminal(db, requestId, row as Record<string, unknown>)
 
   await db.from('processing_logs').insert({
     request_id: requestId,

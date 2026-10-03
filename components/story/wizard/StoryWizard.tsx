@@ -9,7 +9,7 @@ import { storyFormSchema, type StoryFormValues } from '@/lib/validators/story-fo
 import { cn } from '@/lib/utils/cn'
 import { useLanguage } from '@/lib/i18n/context'
 import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
-import type { PlanTier } from '@/types/database'
+import type { LaunchTier as PlanTier } from '@/lib/entitlements/policy'
 import WizardProgress from './WizardProgress'
 import { WizardConfigContext } from './WizardContext'
 import PlanStep from './steps/PlanStep'
@@ -181,7 +181,7 @@ export default function StoryWizard({
 
       if (!res.ok) {
         setError('root', {
-          type: json.requiresSignup ? 'GUEST_LIMIT_EXCEEDED' : (json.code ?? 'error'),
+          type: json.code === 'ACCOUNT_REQUIRED' ? 'ACCOUNT_REQUIRED' : json.requiresSignup ? 'GUEST_LIMIT_EXCEEDED' : (json.code ?? 'error'),
           message: json.message ?? 'Something went wrong. Please try again.',
         })
         return
@@ -282,6 +282,25 @@ export default function StoryWizard({
               <p className="text-sm font-semibold text-oxford">You&apos;ve used your free story</p>
               <p className="text-xs text-charcoal-light">Create a free account to get 2 stories.</p>
               <div className="flex justify-center gap-2 mt-1">
+                <Link
+                  href="/signup"
+                  className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"
+                >
+                  Create account →
+                </Link>
+                <Link
+                  href="/login"
+                  className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-5 py-2 rounded-full transition-colors"
+                >
+                  Sign in
+                </Link>
+              </div>
+            </div>
+          ) : errors.root.type === 'ACCOUNT_REQUIRED' ? (
+            <div className="text-center bg-brand-50 border border-brand-200 rounded-xl px-5 py-4 space-y-2">
+              <p className="text-sm font-semibold text-oxford">Paid plans need an account</p>
+              <p className="text-xs text-charcoal-light">{errors.root.message}</p>
+              <div className="flex flex-wrap gap-2 justify-center mt-1">
                 <Link
                   href="/signup"
                   className="bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2 rounded-full transition-colors"

@@ -13,6 +13,8 @@ import { appUrl } from '@/lib/utils/appUrl'
 import { createNotification } from '@/lib/notifications/createNotification'
 import { runClaimedOnce } from '@/lib/limits/idempotency'
 import { exportIsCurrent } from '@/lib/services/pdfExports'
+import { pdfEntitledFor } from '@/lib/entitlements/policy'
+import { releaseFreeReservationIfTerminal } from '@/lib/entitlements/freeRelease'
 import { INTERNAL_FETCH_REDIRECT, internalUrl } from '@/lib/utils/internalOrigin'
 
 export async function GET(request: NextRequest) {
@@ -61,6 +63,8 @@ export async function GET(request: NextRequest) {
       if (profile?.is_admin === true) isAdmin = true
     }
     const isComplete = storyRequest.status === 'complete'
+    // Authoritative PDF entitlement: snapshot for new rows, label rule for legacy rows.
+    const pdfEntitled = pdfEntitledFor(storyRequest)
     const isOwner =
       isAdmin ||
       isComplete ||
@@ -92,8 +96,9 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // PDF availability depends on the pdf_download_enabled flag, the plan
-      // (free tier is skipped inside generate-pdf) and completion state.
+      // PDF availability depends on the pdf_download_enabled flag, the
+      // request's entitlement snapshot (generate-pdf re-checks it) and
+      // completion state.
       // beta_mode_enabled is deliberately not consulted: beta governs limits
       // and messaging, never whether an entitled plan gets its PDF.
       const pdfDownloadEnabled = await getSetting('pdf_download_enabled', false)
@@ -120,7 +125,7 @@ export async function GET(request: NextRequest) {
             .createSignedUrl(exportRow.storage_path, 60 * 60 * 24 * 7) // 7 days
 
           signedUrl = urlData?.signedUrl
-        } else if (storyRequest.plan_tier !== 'free') {
+        } else if (pdfEntitled) {
           // No export yet — trigger PDF assembly in the background (Node.js, no CPU limit).
           // The generate-pdf route is idempotent; concurrent polls won't double-assemble.
           // Internal authenticated call: target THIS deployment's origin directly and
@@ -239,6 +244,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // FREE-only: give the lifetime slot back once the failure is terminal.
+    // Paid entitlements are never released automatically (support handles them).
+    if (storyRequest.status === 'failed') {
+      after(async () => {
+        try { await releaseFreeReservationIfTerminal(adminSupabase, requestId, storyRequest) } catch { /* non-blocking */ }
+      })
+    }
+
     // Admin story_failed notification
     if (storyRequest.status === 'failed') {
       const { count: adminFailedCount } = await adminSupabase
@@ -338,6 +351,7 @@ export async function GET(request: NextRequest) {
       learningMode: storyRequest.learning_mode ?? false,
       imagesState,
       imagesSkipped,
+      pdfEntitled,
     })
   } catch (err) {
     const { message, code, statusCode } = toApiError(err)

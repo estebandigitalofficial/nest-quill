@@ -3,9 +3,11 @@ import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validateStoryForm } from '@/lib/validators/story-form'
-import { getPlanLimits, resolvePageCount } from '@/lib/plans/config'
-import { canCreateBook } from '@/lib/plans/limits'
-import { PlanLimitError, toApiError } from '@/lib/utils/errors'
+import { toApiError } from '@/lib/utils/errors'
+import { reserveEntitlement } from '@/lib/entitlements/reserve'
+import { supabaseEntitlementStore } from '@/lib/entitlements/supabaseStore'
+import { FREE_GUEST_BOOKS, FREE_LIFETIME_BOOKS } from '@/lib/entitlements/policy'
+import { getSetting } from '@/lib/settings/appSettings'
 import { sendSubmissionConfirmationEmail } from '@/lib/services/email'
 import { sendAdminNotification, buildGuestStoryEmail } from '@/lib/services/adminNotifications'
 import { classifyGenre } from '@/lib/services/genre'
@@ -105,45 +107,43 @@ export async function POST(request: NextRequest) {
       }, { headers: { 'X-Idempotency-Hit': '1' } })
     }
 
-    // ── 3. Check plan limits ─────────────────────────────────────────────────
-    const limits = getPlanLimits(formData.planTier)
-    const limitCheck = await canCreateBook(
-      user?.id ?? null,
-      formData.planTier,
+    // ── 3. Resolve and reserve the entitlement (Entitlement Foundation) ────
+    // formData.planTier is the client's *intent*. The server decides the
+    // source (free counter, purchase, subscription period, admin), reserves
+    // one unit atomically, and snapshots the resulting capabilities onto the
+    // row. Beta Mode is not consulted anywhere on this path.
+    const [freeLifetime, freeGuest] = await Promise.all([
+      getSetting('free_user_story_limit', FREE_LIFETIME_BOOKS) as Promise<number>,
+      getSetting('guest_story_limit', FREE_GUEST_BOOKS) as Promise<number>,
+    ])
+    const reserved = await reserveEntitlement(supabaseEntitlementStore(), {
+      userId: user?.id ?? null,
       guestToken,
-      !user ? formData.userEmail : null,
-    )
+      email: formData.userEmail,
+      intent: formData.planTier,
+      submission: {
+        storyLength: formData.storyLength,
+        illustrationStyle: formData.illustrationStyle,
+        dedicationText: formData.dedicationText ?? null,
+      },
+      limits: { freeLifetime: Number(freeLifetime) || FREE_LIFETIME_BOOKS, freeGuest: Number(freeGuest) || FREE_GUEST_BOOKS },
+    })
 
-    if (!limitCheck.allowed) {
-      if (limitCheck.requiresSignup) {
-        // Return structured response so the frontend can show a signup prompt.
-        return NextResponse.json(
-          {
-            requiresSignup: true,
-            code: 'GUEST_LIMIT_EXCEEDED',
-            message: limitCheck.reason ?? "You've used your free story. Create an account to continue.",
-          },
-          { status: 403 }
-        )
-      }
-      throw new PlanLimitError(limitCheck.reason ?? 'Plan limit reached')
-    }
-
-    // Silently clamp story length to what the plan allows
-    const resolvedPageCount = resolvePageCount(formData.storyLength, formData.planTier)
-
-    // ── 4. Check if payment is required ─────────────────────────────────────
-    const paymentsEnabled = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true'
-    const requiresPayment = paymentsEnabled && formData.planTier !== 'free'
-
-    if (requiresPayment) {
-      // STUB — Phase 2 will create a Stripe Checkout Session here
-      // and return the checkoutUrl instead of proceeding
+    if (!reserved.ok) {
+      const d = reserved.denial
       return NextResponse.json(
-        { requiresPayment: true, message: 'Payments not yet enabled' },
-        { status: 402 }
+        { message: d.message, code: d.code, requiresSignup: 'requiresSignup' in d ? d.requiresSignup : undefined },
+        { status: d.status },
       )
     }
+    const { reservation } = reserved
+    const resolvedTier = reservation.decision.tier
+    const resolvedPageCount = reservation.caps.storyLength
+
+    // ── 4. Payments are not wired in this phase ─────────────────────────────
+    // The public payments flag no longer gates submissions: a paid tier is
+    // only reachable through a reserved entitlement, which checkout will
+    // create later. Without one the reservation above already answered 402.
 
     // ── 5. Insert the story request into the database ────────────────────────
     // Use the admin client so we can write regardless of RLS policies
@@ -189,7 +189,10 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: user?.id ?? null,
         guest_token: guestToken,
-        plan_tier: formData.planTier,
+        plan_tier: resolvedTier,
+        entitlement_source: reservation.decision.source,
+        entitlement_ref: reservation.decision.ref,
+        pdf_entitled: reservation.caps.pdfEntitled,
         child_name: formData.childName,
         child_age: formData.childAge,
         child_description: formData.childDescription ?? null,
@@ -197,8 +200,8 @@ export async function POST(request: NextRequest) {
         story_tone: formData.storyTone,
         story_moral: formData.storyMoral ?? null,
         story_length: resolvedPageCount,
-        illustration_style: formData.illustrationStyle,
-        dedication_text: formData.dedicationText ?? null,
+        illustration_style: reservation.caps.illustrationStyle,
+        dedication_text: reservation.caps.dedicationText,
         supporting_characters: formData.supportingCharacters ?? null,
         author_name: formData.authorName ?? null,
         closing_message: formData.closingMessage ?? null,
@@ -221,6 +224,9 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (insertError || !storyRequest) {
+      // Give the reserved unit back: no story exists for it.
+      await reservation.undo().catch(err => console.error('[story/submit] entitlement undo failed', err))
+
       // Log the full Supabase error so you can see it in your terminal
       console.error('[story/submit] Supabase insert error:', {
         message: insertError?.message,
@@ -246,6 +252,9 @@ export async function POST(request: NextRequest) {
     }
 
     const requestId = storyRequest.id
+
+    // Link the consumed entitlement to the row it produced.
+    await reservation.attach(requestId).catch(err => console.error('[story/submit] entitlement attach failed', requestId, err))
 
     // Finalize the idempotency reservation so subsequent duplicates
     // get the same requestId back instead of creating a new row.

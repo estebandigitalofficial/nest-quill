@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { pdfEntitledFor } from '@/lib/entitlements/policy'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendStoryDripEmail, sendSignupDripEmail, sendDripEmailFromTemplate } from '@/lib/services/email'
 import { getAppUrl } from '@/lib/utils/appUrl'
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
 
     const { data: stories } = await supabase
       .from('story_requests')
-      .select('id, user_email, child_name, plan_tier')
+      .select('id, user_email, child_name, plan_tier, entitlement_source, pdf_entitled')
       .eq('status', 'complete')
       .gte('completed_at', lower)
       .lte('completed_at', upper)
@@ -94,6 +95,7 @@ export async function GET(req: NextRequest) {
             childName: story.child_name,
             requestId: story.id,
             planTier: story.plan_tier,
+            pdfEntitled: pdfEntitledFor(story as unknown as { entitlement_source?: string | null; pdf_entitled?: boolean | null; plan_tier?: string | null }),
           })
         }
         await supabase.from('drip_email_log').insert({

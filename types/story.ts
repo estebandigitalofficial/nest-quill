@@ -102,6 +102,12 @@ export interface StoryStatusResponse {
   imagesState?: StoryImagesState
   /** True only when the worker intentionally skipped illustrations (same as imagesState === 'skipped'). */
   imagesSkipped?: boolean
+  /**
+   * Authoritative PDF entitlement for this story (Entitlement Foundation):
+   * the request snapshot for new rows, the legacy label rule for old ones.
+   * The reader must use this, never planTier.
+   */
+  pdfEntitled?: boolean
 }
 
 export interface QuizQuestion {

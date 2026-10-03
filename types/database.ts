@@ -58,6 +58,10 @@ export interface Profile {
   plan_tier: PlanTier
   books_generated: number
   books_limit: number
+  /** Lifetime Free books consumed (guest book claimed into the account counts). */
+  free_books_used: number
+  current_period_start: string | null
+  stripe_price_id: string | null
   is_admin: boolean
   metadata: Json
   created_at: string
@@ -133,6 +137,12 @@ export interface StoryRequest {
   geo_region: string | null
   usage_counted: boolean
   genre: string | null
+  /** NULL on rows written before the Entitlement Foundation ("legacy"). */
+  entitlement_source: 'free' | 'purchase' | 'subscription' | 'admin' | null
+  entitlement_ref: string | null
+  pdf_entitled: boolean
+  /** Set once when a FREE reservation was given back after a terminal failure. */
+  entitlement_released_at: string | null
 }
 
 export interface QuizQuestion {
@@ -463,4 +473,43 @@ export interface Database {
     }
     CompositeTypes: Record<string, never>
   }
+}
+// ─── Entitlement Foundation ────────────────────────────────────────────────
+
+export type PurchaseStatus = 'paid' | 'consumed' | 'refunded' | 'revoked'
+export type EntitlementGrantSource = 'stripe' | 'admin'
+
+/** One row = one book at `tier`. Stripe writes `stripe_*`; admin grants leave them NULL. */
+export interface StoryPurchase {
+  id: string
+  user_id: string
+  tier: 'single' | 'story_pack' | 'story_pro'
+  status: PurchaseStatus
+  source: EntitlementGrantSource
+  stripe_checkout_session_id: string | null
+  stripe_payment_intent_id: string | null
+  amount_cents: number | null
+  currency: string
+  request_id: string | null
+  granted_by: string | null
+  note: string | null
+  created_at: string
+  consumed_at: string | null
+  refunded_at: string | null
+}
+
+/** One row per billing period; `used` never exceeds `allowance` (DB CHECK). */
+export interface SubscriptionPeriod {
+  id: string
+  user_id: string
+  stripe_subscription_id: string | null
+  plan_tier: 'story_pack' | 'story_pro'
+  period_start: string
+  period_end: string
+  allowance: number
+  used: number
+  source: EntitlementGrantSource
+  granted_by: string | null
+  note: string | null
+  created_at: string
 }

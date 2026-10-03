@@ -8,7 +8,10 @@ const ILLUSTRATION_STYLES = [
   'digital_art',
 ] as const
 
-const PLAN_TIERS = ['free', 'single', 'story_pack', 'story_pro', 'educator'] as const
+// Public submit contract: the four launch tiers only. 'educator' stays in the
+// database enum for the hidden Classroom system but is never accepted here.
+// The value is an *intent*; the server resolves the real entitlement.
+const PLAN_TIERS = ['free', 'single', 'story_pack', 'story_pro'] as const
 const STORY_LENGTHS = [8, 16, 24, 32] as const
 
 // ── Tier-aware tones ──────────────────────────────────────────

@@ -141,12 +141,12 @@ export default function AdminUserActions({ userId, isSelf, userEmail, isBanned: 
               onClick={() => setConfirmResetUsage(true)}
               className="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors bg-adm-surface text-adm-muted hover:bg-adm-border border border-adm-border"
             >
-              Reset usage
+              Reset legacy counter
             </button>
           )}
           {confirmResetUsage && (
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-adm-muted">Reset usage for {userEmail}?</span>
+              <span className="text-[10px] text-adm-muted">Zero the legacy books_generated counter for {userEmail}? (analytics only — Free allowance unaffected)</span>
               <button
                 disabled={resetUsageState !== 'idle'}
                 onClick={() =>

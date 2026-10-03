@@ -3,13 +3,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
 import { AuthError, NotFoundError, toApiError } from '@/lib/utils/errors'
 
-// POST /api/admin/users/[id]/reset-usage
+// POST /api/admin/users/[id]/reset-free-allowance
 //
-// LEGACY COUNTER ONLY. Resets profiles.books_generated, the historical
-// informational counter that no longer enforces anything. It does NOT touch
-// commercial entitlement state (free_books_used, purchases, periods); use
-// /reset-free-allowance for the Free allowance. Kept so old admin links
-// keep working with an explicit, narrow meaning.
+// COMMERCIAL ENTITLEMENT. Sets profiles.free_books_used back to 0, giving
+// the account its two lifetime Free books again. A deliberate goodwill
+// action; it does not touch purchases, subscription periods or the legacy
+// books_generated counter. Logged to processing_logs-free admin trail via
+// the response only (no story is involved).
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
@@ -23,12 +23,12 @@ export async function POST(
 
     const { error } = await supabase
       .from('profiles')
-      .update({ books_generated: 0 })
+      .update({ free_books_used: 0 })
       .eq('id', userId)
 
     if (error) throw new NotFoundError('User')
 
-    return NextResponse.json({ ok: true, reset: ['books_generated'] })
+    return NextResponse.json({ ok: true, reset: ['free_books_used'], by: adminCtx.userId })
   } catch (err) {
     const { message, code, statusCode } = toApiError(err)
     return NextResponse.json({ message, code }, { status: statusCode })

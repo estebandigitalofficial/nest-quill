@@ -288,12 +288,14 @@ export interface StoryDripOptions {
   childName: string
   requestId: string
   planTier: string
+  /** Authoritative PDF entitlement; falls back to the label only for callers that predate it. */
+  pdfEntitled?: boolean
 }
 
 export async function sendStoryDripEmail(step: number, opts: StoryDripOptions): Promise<void> {
-  const { toEmail, childName, requestId, planTier } = opts
+  const { toEmail, childName, requestId, planTier, pdfEntitled } = opts
   const storyUrl = `${APP_URL}/story/${requestId}`
-  const canDownload = planTier !== 'free'
+  const canDownload = typeof pdfEntitled === 'boolean' ? pdfEntitled : planTier !== 'free'
 
   let subject: string
   let html: string

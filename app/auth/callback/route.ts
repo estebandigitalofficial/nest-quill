@@ -5,6 +5,9 @@ import { cookies } from 'next/headers'
 import { sendWelcomeEmail } from '@/lib/services/email'
 import { sendAdminNotification, buildNewUserEmail } from '@/lib/services/adminNotifications'
 import type { EmailOtpType } from '@supabase/supabase-js'
+import { getSetting } from '@/lib/settings/appSettings'
+import { isSettingEnabled } from '@/lib/settings/gates'
+import { FREE_GUEST_BOOKS, FREE_LIFETIME_BOOKS } from '@/lib/entitlements/policy'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
@@ -37,12 +40,27 @@ export async function GET(request: NextRequest) {
 
     const adminSupabase = createAdminClient()
 
+    // Guest → account reconciliation (Entitlement Foundation).
+    // Cookie path: the guest_token is a capability only this browser holds;
+    // the SQL function transfers ownership AND counts the guest's Free book
+    // toward the account's lifetime allowance in one statement.
+    // Verified-email path: only when the cookie is absent and Supabase has
+    // confirmed the address — never on a merely typed email.
+    const freeLimit = Number(await getSetting('free_user_story_limit', FREE_LIFETIME_BOOKS)) || FREE_LIFETIME_BOOKS
+    let claimed = 0
     if (guestToken) {
-      await adminSupabase
-        .from('story_requests')
-        .update({ user_id: user.id })
-        .eq('guest_token', guestToken)
-        .is('user_id', null)
+      const { data, error } = await adminSupabase.rpc('claim_guest_stories', { p_user_id: user.id, p_guest_token: guestToken, p_limit: freeLimit })
+      if (error) console.error('[auth/callback] claim_guest_stories', error)
+      claimed = Number(data ?? 0)
+    }
+    if (claimed === 0 && user.email && user.email_confirmed_at) {
+      const reconcile = await isSettingEnabled('free_email_reconciliation_enabled', true)
+      if (reconcile) {
+        const { error } = await adminSupabase.rpc('claim_guest_stories_by_verified_email', {
+          p_user_id: user.id, p_email: user.email, p_cap: FREE_GUEST_BOOKS, p_limit: freeLimit,
+        })
+        if (error) console.error('[auth/callback] claim_guest_stories_by_verified_email', error)
+      }
     }
 
     // Send welcome email to new users (created within last 24 hours)
