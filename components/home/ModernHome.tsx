@@ -169,11 +169,10 @@ const FOOTER_HREFS = {
   colC: ['/privacy', '/terms'],
 }
 
-export default function ModernHome({ isAuthed = false }: { isAuthed?: boolean }) {
-  const { lang, setLang } = useLanguage()
+export default function ModernHome() {
+  const { lang } = useLanguage()
   const t = COPY[lang] ?? COPY.en
   const rootRef = useRef<HTMLDivElement>(null)
-  const [scrolled, setScrolled] = useState(false)
   const [heroShift, setHeroShift] = useState(0)
   const [howProgress, setHowProgress] = useState(0)
   const [quillRot, setQuillRot] = useState(0)
@@ -216,7 +215,6 @@ export default function ModernHome({ isAuthed = false }: { isAuthed?: boolean })
       raf = requestAnimationFrame(() => {
         raf = 0
         const y = window.scrollY
-        setScrolled(y > 8)
         if (!reduce) setHeroShift(Math.max(y * -0.06, -40))
         const how = document.getElementById('how-it-works')
         if (how) {
@@ -235,40 +233,12 @@ export default function ModernHome({ isAuthed = false }: { isAuthed?: boolean })
     return () => { window.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf) }
   }, [])
 
-  const navLinks = [
-    { label: t.nav.create, href: '/create', icon: 'pen' },
-    { label: t.nav.pricing, href: '#pricing', icon: 'tag' },
-    isAuthed
-      ? { label: t.nav.account, href: '/account', icon: 'login' }
-      : { label: t.nav.signin, href: '/login', icon: 'login' },
-  ]
-
   return (
     <div ref={rootRef} className="nqm-root">
       <style>{NQM_CSS}</style>
 
-      {/* ── Nav ───────────────────────────────────────────────────────────── */}
-      <nav className="nqm-nav" style={{ boxShadow: scrolled ? 'var(--sh-md)' : 'none', borderBottomColor: scrolled ? 'transparent' : 'var(--divider)' }}>
-        <Link href="/" className="nqm-brand">
-          <Image src="/brand/fav.webp" alt="" width={32} height={32} priority />
-          Nest &amp; Quill
-        </Link>
-        <div className="nqm-navlinks">
-          {navLinks.map((n) => (
-            <Link key={n.label} href={n.href} aria-label={n.label} className="nqm-navlink">
-              <span className="nqm-label">{n.label}</span>
-              <span className="nqm-icon"><Icon name={n.icon} size={22} /></span>
-            </Link>
-          ))}
-        </div>
-        <div className="nqm-langs" role="group" aria-label="Language">
-          {(['en', 'es'] as Lang[]).map((l) => (
-            <button key={l} type="button" onClick={() => setLang(l)} aria-pressed={lang === l}
-              className={`nqm-lang${lang === l ? ' is-active' : ''}`}>{l.toUpperCase()}</button>
-          ))}
-        </div>
-        <Link href="/create" className="nqm-btn nqm-btn-primary nqm-btn-lift">{t.nav.cta}</Link>
-      </nav>
+      {/* Nav is the shared SiteHeader (rendered by the page), so the header is
+          identical on every route. */}
 
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <div id="top" className="nqm-wrap">

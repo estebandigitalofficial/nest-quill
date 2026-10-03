@@ -1,6 +1,10 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getAdminContext } from '@/lib/admin/guard'
+import { getServerLang } from '@/lib/i18n/server'
+import { getDictionary } from '@/lib/i18n'
+import SiteHeader from '@/components/layout/SiteHeader'
 import ModernHome from '@/components/home/ModernHome'
 
 export default async function HomePage() {
@@ -14,8 +18,25 @@ export default async function HomePage() {
     if (adminCtx) redirect('/admin')
   }
 
-  // Modernized homepage (design_handoff_nestandquill_modernized). Language is
-  // supplied by the client LanguageProvider, which was seeded from the cookie
-  // in the root layout, so first paint is already in the right language.
-  return <ModernHome isAuthed={!!user} />
+  const lang = await getServerLang()
+  const t = getDictionary(lang)
+
+  // Same SiteHeader as every other route, so the header is identical site-wide.
+  return (
+    <>
+      <SiteHeader
+        right={
+          !user ? (
+            <Link
+              href="/login"
+              className="hidden sm:inline text-sm font-semibold text-oxford hover:text-brand-600 whitespace-nowrap"
+            >
+              {t.nav.signIn}
+            </Link>
+          ) : null
+        }
+      />
+      <ModernHome />
+    </>
+  )
 }
