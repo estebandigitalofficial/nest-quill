@@ -16,7 +16,7 @@ export default function LanguageSwitcher({ className = '' }: { className?: strin
     <div
       role="group"
       aria-label={t.language.label}
-      className={`flex items-center rounded-full p-0.5 gap-0.5 bg-parchment-dark border border-charcoal/10 ${className}`}
+      className={`flex items-center rounded-lg overflow-hidden border-2 border-oxford/15 ${className}`}
     >
       {OPTIONS.map(l => {
         const active = lang === l
@@ -28,8 +28,8 @@ export default function LanguageSwitcher({ className = '' }: { className?: strin
             aria-pressed={active}
             aria-label={l === 'en' ? t.language.en : t.language.es}
             title={l === 'en' ? t.language.en : t.language.es}
-            className={`min-w-[34px] h-7 px-2 rounded-full text-[11px] font-bold tracking-wide transition-all ${
-              active ? 'bg-oxford text-parchment shadow-sm' : 'text-charcoal-light hover:text-charcoal'
+            className={`min-w-[34px] h-7 px-2.5 text-[11px] font-bold tracking-wide transition-colors ${
+              active ? 'bg-oxford text-parchment' : 'text-charcoal-light hover:text-charcoal'
             }`}
           >
             {l.toUpperCase()}
