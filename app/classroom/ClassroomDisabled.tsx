@@ -15,7 +15,7 @@ export default function ClassroomDisabled() {
           </p>
           <Link
             href="/"
-            className="inline-block mt-2 bg-oxford hover:bg-oxford-light text-white text-sm font-semibold px-6 py-2.5 rounded-full transition-colors"
+            className="inline-block mt-2 bg-oxford hover:bg-oxford-light text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors"
           >
             ← Back to Home
           </Link>

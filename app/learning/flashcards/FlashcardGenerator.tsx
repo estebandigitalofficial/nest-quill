@@ -173,7 +173,7 @@ export default function FlashcardGenerator({ assignmentId, initialTopic, initial
                   <p className="text-sm text-indigo-800">{card.back}</p>
                   <button
                     onClick={() => markKnown(i)}
-                    className={`mt-3 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${known.has(i) ? 'bg-green-100 text-green-700' : 'bg-white text-gray-500 hover:bg-green-50 hover:text-green-600 border border-gray-200'}`}
+                    className={`mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${known.has(i) ? 'bg-green-100 text-green-700' : 'bg-white text-gray-500 hover:bg-green-50 hover:text-green-600 border border-gray-200'}`}
                   >
                     {known.has(i) ? '✓ Known' : 'Mark as known'}
                   </button>

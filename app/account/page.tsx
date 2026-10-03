@@ -70,7 +70,7 @@ export default async function AccountPage() {
             Nest &amp; Quill
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/create" className="bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-3 sm:px-4 py-2 rounded-full transition-colors whitespace-nowrap">
+            <Link href="/create" className="bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-3 sm:px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
               <span className="sm:hidden">{t.nav.createShort}</span>
               <span className="hidden sm:inline">{a.createCta}</span>
             </Link>

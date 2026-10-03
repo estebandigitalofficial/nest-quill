@@ -84,7 +84,7 @@ export default async function LearningPage() {
 
               <Link
                 href="#scan"
-                className="bg-white/10 hover:bg-white/15 text-white font-semibold px-7 py-3.5 rounded-full text-base border border-white/20 transition-colors"
+                className="bg-white/10 hover:bg-white/15 text-white font-semibold px-7 py-3.5 rounded-lg text-base border border-white/20 transition-colors"
               >
                 Try Scan Homework
               </Link>
@@ -345,7 +345,7 @@ export default async function LearningPage() {
 
                     <Link
                       href="/learning/scan-homework"
-                      className="inline-flex items-center gap-2 bg-oxford hover:bg-oxford/90 text-white font-semibold px-7 py-3.5 rounded-full text-sm transition-all active:scale-[0.98] shadow-sm"
+                      className="inline-flex items-center gap-2 bg-oxford hover:bg-oxford/90 text-white font-semibold px-7 py-3.5 rounded-lg text-sm transition-all active:scale-[0.98] shadow-sm"
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
                         <path d="M3 9V6a3 3 0 013-3h3M21 9V6a3 3 0 00-3-3h-3M3 15v3a3 3 0 003 3h3M21 15v3a3 3 0 01-3 3h-3" strokeLinecap="round" strokeLinejoin="round" />
@@ -499,7 +499,7 @@ export default async function LearningPage() {
               </div>
               <Link
                 href="/create?mode=learning"
-                className="shrink-0 bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-5 py-2.5 rounded-full transition-colors whitespace-nowrap"
+                className="shrink-0 bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors whitespace-nowrap"
               >
                 Create a Learning Story →
               </Link>
@@ -519,7 +519,7 @@ export default async function LearningPage() {
             </p>
             <Link
               href="#tools"
-              className="inline-block bg-white text-indigo-700 font-semibold px-8 py-3.5 rounded-full text-base hover:bg-indigo-50 transition-colors shadow-lg"
+              className="inline-block bg-white text-indigo-700 font-semibold px-8 py-3.5 rounded-lg text-base hover:bg-indigo-50 transition-colors shadow-lg"
             >
               Start learning free →
             </Link>

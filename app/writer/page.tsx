@@ -80,7 +80,7 @@ export default async function WriterStudioPage() {
                 <h2 className="font-serif text-2xl sm:text-3xl text-oxford">My Projects</h2>
                 <Link
                   href="/writer/new"
-                  className="shrink-0 bg-oxford hover:bg-oxford/90 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors whitespace-nowrap"
+                  className="shrink-0 bg-oxford hover:bg-oxford/90 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors whitespace-nowrap"
                 >
                   + Create New Project
                 </Link>
@@ -95,7 +95,7 @@ export default async function WriterStudioPage() {
                   </p>
                   <Link
                     href="/writer/new"
-                    className="inline-block mt-5 bg-brand-500 hover:bg-brand-600 text-oxford font-semibold px-6 py-3 rounded-full text-sm transition-colors"
+                    className="inline-block mt-5 bg-brand-500 hover:bg-brand-600 text-oxford font-semibold px-6 py-3 rounded-lg text-sm transition-colors"
                   >
                     Create your first project →
                   </Link>

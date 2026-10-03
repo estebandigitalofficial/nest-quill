@@ -35,7 +35,7 @@ export default async function ComingLaterPage({ params }: { params: Promise<{ ar
           <p className="text-xs font-bold text-brand-600 uppercase tracking-widest">{t.comingLater.label}</p>
           <h1 className="font-serif text-2xl text-oxford">{fill(t.comingLater.title, { area: label })}</h1>
           <p className="text-sm text-charcoal-light">{fill(t.comingLater.body, { area: label })}</p>
-          <Link href="/create" className="inline-block bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-6 py-3 rounded-full transition-colors">
+          <Link href="/create" className="inline-block bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-6 py-3 rounded-lg transition-colors">
             {t.comingLater.cta}
           </Link>
         </div>

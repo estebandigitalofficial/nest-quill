@@ -46,7 +46,7 @@ export default function PlanStep() {
               )}
             >
               {plan.isPopular && (
-                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-brand-500 text-oxford text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap">
+                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-brand-500 text-oxford text-[10px] font-semibold px-2.5 py-0.5 rounded-lg uppercase tracking-wide whitespace-nowrap">
                   {p.popular}
                 </span>
               )}

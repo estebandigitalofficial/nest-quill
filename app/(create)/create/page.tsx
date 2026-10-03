@@ -105,7 +105,7 @@ export default async function CreatePage() {
                 <p className="text-xs text-charcoal-light">{c.limitSub}</p>
                 <Link
                   href="/pricing"
-                  className="inline-block mt-1 bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-5 py-2 rounded-full transition-colors"
+                  className="inline-block mt-1 bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
                 >
                   {c.seePlans}
                 </Link>
@@ -156,10 +156,10 @@ function CreateUnavailable({ mode, t }: { mode: 'paused' | 'signin_required'; t:
         <div className="mt-5 flex flex-wrap gap-2 justify-center">
           {!isPaused && (
             <>
-              <Link href="/signup" className="bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-4 py-2 rounded-full">
+              <Link href="/signup" className="bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-4 py-2 rounded-lg">
                 {c.createAccount}
               </Link>
-              <Link href="/login" className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2 rounded-full">
+              <Link href="/login" className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2 rounded-lg">
                 {c.signIn}
               </Link>
             </>

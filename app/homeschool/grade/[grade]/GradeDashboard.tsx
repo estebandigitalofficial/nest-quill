@@ -696,7 +696,7 @@ export default function GradeDashboard({ grade }: { grade: number }) {
           <Link href="/classroom" className="inline-block bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-6 py-2.5 rounded-full transition-colors">
             Set up classroom →
           </Link>
-          <Link href="/learning" className="inline-block bg-white border border-emerald-300 text-emerald-700 text-sm font-semibold px-6 py-2.5 rounded-full hover:bg-emerald-50 transition-colors">
+          <Link href="/learning" className="inline-block bg-white border border-emerald-300 text-emerald-700 text-sm font-semibold px-6 py-2.5 rounded-lg hover:bg-emerald-50 transition-colors">
             Try learning tools
           </Link>
         </div>

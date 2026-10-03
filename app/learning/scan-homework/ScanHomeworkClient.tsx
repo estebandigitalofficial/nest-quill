@@ -157,7 +157,7 @@ export default function ScanHomeworkClient({ triviaEnabled, thinkFirstEnabled, t
             <img src={image.preview} alt="Homework" className="w-full max-h-56 object-contain" />
             <button
               onClick={() => { setImage(null); setActivity(null); setSpellingWords(null) }}
-              className="absolute top-3 right-3 bg-white/90 border border-gray-200 text-gray-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm hover:bg-white transition-colors"
+              className="absolute top-3 right-3 bg-white/90 border border-gray-200 text-gray-600 text-xs font-semibold px-2.5 py-1 rounded-lg shadow-sm hover:bg-white transition-colors"
             >
               Change photo
             </button>

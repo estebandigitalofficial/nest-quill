@@ -24,7 +24,7 @@ export default function SiteHeaderAuthButtons({ isLoggedIn }: { isLoggedIn: bool
         </Link>
       )}
       <Link href="/create"
-        className="bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-4 py-2 rounded-full transition-colors">
+        className="bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
         {t.nav.createCta}
       </Link>
     </>

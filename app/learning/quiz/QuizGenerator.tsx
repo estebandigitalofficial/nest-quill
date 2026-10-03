@@ -190,7 +190,7 @@ export default function QuizGenerator({ assignmentId, initialTopic, initialGrade
               <img src={imagePreview} alt="Homework" className="w-full max-h-48 object-contain bg-gray-50" />
               <button
                 onClick={clearImage}
-                className="absolute top-2 right-2 bg-white/90 hover:bg-white border border-gray-200 text-gray-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm"
+                className="absolute top-2 right-2 bg-white/90 hover:bg-white border border-gray-200 text-gray-600 text-xs font-semibold px-2.5 py-1 rounded-lg shadow-sm"
               >
                 Remove
               </button>

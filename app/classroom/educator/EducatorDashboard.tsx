@@ -70,7 +70,7 @@ export default function EducatorDashboard() {
           <p className="text-sm text-charcoal-light mt-1">{classrooms.length === 0 ? 'Create your first class to get started.' : `${classrooms.length} active ${classrooms.length === 1 ? 'class' : 'classes'}`}</p>
         </div>
         <button onClick={() => setShowCreate(v => !v)}
-          className="bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-5 py-2.5 rounded-full transition-colors">
+          className="bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
           + New Class
         </button>
       </div>
@@ -117,7 +117,7 @@ export default function EducatorDashboard() {
           <p className="font-semibold text-oxford">No classes yet</p>
           <p className="text-sm text-charcoal-light">Create a class to get a join code for your students.</p>
           <button onClick={() => setShowCreate(true)}
-            className="bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-6 py-3 rounded-full transition-colors">
+            className="bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-6 py-3 rounded-lg transition-colors">
             Create your first class →
           </button>
         </div>

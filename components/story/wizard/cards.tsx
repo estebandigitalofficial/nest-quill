@@ -406,7 +406,7 @@ export function StyleCard({
         <p className="text-[11px] text-gray-400 leading-tight">{description}</p>
       </div>
       {locked && (
-        <span className="absolute top-2 right-2 text-[10px] font-semibold text-gray-500 bg-white/90 px-1.5 py-0.5 rounded-full">
+        <span className="absolute top-2 right-2 text-[10px] font-semibold text-gray-500 bg-white/90 px-1.5 py-0.5 rounded-lg">
           {t.wizard.cards.upgrade}
         </span>
       )}
