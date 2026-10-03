@@ -2,6 +2,8 @@
 
 An AI-powered educational platform for K–12 students, homeschool families, and educators. Features personalized illustrated children's books, a complete homeschool curriculum with teaching guides, a suite of AI learning tools, classroom management with assignment tracking, and a gamification layer.
 
+> **Launch scope:** the current launch surfaces the **personalized storybook** product. The learning tools, homeschool, classroom, writer-studio, and publishing areas are fully built but gated behind launch flags (`lib/launch/`) until enabled. Production also gates everything behind a maintenance mode (`middleware.ts`, `app_settings.maintenance_mode_enabled`); set `NEXT_PUBLIC_DISABLE_MAINTENANCE=true` on a preview deploy to bypass it.
+
 ## Tech Stack
 
 | Layer | Choice |
@@ -11,13 +13,23 @@ An AI-powered educational platform for K–12 students, homeschool families, and
 | Database | Supabase (Postgres + RLS) |
 | Auth | Supabase Auth |
 | Storage | Supabase Storage |
-| AI — text | OpenAI GPT-4o / GPT-4o-mini |
-| AI — images | DALL-E 3 (via Edge Function) |
+| AI — text | OpenAI GPT-4o (plan + prose), GPT-4o-mini (learning tools) |
+| AI — images | OpenAI gpt-image, via Edge Function (DALL-E retired) |
 | PDF generation | pdf-lib (Edge Function) + @react-pdf/renderer |
 | Email | Resend |
-| Payments | Stripe |
-| Styling | Tailwind CSS |
+| Payments | Stripe — scaffolded (`lib/stripe/`), not yet wired; gated by `NEXT_PUBLIC_PAYMENTS_ENABLED` |
+| Styling | Tailwind CSS · Source Serif 4 + Archivo (next/font) |
 | Edge Functions | Supabase (Deno runtime) |
+| Package manager | pnpm |
+
+## Design system
+
+Modernized 2026-10. Design tokens live in `tailwind.config.ts`:
+
+- **Type:** Source Serif 4 (headings) + Archivo (body), loaded via `next/font` and exposed as `--font-heading` / `--font-body`.
+- **Palette:** navy `#0f2140`, cream `#fbf9f4`, gold `#c59a00` (+ ramp). Primary buttons are **gold with navy text** (gold + white fails WCAG AA).
+- **Corners:** softened radius scale (8px buttons/tiles, 12px cards).
+- The marketing homepage lives in `components/home/ModernHome.tsx`; `SiteHeader`/`SiteFooter` are the shared chrome on every route.
 
 ## Project Structure
 
@@ -88,7 +100,7 @@ lib/
 
 supabase/
 ├── functions/process-story/   # Edge Function: text → illustrations → PDF → email
-└── migrations/                # 43 sequential SQL migrations
+└── migrations/                # 68 sequential SQL migrations
 
 scripts/
 └── generate-all-content.mjs   # Bulk content generator (fills all empty content_library entries)
@@ -99,7 +111,7 @@ types/                         # Shared TypeScript types (database.ts, story.ts,
 ## Key Features
 
 ### Story Generation
-Users submit a story request (characters, setting, tone, moral, personalization). The submission API queues it, then the Supabase Edge Function handles the full pipeline: GPT-4o generates text → DALL-E 3 generates illustrations → pdf-lib assembles an 8×8 picture book → Resend delivers it by email. Stories are viewable in a full ebook reader at `/story/[requestId]`.
+Users submit a story request (characters, setting, tone, moral, personalization). The submission API queues it, then the Supabase Edge Function (`supabase/functions/process-story`) runs the full pipeline: GPT-4o writes a plan then the prose (with a deterministic quality gate) → a deterministic **Visual Bible** keeps the character consistent → gpt-image renders each page + cover → pdf-lib assembles the picture book → Resend delivers it by email. The worker self-dispatches continuations to beat the edge time limit, and a cron **sweep** recovers stalled jobs. Stories are viewable in a full ebook reader at `/story/[requestId]`.
 
 ### Homeschool Curriculum (K–12)
 A complete standards-aligned curriculum for grades 1–12 across 5 core subjects (Math, English, Science, Social Studies, History).
@@ -146,7 +158,7 @@ Educators create classes, assign learning tools with pre-configured topics/grade
 Students have a profile with XP, level (1–10), coins, and streak days. XP sources: assignment completion (50 base), score bonuses (25–75), streak bonuses (50–100%). Badges are awarded for milestones (first quest, quiz master, streaks, completionist, etc.).
 
 ### Plans
-Five tiers: `free` (1 story, 8 pages), `single` ($7.99 one-time), `story_pack` ($9.99/mo, 3 stories), `story_pro` ($24.99/mo, 10 stories), `educator` ($59/mo, 40 stories + classroom). Plan limits are defined in `lib/plans/config.ts`.
+Tiers: `free` (2 stories lifetime / 1 as guest, 8 pages), `single` ($7.99 one-time, 16 pages), `story_pack` ($9.99/mo, 3 stories, 24 pages), `story_pro` ($24.99/mo, 6 stories, 32 pages), plus an `educator` tier. The **authoritative** caps + reservation logic live in `lib/entitlements/` (DB-enforced via `SECURITY DEFINER` functions); `lib/limits/` handles rate limiting, queue pressure, and idempotency. (`lib/plans/config.ts` holds display metadata.)
 
 ## Local Development
 
@@ -195,13 +207,17 @@ NEXT_PUBLIC_APP_URL=
 EDGE_FUNCTION_BASE_URL=
 EDGE_FUNCTION_SECRET=
 
+# Feature flags
+NEXT_PUBLIC_PAYMENTS_ENABLED=false       # keep false until Stripe is wired
+NEXT_PUBLIC_DISABLE_MAINTENANCE=         # set true on preview deploys to bypass maintenance mode
+
 # Admin (comma-separated emails)
 ADMIN_EMAILS=
 ```
 
 ## Database Migrations
 
-43 migrations in `supabase/migrations/`. Key tables:
+68 migrations in `supabase/migrations/`. Key tables:
 
 | Table | Purpose |
 |---|---|
@@ -211,6 +227,9 @@ ADMIN_EMAILS=
 | `book_exports` | PDF exports with signed URLs |
 | `profiles` | User accounts, plan tier, admin flag |
 | `plans` | Subscription tier definitions |
+| `story_purchases` | One-time/granted book entitlements (reserved → consumed) |
+| `subscription_periods` | Per-period allowance + usage counters |
+| `app_settings` | Feature flags, maintenance mode, branding config |
 | `content_library` | Cached AI-generated learning content (quizzes, flashcards, study guides) |
 | `content_usage` | Usage tracking and score analytics |
 | `curriculum_courses` | Grade + subject course definitions (grades 1–12) |
