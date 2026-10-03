@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Playfair_Display, Nunito } from 'next/font/google'
+import { Playfair_Display, Nunito, Source_Serif_4, Archivo } from 'next/font/google'
 import './globals.css'
 import CookieBanner from '@/components/CookieBanner'
 import ChatWidget from '@/components/ChatWidget'
@@ -21,6 +21,23 @@ const playfair = Playfair_Display({
   weight: ['400', '700'],
   style: ['normal', 'italic'],
   variable: '--font-serif',
+  display: 'swap',
+})
+
+// Modernized homepage type pairing (see design_handoff_nestandquill_modernized).
+// Only consumed by the new homepage; the rest of the site still uses Playfair/Nunito.
+const sourceSerif = Source_Serif_4({
+  subsets: ['latin'],
+  weight: ['600', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-heading',
+  display: 'swap',
+})
+
+const archivo = Archivo({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-body',
   display: 'swap',
 })
 
@@ -78,7 +95,7 @@ export default async function RootLayout({
   // no flash of English and no hydration mismatch when switching.
   const lang = await getServerLang()
   return (
-    <html lang={htmlLang(lang)} className={`${nunito.variable} ${playfair.variable}`} suppressHydrationWarning>
+    <html lang={htmlLang(lang)} className={`${nunito.variable} ${playfair.variable} ${sourceSerif.variable} ${archivo.variable}`} suppressHydrationWarning>
       <body>
         <ThemeProvider>
           <LanguageProvider initialLang={lang}>
