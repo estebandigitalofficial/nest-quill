@@ -2,7 +2,7 @@
 
 An AI-powered educational platform for K–12 students, homeschool families, and educators. Features personalized illustrated children's books, a complete homeschool curriculum with teaching guides, a suite of AI learning tools, classroom management with assignment tracking, and a gamification layer.
 
-> **Launch scope:** the current launch surfaces the **personalized storybook** product. The learning tools, homeschool, classroom, writer-studio, and publishing areas are fully built but gated behind launch flags (`lib/launch/`) until enabled. Production also gates everything behind a maintenance mode (`middleware.ts`, `app_settings.maintenance_mode_enabled`); set `NEXT_PUBLIC_DISABLE_MAINTENANCE=true` on a preview deploy to bypass it.
+> **Launch scope:** the current launch surfaces the **personalized storybook** product. The learning tools, homeschool, classroom, writer-studio, and publishing areas are fully built but gated behind launch flags (`lib/launch/`) until enabled. Production also gates everything behind a maintenance mode (`middleware.ts`, `app_settings.maintenance_mode_enabled`).
 
 ## Tech Stack
 
@@ -209,7 +209,6 @@ EDGE_FUNCTION_SECRET=
 
 # Feature flags
 NEXT_PUBLIC_PAYMENTS_ENABLED=false       # keep false until Stripe is wired
-NEXT_PUBLIC_DISABLE_MAINTENANCE=         # set true on preview deploys to bypass maintenance mode
 
 # Admin (comma-separated emails)
 ADMIN_EMAILS=

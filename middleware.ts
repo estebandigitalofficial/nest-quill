@@ -41,13 +41,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const bypassed = MAINTENANCE_BYPASS.some(prefix => pathname.startsWith(prefix))
 
-  // Dev/preview escape hatch: a deploy that sets NEXT_PUBLIC_DISABLE_MAINTENANCE=true
-  // (e.g. the Digital Official preview site) always shows the real pages even when
-  // the shared Supabase app_settings has maintenance_mode_enabled = true. Production
-  // simply never sets this var, so its maintenance gate is unaffected.
-  const maintenanceDisabled = process.env.NEXT_PUBLIC_DISABLE_MAINTENANCE === 'true'
-
-  if (!bypassed && !maintenanceDisabled) {
+  if (!bypassed) {
     const inMaintenance = await isMaintenanceModeOn()
     if (inMaintenance) {
       return NextResponse.rewrite(new URL('/maintenance', request.url))
