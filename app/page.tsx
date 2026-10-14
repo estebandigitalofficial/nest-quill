@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getAdminContext } from '@/lib/admin/guard'
+import { getSetting } from '@/lib/settings/appSettings'
 import { getServerLang } from '@/lib/i18n/server'
 import { getDictionary } from '@/lib/i18n'
 import SiteHeader from '@/components/layout/SiteHeader'
@@ -18,7 +19,12 @@ export default async function HomePage() {
     if (adminCtx) redirect('/admin')
   }
 
-  const lang = await getServerLang()
+  const [betaMode, imagesPaused, lang] = await Promise.all([
+    getSetting('beta_mode_enabled', false) as Promise<boolean>,
+    // Illustrations are governed by image_generation_enabled, not by beta.
+    getSetting<unknown>('image_generation_enabled', true).then(v => v === false),
+    getServerLang(),
+  ])
   const t = getDictionary(lang)
 
   // Same SiteHeader as every other route, so the header is identical site-wide.
@@ -36,7 +42,7 @@ export default async function HomePage() {
           ) : null
         }
       />
-      <ModernHome />
+      <ModernHome betaMode={betaMode === true} imagesPaused={imagesPaused} />
     </>
   )
 }
