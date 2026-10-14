@@ -27,6 +27,7 @@ export const es: Dictionary = {
       signup: 'Crear una cuenta',
       forgot: 'Restablecer contraseña',
       reset: 'Nueva contraseña',
+      unsubscribe: 'Preferencias de correo',
     },
   },
   language: {
@@ -619,6 +620,16 @@ export const es: Dictionary = {
     body: 'Parece que esta página se perdió entre capítulos. Volvamos al cuento.',
     home: 'Ir al inicio',
     create: 'Crear un cuento',
+  },
+  unsubscribe: {
+    successTitle: 'Cancelaste tu suscripción',
+    successBody: 'Cancelaste tu suscripción a los correos de producto y promociones de Nest & Quill. Seguirás recibiendo los mensajes de servicio sobre los cuentos que crees y tu cuenta.',
+    alreadyTitle: 'Tu suscripción ya estaba cancelada',
+    alreadyBody: 'Esta dirección ya no recibe nuestros correos de producto y promociones. Seguirás recibiendo los mensajes de servicio sobre los cuentos que crees y tu cuenta.',
+    invalidTitle: 'No pudimos verificar este enlace',
+    invalidBody: 'No fue posible verificar este enlace para cancelar la suscripción. Es posible que se haya copiado incompleto. Vuelve a abrirlo desde tu correo o contáctanos y nosotros lo resolvemos.',
+    contact: 'Contáctanos',
+    home: 'Volver al inicio',
   },
   maintenance: {
     title: 'En mantenimiento',

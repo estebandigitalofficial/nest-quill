@@ -3,10 +3,13 @@ import { updateSession } from '@/lib/supabase/middleware'
 
 // Paths that remain accessible regardless of maintenance mode.
 // /api is included so API routes (auth refresh, admin actions) keep working.
+// /unsubscribe stays reachable because an unsubscribe link in an email must
+// work whenever the recipient clicks it.
 const MAINTENANCE_BYPASS = [
   '/admin',
   '/api',
   '/maintenance',
+  '/unsubscribe',
   '/login',
   '/signup',
   '/forgot-password',

@@ -30,13 +30,14 @@ export const BRAND = {
   fontBody: "Archivo,-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif",
 } as const
 
-const CHROME: Record<EmailLang, { tagline: string; create: string; contact: string; rights: string; admin: string }> = {
+const CHROME: Record<EmailLang, { tagline: string; create: string; contact: string; rights: string; admin: string; unsubscribe: string }> = {
   en: {
     tagline: 'Personalized storybooks starring your child',
     create: 'Create a story',
     contact: 'Contact us',
     rights: 'All rights reserved.',
     admin: 'Admin notification',
+    unsubscribe: 'Unsubscribe',
   },
   es: {
     tagline: 'Cuentos personalizados protagonizados por tu hijo o hija',
@@ -44,6 +45,7 @@ const CHROME: Record<EmailLang, { tagline: string; create: string; contact: stri
     contact: 'Contáctanos',
     rights: 'Todos los derechos reservados.',
     admin: 'Notificación de administración',
+    unsubscribe: 'Cancelar suscripción',
   },
 }
 
@@ -74,6 +76,13 @@ export interface EmailLayoutOptions {
   footerNote?: string
   /** 'internal' = team/admin notifications: adds an eyebrow label, drops marketing links. */
   audience?: 'customer' | 'internal'
+  /**
+   * Marketing / product-engagement email only: absolute URL of the signed
+   * unsubscribe link, rendered as its own footer line under footerNote.
+   * Transactional email (story ready/failed, receipts, auth) leaves this unset
+   * and its footer is unchanged.
+   */
+  unsubscribeUrl?: string
 }
 
 export function renderEmail(opts: EmailLayoutOptions): string {
@@ -145,6 +154,7 @@ export function renderEmail(opts: EmailLayoutOptions): string {
               <p style="margin:0 0 10px;font-size:13px;line-height:20px;">${footerLinks}</p>
               ${internal ? '' : `<p style="margin:0 0 10px;font-family:${BRAND.fontHeading};font-style:italic;font-size:14px;line-height:20px;color:${BRAND.body};">${c.tagline}</p>`}
               ${opts.footerNote ? `<p style="margin:0 0 6px;font-size:12px;line-height:18px;color:${BRAND.muted};">${escapeHtml(opts.footerNote)}</p>` : ''}
+              ${opts.unsubscribeUrl ? `<p style="margin:0 0 6px;font-size:12px;line-height:18px;color:${BRAND.muted};"><a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:${BRAND.accentDeep};font-weight:600;text-decoration:underline;">${c.unsubscribe}</a></p>` : ''}
               <p style="margin:0;font-size:12px;line-height:18px;color:${BRAND.muted};">&copy; ${year} Nest &amp; Quill. ${c.rights}</p>
             </td>
           </tr>

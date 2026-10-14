@@ -27,6 +27,7 @@ export const en = {
       signup: 'Create an account',
       forgot: 'Reset your password',
       reset: 'Set new password',
+      unsubscribe: 'Email preferences',
     },
   },
   language: {
@@ -623,6 +624,16 @@ export const en = {
   maintenance: {
     title: 'Down for Maintenance',
     body: "We're currently making improvements. Please check back soon.",
+  },
+  unsubscribe: {
+    successTitle: "You've been unsubscribed",
+    successBody: "You've been unsubscribed from Nest & Quill product and promotional emails. You'll still receive service messages about stories you create and your account.",
+    alreadyTitle: 'You were already unsubscribed',
+    alreadyBody: "This address is already off our product and promotional email list. You'll still receive service messages about stories you create and your account.",
+    invalidTitle: "We couldn't verify this link",
+    invalidBody: 'This unsubscribe link could not be verified. It may have been copied incompletely. Open the link from your email again, or contact us and we will take care of it.',
+    contact: 'Contact us',
+    home: 'Back to home',
   },
   email: {
     footer: "You're receiving this because you created a story at Nest & Quill.",
