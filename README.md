@@ -196,6 +196,7 @@ OPENAI_API_KEY=
 # Resend (email)
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=
+UNSUBSCRIBE_TOKEN_SECRET=                # signs marketing unsubscribe links; drip cron refuses to send without it
 
 # Stripe
 STRIPE_SECRET_KEY=

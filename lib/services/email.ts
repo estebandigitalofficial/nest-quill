@@ -6,6 +6,11 @@ import {
   renderEmail, heading, paragraph, button, bulletList, divider, linkFallback,
   quote, dataTable, escapeHtml, storyFailedEmail,
 } from '@/lib/email/layout'
+import { createAdminClient } from '@/lib/supabase/admin'
+import {
+  deliverMarketingEmail, createSupabaseSuppressionStore,
+  type MarketingMessage, type MarketingSendResult, type ProviderMessage,
+} from '@/lib/email/marketing'
 
 let _resend: Resend | null = null
 function getResend(): Resend {
@@ -118,8 +123,10 @@ export async function sendSubmissionConfirmationEmail(
 }
 
 // ── Shared email shell ────────────────────────────────────────────────────────
-// Customer emails that are English-only today (drips) share the same branded
-// layout as the localized ones above.
+// Transactional customer emails that are English-only today share the same
+// branded layout as the localized ones above. Marketing mail does NOT use this
+// shell: it goes through sendMarketingEmail() below so it is suppression-checked
+// and carries an unsubscribe link.
 
 function emailShell(bodyContent: string, subject: string, opts: { lang?: Lang; footerNote?: string; preheader?: string } = {}): string {
   const lang = opts.lang ?? 'en'
@@ -133,7 +140,36 @@ function emailShell(bodyContent: string, subject: string, opts: { lang?: Lang; f
   })
 }
 
-// ── Story drip emails ─────────────────────────────────────────────────────────
+// ── Marketing / product-engagement sends ─────────────────────────────────────
+// The ONLY way marketing mail leaves this module. Every drip sender below and
+// any future promotional or re-engagement sequence must call this, never
+// resend.emails.send() directly, so the suppression check in
+// lib/email/marketing.ts cannot be bypassed. Transactional senders above and
+// below (ready, submitted, welcome, story error) do not and must not use it.
+
+export type { MarketingSendResult }
+
+async function resendMarketingProvider(message: ProviderMessage): Promise<void> {
+  const resend = getResend()
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: message.to,
+    subject: message.subject,
+    html: message.html,
+    headers: message.headers,
+  })
+  if (error) throw new Error(`Resend error (marketing): ${error.message}`)
+}
+
+export async function sendMarketingEmail(message: MarketingMessage): Promise<MarketingSendResult> {
+  return deliverMarketingEmail(message, {
+    store: createSupabaseSuppressionStore(createAdminClient()),
+    appUrl: APP_URL,
+    send: resendMarketingProvider,
+  })
+}
+
+// ── Story drip emails (marketing) ────────────────────────────────────────────
 
 export interface StoryDripOptions {
   toEmail: string
@@ -144,7 +180,7 @@ export interface StoryDripOptions {
   pdfEntitled?: boolean
 }
 
-export async function sendStoryDripEmail(step: number, opts: StoryDripOptions): Promise<void> {
+export async function sendStoryDripEmail(step: number, opts: StoryDripOptions): Promise<MarketingSendResult> {
   const { toEmail, childName, requestId, planTier, pdfEntitled } = opts
   const storyUrl = `${APP_URL}/story/${requestId}`
   const canDownload = typeof pdfEntitled === 'boolean' ? pdfEntitled : planTier !== 'free'
@@ -197,22 +233,19 @@ export async function sendStoryDripEmail(step: number, opts: StoryDripOptions): 
       paragraph('Simply reply to this email to share your feedback and claim your discount.', { small: true, muted: true }),
     ].join('\n')
   } else {
-    return
+    return { sent: false, reason: 'unknown_step', to: null }
   }
 
-  const html = emailShell(body, subject, { preheader })
-  const resend = getResend()
-  const { error } = await resend.emails.send({ from: FROM, to: toEmail, subject, html })
-  if (error) throw new Error(`Resend error (story drip step ${step}): ${error.message}`)
+  return sendMarketingEmail({ toEmail, subject, preheader, body })
 }
 
-// ── Signup drip emails ────────────────────────────────────────────────────────
+// ── Signup drip emails (marketing) ───────────────────────────────────────────
 
 export interface SignupDripOptions {
   toEmail: string
 }
 
-export async function sendSignupDripEmail(step: number, opts: SignupDripOptions): Promise<void> {
+export async function sendSignupDripEmail(step: number, opts: SignupDripOptions): Promise<MarketingSendResult> {
   const { toEmail } = opts
   const createUrl = `${APP_URL}/create`
   const pricingUrl = `${APP_URL}/pricing`
@@ -277,16 +310,13 @@ export async function sendSignupDripEmail(step: number, opts: SignupDripOptions)
       button('See all plans →', pricingUrl),
     ].join('\n')
   } else {
-    return
+    return { sent: false, reason: 'unknown_step', to: null }
   }
 
-  const html = emailShell(body, subject, { preheader })
-  const resend = getResend()
-  const { error } = await resend.emails.send({ from: FROM, to: toEmail, subject, html })
-  if (error) throw new Error(`Resend error (signup drip step ${step}): ${error.message}`)
+  return sendMarketingEmail({ toEmail, subject, preheader, body })
 }
 
-// ── Generic template-based drip email sender ─────────────────────────────────
+// ── Generic template-based drip email sender (marketing) ─────────────────────
 
 export async function sendDripEmailFromTemplate(
   template: { subject: string; body_html: string },
@@ -294,7 +324,7 @@ export async function sendDripEmailFromTemplate(
     toEmail: string
     variables?: Record<string, string>
   }
-): Promise<void> {
+): Promise<MarketingSendResult> {
   let subject = template.subject
   let body = template.body_html
 
@@ -306,18 +336,12 @@ export async function sendDripEmailFromTemplate(
     body = body.replaceAll(placeholder, escapeHtml(value))
   }
 
-  const html = emailShell(body, subject)
-  const resend = getResend()
-  const { error } = await resend.emails.send({
-    from: FROM,
-    to: opts.toEmail,
-    subject,
-    html,
-  })
-  if (error) throw new Error(`Resend error (template drip): ${error.message}`)
+  return sendMarketingEmail({ toEmail: opts.toEmail, subject, body })
 }
 
-// ── Welcome email ─────────────────────────────────────────────────────────────
+// ── Welcome email (transactional: account-created notice) ────────────────────
+// Sent once when a new account completes auth. Not routed through the
+// marketing path on purpose; see the completion report if that should change.
 
 export async function sendWelcomeEmail(toEmail: string, langInput: Lang | string = 'en'): Promise<void> {
   const createUrl = `${APP_URL}/create`
