@@ -40,3 +40,15 @@ enable_signup = true
 # Equivalent CLI flag: `supabase functions deploy process-story --no-verify-jwt`.
 [functions.process-story]
 verify_jwt = false
+
+# ── Auth email templates ──────────────────────────────────────────────────
+# Branded to match lib/email/layout.ts. These paths only apply to the local
+# stack; production templates live in Supabase Dashboard > Authentication >
+# Emails and must be pasted from these files.
+[auth.email.template.confirmation]
+subject = "Confirm your Nest & Quill account"
+content_path = "./supabase/templates/confirm-signup.html"
+
+[auth.email.template.recovery]
+subject = "Reset your Nest & Quill password"
+content_path = "./supabase/templates/reset-password.html"
