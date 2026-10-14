@@ -30,8 +30,11 @@ export default function MobileMenu({ flags }: { flags: LaunchFlags }) {
         <>
           {/* Backdrop */}
           <div className="fixed inset-0 z-40 md:hidden" onClick={close} />
-          {/* Panel — directly below the 58px header */}
-          <div className="fixed inset-x-0 top-[58px] z-50 md:hidden bg-parchment border-b border-parchment-dark shadow-lg">
+          {/* Panel: anchored to the sticky <header> (its nearest positioned
+              ancestor), starting just below the header's 2px bottom border.
+              100% + 2px tracks the real header height, maintenance banner
+              included, so it can't drift from a hard-coded pixel value. */}
+          <div className="absolute inset-x-0 top-[calc(100%+2px)] z-50 md:hidden bg-parchment border-b border-parchment-dark shadow-lg">
             <nav className="max-w-5xl mx-auto px-6 py-2 flex flex-col">
               {NAV_LINKS.map(({ href, label }) => (
                 <Link

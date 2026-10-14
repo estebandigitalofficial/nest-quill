@@ -174,9 +174,13 @@ test('11. Mobile navigation works in both languages (labels present, panel offse
     assert.ok(d.nav.menuOpen.length > 0 && d.nav.menuClose.length > 0)
   }
   const menu = readFileSync('components/layout/MobileMenu.tsx', 'utf8')
-  assert.match(menu, /top-\[58px\]/)
-  assert.match(readFileSync('components/layout/SiteHeader.tsx', 'utf8'), /h-\[58px\] md:h-\[60px\]/)
-  assert.match(readFileSync('components/layout/SiteHeader.tsx', 'utf8'), /<LanguageSwitcher/)
+  const header = readFileSync('components/layout/SiteHeader.tsx', 'utf8')
+  // The panel hangs off the sticky header (absolute, top: 100% + border), so
+  // it follows the header's real height. The +2px must match border-b-2.
+  assert.match(menu, /absolute inset-x-0 top-\[calc\(100%\+2px\)\]/)
+  assert.doesNotMatch(menu, /fixed inset-x-0 top-\[\d+px\]/)
+  assert.match(header, /<header className="sticky [^"]*border-b-2 /)
+  assert.match(header, /<LanguageSwitcher/)
 })
 
 test('12. No translation key is ever rendered: Spanish mirrors every English key with real text', () => {
