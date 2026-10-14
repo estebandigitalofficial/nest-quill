@@ -168,6 +168,15 @@ export default function ModernHome({ betaMode = false, imagesPaused = false }: P
   const [heroShift, setHeroShift] = useState(0)
   const [howProgress, setHowProgress] = useState(0)
   const [quillRot, setQuillRot] = useState(0)
+  // Touch-only tap-to-front for the hero stack. Index into BOOK_LAYOUT; the
+  // centre card (slot 1) starts on top. Only consulted by the (hover:none)
+  // CSS rule, so pointer-hover devices keep PR #12's hover-to-front and a
+  // mouse click never sticks a card on top.
+  const [activeBook, setActiveBook] = useState(1)
+  const tapBook = (i: number) => {
+    if (window.matchMedia('(hover:hover)').matches) return
+    setActiveBook(i)
+  }
 
   // Scroll-reveal: visible on first paint, hidden + observed only after mount
   // (so no-JS / reduced-motion users always see content).
@@ -260,6 +269,8 @@ export default function ModernHome({ betaMode = false, imagesPaused = false }: P
               const L = BOOK_LAYOUT[i]
               return (
                 <div key={b.title} className="nqm-reveal nqm-book" data-i={i + 1}
+                  data-active={activeBook === i ? '' : undefined}
+                  onClick={() => tapBook(i)}
                   style={{ left: L.left, top: L.top, ['--z' as string]: L.z }}>
                   <div className="nqm-book-float" style={{ ['--rot' as string]: `${L.rot}deg`, animationDuration: `${L.dur}s`, animationDelay: L.delay }}>
                     <div className="nqm-book-card">
@@ -468,6 +479,13 @@ const NQM_CSS = `
    .nqm-book / .nqm-book-float and are untouched. */
 @media (hover:hover){
   .nqm-book:hover{z-index:20}
+}
+/* Touch: the last tapped card (data-active, React state) sits on top and
+   stays there until another card is tapped. Siblings keep their --z order.
+   Only z-index changes; position, rotation and scale are untouched. */
+@media (hover:none){
+  .nqm-book{-webkit-tap-highlight-color:transparent}
+  .nqm-book[data-active]{z-index:10}
 }
 .nqm-cover{aspect-ratio:3/4;position:relative;overflow:hidden;
   background:linear-gradient(160deg,var(--accent-100),var(--surface))}
