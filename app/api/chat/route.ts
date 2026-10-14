@@ -2,6 +2,7 @@ import OpenAI from 'openai'
 import { NextRequest } from 'next/server'
 import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 import { getLaunchFlags } from '@/lib/launch/flags'
+import { launchPricingKnowledge } from '@/lib/chat/launchKnowledge'
 
 // Launch scope (Phase 2A): the assistant describes only what is publicly available.
 function systemPromptBase(classroomEnabled: boolean): string {
@@ -24,12 +25,9 @@ How it works:
 - Stories are ready in about 2 minutes
 - Users get email delivery and can read online; paid plans include a full PDF download
 
-Pricing (currently all free during beta — payments coming soon):
-- Free: 1 story trial, 8 pages max, watercolor style only
-- Single Story: $7.99 one-time — 24 pages, all illustration styles, full PDF, dedication page
-- Story Pack: $9.99/mo (or $99/yr) — 3 stories/month, 24 pages each, full PDF
-- Story Pro (most popular): $24.99/mo (or $249/yr) — 10 stories/month, 32 pages, priority processing
-${classroomEnabled ? '- Educator: $59/mo — 40 stories/month, classroom management (contact us)\n' : '- Educator plans, Classroom, Homeschool, Learning Tools and Writer Studio are not available yet; today Nest & Quill offers personalized children\'s books only. Say so plainly if asked.\n'}
+Plans and pricing (only state what is listed here; never invent plans, discounts, annual pricing or features):
+${launchPricingKnowledge()}
+${classroomEnabled ? '- Educator: $59/mo — 40 stories/month, classroom management (contact us)\n' : '- Nest & Quill offers personalized children\'s books for parents and families. Do not mention or promise educator plans, Classroom, Homeschool, learning tools, Writer Studio, teen/adult books or print ordering; if asked, say plainly that they are not offered.\n'}
 Illustration styles: Watercolor, Cartoon, Storybook (classic painted fairy-tale), Pencil Sketch, Digital Art.
 Free plan: Watercolor only. All paid plans: all 5 styles.
 

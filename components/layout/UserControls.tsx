@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { hasUnread, type Notification } from '@/lib/notifications/types'
 import { useLanguage } from '@/lib/i18n/context'
@@ -22,12 +22,14 @@ export default function UserControls() {
   const [tourAvailable, setTourAvailable] = useState(false)
   const [open, setOpen] = useState<Menu>(null)
   const router = useRouter()
+  const pathname = usePathname()
   const wrapperRef = useRef<HTMLDivElement>(null)
   const { t, lang } = useLanguage()
   const m = t.nav.userMenu
 
   // Self-fetching keeps SiteHeader cookie-free so it can be imported from both
-  // server and client pages. Renders nothing for logged-out users.
+  // server and client pages. Logged-out visitors get the shared Sign in link
+  // (same on every route); nothing renders until the session is known.
   useEffect(() => {
     let cancelled = false
     const supabase = createClient()
@@ -129,8 +131,20 @@ export default function UserControls() {
     } catch { /* swallow — local state already updated */ }
   }
 
-  // Don't render for logged-out users (or while we don't yet know the state).
-  if (!user) return null
+  // Unknown yet: render nothing (avoids a sign-in flash for signed-in users).
+  if (user === undefined) return null
+
+  // Logged out: one Sign in link, identical on every route that uses SiteHeader
+  // (omitted on the auth pages themselves, which already are the sign-in flow).
+  // Phones keep the header bar lean: the hamburger menu carries Sign in there.
+  if (user === null) {
+    if (pathname === '/login' || pathname === '/signup') return null
+    return (
+      <Link href="/login" className="hidden sm:inline text-sm font-semibold text-oxford hover:text-brand-600 whitespace-nowrap">
+        {t.nav.signIn}
+      </Link>
+    )
+  }
 
   const { email, accountType } = user
   const isStudent = accountType === 'student'

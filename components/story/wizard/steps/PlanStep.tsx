@@ -90,11 +90,6 @@ export default function PlanStep() {
           )
         })}
       </div>
-
-      <p className="text-xs text-gray-400 text-center">
-        {p.educator}{' '}
-        <span className="text-brand-500 font-medium">{p.educatorSoon}</span>
-      </p>
     </div>
   )
 }
