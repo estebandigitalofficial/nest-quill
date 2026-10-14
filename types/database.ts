@@ -131,10 +131,9 @@ export interface StoryRequest {
   learning_subject: string | null
   learning_grade: number | null
   learning_topic: string | null
-  ip_address: string | null
-  geo_city: string | null
-  geo_country: string | null
-  geo_region: string | null
+  // ip_address / geo_city / geo_country / geo_region were removed from the
+  // story record on 2026-10-14 (Privacy Foundation 1). The columns are
+  // dropped by migration 20240071; application code must not read them.
   usage_counted: boolean
   genre: string | null
   /** NULL on rows written before the Entitlement Foundation ("legacy"). */

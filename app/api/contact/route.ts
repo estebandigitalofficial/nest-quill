@@ -5,7 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { appUrl } from '@/lib/utils/appUrl'
 import { buildSupportTicketEmail } from '@/lib/services/adminNotifications'
 import { gateSupportIntake } from '@/lib/settings/gates'
-import { checkSupportRateLimit, hashIp } from '@/lib/limits/rateLimits'
+import { checkSupportRateLimit } from '@/lib/limits/rateLimits'
+import { hashIp } from '@/lib/limits/ipHash'
 import { getAdminContext } from '@/lib/admin/guard'
 
 // Stable slug set. Mirrors components/admin (read-only display) and
