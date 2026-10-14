@@ -16,6 +16,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/i18n/context'
 import type { Lang } from '@/lib/i18n'
+import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
 
 // ── Inline Lucide icon paths (stroke, 24×24) ────────────────────────────────
 const ICONS: Record<string, string> = {
@@ -39,14 +40,15 @@ function Icon({ name, size = 24 }: { name: string; size?: number }) {
 }
 
 // ── Copy (final per handoff) ────────────────────────────────────────────────
-type Plan = { name: string; price: string; unit: string; items: string[]; cta: string; popular?: boolean }
+// Plan names, prices, features and beta/paused lines are NOT here: they come
+// from PLAN_CONFIG and the dictionary (t.pricing.*, t.home.*) so the homepage
+// matches /pricing and /create.
 type Copy = {
   nav: { create: string; pricing: string; signin: string; account: string; cta: string }
   hero: { l1: string; l2: string; body: string; sub: string; primary: string; secondary: string; micro: string }
   books: { title: string; meta: string }[]
   how: { title: string; sub: string; step: (n: number) => string; steps: { title: string; copy: string }[] }
   get: { title: string; sub: string; features: { icon: string; title: string; copy: string }[] }
-  pricing: { title: string; sub: string; popular: string; plans: Plan[] }
   cta: { l1: string; l2: string; sub: string; button: string }
   footer: { tagline: string; colA: string[]; colB: string[]; colC: string[]; copyright: string }
 }
@@ -84,17 +86,6 @@ const COPY: Record<Lang, Copy> = {
         { icon: 'download', title: 'Full PDF download', copy: 'Download and keep your story forever. Print at home or at any print shop. Included on all paid plans.' },
         { icon: 'sparkles', title: 'Truly personalized', copy: "The story is written around your child's name, age, personality, and interests." },
         { icon: 'zap', title: 'Ready in minutes', copy: 'No waiting days. Your story is generated and ready to read almost instantly.' },
-      ],
-    },
-    pricing: {
-      title: 'Simple, honest pricing',
-      sub: 'Start free, then upgrade when you want longer books, illustrations, and PDF downloads.',
-      popular: 'Most popular',
-      plans: [
-        { name: 'Free', price: 'Free', unit: '', cta: 'Get started free', items: ['2 stories to try — no card needed', 'Up to 8 pages', 'Watercolor illustration style', 'Read & share online', 'Email delivery'] },
-        { name: 'Single Story', price: '$7.99', unit: 'once', cta: 'Get started', items: ['1 story, yours to keep', 'Up to 16 pages', 'All illustration styles', 'Full PDF download', 'Dedication page', 'No subscription needed'] },
-        { name: 'Story Pack', price: '$9.99', unit: '/mo', cta: 'Get started', items: ['3 stories/month', 'Up to 24 pages each', 'All illustration styles', 'Full PDF download', 'Dedication page'] },
-        { name: 'Story Pro', price: '$24.99', unit: '/mo', cta: 'Get started', popular: true, items: ['6 stories/month', 'Up to 32 pages each', 'All illustration styles', 'Full PDF download', 'Dedication page', 'Print ordering (coming soon)'] },
       ],
     },
     cta: { l1: 'Every child deserves a story', l2: 'made for them.', sub: 'Create your first storybook free — no account required.', button: 'Create a story now →' },
@@ -138,17 +129,6 @@ const COPY: Record<Lang, Copy> = {
         { icon: 'zap', title: 'Listo en minutos', copy: 'Sin esperar días. Tu cuento se genera y está listo para leer casi al instante.' },
       ],
     },
-    pricing: {
-      title: 'Precios simples y honestos',
-      sub: 'Empieza gratis y mejora cuando quieras libros más largos, ilustraciones y descargas en PDF.',
-      popular: 'Más popular',
-      plans: [
-        { name: 'Gratis', price: 'Gratis', unit: '', cta: 'Empieza gratis', items: ['2 cuentos de prueba, sin tarjeta', 'Hasta 8 páginas', 'Ilustración en acuarela', 'Leer y compartir en línea', 'Entrega por correo'] },
-        { name: 'Cuento único', price: '$7.99', unit: 'una vez', cta: 'Empezar', items: ['1 cuento, para siempre', 'Hasta 16 páginas', 'Todos los estilos de ilustración', 'Descarga en PDF', 'Página de dedicatoria', 'Sin suscripción'] },
-        { name: 'Paquete de cuentos', price: '$9.99', unit: '/mes', cta: 'Empezar', items: ['3 cuentos al mes', 'Hasta 24 páginas cada uno', 'Todos los estilos de ilustración', 'Descarga en PDF', 'Página de dedicatoria'] },
-        { name: 'Story Pro', price: '$24.99', unit: '/mes', cta: 'Empezar', popular: true, items: ['6 cuentos al mes', 'Hasta 32 páginas cada uno', 'Todos los estilos de ilustración', 'Descarga en PDF', 'Página de dedicatoria', 'Pedido de impresión (próximamente)'] },
-      ],
-    },
     cta: { l1: 'Todo niño merece un cuento', l2: 'hecho para él.', sub: 'Crea tu primer cuento gratis, sin necesidad de cuenta.', button: 'Crea un cuento ahora →' },
     footer: {
       tagline: 'Un producto de Bright Tale Books',
@@ -169,9 +149,17 @@ const FOOTER_HREFS = {
   colC: ['/privacy', '/terms'],
 }
 
-export default function ModernHome() {
-  const { lang } = useLanguage()
+interface Props {
+  /** app_settings.beta_mode_enabled — messaging only; enforcement never reads it. */
+  betaMode?: boolean
+  /** app_settings.image_generation_enabled === false. Independent of betaMode. */
+  imagesPaused?: boolean
+}
+
+export default function ModernHome({ betaMode = false, imagesPaused = false }: Props) {
+  const { lang, t: dict } = useLanguage()
   const t = COPY[lang] ?? COPY.en
+  const card = dict.pricing.card
   const rootRef = useRef<HTMLDivElement>(null)
   const [heroShift, setHeroShift] = useState(0)
   const [howProgress, setHowProgress] = useState(0)
@@ -244,6 +232,7 @@ export default function ModernHome() {
       <div id="top" className="nqm-wrap">
         <section className="nqm-hero">
           <div>
+            {betaMode && <span className="nqm-reveal nqm-badge nqm-hero-badge">{dict.home.hero.badge}</span>}
             <h1 className="nqm-h1">
               <span className="nqm-reveal" data-i="0" style={{ display: 'block' }}>{t.hero.l1}</span>
               <span className="nqm-reveal" data-i="1" style={{ display: 'block' }}>
@@ -252,7 +241,9 @@ export default function ModernHome() {
               </span>
             </h1>
             <p className="nqm-reveal nqm-hero-body" data-i="2">{t.hero.body}</p>
-            <p className="nqm-reveal nqm-hero-sub" data-i="3">{t.hero.sub}</p>
+            <p className="nqm-reveal nqm-hero-sub" data-i="3">
+              {imagesPaused ? dict.home.hero.imagesPaused : betaMode ? dict.home.hero.betaLine : t.hero.sub}
+            </p>
             <div className="nqm-reveal nqm-hero-cta" data-i="4">
               <Link href="/create" className="nqm-btn nqm-btn-primary nqm-btn-lift nqm-btn-lg">{t.hero.primary}</Link>
               <Link href="#how-it-works" className="nqm-btn nqm-btn-ghost nqm-btn-lift nqm-btn-lg">{t.hero.secondary}</Link>
@@ -323,27 +314,34 @@ export default function ModernHome() {
 
         {/* ── Pricing ─────────────────────────────────────────────────────── */}
         <section id="pricing" className="nqm-sec">
-          <h2 className="nqm-reveal nqm-h2">{t.pricing.title}</h2>
-          <p className="nqm-reveal nqm-lead nqm-lead-wide" data-i="1">{t.pricing.sub}</p>
+          <h2 className="nqm-reveal nqm-h2">{dict.home.pricing.title}</h2>
+          <p className="nqm-reveal nqm-lead nqm-lead-wide" data-i="1">{betaMode ? dict.home.pricing.betaSub : dict.home.pricing.steadySub}</p>
           <div className="nqm-plans">
-            {t.pricing.plans.map((pl, i) => (
-              <div key={pl.name} className={`nqm-reveal nqm-plan nqm-lift${pl.popular ? ' is-popular' : ''}`} data-i={i}>
-                <div className="nqm-plan-head">
-                  <span className="nqm-plan-name">{pl.name}</span>
-                  {pl.popular && <span className="nqm-badge">{t.pricing.popular}</span>}
+            {WIZARD_PLANS.map((tier, i) => {
+              // Same price rules as PlanCard: beta shows every plan as free.
+              const plan = PLAN_CONFIG[tier]
+              const copy = dict.pricing.plans[tier]
+              const free = betaMode || plan.pricingType === 'free'
+              const unit = free ? '' : (plan.pricingType === 'one_time' ? card.once : card.perMonth).trim()
+              return (
+                <div key={tier} className={`nqm-reveal nqm-plan nqm-lift${plan.isPopular ? ' is-popular' : ''}`} data-i={i}>
+                  <div className="nqm-plan-head">
+                    <span className="nqm-plan-name">{copy.name}</span>
+                    {plan.isPopular && <span className="nqm-badge">{card.popular}</span>}
+                  </div>
+                  <div className="nqm-plan-price"><span className="nqm-price">{free ? card.free : `$${plan.priceMonthly}`}</span>{unit && <span className="nqm-unit">{unit}</span>}</div>
+                  <div className="nqm-plan-items">
+                    {copy.features.map((li) => (
+                      <span key={li} className="nqm-plan-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="nqm-check"><path d="M20 6 9 17l-5-5" /></svg>
+                        {li}
+                      </span>
+                    ))}
+                  </div>
+                  <Link href="/create" className={`nqm-btn nqm-plan-btn ${plan.isPopular ? 'nqm-btn-primary' : 'nqm-btn-ghost'}`}>{betaMode ? copy.ctaBeta : copy.cta}</Link>
                 </div>
-                <div className="nqm-plan-price"><span className="nqm-price">{pl.price}</span>{pl.unit && <span className="nqm-unit">{pl.unit}</span>}</div>
-                <div className="nqm-plan-items">
-                  {pl.items.map((li) => (
-                    <span key={li} className="nqm-plan-item">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="nqm-check"><path d="M20 6 9 17l-5-5" /></svg>
-                      {li}
-                    </span>
-                  ))}
-                </div>
-                <Link href="/create" className={`nqm-btn nqm-plan-btn ${pl.popular ? 'nqm-btn-primary' : 'nqm-btn-ghost'}`}>{pl.cta}</Link>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </section>
       </div>
@@ -442,6 +440,7 @@ const NQM_CSS = `
 .nqm-h1{font-size:clamp(44px,6vw,80px);line-height:1.04;letter-spacing:-.02em}
 .nqm-accent-em{color:var(--accent-600);font-style:italic}
 .nqm-hero-body{font-size:18px;line-height:29px;max-width:46ch;margin:28px 0 0}
+.nqm-hero-badge{display:inline-block;margin-bottom:20px}
 .nqm-hero-sub{font-size:15px;line-height:24px;margin:12px 0 0;color:var(--n700)}
 .nqm-hero-cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px}
 .nqm-micro{font-size:13px;margin:20px 0 0;color:var(--n700);display:flex;gap:10px;align-items:center}
@@ -515,7 +514,7 @@ const NQM_CSS = `
 /* closing cta */
 .nqm-cta{background:var(--text);color:var(--bg);overflow:hidden;position:relative}
 .nqm-cta-grid{padding:104px clamp(20px,5vw,72px);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:40px;align-items:center}
-.nqm-cta-h{font-size:clamp(34px,4.6vw,60px);line-height:1.06;letter-spacing:-.02em;max-width:18ch}
+.nqm-cta-h{font-size:clamp(34px,4.6vw,60px);line-height:1.06;letter-spacing:-.02em;max-width:18ch;color:var(--bg)}
 .nqm-accent-400{color:var(--accent-400)}
 .nqm-cta-sub{font-size:17px;margin:20px 0 0;color:var(--n200)}
 .nqm-cta-btn{box-shadow:0 12px 30px rgba(197,154,0,.35)}
