@@ -4,6 +4,7 @@ import { getSetting } from '@/lib/settings/appSettings'
 import SettingsHub from './SettingsHub'
 import type { AdminNotificationType } from '@/lib/services/adminNotifications'
 import type { StripeEnv, LastWebhookEvent } from './StripeStatusPanel'
+import { priceIdFor } from '@/lib/stripe/config'
 
 // Secret values stay on the server; only booleans + the public flag are
 // passed to the client component.
@@ -16,7 +17,11 @@ function readStripeEnv(): StripeEnv {
   return {
     hasSecretKey: secret.length > 0,
     hasWebhookSecret: (process.env.STRIPE_WEBHOOK_SECRET ?? '').length > 0,
-    hasPublishableKey: (process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '').length > 0,
+    hasPriceIds: {
+      single: !!priceIdFor('single'),
+      story_pack: !!priceIdFor('story_pack'),
+      story_pro: !!priceIdFor('story_pro'),
+    },
     paymentsEnabledFlag: process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true',
     detectedMode,
   }

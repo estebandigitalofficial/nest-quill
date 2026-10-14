@@ -9,7 +9,8 @@ import Link from 'next/link'
 export interface StripeEnv {
   hasSecretKey: boolean
   hasWebhookSecret: boolean
-  hasPublishableKey: boolean
+  /** STRIPE_PRICE_SINGLE / _STORY_PACK / _STORY_PRO presence. */
+  hasPriceIds: { single: boolean; story_pack: boolean; story_pro: boolean }
   paymentsEnabledFlag: boolean
   // 'test' if the secret key starts with sk_test_, 'live' if sk_live_, else null.
   detectedMode: 'test' | 'live' | null
@@ -24,24 +25,24 @@ export interface LastWebhookEvent {
 }
 
 const WIRING: { label: string; state: 'not_wired' | 'partial' | 'wired'; note: string }[] = [
-  { label: 'Checkout',           state: 'not_wired', note: 'No /api/stripe/checkout route yet.' },
-  { label: 'Webhook',            state: 'not_wired', note: 'No /api/stripe/webhook route yet.' },
-  { label: 'Customer portal',    state: 'not_wired', note: 'No /api/stripe/portal route yet.' },
-  { label: 'Subscription sync',  state: 'not_wired', note: 'profiles.subscription_status / current_period_end columns exist; no writer yet.' },
-  { label: 'Reporting revenue',  state: 'partial',   note: 'admin_revenue_by_period RPC is live; waiting for paid_at rows from a webhook.' },
+  { label: 'Checkout',           state: 'wired',   note: 'POST /api/stripe/checkout (Single one-time, Story Pack and Story Pro monthly).' },
+  { label: 'Webhook',            state: 'wired',   note: 'POST /api/stripe/webhook — signature-verified, idempotent on event id.' },
+  { label: 'Customer portal',    state: 'wired',   note: 'POST /api/stripe/portal — "Manage billing" on the account page.' },
+  { label: 'Subscription sync',  state: 'wired',   note: 'Webhook mirrors status/period onto profiles; invoice.paid grants each period.' },
+  { label: 'Reporting revenue',  state: 'partial', note: 'admin_revenue_by_period RPC is live; not yet fed from Stripe amounts.' },
 ]
 
 const CHECKLIST: { label: string; done: boolean }[] = [
-  { label: 'Stripe products & prices created (test mode)', done: false },
-  { label: 'Subscription columns on profiles',             done: true  },
-  { label: 'lib/stripe/server.ts (SDK + customer helper)', done: true  },
-  { label: 'Checkout session route',                       done: false },
-  { label: 'Webhook route + signature verification',       done: false },
-  { label: 'Customer portal route',                        done: false },
-  { label: 'Subscription status sync (webhook → profile)', done: false },
-  { label: 'Monthly books_generated reset job',            done: false },
-  { label: 'Pricing CTAs route through checkout',          done: false },
-  { label: 'Reporting revenue chart populating',           done: false },
+  { label: 'Stripe products & prices created (Digital Officials account)', done: false },
+  { label: 'Price ids + keys set in Vercel',                done: false },
+  { label: 'Webhook endpoint registered in Stripe',         done: false },
+  { label: 'Customer portal configured in Stripe',          done: false },
+  { label: 'Checkout session route',                        done: true  },
+  { label: 'Webhook route + signature verification',        done: true  },
+  { label: 'Customer portal route',                         done: true  },
+  { label: 'Subscription status sync (webhook → profile)',  done: true  },
+  { label: 'Pricing CTAs route through checkout',           done: true  },
+  { label: 'Test purchase end to end in test mode',         done: false },
 ]
 
 export default function StripeStatusPanel({ env, betaMode, lastWebhookEvent, webhookLogMissing }: {
@@ -61,11 +62,12 @@ export default function StripeStatusPanel({ env, betaMode, lastWebhookEvent, web
     <div className="space-y-6">
       {/* Top-level status */}
       <div className="bg-amber-500/5 border border-amber-500/30 text-amber-200 rounded-xl px-4 py-3 space-y-1">
-        <p className="text-sm font-semibold">Payments are not active yet.</p>
+        <p className="text-sm font-semibold">{env.paymentsEnabledFlag ? 'Payments are live.' : 'Payments are not active yet.'}</p>
         <p className="text-xs leading-relaxed text-amber-200/80">
-          Do not enable payments until checkout, webhook handling, and subscription sync are complete.
-          Flipping <code className="text-[11px] bg-amber-500/10 px-1 py-0.5 rounded">NEXT_PUBLIC_PAYMENTS_ENABLED=true</code> today
-          would block all paid-tier story submissions with a 402 response.
+          Checkout, webhook and portal are built. Before setting
+          <code className="mx-1 text-[11px] bg-amber-500/10 px-1 py-0.5 rounded">NEXT_PUBLIC_PAYMENTS_ENABLED=true</code>
+          (and redeploying), every row under Environment readiness must read Set and one test-mode purchase must have
+          produced a Processed webhook event below. Turn beta mode off at the same time.
         </p>
       </div>
 
@@ -103,13 +105,15 @@ export default function StripeStatusPanel({ env, betaMode, lastWebhookEvent, web
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <EnvRow label="STRIPE_SECRET_KEY"                  present={env.hasSecretKey} />
           <EnvRow label="STRIPE_WEBHOOK_SECRET"              present={env.hasWebhookSecret} />
-          <EnvRow label="NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" present={env.hasPublishableKey} />
+          <EnvRow label="STRIPE_PRICE_SINGLE"                present={env.hasPriceIds.single} />
+          <EnvRow label="STRIPE_PRICE_STORY_PACK"            present={env.hasPriceIds.story_pack} />
+          <EnvRow label="STRIPE_PRICE_STORY_PRO"             present={env.hasPriceIds.story_pro} />
           <EnvRow label="NEXT_PUBLIC_PAYMENTS_ENABLED"       present={env.paymentsEnabledFlag} valueOverride={env.paymentsEnabledFlag ? 'true' : 'false'} neutral />
         </div>
       </Section>
 
       {/* Last webhook event */}
-      <Section title="Webhook health" subtitle="Recorded by /api/stripe/webhook (not built yet) into stripe_webhook_events.">
+      <Section title="Webhook health" subtitle="Recorded by /api/stripe/webhook into stripe_webhook_events.">
         {webhookLogMissing ? (
           <div className="bg-red-500/5 border border-red-500/30 rounded-xl px-4 py-3 text-sm">
             <p className="text-red-300 font-medium">Schema not deployed.</p>
@@ -148,7 +152,7 @@ export default function StripeStatusPanel({ env, betaMode, lastWebhookEvent, web
           </div>
         ) : (
           <div className="bg-adm-bg/50 border border-adm-border rounded-xl px-4 py-3 text-xs text-adm-muted">
-            No webhook events recorded yet. The log fills in once the webhook handler is wired and Stripe starts delivering events.
+            No webhook events recorded yet. The log fills in once the endpoint is registered in Stripe and events start arriving.
           </div>
         )}
       </Section>

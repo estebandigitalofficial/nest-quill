@@ -10,6 +10,7 @@ import { isSettingEnabled } from '@/lib/settings/gates'
 import { getQueuePressure } from '@/lib/limits/rateLimits'
 import { getServerLang } from '@/lib/i18n/server'
 import { getDictionary, fill, plural, type Dictionary } from '@/lib/i18n'
+import { paymentsEnabled } from '@/lib/stripe/config'
 
 export const dynamic = 'force-dynamic'
 
@@ -137,7 +138,7 @@ export default async function CreatePage() {
         )}
 
         <Suspense>
-          <StoryWizard betaMode={betaMode as boolean} imagesPaused={imageGenSetting === false} learningModeEnabled={flags.learningTools} extendedAudiences={flags.extendedAudiences} accountPlan={planTier} />
+          <StoryWizard betaMode={betaMode as boolean} imagesPaused={imageGenSetting === false} learningModeEnabled={flags.learningTools} extendedAudiences={flags.extendedAudiences} accountPlan={planTier} paymentsEnabled={paymentsEnabled()} />
         </Suspense>
       </div>
     </div>

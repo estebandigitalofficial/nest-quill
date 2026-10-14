@@ -8,6 +8,7 @@ import PlanCard from '@/components/pricing/PlanCard'
 import { getSetting } from '@/lib/settings/appSettings'
 import { getServerLang } from '@/lib/i18n/server'
 import { getDictionary } from '@/lib/i18n'
+import { paymentsEnabled } from '@/lib/stripe/config'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,7 +43,7 @@ export default async function PricingPage() {
         {/* Plan cards — shared with the homepage so copy can't drift. */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {WIZARD_PLANS.map((tier) => (
-            <PlanCard key={tier} tier={tier} betaMode={betaMode} lang={lang} />
+            <PlanCard key={tier} tier={tier} betaMode={betaMode} lang={lang} paymentsEnabled={paymentsEnabled()} />
           ))}
         </div>
 
