@@ -31,6 +31,7 @@ import {
   validateStoryPlan,
 } from './plan.ts'
 import { assessBookQuality } from './quality.ts'
+import { storyFailedEmail } from './emailLayout.ts'
 import {
   DEFAULT_IMAGE_MODEL,
   IMAGES_ENDPOINT,
@@ -1926,53 +1927,22 @@ Deno.serve(async (req) => {
     // sending a second error email if the user hits retry and it fails again.
     if (storyRequest?.user_email && storyRequest?.child_name && storyRequest?.retry_count === 0) {
       try {
-        const retryUrl = `${APP_URL}/story/${requestId}`
-        // Customer language follows the persisted story locale.
-        const es = language === 'es'
-        const name = storyRequest.child_name
-        const failCopy = es
-          ? {
-              subject: `Tuvimos un problema con el cuento de ${name}`,
-              title: `Algo salió mal con el cuento de ${name}`,
-              body1: `Tuvimos un problema al generar el libro de ${name}. Lamentamos la interrupción.`,
-              body2: 'Puedes intentarlo de nuevo desde la página del cuento; solo toma un momento y no tiene costo.',
-              cta: 'Intentar de nuevo →',
-              footer: 'Si el problema continúa, responde a este correo y lo resolveremos.',
-            }
-          : {
-              subject: `We hit a snag with ${name}'s story`,
-              title: `Something went wrong with ${name}'s story`,
-              body1: `We ran into a problem while generating ${name}'s storybook. We're sorry about the interruption.`,
-              body2: "You can try again from the story page — it only takes a moment and there's no charge.",
-              cta: 'Try again →',
-              footer: "If the problem keeps happening, reply to this email and we'll sort it out.",
-            }
+        // Branded template shared with the Next.js app (emailLayout.ts mirrors
+        // lib/email/layout.ts). Customer language follows the persisted story locale.
+        const failEmail = storyFailedEmail({
+          lang: language === 'es' ? 'es' : 'en',
+          appUrl: APP_URL,
+          childName: storyRequest.child_name,
+          requestId,
+        })
         const errorEmailRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_API_KEY}` },
           body: JSON.stringify({
             from: RESEND_FROM,
             to: storyRequest.user_email,
-            subject: failCopy.subject,
-            html: `
-              <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:40px 24px;background:#F8F5EC;">
-                <p style="margin:0 0 24px;font-size:20px;font-weight:700;color:#0C2340;">Nest &amp; Quill</p>
-                <div style="background:#fff;border-radius:16px;border:1px solid #ede9dc;padding:36px;">
-                  <h1 style="margin:0 0 12px;font-size:22px;color:#0C2340;">${failCopy.title}</h1>
-                  <p style="margin:0 0 16px;font-size:15px;color:#2E2E2E;line-height:1.7;">
-                    ${failCopy.body1}
-                  </p>
-                  <p style="margin:0 0 24px;font-size:15px;color:#2E2E2E;line-height:1.7;">
-                    ${failCopy.body2}
-                  </p>
-                  <a href="${retryUrl}" style="display:inline-block;background:#C99700;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:600;font-size:15px;">
-                    ${failCopy.cta}
-                  </a>
-                  <p style="margin:24px 0 0;font-size:13px;color:#4a4a4a;line-height:1.6;">
-                    ${failCopy.footer}
-                  </p>
-                </div>
-              </div>`,
+            subject: failEmail.subject,
+            html: failEmail.html,
           }),
         })
 

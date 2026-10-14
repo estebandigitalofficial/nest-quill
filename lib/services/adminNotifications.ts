@@ -1,6 +1,7 @@
 import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAppUrl } from '@/lib/utils/appUrl'
+import { renderEmail, eyebrow, heading, paragraph, button, detailsTable, messageBlock, escapeHtml } from '@/lib/email/layout'
 
 let _resend: Resend | null = null
 function getResend(): Resend {
@@ -110,50 +111,59 @@ export async function sendAdminNotification(
 }
 
 // ── Email templates ──────────────────────────────────────────────────────────
+// Internal notifications use the same branded layout as customer emails, with
+// the "Admin notification" label. Every interpolated value is escaped: child
+// names, titles and emails come from customer input.
 
-function shell(body: string): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
-<body style="margin:0;padding:0;background:#0C2340;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#0C2340;padding:32px 16px;">
-<tr><td align="center">
-<table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
-<tr><td style="padding-bottom:20px;text-align:center;">
-<p style="margin:0;font-family:Georgia,serif;font-size:18px;font-weight:700;color:#fff;">Nest &amp; Quill — Admin</p>
-</td></tr>
-<tr><td style="background:#1a2e4a;border-radius:12px;border:1px solid #2a3f5f;padding:28px 28px;">
-${body}
-</td></tr>
-<tr><td style="padding-top:16px;text-align:center;">
-<a href="${APP_URL}/admin" style="font-size:12px;color:#64748b;text-decoration:none;">Open Admin Dashboard →</a>
-</td></tr>
-</table>
-</td></tr>
-</table>
-</body></html>`
+type Tone = 'accent' | 'success' | 'danger' | 'muted'
+
+function adminEmail(opts: {
+  subject: string
+  label: string
+  tone: Tone
+  title: string
+  rows: Array<[string, string | null | undefined | false]>
+  cta: { label: string; url: string }
+}): string {
+  const rows = opts.rows
+    .filter((r): r is [string, string] => typeof r[1] === 'string' && r[1] !== '')
+    .map(([label, value]) => [label, escapeHtml(value)] as [string, string])
+  return renderEmail({
+    appUrl: APP_URL,
+    audience: 'internal',
+    title: opts.subject,
+    body: [
+      eyebrow(opts.label, opts.tone),
+      heading(escapeHtml(opts.title)),
+      paragraph(new Date().toUTCString(), { small: true, muted: true }),
+      detailsTable(rows),
+      button(opts.cta.label, opts.cta.url),
+    ].join('\n'),
+  })
 }
 
-function row(label: string, value: string): string {
-  return `<tr><td style="padding:4px 0;font-size:12px;color:#94a3b8;">${label}</td><td style="padding:4px 0 4px 16px;font-size:12px;color:#e2e8f0;text-align:right;">${value}</td></tr>`
+function shortId(id: string): string {
+  return id.slice(0, 8) + '…'
 }
 
 export function buildStoryCompletedEmail(data: {
   requestId: string; childName: string; storyTitle: string; planTier: string; userEmail?: string
 }): { subject: string; html: string } {
   const subject = `✓ Story complete — ${data.childName}'s "${data.storyTitle}"`
-  const html = shell(`
-<p style="margin:0 0 4px;font-size:20px;font-weight:700;color:#34d399;">✓ Story Complete</p>
-<p style="margin:0 0 20px;font-size:13px;color:#94a3b8;">${new Date().toUTCString()}</p>
-<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
-${row('Child', data.childName)}
-${row('Title', data.storyTitle)}
-${row('Plan', data.planTier)}
-${data.userEmail ? row('User', data.userEmail) : ''}
-${row('Request ID', data.requestId.slice(0, 8) + '…')}
-</table>
-<a href="${APP_URL}/story/${data.requestId}" style="display:inline-block;background:#059669;color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:10px 20px;border-radius:8px;">View Story →</a>
-`)
+  const html = adminEmail({
+    subject,
+    label: '✓ Story complete',
+    tone: 'success',
+    title: `${data.childName}'s "${data.storyTitle}"`,
+    rows: [
+      ['Child', data.childName],
+      ['Title', data.storyTitle],
+      ['Plan', data.planTier],
+      ['User', data.userEmail],
+      ['Request ID', shortId(data.requestId)],
+    ],
+    cta: { label: 'View story →', url: `${APP_URL}/story/${data.requestId}` },
+  })
   return { subject, html }
 }
 
@@ -161,19 +171,21 @@ export function buildStoryFailedEmail(data: {
   requestId: string; childName: string; storyTheme: string; planTier: string; userEmail?: string; lastError?: string
 }): { subject: string; html: string } {
   const subject = `✗ Story failed — ${data.childName} (${data.storyTheme})`
-  const html = shell(`
-<p style="margin:0 0 4px;font-size:20px;font-weight:700;color:#f87171;">✗ Story Failed</p>
-<p style="margin:0 0 20px;font-size:13px;color:#94a3b8;">${new Date().toUTCString()}</p>
-<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
-${row('Child', data.childName)}
-${row('Theme', data.storyTheme)}
-${row('Plan', data.planTier)}
-${data.userEmail ? row('User', data.userEmail) : ''}
-${row('Request ID', data.requestId.slice(0, 8) + '…')}
-${data.lastError ? row('Error', `<span style="color:#fca5a5;word-break:break-all;">${data.lastError}</span>`) : ''}
-</table>
-<a href="${APP_URL}/admin?q=${encodeURIComponent(data.requestId)}" style="display:inline-block;background:#dc2626;color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:10px 20px;border-radius:8px;">View in Admin →</a>
-`)
+  const html = adminEmail({
+    subject,
+    label: '✗ Story failed',
+    tone: 'danger',
+    title: `${data.childName} (${data.storyTheme})`,
+    rows: [
+      ['Child', data.childName],
+      ['Theme', data.storyTheme],
+      ['Plan', data.planTier],
+      ['User', data.userEmail],
+      ['Request ID', shortId(data.requestId)],
+      ['Error', data.lastError],
+    ],
+    cta: { label: 'View in admin →', url: `${APP_URL}/admin?q=${encodeURIComponent(data.requestId)}` },
+  })
   return { subject, html }
 }
 
@@ -181,15 +193,17 @@ export function buildNewUserEmail(data: {
   email: string; accountType: string
 }): { subject: string; html: string } {
   const subject = `New user signed up — ${data.email}`
-  const html = shell(`
-<p style="margin:0 0 4px;font-size:20px;font-weight:700;color:#818cf8;">🙋 New User Signed Up</p>
-<p style="margin:0 0 20px;font-size:13px;color:#94a3b8;">${new Date().toUTCString()}</p>
-<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
-${row('Email', data.email)}
-${row('Account type', data.accountType)}
-</table>
-<a href="${APP_URL}/admin/users?q=${encodeURIComponent(data.email)}" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:10px 20px;border-radius:8px;">View User →</a>
-`)
+  const html = adminEmail({
+    subject,
+    label: '🙋 New user',
+    tone: 'accent',
+    title: data.email,
+    rows: [
+      ['Email', data.email],
+      ['Account type', data.accountType],
+    ],
+    cta: { label: 'View user →', url: `${APP_URL}/admin/users?q=${encodeURIComponent(data.email)}` },
+  })
   return { subject, html }
 }
 
@@ -197,17 +211,19 @@ export function buildGuestStoryEmail(data: {
   requestId: string; childName: string; storyTheme: string; userEmail?: string
 }): { subject: string; html: string } {
   const subject = `Guest story submitted — ${data.childName} (${data.storyTheme})`
-  const html = shell(`
-<p style="margin:0 0 4px;font-size:20px;font-weight:700;color:#fbbf24;">📖 Guest Story Submitted</p>
-<p style="margin:0 0 20px;font-size:13px;color:#94a3b8;">${new Date().toUTCString()}</p>
-<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
-${row('Child', data.childName)}
-${row('Theme', data.storyTheme)}
-${data.userEmail ? row('Guest email', data.userEmail) : ''}
-${row('Request ID', data.requestId.slice(0, 8) + '…')}
-</table>
-<a href="${APP_URL}/admin" style="display:inline-block;background:#d97706;color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:10px 20px;border-radius:8px;">View Admin →</a>
-`)
+  const html = adminEmail({
+    subject,
+    label: '📖 Guest story submitted',
+    tone: 'accent',
+    title: `${data.childName} (${data.storyTheme})`,
+    rows: [
+      ['Child', data.childName],
+      ['Theme', data.storyTheme],
+      ['Guest email', data.userEmail],
+      ['Request ID', shortId(data.requestId)],
+    ],
+    cta: { label: 'View admin →', url: `${APP_URL}/admin` },
+  })
   return { subject, html }
 }
 
@@ -215,17 +231,19 @@ export function buildNewClassroomEmail(data: {
   classroomId: string; name: string; educatorEmail: string; grade?: number | null; subject?: string | null
 }): { subject: string; html: string } {
   const subject = `New classroom created — ${data.name}`
-  const html = shell(`
-<p style="margin:0 0 4px;font-size:20px;font-weight:700;color:#2dd4bf;">🏫 New Classroom Created</p>
-<p style="margin:0 0 20px;font-size:13px;color:#94a3b8;">${new Date().toUTCString()}</p>
-<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
-${row('Classroom', data.name)}
-${row('Educator', data.educatorEmail)}
-${data.grade ? row('Grade', String(data.grade)) : ''}
-${data.subject ? row('Subject', data.subject) : ''}
-</table>
-<a href="${APP_URL}/admin/users?q=${encodeURIComponent(data.educatorEmail)}" style="display:inline-block;background:#0d9488;color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:10px 20px;border-radius:8px;">View Educator →</a>
-`)
+  const html = adminEmail({
+    subject,
+    label: '🏫 New classroom',
+    tone: 'accent',
+    title: data.name,
+    rows: [
+      ['Classroom', data.name],
+      ['Educator', data.educatorEmail],
+      ['Grade', data.grade ? String(data.grade) : null],
+      ['Subject', data.subject],
+    ],
+    cta: { label: 'View educator →', url: `${APP_URL}/admin/users?q=${encodeURIComponent(data.educatorEmail)}` },
+  })
   return { subject, html }
 }
 
@@ -234,16 +252,45 @@ export function buildAssignmentCompletedEmail(data: {
 }): { subject: string; html: string } {
   const scoreStr = data.score != null && data.total != null ? `${data.score}/${data.total}` : '—'
   const subject = `Assignment completed — ${data.assignmentTitle}`
-  const html = shell(`
-<p style="margin:0 0 4px;font-size:20px;font-weight:700;color:#a78bfa;">🏆 Assignment Completed</p>
-<p style="margin:0 0 20px;font-size:13px;color:#94a3b8;">${new Date().toUTCString()}</p>
-<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
-${row('Assignment', data.assignmentTitle)}
-${row('Classroom', data.classroomName)}
-${row('Score', scoreStr)}
-${row('Student ID', data.studentId.slice(0, 8) + '…')}
-</table>
-<a href="${APP_URL}/admin" style="display:inline-block;background:#7c3aed;color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:10px 20px;border-radius:8px;">View Admin →</a>
-`)
+  const html = adminEmail({
+    subject,
+    label: '🏆 Assignment completed',
+    tone: 'accent',
+    title: data.assignmentTitle,
+    rows: [
+      ['Assignment', data.assignmentTitle],
+      ['Classroom', data.classroomName],
+      ['Score', scoreStr],
+      ['Student ID', shortId(data.studentId)],
+    ],
+    cta: { label: 'View admin →', url: `${APP_URL}/admin` },
+  })
   return { subject, html }
+}
+
+// ── Support ticket (contact form) ────────────────────────────────────────────
+// Sent to contact@ by app/api/contact/route.ts, reply-to the submitter.
+
+export function buildSupportTicketEmail(data: {
+  refId: string; category: string; authenticated: boolean; name?: string | null; email: string; subject?: string | null; message: string; adminLink: string
+}): string {
+  return renderEmail({
+    appUrl: APP_URL,
+    audience: 'internal',
+    title: `New support ticket #${data.refId}`,
+    body: [
+      eyebrow('✉️ Support ticket', 'accent'),
+      heading(`New support ticket — #${escapeHtml(data.refId)}`),
+      paragraph(`${escapeHtml(data.category)} · ${data.authenticated ? 'Authenticated' : 'Guest'} · Submitted via /contact`, { small: true, muted: true }),
+      detailsTable([
+        ['Name', escapeHtml(data.name || '—')],
+        ['Email', `<a href="mailto:${escapeHtml(data.email)}" style="color:#0f2140;">${escapeHtml(data.email)}</a>`],
+        ['Subject', escapeHtml(data.subject || '—')],
+      ]),
+      eyebrow('Message', 'muted'),
+      messageBlock(data.message),
+      button('Open ticket in admin →', data.adminLink),
+      paragraph('Reply to this email to answer the customer directly.', { small: true, muted: true }),
+    ].join('\n'),
+  })
 }

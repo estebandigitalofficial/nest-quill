@@ -630,14 +630,16 @@ export const en = {
     linkFallback: "If the button doesn't work, copy and paste this link into your browser:",
     ready: {
       subject: "{name}'s story is ready! 📖",
+      preheader: 'Your personalized storybook is ready to read and download.',
       title: "{name}'s story<br/>is ready! ✨",
-      body: 'Your personalized storybook <strong style="color:#1a1a1a;">“{title}”</strong> has been created and is waiting for you.',
+      body: 'Your personalized storybook <strong style="color:#0f2140;">“{title}”</strong> has been created and is waiting for you.',
       hint: 'Tap the button below to read it online or download your PDF.',
       cta: "Read {name}'s story →",
       imagesPaused: 'Illustrations are currently paused — your story includes the full text and saved illustration style for when generation resumes.',
     },
     submitted: {
       subject: "We're creating {name}'s story! 🖊️",
+      preheader: 'We\'re writing it now. We\'ll email you again the moment it\'s done.',
       title: "We're writing<br/>{name}'s story! 🖊️",
       body: "We've got everything we need and are busy crafting a unique story just for {name}. This usually takes a few minutes.",
       hint: "You can check the progress anytime — we'll also send you another email when it's done.",
@@ -645,6 +647,7 @@ export const en = {
     },
     welcome: {
       subject: 'Welcome to Nest & Quill 🪺',
+      preheader: 'Create a storybook starring your child in about two minutes.',
       title: 'Welcome to Nest & Quill 🪺',
       intro: "We're so glad you're here. Nest & Quill creates personalized, illustrated storybooks starring your child — written and illustrated by AI in minutes.",
       what: "Here's what you can do:",

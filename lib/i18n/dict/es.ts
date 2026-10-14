@@ -630,14 +630,16 @@ export const es: Dictionary = {
     linkFallback: 'Si el botón no funciona, copia y pega este enlace en tu navegador:',
     ready: {
       subject: '¡El cuento de {name} está listo! 📖',
+      preheader: 'Tu libro personalizado está listo para leer y descargar.',
       title: '¡El cuento de {name}<br/>está listo! ✨',
-      body: 'Tu libro personalizado <strong style="color:#1a1a1a;">“{title}”</strong> ya está creado y te espera.',
+      body: 'Tu libro personalizado <strong style="color:#0f2140;">“{title}”</strong> ya está creado y te espera.',
       hint: 'Toca el botón para leerlo en línea o descargar tu PDF.',
       cta: 'Leer el cuento de {name} →',
       imagesPaused: 'Las ilustraciones están pausadas por ahora: tu cuento incluye el texto completo y el estilo de ilustración guardado para cuando se reanude la generación.',
     },
     submitted: {
       subject: '¡Estamos creando el cuento de {name}! 🖊️',
+      preheader: 'Lo estamos escribiendo ahora. Te avisaremos por correo en cuanto esté listo.',
       title: '¡Estamos escribiendo<br/>el cuento de {name}! 🖊️',
       body: 'Ya tenemos todo lo necesario y estamos creando un cuento único para {name}. Esto suele tardar unos minutos.',
       hint: 'Puedes revisar el avance cuando quieras; también te enviaremos otro correo cuando esté listo.',
@@ -645,6 +647,7 @@ export const es: Dictionary = {
     },
     welcome: {
       subject: 'Bienvenido a Nest & Quill 🪺',
+      preheader: 'Crea un cuento protagonizado por tu hijo o hija en unos dos minutos.',
       title: 'Bienvenido a Nest & Quill 🪺',
       intro: 'Nos alegra mucho tenerte aquí. Nest & Quill crea cuentos ilustrados y personalizados protagonizados por tu hijo o hija, escritos e ilustrados con IA en minutos.',
       what: 'Esto es lo que puedes hacer:',
