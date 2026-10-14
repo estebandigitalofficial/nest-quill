@@ -94,10 +94,11 @@ export function productAreaForPath(pathname: string): ProductArea | null {
 export type RoutePolicy = 'allow' | 'unavailable'
 
 /**
- * Direct visits to a hidden product route render an intentional
- * "not available yet" page (never the unfinished product, never a 404
- * for a real route). Admins always pass so the Founder can keep using
- * the underlying systems.
+ * Direct visits to a hidden product route are not found for the public
+ * (never the unfinished product, and since the 2026-10 commercial
+ * reconciliation never a "coming later" page that advertises a deferred
+ * product). Admins always pass so the Founder can keep using the
+ * underlying systems. ProductGate applies this per area layout.
  */
 export function routePolicy(pathname: string, flags: LaunchFlags, isAdmin = false): RoutePolicy {
   const area = productAreaForPath(pathname)
@@ -126,7 +127,7 @@ export function signupRoles(flags: LaunchFlags): Array<'parent' | 'educator' | '
 // side effect of a flag flip. The former homepageSections(flags) helper was
 // removed with the flag-driven homepage sections; scope.test.ts pins this.
 
-/** Human copy for the unavailable state, per area. */
+/** Human label per area (admin/ops copy; nothing public renders these). */
 export const AREA_LABELS: Record<ProductArea, string> = {
   classroom: 'Classroom',
   homeschool: 'Homeschool',
