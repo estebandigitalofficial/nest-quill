@@ -7,8 +7,10 @@
  * observer (no framer-motion); icons are inline SVG (no lucide dependency).
  * Copy is final per the handoff; EN/ES wired to the site's LanguageProvider.
  *
- * Book covers are intentional placeholders — drop real 3:4 covers into
- * public/brand/covers and swap <CoverSlot> for next/image when they arrive.
+ * Book covers are curated demo artwork exported from the owner's own test
+ * stories (never customer books), stored as 3:4 WebP files in
+ * public/brand/covers and referenced from BOOK_LAYOUT. The homepage never
+ * reads Supabase Storage.
  */
 
 import { useEffect, useRef, useState } from 'react'
@@ -64,9 +66,9 @@ const COPY: Record<Lang, Copy> = {
       micro: 'No account required · Ready in minutes',
     },
     books: [
-      { title: "Xavier's Dinosaur Adventure", meta: 'Age 6 · Adventure · Watercolor' },
-      { title: 'Sofia Under the Sea', meta: 'Age 4 · Magical · Cartoon' },
-      { title: 'Luca Saves the Stars', meta: 'Age 8 · Brave · Digital Art' },
+      { title: 'The Day Theo Stopped Time', meta: 'Age 8 · Winter mystery · Cartoon' },
+      { title: "The Lantern's Last Light", meta: 'Age 8 · Seaside mystery · Classic Storybook' },
+      { title: 'Pip and the Lost Shell', meta: 'Age 5 · Beach adventure · Watercolor' },
     ],
     how: {
       title: 'A book in three steps', sub: 'From blank page to personalized storybook in minutes.',
@@ -105,9 +107,9 @@ const COPY: Record<Lang, Copy> = {
       micro: 'Sin cuenta · Listo en minutos',
     },
     books: [
-      { title: 'La aventura del dinosaurio de Xavier', meta: 'Edad 6 · Aventura · Acuarela' },
-      { title: 'Sofía bajo el mar', meta: 'Edad 4 · Mágico · Dibujos' },
-      { title: 'Luca salva las estrellas', meta: 'Edad 8 · Valiente · Arte digital' },
+      { title: 'El día que Theo detuvo el tiempo', meta: 'Edad 8 · Misterio de invierno · Caricatura' },
+      { title: 'La última luz del farol', meta: 'Edad 8 · Misterio junto al mar · Cuento clásico' },
+      { title: 'Pip y la caracola perdida', meta: 'Edad 5 · Aventura en la playa · Acuarela' },
     ],
     how: {
       title: 'Un libro en tres pasos', sub: 'De la página en blanco a un cuento personalizado en minutos.',
@@ -138,10 +140,12 @@ const COPY: Record<Lang, Copy> = {
   },
 }
 
+// Layout is language-independent; `cover` pairs each slot with its artwork
+// (600x800 WebP, 3:4). Order matches COPY[lang].books.
 const BOOK_LAYOUT = [
-  { left: '0%', top: '60px', rot: -6, z: 1, dur: 6, delay: '0s' },
-  { left: '22%', top: '0px', rot: 2, z: 3, dur: 7, delay: '-1.7s' },
-  { left: '44%', top: '90px', rot: 7, z: 2, dur: 8, delay: '-3.4s' },
+  { left: '0%', top: '60px', rot: -6, z: 1, dur: 6, delay: '0s', cover: '/brand/covers/snow-village.webp' },
+  { left: '22%', top: '0px', rot: 2, z: 3, dur: 7, delay: '-1.7s', cover: '/brand/covers/night-market.webp' },
+  { left: '44%', top: '90px', rot: 7, z: 2, dur: 8, delay: '-3.4s', cover: '/brand/covers/tide-pool.webp' },
 ]
 const FOOTER_HREFS = {
   colA: ['/', '/create', '/account'],
@@ -259,7 +263,7 @@ export default function ModernHome({ betaMode = false, imagesPaused = false }: P
                   style={{ left: L.left, top: L.top, zIndex: L.z }}>
                   <div className="nqm-book-float" style={{ ['--rot' as string]: `${L.rot}deg`, animationDuration: `${L.dur}s`, animationDelay: L.delay }}>
                     <div className="nqm-book-card">
-                      <CoverSlot title={b.title} />
+                      <CoverSlot title={b.title} src={L.cover} priority={i === 1} />
                       <div className="nqm-book-cap">
                         <span className="nqm-book-title">{b.title}</span>
                         <span className="nqm-book-meta">{b.meta}</span>
@@ -378,12 +382,20 @@ export default function ModernHome({ betaMode = false, imagesPaused = false }: P
   )
 }
 
-// Placeholder book cover — swap for next/image when real 3:4 covers land.
-function CoverSlot({ title }: { title: string }) {
+// Curated 3:4 cover artwork. The gradient stays underneath as the paint
+// while the image loads; the card is at most 270px wide, so `sizes` keeps
+// next/image from serving the full 600px file to phones.
+function CoverSlot({ title, src, priority }: { title: string; src: string; priority?: boolean }) {
   return (
-    <div className="nqm-cover" role="img" aria-label={`${title} cover`}>
-      <Image src="/brand/fav.webp" alt="" width={48} height={48} className="nqm-cover-mark" />
-      <span className="nqm-cover-title">{title}</span>
+    <div className="nqm-cover">
+      <Image
+        src={src}
+        alt={`${title} cover`}
+        fill
+        sizes="(max-width: 768px) 56vw, 270px"
+        priority={priority}
+        style={{ objectFit: 'cover' }}
+      />
     </div>
   )
 }
@@ -450,11 +462,8 @@ const NQM_CSS = `
 .nqm-book-float{transform:rotate(var(--rot));animation-name:nqmFloat;animation-timing-function:ease-in-out;animation-iteration-count:infinite}
 .nqm-book-card{background:var(--surface);box-shadow:var(--sh-lg);border-radius:var(--r-md);overflow:hidden;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s ease}
 .nqm-book:hover .nqm-book-card{transform:scale(1.04);box-shadow:0 32px 60px rgba(15,33,64,.24)}
-.nqm-cover{aspect-ratio:3/4;position:relative;overflow:hidden;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:10px;padding:16px;text-align:center;
+.nqm-cover{aspect-ratio:3/4;position:relative;overflow:hidden;
   background:linear-gradient(160deg,var(--accent-100),var(--surface))}
-.nqm-cover-mark{opacity:.65}
-.nqm-cover-title{font-family:var(--fh);font-weight:700;font-size:15px;line-height:1.2;color:var(--n700)}
 .nqm-book-cap{padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;border-top:3px solid var(--accent)}
 .nqm-book-title{font-family:var(--fh);font-weight:700;font-size:16px;line-height:1.2}
 .nqm-book-meta{font-size:12px;color:var(--n700)}
