@@ -1,10 +1,10 @@
 // Single source of truth for the pricing-card visual on both the homepage
 // pricing section and the dedicated /pricing page. When betaMode is on:
 //   - price displays "Free"
-//   - yearly savings line is hidden
 //   - CTA uses the beta CTA copy
 // Prices and plan semantics come from lib/plans/config (never from the
-// dictionary); only the words follow the site language.
+// dictionary); only the words follow the site language. Launch billing is
+// monthly only, so no yearly-savings line exists (lib/launch/claims.test.ts).
 //
 // CTA: links to /create (the wizard resolves the real entitlement server-side),
 // except when payments are live and beta is off, where a paid tier starts
@@ -15,19 +15,17 @@ import { PLAN_CONFIG } from '@/lib/plans/config'
 import type { LaunchTier } from '@/lib/entitlements/policy'
 import { cn } from '@/lib/utils/cn'
 import CheckoutButton from './CheckoutButton'
-import { getDictionary, fill, type Lang } from '@/lib/i18n'
+import { getDictionary, type Lang } from '@/lib/i18n'
 
 interface Props {
   tier: LaunchTier
   betaMode: boolean
   lang: Lang
-  /** When true, omit the yearly savings line (used by the homepage to keep cards lean). */
-  compact?: boolean
   /** NEXT_PUBLIC_PAYMENTS_ENABLED, resolved by the server parent. */
   paymentsEnabled?: boolean
 }
 
-export default function PlanCard({ tier, betaMode, lang, compact = false, paymentsEnabled = false }: Props) {
+export default function PlanCard({ tier, betaMode, lang, paymentsEnabled = false }: Props) {
   const plan = PLAN_CONFIG[tier]
   const t = getDictionary(lang)
   const copy = t.pricing.plans[tier]
@@ -70,13 +68,6 @@ export default function PlanCard({ tier, betaMode, lang, compact = false, paymen
             </>
           )}
         </p>
-
-        {/* Yearly-savings line is hidden during beta to avoid contradicting "Free". */}
-        {!betaMode && !compact && plan.pricingType === 'subscription' && plan.priceYearly && (
-          <p className="text-xs text-charcoal-light mt-0.5">
-            {fill(card.yearly, { price: plan.priceYearly, pct: Math.round((1 - plan.priceYearly / (plan.priceMonthly * 12)) * 100) })}
-          </p>
-        )}
       </div>
 
       <ul className="space-y-2 flex-1 mb-6">

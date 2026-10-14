@@ -1,6 +1,7 @@
 import type { PlanConfig, PlanLimits } from '@/types/plans'
 import type { PlanTier } from '@/types/database'
-import { TIER_CAPS, type LaunchTier } from '@/lib/entitlements/policy'
+// Relative .ts import so the pure policy tests can load this module under node.
+import { TIER_CAPS, type LaunchTier } from '../entitlements/policy.ts'
 
 /**
  * PLAN CONFIGURATION — display catalogue for pricing UI, wizard and admin.
@@ -8,6 +9,11 @@ import { TIER_CAPS, type LaunchTier } from '@/lib/entitlements/policy'
  * Enforcement does NOT read this file. Capabilities (pages, styles,
  * dedication, PDF, period allowance) come from lib/entitlements/policy.ts;
  * the four launch tiers below mirror those caps so copy cannot drift.
+ *
+ * Launch commercial model (founder decisions, 2026-10): monthly billing only
+ * (no yearly price on any launch tier), Pack = 3 books / Pro = 6 books per
+ * billing period, no rollover, no print ordering promised. The policy test in
+ * lib/launch/claims.test.ts pins these against the customer-facing copy.
  */
 export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
   free: {
@@ -65,7 +71,6 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
     displayName: 'Story Pack',
     pricingType: 'subscription',
     priceMonthly: 9.99,
-    priceYearly: 99,
     cta: 'Get started',
     ctaBeta: 'Try free during beta',
     limits: {
@@ -91,7 +96,6 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
     displayName: 'Story Pro',
     pricingType: 'subscription',
     priceMonthly: 24.99,
-    priceYearly: 249,
     cta: 'Get started',
     ctaBeta: 'Try free during beta',
     isPopular: true,
@@ -110,7 +114,6 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
       'All illustration styles',
       'Full PDF download',
       'Dedication page',
-      'Print ordering (coming soon)',
     ],
   },
 
