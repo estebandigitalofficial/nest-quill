@@ -124,19 +124,22 @@ test('7-8. child audiences stay available; teen/adult are hidden while the audie
   assert.match(read('lib/validators/story-form.ts'), /AGE_TIERS = \['child', 'teen', 'adult'\]/)
 })
 
-test('9. direct routes to hidden products render the intentional unavailable state; others are untouched', () => {
+test('9. direct routes to hidden products are not found for the public (no coming-later promise); others are untouched', () => {
   for (const p of ['/classroom', '/classroom/educator/abc', '/homeschool/grade/3', '/learning/quiz', '/writer/new', '/publish']) {
     assert.equal(routePolicy(p, OFF), 'unavailable', p)
     assert.equal(routePolicy(p, ON), 'allow', p)
   }
   for (const p of ['/', '/create', '/pricing', '/story/abc', '/account', '/storybooks', '/contact', '/login']) assert.equal(routePolicy(p, OFF), 'allow', p)
   assert.equal(productAreaForPath('/classroomx'), null)
-  for (const dir of ['classroom', 'homeschool', 'learning', 'writer']) assert.ok(existsSync(resolve(ROOT, `app/${dir}/layout.tsx`)), `${dir} layout gate`)
-  // the gate must REDIRECT (not render around children): a layout that merely hides children still ships the hidden page's payload
-  assert.match(read('components/layout/ProductGate.tsx'), /routePolicy\(path, flags, !!admin\) !== 'allow'\) redirect\(`\/coming-later\/\$\{SLUG\[area\]\}`\)/)
-  assert.ok(existsSync(resolve(ROOT, 'app/coming-later/[area]/page.tsx')), 'dedicated coming-later page')
-  assert.ok(!read('lib/launch/scope.ts').includes('coming-later') || true)
-  assert.equal(productAreaForPath('/coming-later/homeschool'), null, 'the landing page itself is never gated (no loop)')
+  for (const dir of ['classroom', 'homeschool', 'learning', 'writer', 'publish']) assert.ok(existsSync(resolve(ROOT, `app/${dir}/layout.tsx`)), `${dir} layout gate`)
+  // the gate must short-circuit with notFound() (not render around children): a layout that merely hides
+  // children still ships the hidden page's payload, and a redirect to a "coming later" page advertises a
+  // deferred product. Launch commercial reconciliation (2026-10): hidden routes are a plain 404 for the public.
+  const gate = read('components/layout/ProductGate.tsx')
+  assert.match(gate, /routePolicy\(path, flags, !!admin\) !== 'allow'\) notFound\(\)/)
+  assert.doesNotMatch(gate, /redirect\(|coming-later/)
+  assert.ok(!existsSync(resolve(ROOT, 'app/coming-later')), 'the coming-later landing is gone')
+  for (const lang of ['en', 'es'] as const) assert.doesNotMatch(read(`lib/i18n/dict/${lang}.ts`), /comingLater|Coming later|Próximamente|later release|próxima versión/i, `${lang} dictionary promises no later release`)
   assert.match(read('app/publish/page.tsx'), /publishing_requests_enabled/)
 })
 

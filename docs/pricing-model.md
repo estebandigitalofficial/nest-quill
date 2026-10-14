@@ -1,5 +1,14 @@
 # Nest & Quill — Pricing Model
 
+> **Superseded (2026-10).** This is the original planning document and no longer
+> matches the launch model. The authoritative launch model is in code:
+> `lib/entitlements/policy.ts` (`TIER_CAPS`, `FREE_LIFETIME_BOOKS`,
+> `FREE_GUEST_BOOKS`) and `lib/plans/config.ts` (`PLAN_CONFIG`). At launch:
+> Free 8 pages (1 as guest, 2 per account in total); Single $7.99 / 16 pages;
+> Story Pack $9.99/mo / 3 books / up to 24 pages; Story Pro $24.99/mo /
+> 6 books / up to 32 pages; monthly billing only, no rollover, no print
+> ordering. Kept for history only.
+
 ## Core Strategy
 
 Three distinct buying behaviors require three different pricing shapes:
