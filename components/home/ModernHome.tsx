@@ -93,7 +93,7 @@ const COPY: Record<Lang, Copy> = {
     cta: { l1: 'Every child deserves a story', l2: 'made for them.', sub: 'Create your first storybook free — no account required.', button: 'Create a story now →' },
     footer: {
       tagline: 'A product of Bright Tale Books',
-      colA: ['Home', 'Create', 'Account'], colB: ['Create a Story', 'Pricing', 'Contact'], colC: ['Privacy', 'Terms'],
+      colA: ['Home', 'Create a Story', 'Account'], colB: ['Pricing', 'Contact'], colC: ['Privacy', 'Terms'],
       copyright: '© 2026 Bright Tale Books',
     },
   },
@@ -134,7 +134,7 @@ const COPY: Record<Lang, Copy> = {
     cta: { l1: 'Todo niño merece un cuento', l2: 'hecho para él.', sub: 'Crea tu primer cuento gratis, sin necesidad de cuenta.', button: 'Crea un cuento ahora →' },
     footer: {
       tagline: 'Un producto de Bright Tale Books',
-      colA: ['Inicio', 'Crear', 'Cuenta'], colB: ['Crear un cuento', 'Precios', 'Contacto'], colC: ['Privacidad', 'Términos'],
+      colA: ['Inicio', 'Crear un cuento', 'Cuenta'], colB: ['Precios', 'Contacto'], colC: ['Privacidad', 'Términos'],
       copyright: '© 2026 Bright Tale Books',
     },
   },
@@ -147,9 +147,11 @@ const BOOK_LAYOUT = [
   { left: '22%', top: '0px', rot: 2, z: 3, dur: 7, delay: '-1.7s', cover: '/brand/covers/night-market.webp' },
   { left: '44%', top: '90px', rot: 7, z: 2, dur: 8, delay: '-3.4s', cover: '/brand/covers/tide-pool.webp' },
 ]
+// One link per destination: colA is primary navigation, colB secondary,
+// colC legal. "Create a Story" is the single footer link to /create.
 const FOOTER_HREFS = {
   colA: ['/', '/create', '/account'],
-  colB: ['/create', '#pricing', '/contact'],
+  colB: ['#pricing', '/contact'],
   colC: ['/privacy', '/terms'],
 }
 
