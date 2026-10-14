@@ -116,13 +116,15 @@ export function signupRoles(flags: LaunchFlags): Array<'parent' | 'educator' | '
   return flags.classroom ? ['parent', 'educator', 'student'] : ['parent']
 }
 
-/** Homepage secondary sections. */
-export function homepageSections(flags: LaunchFlags): { secondaryProducts: boolean; writerStudio: boolean } {
-  return {
-    secondaryProducts: flags.learningTools || flags.classroom || flags.homeschool,
-    writerStudio: flags.writerStudio,
-  }
-}
+// Homepage policy (2026-10): the public homepage is curated around the
+// current launch product (personalized children's books) and is NOT a
+// feature-flag catalog. It reads none of the flags above, so enabling a
+// deferred area adds nothing to the homepage by itself. The flags keep
+// governing their own surfaces (nav, footer, tabs, routes via routePolicy,
+// signup roles, wizard audiences, coming-later). Promoting an expanded
+// product on the homepage is an intentional homepage/product change, not a
+// side effect of a flag flip. The former homepageSections(flags) helper was
+// removed with the flag-driven homepage sections; scope.test.ts pins this.
 
 /** Human copy for the unavailable state, per area. */
 export const AREA_LABELS: Record<ProductArea, string> = {

@@ -10,7 +10,6 @@ import {
   LAUNCH_FLAG_KEYS,
   LAUNCH_PLAN_TIERS,
   footerLinks,
-  homepageSections,
   mobileMenuLinks,
   mobileTabHrefs,
   navLinks,
@@ -27,13 +26,59 @@ const OFF: LaunchFlags = { ...LAUNCH_DEFAULTS }
 const ON: LaunchFlags = { classroom: true, homeschool: true, learningTools: true, writerStudio: true, publishing: true, extendedAudiences: true }
 const HIDDEN = ['/learning', '/homeschool', '/classroom', '/writer']
 
-test('1. homepage hides deferred product sections when flags are off, and renders them from the flags', () => {
-  assert.deepEqual(homepageSections(OFF), { secondaryProducts: false, writerStudio: false })
-  assert.deepEqual(homepageSections(ON), { secondaryProducts: true, writerStudio: true })
-  const src = read('app/page.tsx')
-  assert.match(src, /homepageSections\(flags\)\.secondaryProducts && <SecondaryProducts flags=\{flags\} \/>/)
-  assert.match(src, /homepageSections\(flags\)\.writerStudio && <WriterStudio \/>/)
-  for (const f of ['flags.learningTools && (', 'flags.classroom && (', 'flags.homeschool && (']) assert.ok(src.includes(f), f)
+// Deferred-product routes, labels and flag keys that must never reach the homepage.
+const HIDDEN_ROUTE_RE = /\/(classroom|homeschool|learning|writer|publish|coming-later)\b/
+const HIDDEN_LABEL_RE = /Classroom|Homeschool|Learning Tools|Writer Studio|Publishing|Teen|Adult/
+const HIDDEN_FLAG_RE = /classroom_enabled|homeschool_enabled|learning_tools_enabled|writer_studio_enabled|publishing_requests_enabled|extended_audiences_enabled/
+/** Every href the launch homepage may link to (ModernHome + its own footer). */
+const HOMEPAGE_ALLOWED_HREFS = new Set(['/', '/create', '/account', '/contact', '/privacy', '/terms', '/login', '#pricing', '#how-it-works'])
+
+test('1. homepage is curated around the launch product and never renders deferred-product sections from flags', () => {
+  // (a) app/page.tsx reads NO launch flag: it cannot react to a flag flip, so
+  // enabling a deferred area adds nothing to the homepage by itself.
+  const page = read('app/page.tsx')
+  assert.doesNotMatch(page, /lib\/launch|getLaunchFlags|LaunchFlags|homepageSections/, 'homepage must not read launch flags')
+  assert.doesNotMatch(page, HIDDEN_FLAG_RE, 'homepage must not read deferred-product app_settings keys')
+  assert.doesNotMatch(page, /SecondaryProducts|WriterStudio|<Classroom|<Homeschool|<LearningTools|<Publishing/, 'old flag-driven sections stay removed')
+  assert.match(page, /<ModernHome betaMode=\{betaMode === true\} imagesPaused=\{imagesPaused\} \/>/, 'ModernHome receives only messaging state, never flags')
+  assert.doesNotMatch(page, HIDDEN_ROUTE_RE)
+
+  // (b) ModernHome exposes no deferred-product route, label or flag, and does
+  // not import the launch module at all.
+  const home = read('components/home/ModernHome.tsx')
+  assert.doesNotMatch(home, /lib\/launch|LaunchFlags|flags\b/, 'ModernHome is not flag-aware')
+  assert.doesNotMatch(home, HIDDEN_ROUTE_RE, 'no deferred-product route in ModernHome')
+  assert.doesNotMatch(home, HIDDEN_LABEL_RE, 'no deferred-product label in ModernHome')
+  assert.doesNotMatch(home, HIDDEN_FLAG_RE)
+  const hrefs = [...home.matchAll(/href=\{?["'`]([^"'`]+)["'`]/g)].map(m => m[1])
+  const footerBlock = home.slice(home.indexOf('const FOOTER_HREFS'), home.indexOf('\n}\n', home.indexOf('const FOOTER_HREFS')))
+  const footer = [...footerBlock.matchAll(/col[ABC]: \[([^\]]*)\]/g)].flatMap(m => m[1].split(',').map(h => h.trim().replace(/^['"`]|['"`]$/g, '')).filter(Boolean))
+  assert.ok(hrefs.length > 0 && footer.length > 0, 'homepage links were found')
+  for (const h of [...hrefs, ...footer]) assert.ok(HOMEPAGE_ALLOWED_HREFS.has(h), `homepage links only to launch surfaces, got ${h}`)
+
+  // (c) the homepage's copy (both languages) names no deferred product.
+  for (const lang of ['en', 'es'] as const) {
+    const dict = read(`lib/i18n/dict/${lang}.ts`)
+    const homeCopy = dict.slice(dict.indexOf('\n  home: {'), dict.indexOf('\n  pricing: {'))
+    assert.ok(homeCopy.length > 100, `${lang} home copy located`)
+    assert.doesNotMatch(homeCopy, HIDDEN_ROUTE_RE, `${lang} home copy links to no hidden route`)
+    assert.doesNotMatch(homeCopy, /Classroom|Homeschool|Writer Studio|Publishing/, `${lang} home copy names no deferred product`)
+  }
+
+  // (d) the obsolete flag-to-homepage helper is gone and nothing else grew one.
+  const scope = read('lib/launch/scope.ts')
+  assert.doesNotMatch(scope, /export function homepageSections/)
+  assert.match(scope, /Homepage policy/, 'the decision is recorded next to the flags')
+
+  // (e) hidden products stay closed by default, and the flags remain
+  // authoritative for the surfaces they govern (tests 2-4, 7-10 pin each one).
+  assert.deepEqual(LAUNCH_DEFAULTS, { classroom: false, homeschool: false, learningTools: false, writerStudio: false, publishing: false, extendedAudiences: false })
+  assert.notDeepEqual(navLinks(ON), navLinks(OFF))
+  assert.notDeepEqual(footerLinks(ON), footerLinks(OFF))
+  assert.notDeepEqual(mobileTabHrefs(ON), mobileTabHrefs(OFF))
+  assert.notEqual(routePolicy('/classroom', ON), routePolicy('/classroom', OFF))
+  assert.notDeepEqual(signupRoles(ON), signupRoles(OFF))
+  assert.notDeepEqual([...publicAudienceTiers(ON)], [...publicAudienceTiers(OFF)])
 })
 
 test('2-4. desktop nav, mobile nav/tabs and footer hide deferred areas when off', () => {
