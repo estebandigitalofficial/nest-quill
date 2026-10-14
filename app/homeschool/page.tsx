@@ -16,7 +16,7 @@ export default function HomeschoolPage() {
         right={
           <Link
             href="/learning"
-            className="bg-brand-500 hover:bg-brand-600 text-white text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full transition-colors whitespace-nowrap"
+            className="bg-brand-500 hover:bg-brand-600 text-oxford text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors whitespace-nowrap"
           >
             Try Learning Tools →
           </Link>
@@ -55,7 +55,7 @@ export default function HomeschoolPage() {
               </Link>
               <Link
                 href="/learning"
-                className="bg-white/10 hover:bg-white/15 text-white font-semibold px-7 py-3.5 rounded-full text-base border border-white/20 transition-colors"
+                className="bg-white/10 hover:bg-white/15 text-white font-semibold px-7 py-3.5 rounded-lg text-base border border-white/20 transition-colors"
               >
                 Try tools free
               </Link>
@@ -261,7 +261,7 @@ export default function HomeschoolPage() {
 
                   <Link
                     href="/learning/scan-homework"
-                    className="inline-flex items-center gap-2 bg-oxford hover:bg-oxford/90 text-white font-semibold px-6 py-3 rounded-full text-sm transition-all"
+                    className="inline-flex items-center gap-2 bg-oxford hover:bg-oxford/90 text-white font-semibold px-6 py-3 rounded-lg text-sm transition-all"
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
                       <path d="M3 9V6a3 3 0 013-3h3M21 9V6a3 3 0 00-3-3h-3M3 15v3a3 3 0 003 3h3M21 15v3a3 3 0 01-3 3h-3" strokeLinecap="round" strokeLinejoin="round" />
@@ -375,7 +375,7 @@ export default function HomeschoolPage() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
                 href="/learning"
-                className="inline-block bg-white text-emerald-700 font-semibold px-8 py-3.5 rounded-full text-base hover:bg-emerald-50 transition-colors shadow-lg"
+                className="inline-block bg-white text-emerald-700 font-semibold px-8 py-3.5 rounded-lg text-base hover:bg-emerald-50 transition-colors shadow-lg"
               >
                 Start learning free →
               </Link>

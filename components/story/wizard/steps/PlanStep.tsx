@@ -46,7 +46,7 @@ export default function PlanStep() {
               )}
             >
               {plan.isPopular && (
-                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-brand-500 text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap">
+                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-brand-500 text-oxford text-[10px] font-semibold px-2.5 py-0.5 rounded-lg uppercase tracking-wide whitespace-nowrap">
                   {p.popular}
                 </span>
               )}
@@ -55,7 +55,7 @@ export default function PlanStep() {
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-gray-900 text-sm">{copy.name}</span>
                   {isSelected && (
-                    <span className="w-4 h-4 rounded-full bg-brand-500 flex items-center justify-center text-white text-[10px]">
+                    <span className="w-4 h-4 rounded-full bg-brand-500 flex items-center justify-center text-oxford text-[10px]">
                       ✓
                     </span>
                   )}

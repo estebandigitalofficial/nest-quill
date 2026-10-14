@@ -93,7 +93,7 @@ export default function SourceDocuments({ projectId, initialFiles }: Props) {
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="inline-flex items-center gap-2 bg-oxford hover:bg-oxford/90 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors"
+          className="inline-flex items-center gap-2 bg-oxford hover:bg-oxford/90 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors"
         >
           {uploading ? 'Uploading…' : '+ Add document'}
         </button>

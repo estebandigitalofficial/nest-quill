@@ -37,7 +37,7 @@ export default function PlanCard({ tier, betaMode, lang, compact = false }: Prop
       )}
     >
       {plan.isPopular && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-500 text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-500 text-oxford text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wide whitespace-nowrap">
           {card.popular}
         </span>
       )}
@@ -85,7 +85,7 @@ export default function PlanCard({ tier, betaMode, lang, compact = false }: Prop
         className={cn(
           'block text-center text-sm font-semibold py-2.5 rounded-xl transition-colors',
           plan.isPopular
-            ? 'bg-brand-500 hover:bg-brand-600 text-white'
+            ? 'bg-brand-500 hover:bg-brand-600 text-oxford'
             : 'bg-gray-100 hover:bg-gray-200 text-gray-800',
         )}
       >

@@ -119,7 +119,7 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode, header, 
             <button
               onClick={handleRetry}
               disabled={retrying}
-              className="bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors"
+              className="bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-oxford text-sm font-semibold px-6 py-3 rounded-xl transition-colors"
             >
               {retrying ? st.retrying : st.retry}
             </button>

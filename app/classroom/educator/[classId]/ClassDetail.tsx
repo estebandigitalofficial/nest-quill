@@ -490,7 +490,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
                     (aSource === 'topic' && aTopic.trim().length < 3) ||
                     (aSource === 'material' && aMaterial.trim().length < 50)
                   }
-                  className="bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+                  className="bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 text-oxford text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
                   {assigning ? 'Assigning…' : preview ? 'Assign to class' : 'Generate & Assign'}
                 </button>
                 <button type="button" onClick={() => { resetAssignForm(); setShowAssign(false) }}
@@ -664,7 +664,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
               {editAssignError && <p className="text-sm text-red-500">{editAssignError}</p>}
               <div className="flex gap-3 pt-1">
                 <button type="submit" disabled={editingAssignment || !editATitle.trim()}
-                  className="bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+                  className="bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 text-oxford text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
                   {editingAssignment ? 'Saving...' : 'Save changes'}
                 </button>
                 <button type="button" onClick={() => setEditAssignment(null)}
@@ -737,7 +737,7 @@ export default function ClassDetail({ classId }: { classId: string }) {
               {editError && <p className="text-sm text-red-500">{editError}</p>}
               <div className="flex gap-3 pt-1">
                 <button type="submit" disabled={editing || !editName.trim()}
-                  className="bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+                  className="bg-brand-500 hover:bg-brand-600 disabled:bg-gray-200 disabled:text-gray-400 text-oxford text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
                   {editing ? 'Saving…' : 'Save changes'}
                 </button>
                 <button type="button" onClick={() => setShowEdit(false)}

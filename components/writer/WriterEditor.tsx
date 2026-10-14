@@ -133,7 +133,7 @@ export default function WriterEditor({
             <button
               type="submit"
               disabled={pending || !dirty}
-              className="inline-flex justify-center bg-oxford hover:bg-oxford/90 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-full text-sm transition-all active:scale-[0.98]"
+              className="inline-flex justify-center bg-oxford hover:bg-oxford/90 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-6 py-2.5 rounded-lg text-sm transition-all active:scale-[0.98]"
             >
               {pending ? 'Saving…' : 'Save'}
             </button>

@@ -164,7 +164,7 @@ export default function GuideQuill(props: Props) {
               <button
                 type="button"
                 onClick={onNext}
-                className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                className="bg-brand-500 hover:bg-brand-600 text-oxford text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
               >
                 {step.action_label ?? (isLast ? 'Got it' : 'Next')}
               </button>

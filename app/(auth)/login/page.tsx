@@ -98,7 +98,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-white font-semibold py-3 rounded-xl transition-colors"
+            className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-oxford font-semibold py-3 rounded-xl transition-colors"
           >
             {loading ? a.login.submitting : a.login.submit}
           </button>

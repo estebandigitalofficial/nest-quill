@@ -35,7 +35,7 @@ export default function WizardProgress({
                 className={[
                   'w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all',
                   done
-                    ? 'bg-brand-500 text-white'
+                    ? 'bg-brand-500 text-oxford'
                     : active
                     ? 'bg-white border-2 border-brand-500 text-brand-600'
                     : 'bg-white border-2 border-gray-200 text-gray-400',
