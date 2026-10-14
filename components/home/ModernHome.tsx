@@ -260,7 +260,7 @@ export default function ModernHome({ betaMode = false, imagesPaused = false }: P
               const L = BOOK_LAYOUT[i]
               return (
                 <div key={b.title} className="nqm-reveal nqm-book" data-i={i + 1}
-                  style={{ left: L.left, top: L.top, zIndex: L.z }}>
+                  style={{ left: L.left, top: L.top, ['--z' as string]: L.z }}>
                   <div className="nqm-book-float" style={{ ['--rot' as string]: `${L.rot}deg`, animationDuration: `${L.dur}s`, animationDelay: L.delay }}>
                     <div className="nqm-book-card">
                       <CoverSlot title={b.title} src={L.cover} priority={i === 1} />
@@ -375,7 +375,7 @@ export default function ModernHome({ betaMode = false, imagesPaused = false }: P
         </div>
         <div className="nqm-foot-col">{t.footer.colA.map((l, i) => <Link key={l} href={FOOTER_HREFS.colA[i]}>{l}</Link>)}</div>
         <div className="nqm-foot-col">{t.footer.colB.map((l, i) => <Link key={l} href={FOOTER_HREFS.colB[i]}>{l}</Link>)}</div>
-        <div className="nqm-foot-col">{t.footer.colC.map((l, i) => <Link key={l} href={FOOTER_HREFS.colC[i]}>{l}</Link>)}</div>
+        <div className="nqm-foot-col nqm-foot-legal">{t.footer.colC.map((l, i) => <Link key={l} href={FOOTER_HREFS.colC[i]}>{l}</Link>)}</div>
         <span className="nqm-copyright">{t.footer.copyright}</span>
       </footer>
     </div>
@@ -458,10 +458,17 @@ const NQM_CSS = `
 .nqm-micro{font-size:13px;margin:20px 0 0;color:var(--n700);display:flex;gap:10px;align-items:center}
 .nqm-dot{width:8px;height:8px;background:var(--accent);display:block}
 .nqm-stage{position:relative;height:520px}
-.nqm-book{position:absolute;width:min(56%,270px)}
+.nqm-book{position:absolute;width:min(56%,270px);z-index:var(--z,1)}
 .nqm-book-float{transform:rotate(var(--rot));animation-name:nqmFloat;animation-timing-function:ease-in-out;animation-iteration-count:infinite}
 .nqm-book-card{background:var(--surface);box-shadow:var(--sh-lg);border-radius:var(--r-md);overflow:hidden;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s ease}
 .nqm-book:hover .nqm-book-card{transform:scale(1.04);box-shadow:0 32px 60px rgba(15,33,64,.24)}
+/* Pointer hover lifts the hovered card above its siblings; the stack order
+   (--z per slot) returns as soon as the pointer leaves. Hover-only media so a
+   tap on touch devices never sticks a card on top. Position/rotation live on
+   .nqm-book / .nqm-book-float and are untouched. */
+@media (hover:hover){
+  .nqm-book:hover{z-index:20}
+}
 .nqm-cover{aspect-ratio:3/4;position:relative;overflow:hidden;
   background:linear-gradient(160deg,var(--accent-100),var(--surface))}
 .nqm-book-cap{padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;border-top:3px solid var(--accent)}
@@ -544,6 +551,15 @@ const NQM_CSS = `
   .nqm-band-pad,.nqm-sec{padding-top:64px;padding-bottom:64px}
   .nqm-cta-grid{grid-template-columns:1fr;padding:72px clamp(20px,5vw,72px)}
   .nqm-feather{justify-self:center}
+  /* Compact footer: brand on top, the two nav columns side by side, legal
+     links in one row, copyright last. Same links and hrefs as desktop. */
+  .nqm-footer{grid-template-columns:1fr 1fr;gap:16px 24px;padding-top:36px;padding-bottom:24px}
+  .nqm-foot-brand,.nqm-foot-legal{grid-column:1/-1}
+  .nqm-foot-brand{margin-bottom:4px}
+  .nqm-foot-col{gap:0}
+  .nqm-foot-col a{padding:6px 0}
+  .nqm-foot-legal{flex-direction:row;flex-wrap:wrap;gap:0 24px}
+  .nqm-copyright{padding-top:14px}
 }
 @media (prefers-reduced-motion: reduce){
   .nqm-root *{animation:none !important}
