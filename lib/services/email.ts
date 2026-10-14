@@ -7,6 +7,8 @@ import {
   quote, dataTable, escapeHtml, storyFailedEmail,
 } from '@/lib/email/layout'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { PLAN_CONFIG } from '@/lib/plans/config'
+import { FREE_GUEST_BOOKS, FREE_LIFETIME_BOOKS, TIER_CAPS } from '@/lib/entitlements/policy'
 import {
   deliverMarketingEmail, createSupabaseSuppressionStore,
   type MarketingMessage, type MarketingSendResult, type ProviderMessage,
@@ -281,7 +283,7 @@ export async function sendSignupDripEmail(step: number, opts: SignupDripOptions)
         '⬇️ PDF download on paid plans — printable and shareable',
         '💌 An optional dedication page and custom author name',
       ]),
-      paragraph('The free plan gives you one 8-page story to try it out — no card required.'),
+      paragraph(`The free plan gives you ${FREE_LIFETIME_BOOKS} ${TIER_CAPS.free.maxPages}-page stories to try it out — ${FREE_GUEST_BOOKS} of them before you even create an account. No card required.`),
       button('Create my free story →', createUrl),
     ].join('\n')
   } else if (step === 5) {
@@ -302,10 +304,11 @@ export async function sendSignupDripEmail(step: number, opts: SignupDripOptions)
       heading('Ready for more?'),
       paragraph('The free plan is a great start, but if you love your story and want more:'),
       dataTable(['Plan', 'Stories', 'Price'], [
-        ['Single Story', '1 story, yours forever', '$7.99 once'],
-        ['Story Pack', '3 stories/month', '$9.99/mo'],
-        ['<strong>Story Pro ★</strong>', '10 stories/month', '$24.99/mo'],
+        ['Single Story', `1 story, yours forever (up to ${TIER_CAPS.single.maxPages} pages)`, `$${PLAN_CONFIG.single.priceMonthly} once`],
+        ['Story Pack', `${TIER_CAPS.story_pack.periodAllowance} stories/month (up to ${TIER_CAPS.story_pack.maxPages} pages each)`, `$${PLAN_CONFIG.story_pack.priceMonthly}/mo`],
+        ['<strong>Story Pro ★</strong>', `${TIER_CAPS.story_pro.periodAllowance} stories/month (up to ${TIER_CAPS.story_pro.maxPages} pages each)`, `$${PLAN_CONFIG.story_pro.priceMonthly}/mo`],
       ]),
+      paragraph('Subscriptions bill monthly; cancel any time from your account.', { small: true, muted: true }),
       paragraph('All paid plans include full PDF downloads, all illustration styles, and a dedication page.', { small: true }),
       button('See all plans →', pricingUrl),
     ].join('\n')
