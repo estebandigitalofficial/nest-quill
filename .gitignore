@@ -9,10 +9,9 @@ out/
 # TypeScript build artifacts
 *.tsbuildinfo
 
-# Environment — NEVER commit real secrets
-.env
-.env.local
-.env.production
+# Environment — NEVER commit real secrets (covers .env, .env.local, '.env 2.local', .bak copies, etc.)
+.env*
+!.env.example
 
 # Supabase local state
 supabase/.branches
