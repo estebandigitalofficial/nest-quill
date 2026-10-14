@@ -34,6 +34,10 @@ export default function ReviewStep() {
     : null
   const themeMeta = values.setting ? SETTING_META[values.setting as Setting] : null
   const themeLabel = values.setting ? (cards.settings[values.setting]?.label ?? themeMeta?.label) : null
+  // The synthesized storyTheme is the (English) phrase the pipeline receives;
+  // the review card shows the localized preset description instead so the
+  // Spanish review step never surfaces English.
+  const themeDescription = values.setting ? (cards.settings[values.setting]?.description ?? themeMeta?.description) : null
   const traitChips: string[] = [
     ...((values.traits ?? []).map(tr => cards.traits[tr] ?? TRAIT_LABELS[tr as Trait] ?? tr)),
     ...(values.customTrait ? [values.customTrait] : []),
@@ -72,8 +76,8 @@ export default function ReviewStep() {
           <div className="relative h-full flex flex-col justify-end p-4">
             <p className="text-xs uppercase tracking-wider text-white/80">{r.theme}</p>
             <p className="text-white font-serif text-lg drop-shadow">{themeLabel}</p>
-            {values.storyTheme && (
-              <p className="text-white/90 text-xs mt-0.5 line-clamp-2 drop-shadow">{values.storyTheme}</p>
+            {themeDescription && (
+              <p className="text-white/90 text-xs mt-0.5 line-clamp-2 drop-shadow">{themeDescription}</p>
             )}
           </div>
         </div>
