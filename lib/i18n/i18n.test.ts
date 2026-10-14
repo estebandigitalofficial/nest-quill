@@ -228,8 +228,10 @@ test('13. Admin is not localized (admin files never import the customer dictiona
 
 test('14. Transactional emails follow the customer language and the legal copy is faithful', () => {
   const email = readFileSync('lib/services/email.ts', 'utf8')
-  assert.match(email, /<html lang="\$\{lang\}">/)
+  // Every email renders through the shared branded layout, which sets <html lang> from the caller.
+  assert.match(readFileSync('lib/email/layout.ts', 'utf8'), /<html lang="\$\{lang\}"/)
   assert.doesNotMatch(email, /<html lang="en">/)
+  assert.equal((email.match(/renderEmail\(\{\s*lang,/g) ?? []).length, 3)
   assert.match(email, /sendSubmissionConfirmationEmail\(\s*toEmail: string,\s*childName: string,\s*requestId: string,\s*langInput/)
   assert.match(email, /sendWelcomeEmail\(toEmail: string, langInput/)
   assert.match(readFileSync('app/api/story/submit/route.ts', 'utf8'), /sendSubmissionConfirmationEmail\(formData\.userEmail, formData\.childName, requestId, language\)/)

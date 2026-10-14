@@ -3,6 +3,7 @@ import { Resend } from 'resend'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { appUrl } from '@/lib/utils/appUrl'
+import { buildSupportTicketEmail } from '@/lib/services/adminNotifications'
 import { gateSupportIntake } from '@/lib/settings/gates'
 import { checkSupportRateLimit, hashIp } from '@/lib/limits/rateLimits'
 import { getAdminContext } from '@/lib/admin/guard'
@@ -205,26 +206,16 @@ async function handlePost(req: NextRequest) {
         to: 'contact@nestandquill.com',
         replyTo: email,
         subject: subject ? `[Support ${refId}] ${subject}` : `[Support ${refId}] New ticket`,
-        html: `
-          <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#F8F5EC;">
-            <h2 style="margin:0 0 4px;font-size:20px;color:#0C2340;">New support ticket — #${refId}</h2>
-            <p style="margin:0 0 20px;font-size:13px;color:#4a4a4a;">
-              Category: <strong>${category}</strong> · ${user ? 'Authenticated' : 'Guest'} · Submitted via /contact
-            </p>
-            <table style="width:100%;border-collapse:collapse;font-size:14px;">
-              <tr><td style="padding:8px 12px;background:#fff;border:1px solid #ede9dc;width:100px;color:#4a4a4a;font-weight:bold;">Name</td><td style="padding:8px 12px;background:#fff;border:1px solid #ede9dc;">${name ?? '—'}</td></tr>
-              <tr><td style="padding:8px 12px;background:#fff;border:1px solid #ede9dc;color:#4a4a4a;font-weight:bold;">Email</td><td style="padding:8px 12px;background:#fff;border:1px solid #ede9dc;">${email}</td></tr>
-              <tr><td style="padding:8px 12px;background:#fff;border:1px solid #ede9dc;color:#4a4a4a;font-weight:bold;">Subject</td><td style="padding:8px 12px;background:#fff;border:1px solid #ede9dc;">${subject || '—'}</td></tr>
-            </table>
-            <div style="margin-top:16px;padding:16px;background:#fff;border:1px solid #ede9dc;border-radius:8px;">
-              <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#4a4a4a;text-transform:uppercase;letter-spacing:0.5px;">Message</p>
-              <p style="margin:0;font-size:14px;color:#2E2E2E;line-height:1.7;white-space:pre-wrap;">${escapeHtml(message)}</p>
-            </div>
-            <p style="margin:24px 0 0;font-size:13px;">
-              <a href="${adminLink}" style="color:#C99700;font-weight:600;">Open ticket in admin →</a>
-            </p>
-          </div>
-        `,
+        html: buildSupportTicketEmail({
+          refId,
+          category,
+          authenticated: !!user,
+          name,
+          email,
+          subject,
+          message,
+          adminLink,
+        }),
       })
     }
   } catch (err) {
@@ -247,13 +238,6 @@ async function handlePost(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, ticketId, refId })
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
 }
 
 // Maps a PostgREST/Postgres SQLSTATE to a one-line operator hint. The
