@@ -6,6 +6,8 @@ import { getAdminContext } from '@/lib/admin/guard'
 import { PLAN_CONFIG } from '@/lib/plans/config'
 import type { StoryRequest, PlanTier } from '@/types/database'
 import LogoutButton from '@/components/auth/LogoutButton'
+import ManageBillingButton from '@/components/account/ManageBillingButton'
+import { isLiveSubscriptionStatus, paymentsEnabled } from '@/lib/stripe/config'
 import SiteFooter from '@/components/layout/SiteFooter'
 import StoryList from '@/components/account/StoryList'
 import { loadThumbs } from '@/components/account/loadThumbs'
@@ -55,7 +57,18 @@ export default async function AccountPage() {
   const lastRow = rows[rows.length - 1]
   const initialNextCursor = rows.length < PAGE_SIZE || !lastRow ? null : lastRow.created_at
 
-  const planTier = (user.user_metadata?.plan_tier as PlanTier) ?? 'free'
+  // Billing state is written only by the Stripe webhook. A live subscription
+  // decides the plan label; otherwise the older user_metadata label stays.
+  const { data: billing } = await adminSupabase
+    .from('profiles')
+    .select('plan_tier, subscription_status, stripe_customer_id')
+    .eq('id', user.id)
+    .maybeSingle()
+  const bill = billing as { plan_tier: PlanTier | null; subscription_status: string | null; stripe_customer_id: string | null } | null
+  const planTier: PlanTier = bill?.plan_tier && isLiveSubscriptionStatus(bill.subscription_status)
+    ? bill.plan_tier
+    : (user.user_metadata?.plan_tier as PlanTier) ?? 'free'
+  const showBilling = paymentsEnabled() && !!bill?.stripe_customer_id
   const plan = PLAN_CONFIG[planTier]
   const lang = await getServerLang()
   const t = getDictionary(lang)
@@ -91,6 +104,7 @@ export default async function AccountPage() {
               <span className="inline-block bg-brand-100 text-brand-700 text-xs font-semibold px-3 py-1 rounded-full">
                 {planName}
               </span>
+              {showBilling && <ManageBillingButton />}
             </div>
           </div>
 

@@ -5,9 +5,8 @@
  *
  * Lazy initialisation: the SDK is constructed on first use so a missing
  * STRIPE_SECRET_KEY does not break builds or unrelated runtime paths.
- * Payments are gated by NEXT_PUBLIC_PAYMENTS_ENABLED in the submission
- * route — this module is currently only used by future checkout/webhook
- * routes; importing it has no side effects until a function is called.
+ * Used by the /api/stripe/{checkout,webhook,portal} routes; importing it
+ * has no side effects until a function is called.
  */
 
 import Stripe from 'stripe'

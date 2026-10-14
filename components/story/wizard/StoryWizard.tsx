@@ -10,7 +10,8 @@ import { cn } from '@/lib/utils/cn'
 import { useLanguage } from '@/lib/i18n/context'
 import { errorMessage } from '@/lib/i18n'
 import { PLAN_CONFIG, WIZARD_PLANS } from '@/lib/plans/config'
-import type { LaunchTier as PlanTier } from '@/lib/entitlements/policy'
+import { isPaidTier, type LaunchTier as PlanTier } from '@/lib/entitlements/policy'
+import { startCheckout, followCheckoutFailure } from '@/lib/stripe/client'
 import WizardProgress from './WizardProgress'
 import { WizardConfigContext } from './WizardContext'
 import PlanStep from './steps/PlanStep'
@@ -60,12 +61,31 @@ function planFromAccount(raw: string | null | undefined): PlanTier | null {
   return (WIZARD_PLANS as readonly string[]).includes(raw) ? (raw as PlanTier) : null
 }
 
+// The wizard's answers survive the round trip to Stripe Checkout in
+// sessionStorage (this tab only). Nothing in it is trusted by the server:
+// it is the same form the customer would otherwise retype.
+const CHECKOUT_DRAFT_KEY = 'nq-checkout-draft'
+
+function readCheckoutDraft(): Partial<StoryFormValues> | null {
+  try {
+    const raw = sessionStorage.getItem(CHECKOUT_DRAFT_KEY)
+    return raw ? (JSON.parse(raw) as Partial<StoryFormValues>) : null
+  } catch {
+    return null
+  }
+}
+
+function clearCheckoutDraft() {
+  try { sessionStorage.removeItem(CHECKOUT_DRAFT_KEY) } catch { /* storage blocked — nothing to clear */ }
+}
+
 export default function StoryWizard({
   betaMode = false,
   imagesPaused = false,
   learningModeEnabled = false,
   extendedAudiences = false,
   accountPlan = null,
+  paymentsEnabled = false,
 }: {
   betaMode?: boolean
   /** image_generation_enabled === false; drives the "illustrations paused" note. */
@@ -76,6 +96,8 @@ export default function StoryWizard({
   extendedAudiences?: boolean
   /** profiles.plan_tier for the signed-in user; null/undefined for guests. */
   accountPlan?: string | null
+  /** NEXT_PUBLIC_PAYMENTS_ENABLED: a 402 on a paid plan offers Stripe Checkout. */
+  paymentsEnabled?: boolean
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -116,8 +138,36 @@ export default function StoryWizard({
     mode: 'onTouched',
   })
 
-  const { handleSubmit, trigger, setError, setValue, watch, formState: { isSubmitting, errors } } = methods
+  const { handleSubmit, trigger, setError, setValue, watch, reset, getValues, formState: { isSubmitting, errors } } = methods
   const currentPlan = watch('planTier')
+
+  // Returning from Stripe Checkout (?checkout=success|cancelled): restore the
+  // saved answers and land on the review step so one click submits.
+  const checkoutState = searchParams.get('checkout')
+  const [checkoutBusy, setCheckoutBusy] = useState(false)
+  useEffect(() => {
+    if (checkoutState !== 'success' && checkoutState !== 'cancelled') return
+    const draft = readCheckoutDraft()
+    if (!draft || (urlPlan && draft.planTier !== urlPlan)) return
+    reset({ ...getValues(), ...draft })
+    const learning = draft.learningMode === true && learningModeEnabled
+    setLearningMode(learning)
+    setStep((learning ? LEARNING_STEPS : STANDARD_STEPS).length - 1)
+    // Mount-only: the query string is what brought us back.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function goToCheckout() {
+    const values = getValues()
+    if (!isPaidTier(values.planTier)) return
+    setCheckoutBusy(true)
+    try { sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify(values)) } catch { /* storage blocked — the customer re-enters answers */ }
+    const r = await startCheckout(values.planTier, 'create')
+    if (r.ok) { window.location.href = r.url; return }
+    if (await followCheckoutFailure(r.code, `/create?plan=${values.planTier}`)) return
+    setError('root', { message: r.code === 'NOT_CONFIGURED' ? t.checkout.unavailable : t.checkout.failed })
+    setCheckoutBusy(false)
+  }
 
   // Auto-enable learning mode when ?mode=learning is in the URL
   useEffect(() => {
@@ -190,6 +240,14 @@ export default function StoryWizard({
       const json = await res.json()
 
       if (!res.ok) {
+        if (json.code === 'ENTITLEMENT_REQUIRED' && paymentsEnabled && isPaidTier(data.planTier)) {
+          // Just back from a successful checkout: the webhook may still be on
+          // its way, so ask for a retry instead of a second payment.
+          setError('root', checkoutState === 'success'
+            ? { type: 'PAYMENT_PENDING', message: t.checkout.pendingBody }
+            : { type: 'NEEDS_CHECKOUT', message: t.checkout.needPlanBody })
+          return
+        }
         setError('root', {
           type: json.code === 'ACCOUNT_REQUIRED' ? 'ACCOUNT_REQUIRED' : json.requiresSignup ? 'GUEST_LIMIT_EXCEEDED' : (json.code ?? 'error'),
           // Known codes get localized copy; an unknown server message is shown
@@ -209,6 +267,7 @@ export default function StoryWizard({
         }))
       }
 
+      clearCheckoutDraft()
       router.push(`/story/${json.requestId}`)
     } catch {
       setError('root', { message: t.wizard.errors.network })
@@ -218,6 +277,18 @@ export default function StoryWizard({
   return (
     <WizardConfigContext.Provider value={{ betaMode, imagesPaused, learningModeEnabled, extendedAudiences }}>
     <FormProvider {...methods}>
+      {checkoutState === 'success' && (
+        <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-2 text-center">
+          <p className="text-sm font-semibold text-green-800">{t.checkout.successTitle}</p>
+          <p className="text-xs text-green-700 mt-0.5">{t.checkout.successBody}</p>
+        </div>
+      )}
+      {checkoutState === 'cancelled' && (
+        <p className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mb-2 text-xs text-gray-600 text-center">
+          {t.checkout.cancelled}
+        </p>
+      )}
+
       {/* Plan-selected pill — only when ?plan=... preselected the tier and
           we're still on the first visible step. Lets the user jump back to
           the normal plan picker if they want a different one. */}
@@ -324,6 +395,19 @@ export default function StoryWizard({
                   {t.wizard.errors.signIn}
                 </Link>
               </div>
+            </div>
+          ) : errors.root.type === 'NEEDS_CHECKOUT' ? (
+            <div className="rounded-xl border border-brand-200 bg-brand-50 px-5 py-4 text-center space-y-2">
+              <p className="text-sm font-semibold text-oxford">{t.checkout.needPlanTitle}</p>
+              <p className="text-xs text-charcoal-light">{errors.root.message}</p>
+              <button
+                type="button"
+                onClick={goToCheckout}
+                disabled={checkoutBusy}
+                className="inline-block mt-1 bg-brand-500 hover:bg-brand-600 disabled:opacity-60 text-oxford text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
+              >
+                {checkoutBusy ? t.checkout.starting : t.checkout.continueToCheckout}
+              </button>
             </div>
           ) : errors.root.type === 'PLAN_LIMIT_EXCEEDED' ? (
             <div className="rounded-xl border border-brand-200 bg-brand-50 px-5 py-4 text-center space-y-2">

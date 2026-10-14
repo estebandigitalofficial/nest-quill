@@ -6,13 +6,15 @@
 // Prices and plan semantics come from lib/plans/config (never from the
 // dictionary); only the words follow the site language.
 //
-// No payment logic. No Stripe call. CTA always links to /create — that route
-// resolves the real entitlement server-side.
+// CTA: links to /create (the wizard resolves the real entitlement server-side),
+// except when payments are live and beta is off, where a paid tier starts
+// Stripe Checkout directly. Nothing here grants anything; the webhook does.
 
 import Link from 'next/link'
 import { PLAN_CONFIG } from '@/lib/plans/config'
 import type { LaunchTier } from '@/lib/entitlements/policy'
 import { cn } from '@/lib/utils/cn'
+import CheckoutButton from './CheckoutButton'
 import { getDictionary, fill, type Lang } from '@/lib/i18n'
 
 interface Props {
@@ -21,13 +23,21 @@ interface Props {
   lang: Lang
   /** When true, omit the yearly savings line (used by the homepage to keep cards lean). */
   compact?: boolean
+  /** NEXT_PUBLIC_PAYMENTS_ENABLED, resolved by the server parent. */
+  paymentsEnabled?: boolean
 }
 
-export default function PlanCard({ tier, betaMode, lang, compact = false }: Props) {
+export default function PlanCard({ tier, betaMode, lang, compact = false, paymentsEnabled = false }: Props) {
   const plan = PLAN_CONFIG[tier]
   const t = getDictionary(lang)
   const copy = t.pricing.plans[tier]
   const card = t.pricing.card
+  const ctaClass = cn(
+    'block w-full text-center text-sm font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-60',
+    plan.isPopular
+      ? 'bg-brand-500 hover:bg-brand-600 text-oxford'
+      : 'bg-gray-100 hover:bg-gray-200 text-gray-800',
+  )
 
   return (
     <div
@@ -78,19 +88,18 @@ export default function PlanCard({ tier, betaMode, lang, compact = false }: Prop
         ))}
       </ul>
 
+      {paymentsEnabled && !betaMode && tier !== 'free' ? (
+        <CheckoutButton tier={tier} label={copy.cta} className={ctaClass} />
+      ) : (
       <Link
         // ?plan=<tier> lets the wizard preselect this plan and skip the
         // plan-picker step. The server resolves the real entitlement.
         href={`/create?plan=${tier}`}
-        className={cn(
-          'block text-center text-sm font-semibold py-2.5 rounded-xl transition-colors',
-          plan.isPopular
-            ? 'bg-brand-500 hover:bg-brand-600 text-oxford'
-            : 'bg-gray-100 hover:bg-gray-200 text-gray-800',
-        )}
+        className={ctaClass}
       >
         {betaMode ? copy.ctaBeta : copy.cta}
       </Link>
+      )}
     </div>
   )
 }
