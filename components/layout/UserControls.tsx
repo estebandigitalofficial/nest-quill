@@ -136,10 +136,11 @@ export default function UserControls() {
 
   // Logged out: one Sign in link, identical on every route that uses SiteHeader
   // (omitted on the auth pages themselves, which already are the sign-in flow).
+  // Phones keep the header bar lean: the hamburger menu carries Sign in there.
   if (user === null) {
     if (pathname === '/login' || pathname === '/signup') return null
     return (
-      <Link href="/login" className="text-sm font-semibold text-oxford hover:text-brand-600 whitespace-nowrap">
+      <Link href="/login" className="hidden sm:inline text-sm font-semibold text-oxford hover:text-brand-600 whitespace-nowrap">
         {t.nav.signIn}
       </Link>
     )

@@ -1,14 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 import { mobileMenuLinks, type LaunchFlags } from '@/lib/launch/scope'
 import { useLanguage } from '@/lib/i18n/context'
 import { navLabel } from '@/lib/i18n'
 
 export default function MobileMenu({ flags }: { flags: LaunchFlags }) {
   const [open, setOpen] = useState(false)
+  // Logged-out visitors get Sign in inside the panel (the header's own Sign in
+  // link is desktop-only). Unknown until the session is read: show nothing.
+  const [loggedOut, setLoggedOut] = useState(false)
   const { lang, t } = useLanguage()
+  useEffect(() => {
+    let cancelled = false
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => { if (!cancelled) setLoggedOut(!data.user) })
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => setLoggedOut(!session?.user))
+    return () => { cancelled = true; sub.subscription.unsubscribe() }
+  }, [])
   // Launch scope (Phase 2A): same gated set as the desktop header.
   const NAV_LINKS = mobileMenuLinks(flags)
   const close = () => setOpen(false)
@@ -46,9 +57,14 @@ export default function MobileMenu({ flags }: { flags: LaunchFlags }) {
                   {navLabel(lang, href, label)}
                 </Link>
               ))}
-              <Link href="/contact" onClick={close} className="py-3 text-sm font-medium text-charcoal hover:text-oxford transition-colors">
+              <Link href="/contact" onClick={close} className="py-3 text-sm font-medium text-charcoal hover:text-oxford border-b border-parchment-dark last:border-0 transition-colors">
                 {navLabel(lang, '/contact', 'Contact')}
               </Link>
+              {loggedOut && (
+                <Link href="/login" onClick={close} className="py-3 text-sm font-semibold text-oxford hover:text-brand-600 transition-colors">
+                  {t.nav.signIn}
+                </Link>
+              )}
             </nav>
           </div>
         </>
