@@ -165,8 +165,9 @@ export default function ChatWidget() {
               onKeyDown={handleKey}
               placeholder={t.chat.placeholder}
               disabled={loading}
+              className="text-base md:text-[13px]"
               style={{
-                flex: 1, fontSize: 13, padding: '9px 12px',
+                flex: 1, padding: '9px 12px',
                 borderRadius: 10, border: '1px solid rgba(12,35,64,0.15)',
                 background: '#F8F5EC', outline: 'none',
                 color: '#2E2E2E', fontFamily: 'inherit',
@@ -195,10 +196,13 @@ export default function ChatWidget() {
         </div>
       )}
 
-      {/* Toggle button */}
+      {/* Toggle button. The idle "tinker" animation rotates the whole fixed
+          button by up to 8deg; flush against the viewport edge (right-0) the
+          rotated corners poked 1-5px past it on every page, which on iOS lets
+          the page be dragged sideways. right-1.5 (6px) covers the swing. */}
       <button
         onClick={() => setOpen(o => !o)}
-        className={`chat-btn bottom-[calc(56px+env(safe-area-inset-bottom))] right-0 w-[76px] h-[76px] sm:w-[120px] sm:h-[120px] md:bottom-[68px] md:right-5 ls:bottom-14`}
+        className={`chat-btn bottom-[calc(56px+env(safe-area-inset-bottom))] right-1.5 w-[76px] h-[76px] sm:w-[120px] sm:h-[120px] md:bottom-[68px] md:right-5 ls:bottom-14`}
         style={{
           position: 'fixed', zIndex: 45,
           background: 'transparent',

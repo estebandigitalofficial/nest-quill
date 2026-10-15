@@ -447,12 +447,13 @@ const NQM_CSS = `
 .nqm-book{position:absolute;width:min(56%,270px);z-index:var(--z,1)}
 .nqm-book-float{transform:rotate(var(--rot));animation-name:nqmFloat;animation-timing-function:ease-in-out;animation-iteration-count:infinite}
 .nqm-book-card{background:var(--surface);box-shadow:var(--sh-lg);border-radius:var(--r-md);overflow:hidden;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s ease}
-.nqm-book:hover .nqm-book-card{transform:scale(1.04);box-shadow:0 32px 60px rgba(15,33,64,.24)}
-/* Pointer hover lifts the hovered card above its siblings; the stack order
-   (--z per slot) returns as soon as the pointer leaves. Hover-only media so a
-   tap on touch devices never sticks a card on top. Position/rotation live on
-   .nqm-book / .nqm-book-float and are untouched. */
+/* Pointer hover lifts the hovered card above its siblings and scales it; the
+   stack order (--z per slot) returns as soon as the pointer leaves. Hover-only
+   media so a tap on touch devices never sticks a card on top or leaves it
+   scaled 4% until the next tap (mobile UX, 2026-10-15). Position/rotation
+   live on .nqm-book / .nqm-book-float and are untouched. */
 @media (hover:hover){
+  .nqm-book:hover .nqm-book-card{transform:scale(1.04);box-shadow:0 32px 60px rgba(15,33,64,.24)}
   .nqm-book:hover{z-index:20}
 }
 /* Touch: the last tapped card (data-active, React state) sits on top and

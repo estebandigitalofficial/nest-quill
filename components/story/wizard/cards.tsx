@@ -262,7 +262,11 @@ export function SettingCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'group relative overflow-hidden rounded-2xl border-2 text-left transition-all aspect-[4/3] sm:aspect-[5/3] min-h-[112px]',
+        // w-full min-w-0: with aspect-ratio set, min-h-[112px] transfers into a
+        // 149px minimum width, which at 320px (two 114px columns) pushed the
+        // right-hand cards past the wizard card. An explicit min-width
+        // switches that transfer off and the card fills its column.
+        'group relative overflow-hidden rounded-2xl border-2 text-left transition-all w-full min-w-0 aspect-[4/3] sm:aspect-[5/3] min-h-[112px]',
         active
           ? 'border-brand-500 ring-2 ring-brand-200'
           : 'border-transparent hover:border-gray-300'
