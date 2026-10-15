@@ -371,6 +371,9 @@ export const es: Dictionary = {
       emailPlaceholder: 'tu@correo.com',
       submit: 'Crear mi cuento →',
       submitting: 'Creando tu cuento…',
+      // Fundamento de privacidad 2: autorización del padre, madre o tutor legal.
+      authorizationHeading: 'Antes de crear el cuento',
+      authorizationLabel: 'Confirmo que soy una persona adulta y que soy el padre, la madre o el tutor legal del niño o la niña, o que tengo permiso de su padre, madre o tutor legal para proporcionar esta información. También tengo permiso para proporcionar información sobre cualquier otra persona incluida en este cuento.',
       labels: { plan: 'Plan', child: 'Niño', age: 'Edad', description: 'Descripción', theme: 'Tema', tone: 'Tono', lesson: 'Lección', style: 'Estilo', length: 'Extensión', dedication: 'Dedicatoria', characters: 'Personajes' },
     },
     errors: {
@@ -398,6 +401,7 @@ export const es: Dictionary = {
         STORY_RATE_DAY: 'Alcanzaste el límite diario de cuentos. Inténtalo mañana.',
         STORY_RATE_HOUR_GUEST: 'Ya enviaste varios cuentos. Crea una cuenta para ampliar el límite o inténtalo en una hora.',
         STORY_RATE_DAY_GUEST: 'Alcanzaste el límite diario para invitados. Crea una cuenta gratis para continuar.',
+        ADULT_AUTHORIZATION_REQUIRED: 'Antes de crear el cuento, confirma que eres una persona adulta con permiso para proporcionar esta información.',
       },
     },
   },
@@ -425,6 +429,7 @@ export const es: Dictionary = {
     email: 'Escribe un correo electrónico válido',
     adultTonesLearning: 'Los tonos para adultos no están disponibles en cuentos educativos.',
     adultTonesConsent: 'Los tonos solo para adultos requieren la categoría Adulto (18+) y su consentimiento.',
+    adultAuthorization: 'Confirma que eres una persona adulta con permiso para proporcionar esta información.',
   },
   status: {
     loading: 'Cargando tu cuento…',
