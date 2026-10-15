@@ -20,6 +20,7 @@ import {
   readyEmailRecoveryCandidates,
   shouldSkipImages,
 } from './policy.ts'
+import { createLeaseGuard, isLeaseLost, type LeaseStore } from './lease.ts'
 import { buildBookPrompt, buildPlanPrompt, deriveAgeBand, personalizationFieldsUsed } from './prompt.ts'
 import {
   MAX_STAGE_ATTEMPTS,
@@ -93,6 +94,31 @@ const SELF_URL = Deno.env.get('PROCESS_STORY_SELF_URL')
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * The lease guard's two statements bound to the service-role client
+ * (3C-7). updateOwned is the ONLY way this file writes story_requests
+ * state during a run: it carries `worker_id = <this worker>` so a stale
+ * invocation can never touch a row the live worker now owns.
+ */
+function supabaseLeaseStore(supabase: ReturnType<typeof createClient>, requestId: string, workerId: string): LeaseStore {
+  return {
+    async updateOwned(values) {
+      const { data, error } = await supabase
+        .from('story_requests')
+        .update(values)
+        .eq('id', requestId)
+        .eq('worker_id', workerId)
+        .select('id')
+        .maybeSingle()
+      return { written: !!data, error: error ? error.message : null }
+    },
+    async readWorkerId() {
+      const { data } = await supabase.from('story_requests').select('worker_id').eq('id', requestId).maybeSingle()
+      return (data?.worker_id as string | null) ?? null
+    },
+  }
 }
 
 /**
@@ -404,12 +430,16 @@ async function runCoverStage(args: {
 
   try {
     const image = await generateImage(built.prompt)
+    // Ownership is re-checked after the long image call and BEFORE the
+    // upload, then once more before the reference is recorded. The upload
+    // itself cannot be conditioned on the lease (lease.ts header).
+    if (!(await args.ownsLease())) return stale('after generation')
     const path = coverStoragePath(requestId, image.ext)
     const { error: upErr } = await supabase.storage
       .from('story-images')
       .upload(path, image.bytes, { contentType: image.contentType, upsert: true })
     if (upErr) throw new Error(`Cover upload failed: ${upErr.message}`)
-    if (!(await args.ownsLease())) return stale('after generation')
+    if (!(await args.ownsLease())) return stale('before recording the cover')
     await supabase.from('generated_stories').update({
       cover_storage_path: path,
       cover_status: 'complete',
@@ -742,17 +772,11 @@ Deno.serve(async (req) => {
 
     // Lease helpers — conditional on our own worker_id so a backfill whose
     // lease was reclaimed can neither extend nor release the new owner's.
-    const backfillHeartbeat = async () => {
-      await supabase
-        .from('story_requests')
-        .update({ worker_heartbeat_at: new Date().toISOString(), worker_lease_expires_at: new Date(Date.now() + BACKFILL_LEASE_MS).toISOString() })
-        .eq('id', requestId)
-        .eq('worker_id', lockId)
-    }
-    const backfillOwnsLease = async () => {
-      const { data } = await supabase.from('story_requests').select('worker_id').eq('id', requestId).maybeSingle()
-      return data?.worker_id === lockId
-    }
+    // Same guard as the pipeline (lease.ts); LeaseLostError stops the loop
+    // without recording a scene failure.
+    const backfillLease = createLeaseGuard(supabaseLeaseStore(supabase, requestId, lockId), { workerId: lockId, leaseMs: BACKFILL_LEASE_MS })
+    const backfillHeartbeat = () => backfillLease.heartbeat()
+    const backfillOwnsLease = () => backfillLease.stillOwns()
     const releaseBackfillLease = async (message: string) => {
       const { data } = await supabase
         .from('story_requests')
@@ -816,11 +840,17 @@ Deno.serve(async (req) => {
           safetySuffix: backfillImageCfg.safetySuffix,
         })
         const image = await generateImage(built.prompt)
+        // The image call is long: re-assert ownership (and renew the lease
+        // for the upload + write that follow) before touching storage, and
+        // once more right before the scene row is written. The upload
+        // itself cannot be conditioned on the lease (see lease.ts header).
+        await backfillLease.renewOrThrow(`after page ${scene.page_number} image generation`)
         const path = sceneStoragePath(requestId, scene.page_number as number, image.ext)
         const { error: upErr } = await supabase.storage
           .from('story-images')
           .upload(path, image.bytes, { contentType: image.contentType, upsert: true })
         if (upErr) throw new Error(`Upload failed: ${upErr.message}`)
+        await backfillLease.require(`before page ${scene.page_number} scene write`)
         await supabase.from('story_scenes')
           .update({
             storage_path: path,
@@ -830,6 +860,7 @@ Deno.serve(async (req) => {
             generation_attempts: Number(scene.generation_attempts ?? 0) + 1,
           })
           .eq('id', scene.id)
+          .eq('request_id', requestId)
         generated++
         await backfillLog('admin_image_backfill_page', `Page ${scene.page_number} illustrated`, 'info', {
           page_number: scene.page_number,
@@ -839,11 +870,17 @@ Deno.serve(async (req) => {
         })
         await supabase.from('story_requests').update({
           status_message: `Generating illustrations… (${completedBefore + generated} of ${totalScenes})`,
-        }).eq('id', requestId)
+        }).eq('id', requestId).eq('worker_id', lockId)
       } catch (e) {
+        if (isLeaseLost(e)) {
+          // Not a scene failure: the row belongs to another backfill now.
+          // Leave every scene as the current owner sees it and stop.
+          await backfillLog('admin_image_backfill_lease_lost', e instanceof Error ? e.message : String(e), 'warning', { page_number: scene.page_number })
+          break
+        }
         failed++
         const msg = e instanceof Error ? e.message : String(e)
-        await supabase.from('story_scenes').update({ image_status: 'failed' }).eq('id', scene.id)
+        await supabase.from('story_scenes').update({ image_status: 'failed' }).eq('id', scene.id).eq('request_id', requestId)
         await supabase.from('processing_logs').insert({
           request_id: requestId, level: 'warning', stage: 'admin_image_backfill_failed_scene',
           message: `Page ${scene.page_number}: ${msg}`, metadata: { worker_id: lockId, page_number: scene.page_number },
@@ -995,30 +1032,14 @@ Deno.serve(async (req) => {
     )
   }
 
-  // Heartbeat — call from inside long stages to refresh the lease.
-  // Conditional on worker_id matching ours so a stale worker that
-  // tries to extend after being reclaimed is a no-op.
-  async function heartbeat(leaseMs: number = LEASE_MS) {
-    const next = new Date(Date.now() + leaseMs).toISOString()
-    await supabase
-      .from('story_requests')
-      .update({ worker_heartbeat_at: new Date().toISOString(), worker_lease_expires_at: next })
-      .eq('id', requestId)
-      .eq('worker_id', workerId)
-  }
-
-  // True while this invocation still owns the row. Used before writing the
-  // result of a long external call, so a worker whose lease was reclaimed
-  // (and whose row may now belong to another invocation) never overwrites
-  // the live worker's progress.
-  async function stillOwnsLease(): Promise<boolean> {
-    const { data } = await supabase
-      .from('story_requests')
-      .select('worker_id')
-      .eq('id', requestId)
-      .maybeSingle()
-    return data?.worker_id === workerId
-  }
+  // Lease guard (3C-7, lease.ts). Every story_requests write below goes
+  // through it with `worker_id = <this worker>`; every long external call
+  // is followed by lease.require()/renewOrThrow() before the result is
+  // persisted or uploaded. A lost lease raises LeaseLostError, which the
+  // catch block treats as "stop quietly" rather than as a story failure.
+  const lease = createLeaseGuard(supabaseLeaseStore(supabase, requestId, workerId), { workerId, leaseMs: LEASE_MS })
+  // True while this invocation still owns the row.
+  const stillOwnsLease = () => lease.stillOwns()
 
   // Worker start time — used to enforce the time budget
   const workerStart = Date.now()
@@ -1087,6 +1108,10 @@ Deno.serve(async (req) => {
   }
 
 
+  // Status transitions are owner-only: the conditional UPDATE inside
+  // lease.setStatus() writes nothing for a stale worker and raises
+  // LeaseLostError instead, so a reclaimed invocation can never move the
+  // live worker's status, message or progress.
   async function setStatus(
     status: string,
     message: string,
@@ -1094,10 +1119,8 @@ Deno.serve(async (req) => {
     extra: Record<string, unknown> = {}
   ) {
     currentStage = status
-    await supabase
-      .from('story_requests')
-      .update({ status, status_message: message, progress_pct: progress, ...extra })
-      .eq('id', requestId)
+    const { error } = await lease.setStatus(status, message, progress, extra)
+    if (error) await log('status_write_failed', `Status update to ${status} not written: ${error}`, 'warning')
   }
 
   async function log(
@@ -1188,8 +1211,11 @@ Deno.serve(async (req) => {
           status_message: 'Mock story ready!',
           progress_pct: 100,
           completed_at: new Date().toISOString(),
+          worker_id: null,
+          worker_lease_expires_at: null,
         })
         .eq('id', requestId)
+        .eq('worker_id', workerId)
 
       await log('pipeline_complete', 'Mock pipeline complete — no API calls made')
 
@@ -1296,7 +1322,7 @@ Deno.serve(async (req) => {
       }
 
       // ── Stage 1: story plan (reuse the checkpoint when a previous run left one) ──
-      await heartbeat(TEXT_STAGE_LEASE_MS)
+      await lease.renewOrThrow('before story planning', TEXT_STAGE_LEASE_MS)
       await setStatus('generating_text', 'Planning the story…', 15)
 
       let plan: Record<string, unknown> & { title: string; pages: unknown[] }
@@ -1316,9 +1342,7 @@ Deno.serve(async (req) => {
           (raw) => { const v = validateStoryPlan(raw, pageCountWanted); return v.ok ? { ok: true, value: v.plan } : v },
           0.7,
         )
-        if (!(await stillOwnsLease())) {
-          throw new Error('Lease lost during story planning — another worker owns this request')
-        }
+        await lease.require('after story planning')
         plan = planGen.value as typeof plan
         textPlan = plan
         planUsage = planGen.usage
@@ -1378,7 +1402,7 @@ Deno.serve(async (req) => {
       }
 
       // ── Stage 2: final book from the plan ───────────────────────────────
-      await heartbeat(TEXT_STAGE_LEASE_MS)
+      await lease.renewOrThrow('before writing the pages', TEXT_STAGE_LEASE_MS)
       await setStatus('generating_text', 'Writing the pages…', 25)
 
       // Quality layer (Phase 1D): structural validation stays a hard gate;
@@ -1428,9 +1452,7 @@ Deno.serve(async (req) => {
         },
       )
 
-      if (!(await stillOwnsLease())) {
-        throw new Error('Lease lost during text generation — another worker owns this request')
-      }
+      await lease.require('after text generation')
 
       const book = bookGen.value as { title: string; subtitle: string; author_line: string; dedication: string; synopsis: string; pages: { page: number; text: string; image_description: string }[] }
       story = {
@@ -1464,6 +1486,12 @@ Deno.serve(async (req) => {
       if (usageErr) {
         await log('usage_persist_skipped', `generation_usage not persisted (${usageErr.message}) — apply migration 20240063`, 'warning')
       }
+
+      // Re-assert ownership immediately before the story and its scenes are
+      // (re)written: these rows are keyed by request_id, not worker_id, so
+      // the check right here is what keeps a stale worker from replacing
+      // the live worker's text (see lease.ts for the remaining window).
+      await lease.require('before saving the story')
 
       // Upsert so a re-run after a crash between text-save and scene-insert stays clean
       const { data: gs, error: storyInsertError } = await supabase
@@ -1620,8 +1648,9 @@ Deno.serve(async (req) => {
       for (const scene of pendingScenes) {
         // Heartbeat — refresh the lease before each scene so a long
         // run doesn't get reclaimed by a stuck-job sweeper while it's
-        // still actively working.
-        await heartbeat()
+        // still actively working. A heartbeat that writes nothing means
+        // the lease was reclaimed: stop before paying for another image.
+        await lease.renewOrThrow(`before page ${scene.page_number}`)
 
         // ── Time budget check ─────────────────────────────────────────────
         // Evaluated BEFORE each image call so we never start an image we
@@ -1694,6 +1723,13 @@ Deno.serve(async (req) => {
           const image = await generateImage(built.prompt)
           longestImageMs = Math.max(longestImageMs ?? 0, Date.now() - imageStarted)
 
+          // The image call is the long operation: the lease may have been
+          // reclaimed while it ran. Re-assert ownership (renewing the lease
+          // for the upload + write) BEFORE the object is uploaded, and again
+          // right before the scene row is written. The upload itself cannot
+          // be made conditional on the lease — see lease.ts.
+          await lease.renewOrThrow(`after page ${scene.page_number} image generation`)
+
           const storagePath = sceneStoragePath(requestId, scene.page_number, image.ext)
           const { error: uploadError } = await supabase.storage
             .from('story-images')
@@ -1703,7 +1739,11 @@ Deno.serve(async (req) => {
             throw new Error(`Storage upload failed for page ${scene.page_number}: ${uploadError.message}`)
           }
 
-          await supabase
+          await lease.require(`before page ${scene.page_number} scene write`)
+          // Owner-side guard on the row itself: never replace a reference the
+          // current owner already completed (the pipeline only draws pending
+          // or failed pages, so this never blocks a legitimate write).
+          const { data: sceneWritten } = await supabase
             .from('story_scenes')
             .update({
               storage_path: storagePath,
@@ -1713,6 +1753,14 @@ Deno.serve(async (req) => {
               generation_attempts: Number(scene.generation_attempts ?? 0) + 1,
             })
             .eq('id', scene.id)
+            .eq('request_id', requestId)
+            .neq('image_status', 'complete')
+            .select('id')
+            .maybeSingle()
+          if (!sceneWritten) {
+            await log('scene_write_skipped', `Page ${scene.page_number} already complete — reference left as recorded`, 'warning', { page_number: scene.page_number })
+            continue
+          }
 
           imagesGenerated++
 
@@ -1728,12 +1776,17 @@ Deno.serve(async (req) => {
             ...(image.usage ? { image_tokens: image.usage.total_tokens ?? image.usage.output_tokens } : {}),
           })
         } catch (imgErr) {
+          // A lost lease is not an image failure: leave the scene exactly as
+          // the current owner has it and let the outer catch stop this run.
+          if (isLeaseLost(imgErr)) throw imgErr
           imagesFailed++
           const imgMsg = imgErr instanceof Error ? imgErr.message : String(imgErr)
           console.error(`[process-story] Image failed page ${scene.page_number}:`, imgMsg)
           await supabase.from('story_scenes')
             .update({ image_status: 'failed', last_error: imgMsg.slice(0, 500), generation_attempts: Number(scene.generation_attempts ?? 0) + 1 })
             .eq('id', scene.id)
+            .eq('request_id', requestId)
+            .neq('image_status', 'complete')
           await log('generate_images', `Page ${scene.page_number} image failed: ${imgMsg}`, 'warning', {
             page_number: scene.page_number,
             prompt_length: built.meta.prompt_length,
@@ -1789,7 +1842,7 @@ Deno.serve(async (req) => {
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         )
       }
-      await heartbeat()
+      await lease.renewOrThrow('before the cover')
       await setStatus('generating_images', 'Illustrating the cover…', 80)
       await runCoverStage({
         supabase,
@@ -1891,6 +1944,19 @@ Deno.serve(async (req) => {
 
     const message = err instanceof Error ? err.message : String(err)
     console.error(`[process-story] requestId=${requestId} error:`, message)
+
+    // A lost lease is not a story failure. The row now belongs to another
+    // invocation (or was reclaimed by an admin action): write nothing to
+    // it, send nothing, and let the current owner finish. The conditional
+    // failure UPDATE below would match nothing anyway; returning here keeps
+    // the log honest (lease_lost, not pipeline_error) and the HTTP status 200.
+    if (isLeaseLost(err)) {
+      await log('lease_lost', message, 'warning', { stage: currentStage })
+      return new Response(
+        JSON.stringify({ requestId, status: 'stale', reason: 'lease_lost', staleWorker: true }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
     const classified = classifyFailure(err, currentStage)
     // Only the worker that still owns the lease may fail the row. A stale
