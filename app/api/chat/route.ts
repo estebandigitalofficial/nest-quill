@@ -3,10 +3,15 @@ import { NextRequest } from 'next/server'
 import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 import { getLaunchFlags } from '@/lib/launch/flags'
 import { launchPricingKnowledge } from '@/lib/chat/launchKnowledge'
+import { assistantIdentityPrompt, assistantIdentitySpanishNote } from '@/lib/assistant/identity'
 
 // Launch scope (Phase 2A): the assistant describes only what is publicly available.
+// Identity (Quilliam) comes from lib/assistant/identity.ts; commercial facts
+// from lib/chat/launchKnowledge.ts.
 function systemPromptBase(classroomEnabled: boolean): string {
-  return `You are the Nest & Quill assistant — a warm, friendly helper for a personalized AI-powered children's storybook service. You help in two ways:
+  return `${assistantIdentityPrompt()}
+
+You help in two ways:
 
 STORY CREATION HELP: Help parents brainstorm and craft the perfect story for their child.
 - Suggest creative themes (adventure, friendship, bravery, curiosity, kindness, bedtime, etc.)
@@ -51,7 +56,7 @@ function guardedStream(text: string): Response {
   return new Response(readable, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
 }
 
-const SPANISH_SYSTEM_NOTE = `\n\nIMPORTANT: The user has selected Spanish. You MUST respond entirely in Spanish for every message. All your responses, including product information, suggestions, and support, must be in Spanish.`
+const SPANISH_SYSTEM_NOTE = `\n\nIMPORTANT: The user has selected Spanish. You MUST respond entirely in Spanish for every message. All your responses, including product information, suggestions, and support, must be in Spanish. ${assistantIdentitySpanishNote()}`
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
