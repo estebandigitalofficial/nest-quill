@@ -76,8 +76,8 @@ export const en = {
     },
   },
   footer: {
-    product: 'A product of Bright Tale Books',
-    copyright: '© {year} Bright Tale Books',
+    product: 'Operated by Digital Official & Huerta Group',
+    copyright: '© {year} Digital Official & Huerta Group',
   },
   cookie: {
     text: 'We use cookies to keep you signed in and remember your reading position.',

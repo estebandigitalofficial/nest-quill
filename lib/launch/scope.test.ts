@@ -30,7 +30,7 @@ const HIDDEN = ['/learning', '/homeschool', '/classroom', '/writer']
 const HIDDEN_ROUTE_RE = /\/(classroom|homeschool|learning|writer|publish|coming-later)\b/
 const HIDDEN_LABEL_RE = /Classroom|Homeschool|Learning Tools|Writer Studio|Publishing|Teen|Adult/
 const HIDDEN_FLAG_RE = /classroom_enabled|homeschool_enabled|learning_tools_enabled|writer_studio_enabled|publishing_requests_enabled|extended_audiences_enabled/
-/** Every href the launch homepage may link to (ModernHome + its own footer). */
+/** Every href the launch homepage body (ModernHome) may link to. The footer is the shared SiteFooter (pinned in test 2-4). */
 const HOMEPAGE_ALLOWED_HREFS = new Set(['/', '/create', '/account', '/contact', '/privacy', '/terms', '/login', '#pricing', '#how-it-works'])
 
 test('1. homepage is curated around the launch product and never renders deferred-product sections from flags', () => {
@@ -51,10 +51,15 @@ test('1. homepage is curated around the launch product and never renders deferre
   assert.doesNotMatch(home, HIDDEN_LABEL_RE, 'no deferred-product label in ModernHome')
   assert.doesNotMatch(home, HIDDEN_FLAG_RE)
   const hrefs = [...home.matchAll(/href=\{?["'`]([^"'`]+)["'`]/g)].map(m => m[1])
-  const footerBlock = home.slice(home.indexOf('const FOOTER_HREFS'), home.indexOf('\n}\n', home.indexOf('const FOOTER_HREFS')))
-  const footer = [...footerBlock.matchAll(/col[ABC]: \[([^\]]*)\]/g)].flatMap(m => m[1].split(',').map(h => h.trim().replace(/^['"`]|['"`]$/g, '')).filter(Boolean))
-  assert.ok(hrefs.length > 0 && footer.length > 0, 'homepage links were found')
-  for (const h of [...hrefs, ...footer]) assert.ok(HOMEPAGE_ALLOWED_HREFS.has(h), `homepage links only to launch surfaces, got ${h}`)
+  assert.ok(hrefs.length > 0, 'homepage links were found')
+  for (const h of hrefs) assert.ok(HOMEPAGE_ALLOWED_HREFS.has(h), `homepage links only to launch surfaces, got ${h}`)
+  // The homepage has no footer of its own (2026-10-15 footer standardization):
+  // app/page.tsx renders the shared SiteFooter after ModernHome, exactly like
+  // the shared SiteHeader before it. Its link set is footerLinks(flags), pinned
+  // under launch defaults in test 2-4, so no deferred product can reach the
+  // homepage footer unless its flag is on (the same rule the header follows).
+  assert.doesNotMatch(home, /<footer|FOOTER_HREFS/, 'ModernHome carries no footer of its own')
+  assert.match(page, /<SiteFooter tabBar=\{false\} \/>/, 'homepage renders the shared footer (no tab bar yet: separate task)')
 
   // (c) the homepage's copy (both languages) names no deferred product.
   for (const lang of ['en', 'es'] as const) {
