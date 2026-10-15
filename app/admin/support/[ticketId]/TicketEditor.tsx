@@ -49,7 +49,7 @@ export default function TicketEditor({
 
   return (
     <div className="bg-adm-surface rounded-2xl border border-adm-border px-5 py-4 space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-[11px] uppercase tracking-widest text-adm-muted mb-1">Status</label>
           <select

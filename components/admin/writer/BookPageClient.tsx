@@ -132,7 +132,7 @@ export default function BookPageClient({
 
   return (
     <div className="min-h-screen bg-adm-bg text-adm-text">
-      <header className="border-b border-adm-border px-4 sm:px-6 h-13 flex items-center justify-between sticky top-0 bg-adm-bg z-10" style={{ height: 52 }}>
+      <header className="border-b border-adm-border px-4 sm:px-6 h-13 flex items-center justify-between gap-2 sticky top-14 sm:top-16 bg-adm-bg z-10" style={{ height: 52 }}>
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Link href="/admin/writer" className="text-xs text-adm-muted hover:text-adm-muted shrink-0">← Books</Link>
           <span className="text-gray-700 shrink-0">/</span>
@@ -242,7 +242,7 @@ export default function BookPageClient({
                 </select>
               </div>
             </div>
-            <p className="text-sm text-adm-muted">{book.premise}</p>
+            <p className="text-sm text-adm-muted break-words [overflow-wrap:anywhere]">{book.premise}</p>
             <div className="flex flex-wrap gap-4 sm:gap-6 pt-2 text-xs text-adm-muted">
               <span><span className="text-adm-text font-semibold">{book.target_chapters}</span> chapters</span>
               <span><span className="text-adm-text font-semibold">{doneScenes}/{totalScenes}</span> scenes</span>

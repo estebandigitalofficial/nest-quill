@@ -10,7 +10,7 @@ export default async function AdminBetaPage() {
   const betaModeEnabled = await getSetting('beta_mode_enabled', false)
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-8">
 
       <div>
         <h1 className="text-xl font-semibold text-adm-text">Beta Mode</h1>
@@ -46,31 +46,31 @@ export default async function AdminBetaPage() {
           <ul className="space-y-2 text-sm text-adm-muted">
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              Story text generation (GPT-4o) — full AI writing
+              <span className="min-w-0">Story text generation (GPT-4o) — full AI writing</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              Database writes — story, scenes, and status all saved
+              <span className="min-w-0">Database writes — story, scenes, and status all saved</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              Usage tracking — books_generated still increments
+              <span className="min-w-0">Usage tracking — books_generated still increments</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              Status and progress flow — queued → generating → complete
+              <span className="min-w-0">Status and progress flow — queued → generating → complete</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              Completion emails — sent as normal
+              <span className="min-w-0">Completion emails — sent as normal</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              Illustrations — generated whenever <code className="text-[11px] bg-adm-text/5 px-1 rounded">image_generation_enabled</code> is on
+              <span className="min-w-0">Illustrations — generated whenever <code className="text-[11px] bg-adm-text/5 px-1 rounded break-all">image_generation_enabled</code> is on</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              PDFs — assembled for entitled plans whenever <code className="text-[11px] bg-adm-text/5 px-1 rounded">pdf_download_enabled</code> is on
+              <span className="min-w-0">PDFs — assembled for entitled plans whenever <code className="text-[11px] bg-adm-text/5 px-1 rounded break-all">pdf_download_enabled</code> is on</span>
             </li>
           </ul>
         </div>
@@ -80,15 +80,15 @@ export default async function AdminBetaPage() {
           <ul className="space-y-2 text-sm text-adm-muted">
             <li className="flex items-start gap-2">
               <span className="text-amber-400 mt-0.5">~</span>
-              All story limits bypassed — guest, free, and paid tiers
+              <span className="min-w-0">All story limits bypassed — guest, free, and paid tiers</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-amber-400 mt-0.5">~</span>
-              Public copy switches to &ldquo;free during beta&rdquo;; prices hidden on plan cards
+              <span className="min-w-0">Public copy switches to &ldquo;free during beta&rdquo;; prices hidden on plan cards</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-amber-400 mt-0.5">~</span>
-              To pause illustration or PDF spend, use <Link href="/admin/beta-ops" className="text-sky-300 hover:underline">Beta Ops</Link> — not this switch
+              <span className="min-w-0">To pause illustration or PDF spend, use <Link href="/admin/beta-ops" className="text-sky-300 hover:underline">Beta Ops</Link> — not this switch</span>
             </li>
           </ul>
         </div>

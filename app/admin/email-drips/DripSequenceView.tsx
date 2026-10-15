@@ -63,8 +63,8 @@ export default function DripSequenceView({
                     )}
                   </div>
                   {/* Card */}
-                  <div className="flex-1 bg-adm-surface border border-adm-border rounded-xl px-4 py-3">
-                    <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0 bg-adm-surface border border-adm-border rounded-xl px-4 py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium text-adm-text">Step {template.step}</span>
@@ -75,7 +75,7 @@ export default function DripSequenceView({
                         </div>
                         <p className="text-xs text-adm-muted mt-1 truncate">{template.subject}</p>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-3 shrink-0">
                         <button
                           onClick={() => toggleTemplate(template.id, !template.enabled)}
                           className="text-xs text-adm-muted hover:text-adm-muted transition-colors"

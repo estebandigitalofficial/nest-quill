@@ -185,7 +185,7 @@ export default async function BetaOpsPage() {
   const paymentsEnabled = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === 'true'
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
       <header>
         <p className="text-xs font-semibold text-violet-300 uppercase tracking-widest">Beta Ops</p>
         <h1 className="text-2xl font-semibold text-adm-text mt-1">30-day beta control room</h1>

@@ -17,7 +17,7 @@ export default async function AdminToursPage() {
   // Surface a clear "schema not deployed" message rather than crashing.
   if (probeErr?.code === '42P01') {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         <h1 className="text-xl font-semibold text-adm-text">Tours</h1>
         <div className="mt-4 bg-red-500/5 border border-red-500/30 rounded-xl px-4 py-3 text-sm">
           <p className="text-red-300 font-medium">Schema not deployed.</p>
@@ -38,7 +38,7 @@ export default async function AdminToursPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       <div>
         <h1 className="text-xl font-semibold text-adm-text">Guided tours</h1>
         <p className="text-sm text-adm-muted mt-1">Tour definitions are seeded by migration. Toggle a tour off to suppress it across the app.</p>
@@ -54,7 +54,7 @@ export default async function AdminToursPage() {
                 <div className="min-w-0">
                   <p className="text-xs text-adm-subtle font-mono">{t.tour_key}</p>
                   <p className="text-base font-semibold text-adm-text mt-0.5">{(t as { name?: string }).name ?? '—'}</p>
-                  {t.description && <p className="text-xs text-adm-muted mt-1">{t.description}</p>}
+                  {t.description && <p className="text-xs text-adm-muted mt-1 break-words [overflow-wrap:anywhere]">{t.description}</p>}
                 </div>
                 <TourEnableToggle tourId={t.id} initialEnabled={t.enabled} />
               </div>
@@ -66,7 +66,7 @@ export default async function AdminToursPage() {
                       <p className="text-sm font-medium text-adm-text">{s.title}</p>
                       <p className="text-[11px] text-adm-muted leading-relaxed mt-0.5">{s.body}</p>
                       {s.target_selector && (
-                        <p className="text-[10px] font-mono text-adm-subtle mt-1">target: {s.target_selector}</p>
+                        <p className="text-[10px] font-mono text-adm-subtle mt-1 break-all">target: {s.target_selector}</p>
                       )}
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
                         <span className="text-[10px] text-adm-subtle">
@@ -74,7 +74,7 @@ export default async function AdminToursPage() {
                         </span>
                         {s.advance_selector && (
                           <span className="text-[10px] text-adm-subtle">
-                            on: <span className="font-mono">{s.advance_selector}</span>
+                            on: <span className="font-mono break-all">{s.advance_selector}</span>
                           </span>
                         )}
                         {s.wait_message && (

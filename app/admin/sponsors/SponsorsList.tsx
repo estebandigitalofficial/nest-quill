@@ -37,6 +37,7 @@ export default function SponsorsList({ initialSponsors }: { initialSponsors: Spo
 
   return (
     <div className="bg-adm-surface border border-adm-border rounded-xl overflow-hidden">
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead className="bg-adm-bg/50 text-[11px] font-semibold text-adm-muted uppercase tracking-widest">
           <tr>
@@ -65,7 +66,7 @@ export default function SponsorsList({ initialSponsors }: { initialSponsors: Spo
                   </div>
                 </Link>
               </td>
-              <td className="px-4 py-3 text-adm-muted hidden sm:table-cell">
+              <td className="px-4 py-3 text-adm-muted hidden sm:table-cell break-all">
                 {s.contact_email ?? '—'}
               </td>
               <td className="px-4 py-3 text-right font-mono text-adm-text">
@@ -84,6 +85,7 @@ export default function SponsorsList({ initialSponsors }: { initialSponsors: Spo
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

@@ -134,8 +134,8 @@ function PlanTierBreakdown({ counts }: { counts: Record<string, number> }) {
         const pct = total > 0 ? Math.round((n / total) * 1000) / 10 : 0
         const isPaid = tier !== 'free'
         return (
-          <div key={tier} className="px-4 py-3 flex items-center gap-3">
-            <span className="text-sm font-medium text-adm-text w-32 shrink-0">{PLAN_LABELS[tier] ?? tier}</span>
+          <div key={tier} className="px-4 py-3 flex items-center gap-3 min-w-0">
+            <span className="text-sm font-medium text-adm-text w-24 sm:w-32 shrink-0 truncate">{PLAN_LABELS[tier] ?? tier}</span>
             <div className="flex-1 h-2 bg-adm-bg/60 rounded-full overflow-hidden">
               <div
                 className={`h-full ${isPaid ? 'bg-brand-500' : 'bg-adm-border'}`}

@@ -115,7 +115,7 @@ export default function NewBookForm({
         <span className="font-semibold text-adm-text">New book</span>
       </header>
 
-      <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 space-y-6">
 
         {isSuperAdmin && adminUsers.length > 1 && (
           <div className="space-y-1.5">

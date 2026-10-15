@@ -170,11 +170,11 @@ export default function BookSourcePanel({
 
   return (
     <div className="bg-adm-surface border border-adm-border rounded-xl overflow-hidden">
-      <div className="px-5 py-4 flex items-center justify-between gap-4">
-        <div>
+      <div className="px-5 py-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div className="min-w-0">
           <p className="text-xs font-bold text-adm-muted uppercase tracking-widest">Source Manuscript</p>
           {fileName ? (
-            <p className="text-sm text-adm-muted mt-0.5">
+            <p className="text-sm text-adm-muted mt-0.5 break-all">
               {fileName}
               {wordCount && <span className="text-adm-subtle ml-2">· {wordCount.toLocaleString()} words</span>}
             </p>

@@ -45,21 +45,21 @@ export default async function WriterPage() {
 
   return (
     <>
-      <header className="border-b border-adm-border px-6 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/admin" className="text-xs text-adm-muted hover:text-adm-muted">← Admin</Link>
-          <span className="text-gray-700">/</span>
-          <span className="font-semibold text-adm-text">Book Writer</span>
+      <header className="border-b border-adm-border px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link href="/admin" className="text-xs text-adm-muted hover:text-adm-muted shrink-0">← Admin</Link>
+          <span className="text-gray-700 shrink-0">/</span>
+          <span className="font-semibold text-adm-text truncate">Book Writer</span>
         </div>
         <Link
           href="/admin/writer/new"
-          className="bg-brand-500 hover:bg-brand-600 text-adm-text text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+          className="shrink-0 bg-brand-500 hover:bg-brand-600 text-adm-text text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
         >
           + New book
         </Link>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {(!books || books.length === 0) ? (
           <div className="text-center py-20 space-y-3">
             <p className="font-serif text-xl text-adm-muted">No books yet</p>

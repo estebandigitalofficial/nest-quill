@@ -19,7 +19,7 @@ export default async function BetaReadinessPage() {
   const report = await getReadinessReport()
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
       <RollupBanner rollup={report.rollup} generatedAt={report.generated_at} />
 
       {report.sections.map(section => (
