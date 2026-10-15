@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { getSetting } from '@/lib/settings/appSettings'
 import { getLaunchFlags } from '@/lib/launch/flags'
 import { footerLinks } from '@/lib/launch/scope'
 import { getServerLang } from '@/lib/i18n/server'
@@ -26,19 +27,25 @@ import MobileTabBar from './MobileTabBar'
  * links stay reachable on mobile now that the homepage has no footer of
  * its own. The bottom tab bar is unchanged.
  *
- * The brand lockup reuses SiteHeader's: the local gold quill mark plus the
- * serif wordmark, on both surfaces. The old white-silhouette CDN logo only
- * worked on the dark bar and never loaded outside production.
+ * The navy surface keeps its original brand image: the admin-configured
+ * branding_footer_logo_url, forced to a white silhouette, exactly as
+ * before. That silhouette has no legible form on parchment, so the light
+ * surface uses SiteHeader's lockup instead (local gold quill mark + serif
+ * wordmark).
  */
 type Surface = 'dark' | 'light'
 
-const SURFACE: Record<Surface, { footer: string; text: string; brand: string; link: string }> = {
-  dark:  { footer: 'bg-oxford-dark', text: 'text-white/55', brand: 'text-white/90', link: 'hover:text-white/90' },
-  light: { footer: 'bg-parchment border-t-2 border-oxford/15', text: 'text-charcoal-light', brand: 'text-oxford', link: 'hover:text-oxford' },
+const SURFACE: Record<Surface, { footer: string; text: string; brand: string; product: string; link: string }> = {
+  dark:  { footer: 'bg-oxford-dark', text: 'text-white/55', brand: 'text-white/90', product: 'text-white/40', link: 'hover:text-white/90' },
+  light: { footer: 'bg-parchment border-t-2 border-oxford/15', text: 'text-charcoal-light', brand: 'text-oxford', product: 'text-charcoal-light', link: 'hover:text-oxford' },
 }
 
 export default async function SiteFooter({ tabBar = true, surface = 'dark' }: { tabBar?: boolean; surface?: Surface }) {
-  const [flags, lang] = await Promise.all([getLaunchFlags(), getServerLang()])
+  const [flags, footerLogoUrl, lang] = await Promise.all([
+    getLaunchFlags(),
+    getSetting('branding_footer_logo_url', 'https://nestandquill.b-cdn.net/nestandquill%20brand%20start-03.webp'),
+    getServerLang(),
+  ])
   const t = getDictionary(lang)
   const c = SURFACE[surface]
   return (
@@ -49,10 +56,12 @@ export default async function SiteFooter({ tabBar = true, surface = 'dark' }: { 
     <footer className={`${c.footer} py-3 sm:py-4 md:py-[5px] ls:py-2.5 px-5 sm:px-6`}>
       <div className={`max-w-5xl mx-auto flex flex-col items-center gap-2 md:gap-1.5 text-xs sm:text-sm ${c.text} sm:flex-row sm:justify-between`}>
         <div className="flex ls:hidden items-center gap-2 md:gap-1.5 text-left">
-          <Image src="/brand/fav.webp" alt="" width={32} height={32} className="w-8 h-8 md:w-7 md:h-7 shrink-0" />
+          {surface === 'dark'
+            ? <Image src={footerLogoUrl} alt="Nest & Quill" width={140} height={42} className="brightness-0 invert w-14 md:w-[100px] shrink-0" />
+            : <Image src="/brand/fav.webp" alt="" width={32} height={32} className="w-8 h-8 md:w-7 md:h-7 shrink-0" />}
           <div>
             <p className={`font-serif ${c.brand} font-semibold leading-tight md:text-xs`}>Nest &amp; Quill</p>
-            <p className="text-[11px] mt-0.5 md:text-[10px]">{t.footer.product}</p>
+            <p className={`text-[11px] mt-0.5 md:text-[10px] ${c.product}`}>{t.footer.product}</p>
           </div>
         </div>
         <p className="order-last sm:order-none text-center">{fill(t.footer.copyright, { year: new Date().getFullYear() })}</p>

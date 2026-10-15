@@ -104,7 +104,8 @@ test('2-4. desktop nav, mobile nav/tabs and footer hide deferred areas when off'
   assert.match(footer, /dark: +\{ footer: 'bg-oxford-dark'/, 'default surface is the original navy')
   assert.match(footer, /light: \{ footer: 'bg-parchment border-t-2 border-oxford\/15'/, 'light surface is parchment')
   assert.match(footer, /surface = 'dark'/, 'navy unless a page asks for light')
-  assert.doesNotMatch(footer, /hidden md:block|brightness-0|Bright Tale/, 'no desktop-only gate, no inverted CDN logo, no stale operator')
+  assert.match(footer, /surface === 'dark'\s*\? <Image src=\{footerLogoUrl\}[^\n]*brightness-0 invert/, 'navy keeps the original white-silhouette brand image')
+  assert.doesNotMatch(footer, /hidden md:block|Bright Tale/, 'no desktop-only gate, no stale operator')
   assert.equal([...footer.matchAll(/<footer/g)].length, 1)
   for (const f of ['components/legal/LegalDocument.tsx', 'app/pricing/page.tsx', 'app/contact/page.tsx', 'app/(create)/layout.tsx']) {
     assert.match(read(f), /<SiteFooter \/>/, `${f} renders the shared footer on its default (navy) surface`)
