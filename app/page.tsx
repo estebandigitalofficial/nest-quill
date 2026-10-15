@@ -24,12 +24,14 @@ export default async function HomePage() {
   ])
   // Same SiteHeader and SiteFooter as every other route, so header and
   // footer are identical site-wide (UserControls inside the header renders
-  // Sign in for logged-out visitors). The homepage keeps no bottom tab bar.
+  // Sign in for logged-out visitors). Only the homepage takes the light
+  // footer surface (its navy closing CTA sits right above the footer); it
+  // keeps no bottom tab bar.
   return (
     <>
       <SiteHeader />
       <ModernHome betaMode={betaMode === true} imagesPaused={imagesPaused} />
-      <SiteFooter tabBar={false} />
+      <SiteFooter tabBar={false} surface="light" />
     </>
   )
 }
