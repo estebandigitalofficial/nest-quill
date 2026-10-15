@@ -11,10 +11,10 @@ import type { Dictionary } from '@/lib/i18n'
  */
 export default function LegalDocument({ doc, betaMode, t }: { doc: LegalDoc; betaMode: boolean; t: Dictionary }) {
   return (
-    <div className="h-dvh bg-parchment flex flex-col">
+    <div className="min-h-dvh md:h-dvh bg-parchment flex flex-col">
       <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford whitespace-nowrap">{t.nav.back}</Link>} />
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 md:overflow-y-auto">
       <main className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14 space-y-8 sm:space-y-10 w-full">
         <div>
           <h1 className="font-serif text-3xl sm:text-4xl text-oxford mb-3">{doc.title}</h1>

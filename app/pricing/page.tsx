@@ -28,10 +28,10 @@ export default async function PricingPage() {
   const p = t.pricing
 
   return (
-    <div className="h-dvh bg-parchment flex flex-col">
+    <div className="min-h-dvh md:h-dvh bg-parchment flex flex-col">
       <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford whitespace-nowrap">{t.nav.back}</Link>} />
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 md:overflow-y-auto">
       <main className="max-w-5xl mx-auto px-5 sm:px-6 py-12 sm:py-16 space-y-12 sm:space-y-14 w-full">
         <div className="text-center space-y-3">
           <h1 className="font-serif text-4xl sm:text-5xl text-oxford">{p.title}</h1>

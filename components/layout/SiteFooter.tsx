@@ -36,6 +36,13 @@ import MobileTabBar from './MobileTabBar'
  * That silhouette has no legible form on parchment, so the light surface
  * shows the full-colour local logo (public/brand/logo.webp) at the same
  * size. Phones get the same lockup at 80px.
+ *
+ * Document flow: this footer is a plain block, never fixed or sticky. The
+ * page shells that render it (LegalDocument, pricing, contact, the create
+ * and auth layouts, unsubscribe, account, the story page) keep their
+ * desktop viewport-locked shell but, below md, use min-h-dvh with no inner
+ * scroll region, so on phones the footer is only reached by scrolling to
+ * the bottom of the page, exactly as on the homepage (Esteban, 2026-10-15).
  */
 type Surface = 'dark' | 'light'
 
@@ -59,13 +66,17 @@ export default async function SiteFooter({ tabBar = true, surface = 'dark' }: { 
 
     <footer className={`${c.footer} py-4 md:py-2 ls:py-2 px-5 sm:px-6`}>
       <div className={`max-w-5xl mx-auto flex flex-col items-center gap-3 md:gap-2 text-xs sm:text-sm ${c.text} sm:flex-row sm:justify-between`}>
-        {/* Brand lockup at the original scale: 100px logo beside the wordmark and operator line. */}
+        {/* Brand lockup at the original scale: 100px logo beside the wordmark and operator line.
+            The logo and the wordmark are two independent Home links; the
+            operator line stays plain text (Esteban, 2026-10-15). */}
         <div className="flex ls:hidden items-center gap-3 text-left">
+          <Link href="/" aria-label={`Nest & Quill — ${t.nav.home}`} className="shrink-0">
           {surface === 'dark'
             ? <Image src={footerLogoUrl} alt="Nest & Quill" width={100} height={100} className="brightness-0 invert w-20 md:w-[100px] h-auto shrink-0" />
             : <Image src="/brand/logo.webp" alt="Nest & Quill" width={100} height={100} className="w-20 md:w-[100px] h-auto shrink-0" />}
+          </Link>
           <div>
-            <p className={`font-serif ${c.brand} font-semibold text-base leading-tight`}>Nest &amp; Quill</p>
+            <p className={`font-serif ${c.brand} font-semibold text-base leading-tight`}><Link href="/" className={`${c.link} transition-colors`}>Nest &amp; Quill</Link></p>
             <p className={`text-xs mt-0.5 ${c.product}`}>{t.footer.product}</p>
           </div>
         </div>
@@ -79,8 +90,8 @@ export default async function SiteFooter({ tabBar = true, surface = 'dark' }: { 
       </div>
     </footer>
 
-    {/* Spacer so the fixed tab bar never covers the footer on phones. */}
-    {tabBar && <div className="h-14 md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} />}
+    {/* Spacer so the fixed tab bar (h-14 plus its 1px top border) never covers the footer on phones. */}
+    {tabBar && <div className="h-[calc(3.5rem+1px)] md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} />}
     </>
   )
 }

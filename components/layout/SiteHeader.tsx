@@ -9,7 +9,7 @@ import { getSetting } from '@/lib/settings/appSettings'
 import { getLaunchFlags } from '@/lib/launch/flags'
 import { navLinks } from '@/lib/launch/scope'
 import { getServerLang } from '@/lib/i18n/server'
-import { navLabel } from '@/lib/i18n'
+import { getDictionary, navLabel } from '@/lib/i18n'
 
 interface Props {
   right?: ReactNode
@@ -26,6 +26,7 @@ export default async function SiteHeader({ right }: Props) {
   ])
 
   const showBanner = maintenanceEnabled === true && typeof maintenanceMessage === 'string' && maintenanceMessage.trim().length > 0
+  const t = getDictionary(lang)
 
   return (
     <header className="sticky top-0 bg-parchment border-b-2 border-oxford/15 shrink-0 z-40">
@@ -35,10 +36,16 @@ export default async function SiteHeader({ right }: Props) {
         </div>
       )}
       <div className="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8 h-[60px] flex items-center justify-between gap-2 sm:gap-4">
-        {/* Brand — quill mark + Source Serif wordmark, matching the homepage. */}
-        <Link href="/" className="shrink-0 flex items-center gap-2 font-serif font-bold text-oxford text-xl sm:text-[22px]">
-          <Image src="/brand/fav.webp" alt="" width={32} height={32} className="w-8 h-8" priority />
-          <span>Nest &amp; Quill</span>
+        {/* Brand: the same full-colour Nest & Quill graphic the footer shows
+            on its light surface (public/brand/logo.webp), as the Home link.
+            The file is an 800px square whose artwork (nest, quill and the
+            wordmark) sits in a 705x425 band with transparent padding above
+            and below; object-cover inside a 5:3 box trims that padding so
+            the artwork reads at full size inside the 60px header without
+            distorting it. Branding only (Esteban, 2026-10-15): nav, auth
+            and language controls are untouched. */}
+        <Link href="/" aria-label={`Nest & Quill — ${t.nav.home}`} className="shrink-0 block h-12 w-20 sm:h-[52px] sm:w-[87px]">
+          <Image src="/brand/logo.webp" alt="Nest & Quill" width={800} height={800} className="h-full w-full object-cover" priority />
         </Link>
 
         {/* Launch-scoped nav. Homepage typography (serif brand, semibold links). */}

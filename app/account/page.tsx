@@ -76,7 +76,7 @@ export default async function AccountPage() {
   const planName = (t.pricing.plans as Record<string, { name: string }>)[planTier]?.name ?? plan.displayName
 
   return (
-    <div className="h-dvh bg-parchment flex flex-col">
+    <div className="min-h-dvh md:h-dvh bg-parchment flex flex-col">
       <header className="bg-parchment/95 border-b border-parchment-dark backdrop-blur">
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="font-serif text-xl font-semibold text-oxford">
@@ -92,7 +92,7 @@ export default async function AccountPage() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 md:overflow-y-auto">
         <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 sm:px-6 py-5 sm:py-6 flex items-center justify-between gap-4">
             <div className="min-w-0">
