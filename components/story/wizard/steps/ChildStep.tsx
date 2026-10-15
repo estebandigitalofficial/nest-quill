@@ -134,7 +134,7 @@ export default function ChildStep() {
       </Field>
 
       <Field label={c.ageGroup} error={errors.childAge?.message} required>
-        <div className={cn('grid gap-2', ageOptions.length === 1 ? 'grid-cols-1' : ageOptions.length === 2 ? 'grid-cols-2' : 'grid-cols-4')}>
+        <div className={cn('grid gap-2', ageOptions.length === 1 ? 'grid-cols-1' : ageOptions.length === 2 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-4')}>
           {ageOptions.map(({ label, key, age }) => {
             const active = selectedAge === age
             return (
@@ -143,7 +143,7 @@ export default function ChildStep() {
                 type="button"
                 onClick={() => handleAgeSelect(age)}
                 className={cn(
-                  'flex flex-col items-center py-3 px-2 rounded-xl border-2 text-center transition-all',
+                  'flex flex-col items-center min-w-0 py-3 px-2 rounded-xl border-2 text-center transition-all',
                   active
                     ? 'border-brand-500 bg-brand-50 text-brand-700'
                     : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'

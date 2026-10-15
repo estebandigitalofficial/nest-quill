@@ -60,6 +60,36 @@
   }
 }
 
+/* Mobile UX stabilization (2026-10-15).
+   Every public form (wizard steps, contact, login/signup/reset) sizes its
+   inputs with text-sm (14px). iOS Safari zooms the page into any focused
+   field whose font-size is under 16px, which is the "aggressive zoom on
+   tap" users reported. Below md, editable controls take the 16px base size
+   instead; desktop keeps text-sm. Zoom itself is untouched: there is no
+   user-scalable=no or maximum-scale anywhere, pinch-to-zoom still works.
+   Unlayered on purpose, and every selector carries a :not() so its
+   specificity (0,1,1) beats the text-sm utility (0,1,0). */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  textarea:not([hidden]),
+  select:not([hidden]) {
+    font-size: 1rem;
+  }
+}
+
+/* The sources of sideways movement on phones were fixed individually (the
+   rotating chat button inset from the edge, the wizard theme cards given
+   min-width:0, the 4-column option grids stacked to 2). This clips any
+   remaining horizontal overflow at the root so a stray element can never
+   make the whole page draggable sideways again. `clip` (not hidden) keeps
+   the root a non-scroller, so position:sticky and the fixed tab bar are
+   unaffected. Desktop is left alone. */
+@media (max-width: 767px) {
+  html {
+    overflow-x: clip;
+  }
+}
+
 /* Animated writing quill — tip stays planted, top sways */
 @keyframes quill-write {
   0%, 100% { transform: rotate(-3deg); }

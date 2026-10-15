@@ -93,7 +93,9 @@ export default function StyleStep() {
           {s.lengthLabel} <span className="text-brand-500">*</span>
         </label>
 
-        <div className="grid grid-cols-4 gap-2">
+        {/* Two columns on phones: four across left ~50px per label at 320-375px,
+            so "Standard" / "Estándar" overflowed its button. */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {LENGTH_KEYS.map((key, i) => {
             const pages = LENGTH_PAGES[i]
             const locked = pages > maxPages
@@ -105,7 +107,7 @@ export default function StyleStep() {
                 disabled={locked}
                 onClick={() => !locked && setValue('storyLength', pages, { shouldValidate: true })}
                 className={cn(
-                  'flex flex-col items-center py-3 px-2 rounded-xl border-2 transition-all',
+                  'flex flex-col items-center min-w-0 py-3 px-2 rounded-xl border-2 transition-all',
                   active
                     ? 'border-brand-500 bg-brand-50 text-brand-700'
                     : locked
