@@ -216,15 +216,5 @@ async function logBlock(action: string, reason: string, ctx: LogContext): Promis
   }
 }
 
-/** Hash an IP for low-cardinality logging without storing the raw value. */
-export async function hashIp(ip: string | null): Promise<string | null> {
-  if (!ip) return null
-  try {
-    const buf = new TextEncoder().encode(ip)
-    const digest = await crypto.subtle.digest('SHA-256', buf)
-    const bytes = new Uint8Array(digest)
-    return Array.from(bytes.slice(0, 8)).map(b => b.toString(16).padStart(2, '0')).join('')
-  } catch {
-    return null
-  }
-}
+// hashIp lives in ./ipHash (dependency-free so it can be unit tested).
+export { hashIp } from './ipHash'

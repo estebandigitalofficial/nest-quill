@@ -68,7 +68,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
   // ── Filtered stories table ────────────────────────────────────────────────
   let query = adminSupabase
     .from('story_requests')
-    .select('id, child_name, story_theme, plan_tier, status, progress_pct, user_email, created_at, last_error, geo_city, geo_region, geo_country, archived_at')
+    .select('id, child_name, story_theme, plan_tier, status, progress_pct, user_email, created_at, last_error, archived_at')
     .order('created_at', { ascending: false })
     .limit(100)
 
@@ -685,7 +685,6 @@ export default async function AdminPage({ searchParams }: PageProps) {
                       <th className="text-left px-4 py-3 hidden md:table-cell">Email</th>
                       <th className="text-left px-4 py-3">Plan</th>
                       <th className="text-left px-4 py-3">Status</th>
-                      <th className="text-left px-4 py-3 hidden lg:table-cell">Location</th>
                       <th className="text-left px-4 py-3 hidden sm:table-cell">Date (AZ)</th>
                       <th className="px-4 py-3"></th>
                     </tr>
@@ -713,12 +712,6 @@ export default async function AdminPage({ searchParams }: PageProps) {
                               {story.last_error}
                             </p>
                           )}
-                        </td>
-                        <td className="px-4 py-3 text-adm-muted text-xs hidden lg:table-cell whitespace-nowrap">
-                          {story.geo_city || story.geo_region || story.geo_country
-                            ? [story.geo_city, story.geo_region, story.geo_country].filter(Boolean).join(', ')
-                            : <span className="text-gray-700">—</span>
-                          }
                         </td>
                         <td className="px-4 py-3 text-adm-muted text-xs hidden sm:table-cell whitespace-nowrap">
                           {formatAZTimeShort(story.created_at)}

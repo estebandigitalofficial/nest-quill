@@ -168,10 +168,6 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
             <Field label="Created (AZ)" value={formatAZTime(req.created_at)} />
             <Field label="Updated (AZ)" value={formatAZTime(req.updated_at)} />
             {req.completed_at && <Field label="Completed (AZ)" value={formatAZTime(req.completed_at)} />}
-            {req.ip_address && <Field label="IP address" value={req.ip_address} mono />}
-            {(req.geo_city || req.geo_country) && (
-              <Field label="Location" value={[req.geo_city, req.geo_region, req.geo_country].filter(Boolean).join(', ')} />
-            )}
             {req.child_description && <Field label="Child description" value={req.child_description} wide />}
             {req.custom_notes && <Field label="Custom notes" value={req.custom_notes} wide />}
             {req.supporting_characters && <Field label="Supporting characters" value={req.supporting_characters} wide />}

@@ -13,7 +13,8 @@ import { sendAdminNotification, buildGuestStoryEmail } from '@/lib/services/admi
 import { classifyGenre } from '@/lib/services/genre'
 import { synthesizeTheme, synthesizeTraitsLine, synthesizeStructureLines, mergeIntoCustomNotes } from '@/lib/services/storyFormSynthesis'
 import { gateStoryCreation, gateGuestStoryCreation } from '@/lib/settings/gates'
-import { checkStoryRateLimit, checkQueueGate, hashIp } from '@/lib/limits/rateLimits'
+import { checkStoryRateLimit, checkQueueGate } from '@/lib/limits/rateLimits'
+import { hashIp } from '@/lib/limits/ipHash'
 import { deriveStorySubmissionKey, reserveIdempotencyKey, finalizeIdempotencyKey } from '@/lib/limits/idempotency'
 import { getAdminContext } from '@/lib/admin/guard'
 import type { SubmitStoryResponse } from '@/types/story'
@@ -54,8 +55,10 @@ export async function POST(request: NextRequest) {
     // legitimate users), queue gate second.
     const adminCtx = user ? await getAdminContext() : null
     const isAdmin = !!adminCtx
-    const ipRawForHash = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null
-    const ipHash = await hashIp(ipRawForHash)
+    // Privacy Foundation 1 (2026-10-14): the client IP is read once, hashed
+    // in memory for the block-only rate_limit_events log, and never stored
+    // on the story record or printed to a log. See lib/limits/ipHash.ts.
+    const ipHash = await hashIp(request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null)
 
     const rateBlock = await checkStoryRateLimit({
       userId: user?.id ?? null,
@@ -152,14 +155,9 @@ export async function POST(request: NextRequest) {
     // Use the admin client so we can write regardless of RLS policies
     const adminSupabase = createAdminClient()
 
-    // Read Vercel geo headers (populated automatically on Vercel deployments)
-    const ipRaw = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip')
-    const ipAddress = ipRaw?.split(',')[0]?.trim() ?? null
-    const geoCity = request.headers.get('x-vercel-ip-city')
-      ? decodeURIComponent(request.headers.get('x-vercel-ip-city')!)
-      : null
-    const geoCountry = request.headers.get('x-vercel-ip-country') ?? null
-    const geoRegion = request.headers.get('x-vercel-ip-country-region') ?? null
+    // No IP address and no IP-derived city/region/country are written to the
+    // story record (founder decision, 2026-10-14). The Vercel geo headers
+    // (x-vercel-ip-*) are intentionally not read here.
 
     // Synthesize the structured selections (traits/setting/conflict/goal)
     // into the existing string fields so the worker prompt sees them. This
@@ -215,10 +213,6 @@ export async function POST(request: NextRequest) {
         learning_subject: formData.learningSubject ?? null,
         learning_grade: formData.learningGrade ?? null,
         learning_topic: formData.learningTopic ?? null,
-        ip_address: ipAddress,
-        geo_city: geoCity,
-        geo_country: geoCountry,
-        geo_region: geoRegion,
         genre: classifyGenre(finalStoryTheme, formData.storyTone),
         status: 'queued',
         progress_pct: 0,
