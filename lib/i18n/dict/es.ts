@@ -76,8 +76,8 @@ export const es: Dictionary = {
     },
   },
   footer: {
-    product: 'Un producto de Bright Tale Books',
-    copyright: '© {year} Bright Tale Books',
+    product: 'Operado por Digital Official & Huerta Group',
+    copyright: '© {year} Digital Official & Huerta Group',
   },
   cookie: {
     text: 'Usamos cookies para mantener tu sesión iniciada y recordar en qué página ibas.',

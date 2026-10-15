@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getAdminContext } from '@/lib/admin/guard'
 import { getSetting } from '@/lib/settings/appSettings'
 import SiteHeader from '@/components/layout/SiteHeader'
+import SiteFooter from '@/components/layout/SiteFooter'
 import ModernHome from '@/components/home/ModernHome'
 
 export default async function HomePage() {
@@ -21,12 +22,14 @@ export default async function HomePage() {
     // Illustrations are governed by image_generation_enabled, not by beta.
     getSetting<unknown>('image_generation_enabled', true).then(v => v === false),
   ])
-  // Same SiteHeader as every other route, so the header is identical site-wide
-  // (UserControls inside it renders Sign in for logged-out visitors).
+  // Same SiteHeader and SiteFooter as every other route, so header and
+  // footer are identical site-wide (UserControls inside the header renders
+  // Sign in for logged-out visitors). The homepage keeps no bottom tab bar.
   return (
     <>
       <SiteHeader />
       <ModernHome betaMode={betaMode === true} imagesPaused={imagesPaused} />
+      <SiteFooter tabBar={false} />
     </>
   )
 }

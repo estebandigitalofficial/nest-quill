@@ -51,10 +51,12 @@ test('1. homepage is curated around the launch product and never renders deferre
   assert.doesNotMatch(home, HIDDEN_LABEL_RE, 'no deferred-product label in ModernHome')
   assert.doesNotMatch(home, HIDDEN_FLAG_RE)
   const hrefs = [...home.matchAll(/href=\{?["'`]([^"'`]+)["'`]/g)].map(m => m[1])
-  const footerBlock = home.slice(home.indexOf('const FOOTER_HREFS'), home.indexOf('\n}\n', home.indexOf('const FOOTER_HREFS')))
-  const footer = [...footerBlock.matchAll(/col[ABC]: \[([^\]]*)\]/g)].flatMap(m => m[1].split(',').map(h => h.trim().replace(/^['"`]|['"`]$/g, '')).filter(Boolean))
-  assert.ok(hrefs.length > 0 && footer.length > 0, 'homepage links were found')
-  for (const h of [...hrefs, ...footer]) assert.ok(HOMEPAGE_ALLOWED_HREFS.has(h), `homepage links only to launch surfaces, got ${h}`)
+  assert.ok(hrefs.length > 0, 'homepage links were found')
+  for (const h of hrefs) assert.ok(HOMEPAGE_ALLOWED_HREFS.has(h), `homepage links only to launch surfaces, got ${h}`)
+  // (b2) the homepage has no footer of its own: it renders the shared
+  // SiteFooter (test 2 pins that footer's link set to lib/launch/scope).
+  assert.doesNotMatch(home, /<footer|FOOTER_HREFS/, 'ModernHome renders no footer of its own')
+  assert.match(page, /<SiteFooter tabBar=\{false\} \/>/, 'homepage renders the shared SiteFooter')
 
   // (c) the homepage's copy (both languages) names no deferred product.
   for (const lang of ['en', 'es'] as const) {
@@ -95,6 +97,16 @@ test('2-4. desktop nav, mobile nav/tabs and footer hide deferred areas when off'
   assert.match(read('components/layout/SiteFooter.tsx'), /footerLinks\(flags\)\.map/)
   assert.ok(!/href="\/(learning|homeschool|classroom|writer)"/.test(read('components/layout/SiteHeader.tsx')), 'no hard-coded hidden links in header')
   assert.ok(!/href="\/(learning|homeschool|classroom|writer)"/.test(read('components/layout/SiteFooter.tsx')), 'no hard-coded hidden links in footer')
+  // The shared footer is the only public footer: compact, parchment (not
+  // navy), rendered on every width, and it names the current operator.
+  const footer = read('components/layout/SiteFooter.tsx')
+  assert.match(footer, /<footer className="bg-parchment /, 'footer surface is parchment')
+  assert.doesNotMatch(footer, /bg-oxford|hidden md:block|brightness-0|Bright Tale/, 'no navy surface, no desktop-only gate, no stale operator')
+  assert.equal([...footer.matchAll(/<footer/g)].length, 1)
+  for (const f of ['components/legal/LegalDocument.tsx', 'app/pricing/page.tsx', 'app/contact/page.tsx', 'app/(create)/layout.tsx', 'app/page.tsx']) {
+    assert.match(read(f), /<SiteFooter/, `${f} renders the shared footer`)
+    assert.doesNotMatch(read(f), /<footer/, `${f} has no footer of its own`)
+  }
 })
 
 test('5-6. pricing shows the four launch choices and Educator is never selectable', () => {
