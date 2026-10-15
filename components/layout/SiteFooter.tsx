@@ -18,10 +18,12 @@ import MobileTabBar from './MobileTabBar'
  * in favour of it.
  *
  * Surface: navy (the original) by default. The homepage passes
- * surface="light" (parchment, #fbf9f4, with a 2px oxford/15 top rule that
- * mirrors SiteHeader's bottom rule) because its navy closing section sits
- * directly above the footer and the two blended together. Esteban,
- * 2026-10-15: "footer can stay dark on any screens other than home page".
+ * surface="light" (parchment, #fbf9f4) because its navy closing section
+ * sits directly above the footer and the two blended together. Esteban,
+ * 2026-10-15: "footer can stay dark on any screens other than home page"
+ * and "home page footer needs to be the same as footer for all other
+ * pages, just the cream color and not navy": identical markup and
+ * dimensions, only the colours differ.
  *
  * It renders on phones too (stacked and centred, same pieces) so the legal
  * links stay reachable on mobile now that the homepage has no footer of
@@ -39,7 +41,7 @@ type Surface = 'dark' | 'light'
 
 const SURFACE: Record<Surface, { footer: string; text: string; brand: string; product: string; link: string }> = {
   dark:  { footer: 'bg-oxford-dark', text: 'text-white/55', brand: 'text-white/90', product: 'text-white/40', link: 'hover:text-white/90' },
-  light: { footer: 'bg-parchment border-t-2 border-oxford/15', text: 'text-charcoal-light', brand: 'text-oxford', product: 'text-charcoal-light', link: 'hover:text-oxford' },
+  light: { footer: 'bg-parchment', text: 'text-charcoal-light', brand: 'text-oxford', product: 'text-charcoal-light', link: 'hover:text-oxford' },
 }
 
 export default async function SiteFooter({ tabBar = true, surface = 'dark' }: { tabBar?: boolean; surface?: Surface }) {

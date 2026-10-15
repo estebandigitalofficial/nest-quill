@@ -102,7 +102,7 @@ test('2-4. desktop nav, mobile nav/tabs and footer hide deferred areas when off'
   // rendered on every width, and it names the current operator.
   const footer = read('components/layout/SiteFooter.tsx')
   assert.match(footer, /dark: +\{ footer: 'bg-oxford-dark'/, 'default surface is the original navy')
-  assert.match(footer, /light: \{ footer: 'bg-parchment border-t-2 border-oxford\/15'/, 'light surface is parchment')
+  assert.match(footer, /light: \{ footer: 'bg-parchment'/, 'light surface is parchment, nothing else added')
   assert.match(footer, /surface = 'dark'/, 'navy unless a page asks for light')
   assert.match(footer, /surface === 'dark'\s*\? <Image src=\{footerLogoUrl\}[^\n]*brightness-0 invert/, 'navy keeps the original white-silhouette brand image')
   assert.doesNotMatch(footer, /hidden md:block|Bright Tale/, 'no desktop-only gate, no stale operator')
