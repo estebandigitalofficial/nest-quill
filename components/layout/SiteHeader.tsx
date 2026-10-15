@@ -60,7 +60,7 @@ export default async function SiteHeader({ right }: Props) {
         <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
           {right && <div className="flex items-center gap-2 sm:gap-4 min-w-0">{right}</div>}
           <LanguageSwitcher className="shrink-0" />
-          <UserControls />
+          <UserControls flags={flags} />
           <MobileMenu flags={flags} />
         </div>
       </div>

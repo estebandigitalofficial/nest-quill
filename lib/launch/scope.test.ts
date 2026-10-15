@@ -16,6 +16,7 @@ import {
   productAreaForPath,
   publicAudienceTiers,
   routePolicy,
+  accountHomeHref,
   signupRoles,
   type LaunchFlags,
 } from './scope.ts'
@@ -193,10 +194,38 @@ test('12-14. core /create journey, engine contract and existing accounts are una
   assert.match(submit, /validateStoryForm\(body\)/)
   assert.match(submit, /synthesizeStructureLines/)
   assert.ok(!submit.includes('launch'), 'submit route unchanged by scope work')
-  // signup: parent remains the default; hidden roles fall back to parent; existing role routing kept in auth callback
+  // signup: parent remains the default; hidden roles fall back to parent; role routing in the auth callback is flag-aware
   assert.deepEqual(signupRoles(OFF), ['parent'])
   const form = read('app/(auth)/signup/SignupForm.tsx')
   assert.match(form, /allowedRoles\.includes\(requested\) \? requested : 'parent'/)
   assert.match(form, /roles\.length > 1 && \(/)
-  assert.match(read('app/auth/callback/route.ts'), /accountType === 'educator' \? '\/classroom\/educator'/)
+  assert.match(read('app/auth/callback/route.ts'), /accountHomeHref\(accountType, await getLaunchFlags\(\)\)/)
+})
+
+test('15. customer Dashboard (2026-10-15): every signed-in account home resolves to a public route', () => {
+  // The only customer-facing "Dashboard" link sent educator/student accounts to
+  // /classroom/*, which routePolicy makes not-found while Classroom is hidden.
+  for (const role of ['parent', 'educator', 'student', undefined, null, 'anything-else']) {
+    assert.equal(accountHomeHref(role, OFF), '/account', `${role} → /account while Classroom is off`)
+    assert.equal(routePolicy(accountHomeHref(role, OFF), OFF), 'allow', `${role} home is reachable`)
+  }
+  // Classroom roles keep their dashboards once that product is public; parents never see them.
+  assert.equal(accountHomeHref('educator', ON), '/classroom/educator')
+  assert.equal(accountHomeHref('student', ON), '/classroom/student')
+  assert.equal(accountHomeHref('parent', ON), '/account')
+  // Every surface that routes a signed-in customer uses the one helper.
+  for (const f of ['components/layout/UserControls.tsx', 'components/layout/MobileTabBar.tsx', 'app/(auth)/login/LoginForm.tsx', 'app/auth/callback/route.ts']) {
+    assert.match(read(f), /accountHomeHref\(/, `${f} routes through accountHomeHref`)
+    assert.doesNotMatch(read(f), /'\/classroom\/(student|educator)'/, `${f} has no hard-coded classroom destination`)
+  }
+  assert.match(read('components/layout/SiteHeader.tsx'), /<UserControls flags=\{flags\} \/>/)
+  assert.match(read('app/(auth)/login/page.tsx'), /<LoginForm flags=\{flags\} \/>/)
+  // The empty account is a welcome in both languages, with no numbers in it.
+  for (const f of ['lib/i18n/dict/en.ts', 'lib/i18n/dict/es.ts']) {
+    const acct = read(f).match(/\n  account: \{[\s\S]*?\n  \},/)?.[0] ?? ''
+    for (const k of ['noneTitle', 'noneSub', 'noneCta']) assert.match(acct, new RegExp(`${k}: `), `${f} ${k}`)
+    const none = acct.match(/noneTitle: (.*)\n\s*noneSub: (.*)\n\s*noneCta: (.*)\n/)
+    assert.ok(none && !/\d/.test(none[0]), `${f} empty-state copy carries no allowances or counts`)
+  }
+  assert.match(read('app/account/page.tsx'), /\{a\.noneCta\}/)
 })

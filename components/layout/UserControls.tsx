@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { hasUnread, type Notification } from '@/lib/notifications/types'
 import { useLanguage } from '@/lib/i18n/context'
+import { accountHomeHref, type LaunchFlags } from '@/lib/launch/scope'
 
 type Menu = 'notifications' | 'help' | 'settings' | null
 
@@ -14,7 +15,7 @@ interface UserSummary {
   accountType: string
 }
 
-export default function UserControls() {
+export default function UserControls({ flags }: { flags: LaunchFlags }) {
   const [user, setUser] = useState<UserSummary | null | undefined>(undefined)
   const [isAdmin, setIsAdmin] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -147,10 +148,13 @@ export default function UserControls() {
   }
 
   const { email, accountType } = user
-  const isStudent = accountType === 'student'
+  // Launch scope: the Classroom dashboards exist only while that product is
+  // public. With the flag off, an educator/student account is an ordinary
+  // customer whose home is /account (the old link sent them to a hidden route
+  // and the site's not-found page). accountHomeHref owns that decision.
+  const accountHome = accountHomeHref(accountType, flags)
+  const showClassroomLink = accountHome.startsWith('/classroom')
   const isEducator = accountType === 'educator'
-  const showClassroomLink = isStudent || isEducator
-  const showArchivedLink = !isStudent && !isEducator // archives only exist for parent accounts
   const unread = hasUnread(notifications)
 
   return (
@@ -218,15 +222,13 @@ export default function UserControls() {
       {open === 'settings' && (
         <Dropdown title={email ?? t.nav.account}>
           {showClassroomLink ? (
-            <DropdownLink href={isEducator ? '/classroom/educator' : '/classroom/student'} onClick={() => setOpen(null)}>
+            <DropdownLink href={accountHome} onClick={() => setOpen(null)}>
               {isEducator ? 'My classes' : 'My dashboard'}
             </DropdownLink>
           ) : (
             <>
-              <DropdownLink href="/account" onClick={() => setOpen(null)}>{m.myStories}</DropdownLink>
-              {showArchivedLink && (
-                <DropdownLink href="/account/archived" onClick={() => setOpen(null)}>{m.archived}</DropdownLink>
-              )}
+              <DropdownLink href={accountHome} onClick={() => setOpen(null)}>{m.myStories}</DropdownLink>
+              <DropdownLink href="/account/archived" onClick={() => setOpen(null)}>{m.archived}</DropdownLink>
             </>
           )}
           {isAdmin && (

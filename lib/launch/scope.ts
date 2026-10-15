@@ -107,6 +107,22 @@ export function routePolicy(pathname: string, flags: LaunchFlags, isAdmin = fals
   return flags[area] ? 'allow' : 'unavailable'
 }
 
+/**
+ * Where a signed-in customer's own account lives. The Classroom roles
+ * (educator, student) have their dashboards inside the Classroom product, so
+ * they are routed there only while that product is public; while it is
+ * hidden, /classroom/* is not found for them (routePolicy above) and every
+ * customer's home is /account. Admins are decided by the callers before this
+ * (they go to /admin). Customer Dashboard 404 fix, 2026-10-15.
+ */
+export function accountHomeHref(accountType: string | null | undefined, flags: LaunchFlags): string {
+  if (flags.classroom) {
+    if (accountType === 'educator') return '/classroom/educator'
+    if (accountType === 'student') return '/classroom/student'
+  }
+  return '/account'
+}
+
 /** Audience tiers the public wizard offers. */
 export function publicAudienceTiers(flags: LaunchFlags): readonly AudienceTier[] {
   return flags.extendedAudiences ? ALL_AUDIENCE_TIERS : (['child'] as const)

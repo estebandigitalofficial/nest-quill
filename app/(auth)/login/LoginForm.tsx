@@ -1,0 +1,119 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/lib/i18n/context'
+import { authErrorMessage } from '@/lib/i18n/authErrors'
+import { accountHomeHref, type LaunchFlags } from '@/lib/launch/scope'
+
+// Client half of /login. The server page (page.tsx) reads the launch flags so
+// the post-login destination can be flag-aware: admins go to /admin, every
+// other account to accountHomeHref (the Classroom dashboards only while that
+// product is public, otherwise /account). Before this, an educator/student
+// account was pushed to a hidden /classroom route and saw the not-found page.
+export default function LoginForm({ flags }: { flags: LaunchFlags }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const nextParam = searchParams.get('next')
+  const { t } = useLanguage()
+  const a = t.auth
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    const supabase = createClient()
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (error) {
+      setError(authErrorMessage(t, error.message))
+      setLoading(false)
+      return
+    }
+
+    const [adminRes] = await Promise.all([
+      fetch('/api/auth/is-admin'),
+      fetch('/api/story/claim', { method: 'POST' }),
+    ])
+    const { isAdmin } = await adminRes.json()
+    const accountType = (data.user.user_metadata?.account_type as string | undefined) ?? 'parent'
+    const dest = nextParam ?? (isAdmin ? '/admin' : accountHomeHref(accountType, flags))
+    router.push(dest)
+    router.refresh()
+  }
+
+  return (
+    <div className="w-full max-w-sm">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 sm:px-8 py-8 sm:py-10 space-y-6">
+        <div>
+          <h1 className="font-serif text-2xl text-oxford">{a.login.title}</h1>
+          <p className="text-sm text-charcoal-light mt-1">{a.login.sub}</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-charcoal" htmlFor="login-email">{a.email}</label>
+            <input
+              id="login-email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputClass}
+              placeholder={a.emailPlaceholder}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-charcoal" htmlFor="login-password">{a.password}</label>
+              <Link href="/forgot-password" className="text-xs text-brand-600 hover:text-brand-700">
+                {a.login.forgot}
+              </Link>
+            </div>
+            <input
+              id="login-password"
+              type="password"
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={inputClass}
+              placeholder="••••••••"
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-500 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 text-oxford font-semibold py-3 rounded-xl transition-colors"
+          >
+            {loading ? a.login.submitting : a.login.submit}
+          </button>
+        </form>
+
+        <p className="text-center text-sm text-charcoal-light">
+          {a.login.noAccount}{' '}
+          <Link href="/signup" className="text-brand-600 font-medium hover:text-brand-700">
+            {a.login.signUp}
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+const inputClass =
+  'w-full rounded-lg border border-parchment-dark px-3.5 py-2.5 text-sm text-charcoal bg-white placeholder:text-charcoal-light/40 focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent transition-colors hover:border-oxford/30'

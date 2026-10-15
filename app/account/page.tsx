@@ -124,14 +124,24 @@ export default async function AccountPage() {
             </div>
 
             {rows.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-8 py-12 text-center space-y-3">
-                <p className="font-serif text-lg text-oxford">{a.noneTitle}</p>
-                <p className="text-sm text-gray-500">{a.noneSub}</p>
+              // Empty account (2026-10-15): a welcome, not a blank list. Copy
+              // only; plan and usage numbers stay on the server-rendered card
+              // above (PLAN_CONFIG / billing), nothing is restated here.
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 sm:px-8 py-10 sm:py-12 text-center">
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-brand-100" aria-hidden>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-brand-700">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                    <path d="M9 7h7M9 11h5" />
+                  </svg>
+                </div>
+                <h3 className="font-serif text-xl sm:text-2xl text-oxford">{a.noneTitle}</h3>
+                <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-charcoal-light">{a.noneSub}</p>
                 <Link
                   href="/create"
-                  className="inline-block mt-2 bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+                  className="mt-6 inline-block w-full sm:w-auto bg-brand-500 hover:bg-brand-600 text-oxford text-sm font-semibold px-6 py-3 rounded-xl transition-colors"
                 >
-                  {a.createCta}
+                  {a.noneCta}
                 </Link>
               </div>
             ) : (
