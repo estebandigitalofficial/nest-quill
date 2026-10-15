@@ -59,7 +59,7 @@ const termsEn: LegalDoc = {
       { p: 'By using the Service, creating a story, creating an account, or buying a plan, you agree to these Terms. If you do not agree, please do not use the Service. Our Privacy Policy explains how we handle information and should be read together with these Terms.' },
     ] },
     { title: 'Who May Use Nest & Quill', blocks: [
-      { p: 'Nest & Quill is a service for adults, such as parents, guardians and other family members, who create personalized books for children. You must be an adult to create an account, submit a story, or buy a plan.' },
+      { p: 'Nest & Quill is a service for adults, such as parents, guardians and other family members, who create personalized books for children. You must be an adult age 18 or older to create an account, submit a story, or buy a plan.' },
       { p: 'Children should not create accounts or use the Service on their own. Children can enjoy finished books with the adults who choose to share them.' },
     ] },
     { title: 'The Service', blocks: [
@@ -189,7 +189,7 @@ const termsEs: LegalDoc = {
       { p: 'Al usar el Servicio, crear un cuento, crear una cuenta o comprar un plan, aceptas estos Términos. Si no estás de acuerdo, por favor no uses el Servicio. Nuestra Política de privacidad explica cómo tratamos la información y debe leerse junto con estos Términos.' },
     ] },
     { title: 'Quién puede usar Nest & Quill', blocks: [
-      { p: 'Nest & Quill es un servicio para personas adultas, como padres, madres, tutores y otros familiares, que crean libros personalizados para niños. Debes ser una persona adulta para crear una cuenta, enviar un cuento o comprar un plan.' },
+      { p: 'Nest & Quill es un servicio para personas adultas, como padres, madres, tutores y otros familiares, que crean libros personalizados para niños. Debes ser una persona adulta de 18 años o más para crear una cuenta, enviar un cuento o comprar un plan.' },
       { p: 'Los niños no deben crear cuentas ni usar el Servicio por su cuenta. Los niños pueden disfrutar los libros terminados con las personas adultas que decidan compartirlos.' },
     ] },
     { title: 'El Servicio', blocks: [
@@ -318,7 +318,7 @@ const privacyEn: LegalDoc = {
   sections: [
     { title: 'Overview', blocks: [
       { p: 'This Privacy Policy explains what information Nest & Quill collects, how we use and share it, and the choices you have. Nest & Quill is operated by Digital Official & Huerta Group (“we”, “us”, “our”). This policy covers our website, story creation, accounts, emails and the chat assistant on our website.' },
-      { p: 'Nest & Quill is intended for adults who create personalized books for children. Children are not meant to create accounts or use the Service on their own. Much of the information we handle is about a child, but it is provided by an adult.' },
+      { p: 'Nest & Quill is intended for adults age 18 or older who create personalized books for children. Children are not meant to create accounts or use the Service on their own. Much of the information we handle is about a child, but it is provided by an adult.' },
     ] },
     { title: 'Beta Notice', beta: true, blocks: [
       { p: 'Nest & Quill is currently in beta. Some paid features may be free during this period and certain capabilities (such as illustration generation) may be paused or limited. We will give reasonable notice before enabling billing or removing beta accommodations.' },
@@ -477,7 +477,7 @@ const privacyEs: LegalDoc = {
   sections: [
     { title: 'Resumen', blocks: [
       { p: 'Esta Política de privacidad explica qué información recopila Nest & Quill, cómo la usamos y la compartimos, y qué opciones tienes. Nest & Quill es operado por Digital Official & Huerta Group (“nosotros”). Esta política cubre nuestro sitio web, la creación de cuentos, las cuentas, los correos electrónicos y el asistente de chat de nuestro sitio.' },
-      { p: 'Nest & Quill está pensado para personas adultas que crean libros personalizados para niños. Los niños no deben crear cuentas ni usar el Servicio por su cuenta. Gran parte de la información que tratamos es sobre un niño o una niña, pero la proporciona una persona adulta.' },
+      { p: 'Nest & Quill está pensado para personas adultas de 18 años o más que crean libros personalizados para niños. Los niños no deben crear cuentas ni usar el Servicio por su cuenta. Gran parte de la información que tratamos es sobre un niño o una niña, pero la proporciona una persona adulta.' },
     ] },
     { title: 'Aviso de beta', beta: true, blocks: [
       { p: 'Nest & Quill se encuentra actualmente en beta. Algunas funciones de pago pueden ser gratuitas durante este periodo y ciertas capacidades (como la generación de ilustraciones) pueden pausarse o limitarse. Daremos un aviso razonable antes de activar la facturación o de retirar las condiciones especiales de la beta.' },

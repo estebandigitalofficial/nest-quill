@@ -9,14 +9,15 @@ import { checkSupportRateLimit } from '@/lib/limits/rateLimits'
 import { hashIp } from '@/lib/limits/ipHash'
 import { getAdminContext } from '@/lib/admin/guard'
 
-// Stable slug set. Mirrors components/admin (read-only display) and
-// app/contact/ContactForm (the dropdown).
+// Stable slug set. Mirrors app/contact/ContactForm (the dropdown) plus the
+// guided-tour slug. Launch scope: the classroom_educator and sponsor_rewards
+// slugs belong to deferred products and are no longer accepted; a request
+// that still sends them (stale bundle, hand-made call) is filed as 'other'.
+// Tickets already stored with those slugs are untouched.
 const VALID_CATEGORIES = new Set([
   'story_issue',
   'account_login',
-  'classroom_educator',
   'billing_pricing',
-  'sponsor_rewards',
   'guided_tour_confusion',
   'bug_report',
   'other',
@@ -24,9 +25,7 @@ const VALID_CATEGORIES = new Set([
 // Backwards-compat: shorter slugs from the prior ContactForm bundle.
 const LEGACY_CATEGORY_MAP: Record<string, string> = {
   account:    'account_login',
-  classroom:  'classroom_educator',
   billing:    'billing_pricing',
-  sponsor:    'sponsor_rewards',
   tour:       'guided_tour_confusion',
   bug:        'bug_report',
 }

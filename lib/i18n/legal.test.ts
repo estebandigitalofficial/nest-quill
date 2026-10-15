@@ -6,10 +6,13 @@
 // truth, the share-link and archive disclosures, and the absence of stale or
 // undecided legal positions. Structural EN/ES parity is in i18n.test.ts.
 import { test } from 'node:test'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import assert from 'node:assert/strict'
 import { legal, LEGAL_CONTACT, type LegalDoc } from './legal.ts'
 import { PLAN_CONFIG } from '../plans/config.ts'
 import { FREE_GUEST_BOOKS, FREE_LIFETIME_BOOKS, TIER_CAPS } from '../entitlements/policy.ts'
+import { dictionaries } from './index.ts'
 
 const LANGS = ['en', 'es'] as const
 const DOCS = ['terms', 'privacy'] as const
@@ -91,6 +94,13 @@ test('4. Stale products, billing and undecided legal positions are gone', () => 
   assert.match(text(legal.es.terms), /No ofrecemos libros impresos ni procesamiento prioritario\./)
 })
 
+test('4b. Eligibility is adults age 18 or older, consistent in EN/ES Terms and Privacy', () => {
+  assert.match(text(legal.en.terms), /You must be an adult age 18 or older to create an account, submit a story, or buy a plan\./)
+  assert.match(text(legal.es.terms), /Debes ser una persona adulta de 18 años o más para crear una cuenta, enviar un cuento o comprar un plan\./)
+  assert.match(text(legal.en.privacy), /intended for adults age 18 or older/)
+  assert.match(text(legal.es.privacy), /personas adultas de 18 años o más/)
+})
+
 test('5. Share-link, archive and deletion disclosures describe current behaviour', () => {
   const en = all('en'), es = all('es')
   assert.match(en, /Anyone who has the link can (open and )?read the finished story without signing in/)
@@ -132,5 +142,24 @@ test('8. EN and ES carry the same numbers and the same section titles are unique
       const titles = legal[lang][doc].sections.map(s => s.title)
       assert.equal(new Set(titles).size, titles.length, `${lang} ${doc} titles unique (React keys)`)
     }
+  }
+})
+
+test('9. Surrounding launch copy: email From name, contact categories, cookie banner wording', () => {
+  const read = (rel: string) => readFileSync(resolve(import.meta.dirname, '../..', rel), 'utf8')
+  for (const f of ['lib/services/email.ts', 'lib/services/adminNotifications.ts']) {
+    const src = read(f)
+    assert.match(src, /const FROM = 'Nest & Quill <stories@nestandquill\.com>'/, f)
+    assert.doesNotMatch(src, /Bright Tale|\bLLC\b|\bInc\b/, f)
+  }
+  const api = read('app/api/contact/route.ts')
+  const form = read('app/contact/ContactForm.tsx')
+  for (const slug of ['classroom_educator', 'sponsor_rewards']) {
+    assert.doesNotMatch(api.split('// Per-stage')[0].replace(/^\/\/.*$/gm, ''), new RegExp(`'${slug}'`), `API still accepts ${slug}`)
+    assert.doesNotMatch(form.replace(/^\/\/.*$/gm, ''), new RegExp(slug), `form offers ${slug}`)
+  }
+  for (const lang of LANGS) {
+    assert.doesNotMatch(Object.keys(dictionaries[lang].contact.categories).join(' '), /classroom|sponsor/)
+    assert.match(dictionaries[lang].cookie.text, lang === 'en' ? /cookies and browser storage/ : /cookies y el almacenamiento del navegador/)
   }
 })

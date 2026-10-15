@@ -80,7 +80,7 @@ export const en = {
     copyright: '© {year} Digital Official & Huerta Group',
   },
   cookie: {
-    text: 'We use cookies to keep you signed in and remember your reading position.',
+    text: 'We use cookies and browser storage to keep you signed in and remember your language, preferences and reading position.',
     policy: 'Privacy Policy',
     decline: 'Decline',
     accept: 'Accept',
