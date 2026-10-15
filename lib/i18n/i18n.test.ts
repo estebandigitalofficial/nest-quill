@@ -64,6 +64,13 @@ test('3. CURRENT navigation translates (header, mobile menu, footer, tab bar)', 
     assert.match(readFileSync(f, 'utf8'), /navLabel\(lang, /, f)
   }
   assert.match(readFileSync('components/layout/MobileTabBar.tsx', 'utf8'), /t\.nav\.tabs\.(home|create|account)/)
+  // Footer attribution names the operator (founder decision 2026-10-15), no suffix, both languages.
+  assert.equal(dictionaries.en.footer.product, 'Operated by Digital Official & Huerta Group')
+  assert.equal(dictionaries.es.footer.product, 'Operado por Digital Official & Huerta Group')
+  for (const lang of ['en', 'es'] as const) {
+    assert.equal(dictionaries[lang].footer.copyright, '© {year} Digital Official & Huerta Group')
+    assert.doesNotMatch(dictionaries[lang].footer.product + dictionaries[lang].footer.copyright, /Bright Tale|LLC|Inc\b/)
+  }
 })
 
 test('4. Pricing translates without changing prices or plan semantics', () => {

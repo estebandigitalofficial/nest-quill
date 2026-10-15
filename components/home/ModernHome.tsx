@@ -52,7 +52,6 @@ type Copy = {
   how: { title: string; sub: string; step: (n: number) => string; steps: { title: string; copy: string }[] }
   get: { title: string; sub: string; features: { icon: string; title: string; copy: string }[] }
   cta: { l1: string; l2: string; sub: string; button: string }
-  footer: { tagline: string; colA: string[]; colB: string[]; colC: string[]; copyright: string }
 }
 
 const COPY: Record<Lang, Copy> = {
@@ -91,11 +90,6 @@ const COPY: Record<Lang, Copy> = {
       ],
     },
     cta: { l1: 'Every child deserves a story', l2: 'made for them.', sub: 'Create your first storybook free — no account required.', button: 'Create a story now →' },
-    footer: {
-      tagline: 'A product of Bright Tale Books',
-      colA: ['Home', 'Create a Story', 'Account'], colB: ['Pricing', 'Contact'], colC: ['Privacy', 'Terms'],
-      copyright: '© 2026 Bright Tale Books',
-    },
   },
   es: {
     nav: { create: 'Crear un cuento', pricing: 'Precios', signin: 'Iniciar sesión', account: 'Mi cuenta', cta: 'Crea un cuento →' },
@@ -132,11 +126,6 @@ const COPY: Record<Lang, Copy> = {
       ],
     },
     cta: { l1: 'Todo niño merece un cuento', l2: 'hecho para él.', sub: 'Crea tu primer cuento gratis, sin necesidad de cuenta.', button: 'Crea un cuento ahora →' },
-    footer: {
-      tagline: 'Un producto de Bright Tale Books',
-      colA: ['Inicio', 'Crear un cuento', 'Cuenta'], colB: ['Precios', 'Contacto'], colC: ['Privacidad', 'Términos'],
-      copyright: '© 2026 Bright Tale Books',
-    },
   },
 }
 
@@ -147,14 +136,6 @@ const BOOK_LAYOUT = [
   { left: '22%', top: '0px', rot: 2, z: 3, dur: 7, delay: '-1.7s', cover: '/brand/covers/night-market.webp' },
   { left: '44%', top: '90px', rot: 7, z: 2, dur: 8, delay: '-3.4s', cover: '/brand/covers/tide-pool.webp' },
 ]
-// One link per destination: colA is primary navigation, colB secondary,
-// colC legal. "Create a Story" is the single footer link to /create.
-const FOOTER_HREFS = {
-  colA: ['/', '/create', '/account'],
-  colB: ['#pricing', '/contact'],
-  colC: ['/privacy', '/terms'],
-}
-
 interface Props {
   /** app_settings.beta_mode_enabled — messaging only; enforcement never reads it. */
   betaMode?: boolean
@@ -380,17 +361,9 @@ export default function ModernHome({ betaMode = false, imagesPaused = false }: P
         </div>
       </section>
 
-      {/* ── Footer ────────────────────────────────────────────────────────── */}
-      <footer className="nqm-wrap nqm-footer">
-        <div className="nqm-foot-brand">
-          <span className="nqm-foot-logo"><Image src="/brand/fav.webp" alt="" width={28} height={28} />Nest &amp; Quill</span>
-          <span className="nqm-muted">{t.footer.tagline}</span>
-        </div>
-        <div className="nqm-foot-col">{t.footer.colA.map((l, i) => <Link key={l} href={FOOTER_HREFS.colA[i]}>{l}</Link>)}</div>
-        <div className="nqm-foot-col">{t.footer.colB.map((l, i) => <Link key={l} href={FOOTER_HREFS.colB[i]}>{l}</Link>)}</div>
-        <div className="nqm-foot-col nqm-foot-legal">{t.footer.colC.map((l, i) => <Link key={l} href={FOOTER_HREFS.colC[i]}>{l}</Link>)}</div>
-        <span className="nqm-copyright">{t.footer.copyright}</span>
-      </footer>
+      {/* The site footer (components/layout/SiteFooter) is rendered by
+          app/page.tsx right after this component, exactly as on every other
+          public route. */}
     </div>
   )
 }
@@ -556,30 +529,12 @@ const NQM_CSS = `
 .nqm-cta-btn{box-shadow:0 12px 30px rgba(197,154,0,.35)}
 .nqm-feather{width:clamp(120px,16vw,220px);height:auto;transition:transform .2s linear}
 
-/* footer */
-.nqm-footer{padding:48px clamp(20px,5vw,72px) 32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:32px;font-size:14px}
-.nqm-foot-brand{display:flex;flex-direction:column;gap:8px}
-.nqm-foot-logo{font-family:var(--fh);font-weight:700;font-size:20px;display:flex;align-items:center;gap:8px}
-.nqm-muted{color:var(--n700)}
-.nqm-foot-col{display:flex;flex-direction:column;gap:8px}
-.nqm-foot-col a:hover{color:var(--accent-700)}
-.nqm-copyright{grid-column:1/-1;padding-top:20px;border-top:2px solid var(--divider);font-size:13px;color:var(--n700)}
-
 @media (max-width:640px){
   .nqm-hero{padding:56px 0 64px;gap:40px}
   .nqm-stage{height:440px}
   .nqm-band-pad,.nqm-sec{padding-top:64px;padding-bottom:64px}
   .nqm-cta-grid{grid-template-columns:1fr;padding:72px clamp(20px,5vw,72px)}
   .nqm-feather{justify-self:center}
-  /* Compact footer: brand on top, the two nav columns side by side, legal
-     links in one row, copyright last. Same links and hrefs as desktop. */
-  .nqm-footer{grid-template-columns:1fr 1fr;gap:16px 24px;padding-top:36px;padding-bottom:24px}
-  .nqm-foot-brand,.nqm-foot-legal{grid-column:1/-1}
-  .nqm-foot-brand{margin-bottom:4px}
-  .nqm-foot-col{gap:0}
-  .nqm-foot-col a{padding:6px 0}
-  .nqm-foot-legal{flex-direction:row;flex-wrap:wrap;gap:0 24px}
-  .nqm-copyright{padding-top:14px}
 }
 @media (prefers-reduced-motion: reduce){
   .nqm-root *{animation:none !important}
