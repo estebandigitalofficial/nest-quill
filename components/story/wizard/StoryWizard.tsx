@@ -29,7 +29,7 @@ const STANDARD_FIELDS: (keyof StoryFormValues)[][] = [
   ['childName', 'childAge'],
   ['storyTheme', 'storyTone'],
   ['illustrationStyle', 'storyLength'],
-  ['userEmail'],
+  ['userEmail', 'adultAuthorizationConfirmed'],
 ]
 
 // Learning story steps (insert LearningStep before StyleStep)
@@ -40,7 +40,7 @@ const LEARNING_FIELDS: (keyof StoryFormValues)[][] = [
   ['storyTheme', 'storyTone'],
   ['learningSubject', 'learningGrade', 'learningTopic'],
   ['illustrationStyle', 'storyLength'],
-  ['userEmail'],
+  ['userEmail', 'adultAuthorizationConfirmed'],
 ]
 
 // Resolve a ?plan=<tier> query param to a valid plan tier — only the four
@@ -69,7 +69,12 @@ const CHECKOUT_DRAFT_KEY = 'nq-checkout-draft'
 function readCheckoutDraft(): Partial<StoryFormValues> | null {
   try {
     const raw = sessionStorage.getItem(CHECKOUT_DRAFT_KEY)
-    return raw ? (JSON.parse(raw) as Partial<StoryFormValues>) : null
+    if (!raw) return null
+    const draft = JSON.parse(raw) as Partial<StoryFormValues>
+    // The parent/guardian affirmation is never restored: the box must be
+    // ticked again by the person submitting, right before they submit.
+    delete draft.adultAuthorizationConfirmed
+    return draft
   } catch {
     return null
   }

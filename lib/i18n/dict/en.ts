@@ -371,6 +371,11 @@ export const en = {
       emailPlaceholder: 'your@email.com',
       submit: 'Create my story →',
       submitting: 'Creating your story…',
+      // Privacy Foundation 2: parent / guardian authorization. A user
+      // representation, not identity verification. Wording version lives in
+      // lib/story/adultAuthorization.ts; bump it when this sentence changes.
+      authorizationHeading: 'Before we create the story',
+      authorizationLabel: "I confirm that I am an adult and that I am the child's parent or legal guardian, or I have permission from the child's parent or legal guardian to provide this information. I also have permission to provide information about any other people included in this story.",
       labels: { plan: 'Plan', child: 'Child', age: 'Age', description: 'Description', theme: 'Theme', tone: 'Tone', lesson: 'Lesson', style: 'Style', length: 'Length', dedication: 'Dedication', characters: 'Characters' },
     },
     errors: {
@@ -398,6 +403,7 @@ export const en = {
         STORY_RATE_DAY: 'Daily story limit reached. Try again tomorrow.',
         STORY_RATE_HOUR_GUEST: "You've sent in a few stories already. Sign up to lift the limit, or try again in an hour.",
         STORY_RATE_DAY_GUEST: 'Daily guest limit reached. Sign up for a free account to keep going.',
+        ADULT_AUTHORIZATION_REQUIRED: 'Please confirm that you are an adult with permission to provide this information before creating the story.',
       } as Record<string, string>,
     },
   },
@@ -425,6 +431,7 @@ export const en = {
     email: 'Please enter a valid email address',
     adultTonesLearning: 'Adult tones are not available for learning stories.',
     adultTonesConsent: 'Adult-only tones require the Adult (18+) tier and consent.',
+    adultAuthorization: 'Please confirm that you are an adult with permission to provide this information.',
   },
   status: {
     loading: 'Loading your story…',

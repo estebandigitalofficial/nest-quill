@@ -15,6 +15,7 @@ import { synthesizeTheme, synthesizeTraitsLine, synthesizeStructureLines, mergeI
 import { gateStoryCreation, gateGuestStoryCreation } from '@/lib/settings/gates'
 import { checkStoryRateLimit, checkQueueGate } from '@/lib/limits/rateLimits'
 import { hashIp } from '@/lib/limits/ipHash'
+import { checkAdultAuthorization, adultAuthorizationEvidence } from '@/lib/story/adultAuthorization'
 import { deriveStorySubmissionKey, reserveIdempotencyKey, finalizeIdempotencyKey } from '@/lib/limits/idempotency'
 import { getAdminContext } from '@/lib/admin/guard'
 import type { SubmitStoryResponse } from '@/types/story'
@@ -31,6 +32,25 @@ export async function POST(request: NextRequest) {
     // English). Persisted on the row as `locale` so retries, sweep recovery
     // and emails all know it without the browser.
     const language: 'en' | 'es' = body.language === 'es' ? 'es' : 'en'
+
+    // ── 1.1 Parent / guardian authorization (Privacy Foundation 2) ──────────
+    // The adult submitting the form must have affirmed, on the Review step,
+    // that they are an adult and the child's parent/legal guardian (or have
+    // that person's permission), and that they may include any other people
+    // named in the story. Checked on the raw body, strictly (`=== true`),
+    // before the user is identified, before rate limits, before the
+    // idempotency and entitlement reservations and before any row is
+    // written: a missing or false affirmation ends here with a 400 and
+    // nothing consumed. Nest & Quill records the affirmation; it does not
+    // verify identity or legal authority.
+    const authorization = checkAdultAuthorization(body)
+    if (!authorization.ok) {
+      return NextResponse.json(
+        { message: authorization.message, code: authorization.code },
+        { status: authorization.status },
+      )
+    }
+
     const formData = validateStoryForm(body)
 
     // ── 2. Identify the user (authenticated or guest) ───────────────────────
@@ -214,6 +234,10 @@ export async function POST(request: NextRequest) {
         learning_grade: formData.learningGrade ?? null,
         learning_topic: formData.learningTopic ?? null,
         genre: classifyGenre(finalStoryTheme, formData.storyTone),
+        // Evidence of the affirmation checked in step 1.1: TRUE, the server
+        // time of this submission, and the wording version shown. Nothing
+        // else about the person is recorded (migration 20240072).
+        ...adultAuthorizationEvidence(),
         status: 'queued',
         progress_pct: 0,
         status_message: 'Your story is in the queue...',

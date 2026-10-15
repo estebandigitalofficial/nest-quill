@@ -165,6 +165,12 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
             <Field label="Progress" value={`${req.progress_pct}%`} />
             <Field label="Retry count" value={String(req.retry_count)} />
             <Field label="Worker ID" value={req.worker_id ?? '—'} mono />
+            <Field
+              label="Adult authorization"
+              value={req.adult_authorization_confirmed
+                ? `Confirmed ${req.adult_authorization_confirmed_at ? formatAZTime(req.adult_authorization_confirmed_at) : ''} · wording ${req.adult_authorization_version ?? '?'}`
+                : 'Not collected (submitted before the affirmation existed)'}
+            />
             <Field label="Created (AZ)" value={formatAZTime(req.created_at)} />
             <Field label="Updated (AZ)" value={formatAZTime(req.updated_at)} />
             {req.completed_at && <Field label="Completed (AZ)" value={formatAZTime(req.completed_at)} />}

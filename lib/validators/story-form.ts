@@ -125,6 +125,7 @@ export interface StoryFormMessages {
   email: string
   adultTonesLearning: string
   adultTonesConsent: string
+  adultAuthorization: string
 }
 
 export const STORY_FORM_MESSAGES_EN: StoryFormMessages = {
@@ -151,6 +152,7 @@ export const STORY_FORM_MESSAGES_EN: StoryFormMessages = {
   email: 'Please enter a valid email address',
   adultTonesLearning: 'Adult tones are not available for learning stories.',
   adultTonesConsent: 'Adult-only tones require the Adult (18+) tier and consent.',
+  adultAuthorization: 'Please confirm that you are an adult with permission to provide this information.',
 }
 
 export function buildStoryFormSchema(m: StoryFormMessages = STORY_FORM_MESSAGES_EN) {
@@ -265,8 +267,17 @@ export function buildStoryFormSchema(m: StoryFormMessages = STORY_FORM_MESSAGES_
   conflict: z.enum(CONFLICTS).optional(),
   goal: z.enum(GOALS).optional(),
 
-  // ── Adult consent ────────────────────────────────────────────────────────
+  // ── Adult consent (deferred 18+ audience; not persisted) ─────────────────
   adultConsent: z.boolean().optional(),
+
+  // ── Parent / guardian authorization (Privacy Foundation 2) ───────────────
+  // The Review-step checkbox. Only the literal `true` validates: the box is
+  // never pre-checked, an unchecked box blocks the client submit with
+  // m.adultAuthorization, and app/api/story/submit/route.ts re-checks the
+  // raw body before anything irreversible. See lib/story/adultAuthorization.ts.
+  adultAuthorizationConfirmed: z.literal(true, {
+    errorMap: () => ({ message: m.adultAuthorization }),
+  }),
 
   // ── Delivery ──────────────────────────────────────────────────────────────
   userEmail: z

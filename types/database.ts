@@ -142,6 +142,15 @@ export interface StoryRequest {
   pdf_entitled: boolean
   /** Set once when a FREE reservation was given back after a terminal failure. */
   entitlement_released_at: string | null
+  /**
+   * Privacy Foundation 2 (migration 20240072). NULL on rows created before
+   * the parent/guardian affirmation existed (never collected, never
+   * backfilled); TRUE on every row the public submit route creates since.
+   * The route never writes FALSE: a missing affirmation creates no row.
+   */
+  adult_authorization_confirmed: boolean | null
+  adult_authorization_confirmed_at: string | null
+  adult_authorization_version: string | null
 }
 
 export interface QuizQuestion {

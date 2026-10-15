@@ -144,6 +144,42 @@ export default function ReviewStep() {
         )}
       </div>
 
+      {/* Parent / guardian authorization (Privacy Foundation 2). Sits right
+          above the Create button, is never pre-checked (no defaultChecked,
+          no default value in the form), and the server refuses the
+          submission without it. A representation by the adult user, not
+          identity verification. */}
+      <div
+        data-tour-id="adult-authorization"
+        className={cn(
+          'rounded-xl border px-4 py-3.5 transition-colors',
+          errors.adultAuthorizationConfirmed ? 'border-red-300 bg-red-50' : 'border-brand-200 bg-brand-50/60'
+        )}
+      >
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
+          {r.authorizationHeading} <span className="text-brand-500">*</span>
+        </p>
+        <div className="flex items-start gap-3">
+          <input
+            id="adult-authorization"
+            type="checkbox"
+            aria-required="true"
+            aria-invalid={errors.adultAuthorizationConfirmed ? 'true' : 'false'}
+            aria-describedby={errors.adultAuthorizationConfirmed ? 'adult-authorization-error' : undefined}
+            {...register('adultAuthorizationConfirmed')}
+            className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300 text-brand-600 focus:ring-2 focus:ring-brand-400 cursor-pointer"
+          />
+          <label htmlFor="adult-authorization" className="text-sm leading-snug text-gray-700 cursor-pointer select-none">
+            {r.authorizationLabel}
+          </label>
+        </div>
+        {errors.adultAuthorizationConfirmed && (
+          <p id="adult-authorization-error" role="alert" className="text-xs text-red-600 mt-2 pl-8">
+            {errors.adultAuthorizationConfirmed.message}
+          </p>
+        )}
+      </div>
+
       {errors.root && (
         <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
           {errors.root.message}
