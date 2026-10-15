@@ -2,25 +2,18 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { mobileTabHrefs, type LaunchFlags } from '@/lib/launch/scope'
+import { accountHomeHref, mobileTabHrefs, type LaunchFlags } from '@/lib/launch/scope'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/lib/i18n/context'
 
 // Role-aware destination for the bottom-right Account tab. Logged-out
-// users get /login; signed-in users go to their role's home so the tab
-// never sends an authenticated user back through the login page.
-//   parent   → /account
-//   educator → /classroom (auto-redirects to /classroom/educator when
-//             they have classes, otherwise lands on the setup page)
-//   student  → /classroom/student
-//   admin    → routed by their underlying role (typically /account);
-//             the admin dashboard remains reachable from the profile menu.
-function accountDestination(accountType: string | null | undefined): string {
-  if (accountType === 'student')  return '/classroom/student'
-  if (accountType === 'educator') return '/classroom'
-  return '/account'
-}
+// users get /login; signed-in users go to their home so the tab never sends
+// an authenticated user back through the login page. accountHomeHref
+// (lib/launch/scope.ts) decides: /account for every customer while the
+// Classroom product is hidden, the Classroom dashboards for educator/student
+// accounts only while that flag is on. Admins are routed by their underlying
+// role; the admin dashboard remains reachable from the profile menu.
 
 const TABS = [
   {
@@ -103,14 +96,14 @@ export default function MobileTabBar({ flags }: { flags: LaunchFlags }) {
     supabase.auth.getUser().then(({ data }) => {
       if (cancelled) return
       const u = data.user
-      setAccountHref(u ? accountDestination(u.user_metadata?.account_type as string | undefined) : '/login')
+      setAccountHref(u ? accountHomeHref(u.user_metadata?.account_type as string | undefined, flags) : '/login')
     })
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       const u = session?.user ?? null
-      setAccountHref(u ? accountDestination(u.user_metadata?.account_type as string | undefined) : '/login')
+      setAccountHref(u ? accountHomeHref(u.user_metadata?.account_type as string | undefined, flags) : '/login')
     })
     return () => { cancelled = true; sub.subscription.unsubscribe() }
-  }, [])
+  }, [flags.classroom])
 
   function isActive(href: string) {
     if (href === '/') return pathname === '/'

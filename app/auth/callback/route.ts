@@ -8,6 +8,8 @@ import type { EmailOtpType } from '@supabase/supabase-js'
 import { getSetting } from '@/lib/settings/appSettings'
 import { isSettingEnabled } from '@/lib/settings/gates'
 import { FREE_GUEST_BOOKS, FREE_LIFETIME_BOOKS } from '@/lib/entitlements/policy'
+import { getLaunchFlags } from '@/lib/launch/flags'
+import { accountHomeHref } from '@/lib/launch/scope'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
@@ -92,12 +94,11 @@ export async function GET(request: NextRequest) {
     } else if (isAdmin) {
       dest = '/admin'
     } else {
-      const accountType = user.user_metadata?.account_type ?? 'parent'
-      dest = nextParam ?? (
-        accountType === 'educator' ? '/classroom/educator'
-        : accountType === 'student'  ? '/classroom/student'
-        : '/account'
-      )
+      // Customer home is flag-aware: the Classroom dashboards only while that
+      // product is public, otherwise /account for every role (an educator or
+      // student confirmation link used to land on a not-found page).
+      const accountType = (user.user_metadata?.account_type as string | undefined) ?? 'parent'
+      dest = nextParam ?? accountHomeHref(accountType, await getLaunchFlags())
     }
 
     const redirectResponse = NextResponse.redirect(new URL(dest, origin))

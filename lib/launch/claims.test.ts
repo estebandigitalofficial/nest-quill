@@ -167,7 +167,7 @@ test('9. sign-in is reachable from the shared header on every route (logged-out)
   const controls = read('components/layout/UserControls.tsx')
   assert.match(controls, /if \(user === null\) \{[\s\S]*?href="\/login"[\s\S]*?t\.nav\.signIn/)
   assert.doesNotMatch(read('app/page.tsx'), /href="\/login"/, 'homepage relies on the shared header, no second link')
-  assert.match(read('components/layout/SiteHeader.tsx'), /<UserControls \/>/)
+  assert.match(read('components/layout/SiteHeader.tsx'), /<UserControls flags=\{flags\} \/>/)
   // phones: the hamburger panel carries Sign in for logged-out visitors on every route
   assert.match(read('components/layout/MobileMenu.tsx'), /\{loggedOut && \([\s\S]*?href="\/login"[\s\S]*?t\.nav\.signIn/)
 })

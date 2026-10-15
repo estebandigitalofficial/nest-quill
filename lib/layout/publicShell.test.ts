@@ -78,7 +78,7 @@ test('3. header branding is the footer logo, linking home with an accessible lab
   assert.doesNotMatch(header, /fav\.webp|<span>Nest &amp; Quill<\/span>/, 'the old quill + text wordmark is gone')
   // The header shell is unchanged: 60px row, sticky, same nav, controls and menu.
   assert.match(header, /h-\[60px\]/)
-  for (const part of ['<LanguageSwitcher', '<UserControls />', '<MobileMenu flags={flags} />', 'navLinks(flags).map']) assert.ok(header.includes(part), part)
+  for (const part of ['<LanguageSwitcher', '<UserControls flags={flags} />', '<MobileMenu flags={flags} />', 'navLinks(flags).map']) assert.ok(header.includes(part), part)
   // The light footer uses the very same file, so there is one brand graphic, not two.
   assert.match(read('components/layout/SiteFooter.tsx'), /<Image src="\/brand\/logo\.webp"/)
 })
