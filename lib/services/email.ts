@@ -23,7 +23,7 @@ function getResend(): Resend {
 }
 
 const APP_URL = getAppUrl()
-const FROM = 'Nest & Quill by Bright Tale Books <stories@nestandquill.com>'
+const FROM = 'Nest & Quill <stories@nestandquill.com>'
 
 export interface SendBookEmailOptions {
   toEmail: string

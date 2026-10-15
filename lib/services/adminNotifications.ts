@@ -9,7 +9,7 @@ function getResend(): Resend {
   return _resend
 }
 
-const FROM = 'Nest & Quill by Bright Tale Books <stories@nestandquill.com>'
+const FROM = 'Nest & Quill <stories@nestandquill.com>'
 const APP_URL = getAppUrl()
 
 export type AdminNotificationType =

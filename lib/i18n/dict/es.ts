@@ -80,7 +80,7 @@ export const es: Dictionary = {
     copyright: '© {year} Digital Official & Huerta Group',
   },
   cookie: {
-    text: 'Usamos cookies para mantener tu sesión iniciada y recordar en qué página ibas.',
+    text: 'Usamos cookies y el almacenamiento del navegador para mantener tu sesión iniciada y recordar tu idioma, tus preferencias y en qué página ibas.',
     policy: 'Política de privacidad',
     decline: 'Rechazar',
     accept: 'Aceptar',
