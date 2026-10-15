@@ -27,11 +27,13 @@ import MobileTabBar from './MobileTabBar'
  * links stay reachable on mobile now that the homepage has no footer of
  * its own. The bottom tab bar is unchanged.
  *
- * The navy surface keeps its original brand image: the admin-configured
- * branding_footer_logo_url, forced to a white silhouette, exactly as
- * before. That silhouette has no legible form on parchment, so the light
- * surface uses SiteHeader's lockup instead (local gold quill mark + serif
- * wordmark).
+ * Scale is the original's: a 100px brand logo beside the wordmark and
+ * operator line, about 110px tall on desktop (Esteban, 2026-10-15: "not a
+ * 50px utility bar"). The navy surface keeps its original brand image, the
+ * admin-configured branding_footer_logo_url forced to a white silhouette.
+ * That silhouette has no legible form on parchment, so the light surface
+ * shows the full-colour local logo (public/brand/logo.webp) at the same
+ * size. Phones get the same lockup at 80px.
  */
 type Surface = 'dark' | 'light'
 
@@ -53,15 +55,16 @@ export default async function SiteFooter({ tabBar = true, surface = 'dark' }: { 
     {/* Mobile bottom tab bar (fixed). Not rendered on the homepage. */}
     {tabBar && <MobileTabBar flags={flags} />}
 
-    <footer className={`${c.footer} py-3 sm:py-4 md:py-[5px] ls:py-2.5 px-5 sm:px-6`}>
-      <div className={`max-w-5xl mx-auto flex flex-col items-center gap-2 md:gap-1.5 text-xs sm:text-sm ${c.text} sm:flex-row sm:justify-between`}>
-        <div className="flex ls:hidden items-center gap-2 md:gap-1.5 text-left">
+    <footer className={`${c.footer} py-4 md:py-2 ls:py-2 px-5 sm:px-6`}>
+      <div className={`max-w-5xl mx-auto flex flex-col items-center gap-3 md:gap-2 text-xs sm:text-sm ${c.text} sm:flex-row sm:justify-between`}>
+        {/* Brand lockup at the original scale: 100px logo beside the wordmark and operator line. */}
+        <div className="flex ls:hidden items-center gap-3 text-left">
           {surface === 'dark'
-            ? <Image src={footerLogoUrl} alt="Nest & Quill" width={140} height={42} className="brightness-0 invert w-14 md:w-[100px] shrink-0" />
-            : <Image src="/brand/fav.webp" alt="" width={32} height={32} className="w-8 h-8 md:w-7 md:h-7 shrink-0" />}
+            ? <Image src={footerLogoUrl} alt="Nest & Quill" width={100} height={100} className="brightness-0 invert w-20 md:w-[100px] h-auto shrink-0" />
+            : <Image src="/brand/logo.webp" alt="Nest & Quill" width={100} height={100} className="w-20 md:w-[100px] h-auto shrink-0" />}
           <div>
-            <p className={`font-serif ${c.brand} font-semibold leading-tight md:text-xs`}>Nest &amp; Quill</p>
-            <p className={`text-[11px] mt-0.5 md:text-[10px] ${c.product}`}>{t.footer.product}</p>
+            <p className={`font-serif ${c.brand} font-semibold text-base leading-tight`}>Nest &amp; Quill</p>
+            <p className={`text-xs mt-0.5 ${c.product}`}>{t.footer.product}</p>
           </div>
         </div>
         <p className="order-last sm:order-none text-center">{fill(t.footer.copyright, { year: new Date().getFullYear() })}</p>
