@@ -67,7 +67,7 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
   const imagesSummary = storyImagesSummary({ storyStatus: req.status, scenes, logs })
 
   return (
-      <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
 
         {/* Breadcrumb + title */}
         <div>
@@ -279,12 +279,12 @@ export default async function AdminStoryDetailPage({ params }: PageProps) {
           ) : (
             <div className="space-y-1 font-mono text-xs">
               {logs.map(log => (
-                <div key={log.id} className={`flex gap-3 px-3 py-2 rounded-lg ${log.level === 'error' ? 'bg-red-950/40' : 'hover:bg-adm-surface/40'}`}>
+                <div key={log.id} className={`flex flex-wrap sm:flex-nowrap gap-x-3 gap-y-0.5 px-3 py-2 rounded-lg ${log.level === 'error' ? 'bg-red-950/40' : 'hover:bg-adm-surface/40'}`}>
                   <span className={`shrink-0 font-bold uppercase w-12 ${log.level === 'error' ? 'text-red-400' : log.level === 'warning' ? 'text-amber-400' : 'text-blue-400'}`}>
                     {log.level}
                   </span>
                   <span className="shrink-0 text-adm-subtle w-28 truncate">{log.stage}</span>
-                  <span className="text-adm-muted flex-1">{log.message}</span>
+                  <span className="text-adm-muted flex-1 basis-full sm:basis-auto min-w-0 break-words [overflow-wrap:anywhere]">{log.message}</span>
                   {log.duration_ms != null && (
                     <span className="shrink-0 text-adm-subtle">{log.duration_ms}ms</span>
                   )}
@@ -305,7 +305,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <div>
       <h2 className="text-xs font-semibold text-adm-muted uppercase tracking-widest mb-4">{title}</h2>
-      <div className="bg-adm-surface rounded-2xl border border-adm-border px-6 py-5">
+      <div className="bg-adm-surface rounded-2xl border border-adm-border px-4 sm:px-6 py-5">
         {children}
       </div>
     </div>
@@ -400,16 +400,17 @@ function Timeline({ logs }: { logs: ProcessingLog[] }) {
                     : 'text-adm-text'
         const icon = TIMELINE_ICONS[l.stage] ?? '·'
         return (
-          <li key={l.id} className="px-4 py-2.5 flex items-start gap-3">
+          <li key={l.id} className="px-4 py-2.5 flex flex-wrap sm:flex-nowrap items-start gap-x-3 gap-y-1">
             <span aria-hidden className={`text-sm leading-5 ${tone}`}>{icon}</span>
             <div className="min-w-0 flex-1">
-              <div className="flex items-baseline gap-2">
+              <div className="flex flex-wrap items-baseline gap-x-2">
                 <span className="text-xs font-mono text-adm-muted">{l.stage}</span>
                 <span className="text-[10px] uppercase tracking-widest text-adm-subtle">{l.level}</span>
               </div>
-              <p className={`text-sm mt-0.5 leading-snug ${tone}`}>{l.message}</p>
+              <p className={`text-sm mt-0.5 leading-snug break-words [overflow-wrap:anywhere] ${tone}`}>{l.message}</p>
             </div>
-            <span className="text-[11px] font-mono text-adm-subtle shrink-0 whitespace-nowrap">
+            {/* Phones: the time drops under the message so the message keeps the width. */}
+            <span className="text-[11px] font-mono text-adm-subtle shrink-0 whitespace-nowrap basis-full pl-[26px] sm:basis-auto sm:pl-0">
               {formatAZTimeOnly(l.created_at)}
             </span>
           </li>

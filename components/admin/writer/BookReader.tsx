@@ -56,7 +56,7 @@ export default function BookReader({
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12 space-y-16">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12 space-y-16">
       {/* Title */}
       <div className="text-center space-y-3 pb-8 border-b border-adm-border">
         <h1 className="font-serif text-adm-text text-3xl">{book.title}</h1>

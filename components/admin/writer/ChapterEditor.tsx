@@ -237,8 +237,8 @@ export default function ChapterEditor({
         {scenes.map((scene, idx) => (
           <div key={scene.id} className="bg-adm-surface border border-adm-border rounded-xl overflow-hidden">
             {/* Scene header */}
-            <div className="px-5 py-3 border-b border-adm-border flex items-center justify-between gap-4">
-              <div>
+            <div className="px-5 py-3 border-b border-adm-border flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <div className="min-w-0">
                 <span className="text-xs font-bold text-adm-subtle uppercase tracking-widest">Scene {idx + 1}</span>
                 <p className="text-xs text-adm-muted mt-0.5">{scene.brief}</p>
               </div>

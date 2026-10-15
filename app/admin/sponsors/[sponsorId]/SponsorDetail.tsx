@@ -280,7 +280,7 @@ function Section({ title, subtitle, action, children }: { title: string; subtitl
   return (
     <div className="bg-adm-surface border border-adm-border rounded-xl p-6">
       <div className="flex items-start justify-between gap-3 mb-4">
-        <div>
+        <div className="min-w-0">
           <h2 className="text-base font-semibold text-adm-text">{title}</h2>
           {subtitle && <p className="text-xs text-adm-muted mt-0.5">{subtitle}</p>}
         </div>
@@ -344,7 +344,7 @@ function RewardRow({ reward, onToggle, onDelete }: {
   return (
     <div className="bg-adm-bg/50 border border-adm-border rounded-xl px-4 py-3">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-medium text-adm-text">{reward.title}</p>
             <span className="text-[10px] font-semibold uppercase tracking-wider text-adm-muted border border-adm-border rounded px-1.5 py-0.5">
@@ -356,7 +356,7 @@ function RewardRow({ reward, onToggle, onDelete }: {
               </span>
             )}
           </div>
-          {reward.description && <p className="text-xs text-adm-muted mt-0.5">{reward.description}</p>}
+          {reward.description && <p className="text-xs text-adm-muted mt-0.5 break-words [overflow-wrap:anywhere]">{reward.description}</p>}
           <p className="text-[11px] text-adm-subtle mt-1">
             {fmt(reward.value_cents)} · Unlock: {condLabel}
             {reward.max_redemptions != null && ` · ${reward.redemption_count}/${reward.max_redemptions} redeemed`}

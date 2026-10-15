@@ -9,6 +9,7 @@ import AdminLogoutButton from '@/components/admin/AdminLogoutButton'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import AdminBottomNav from '@/components/admin/AdminBottomNav'
 import AdminHeaderToggles from '@/components/admin/AdminHeaderToggles'
+import AdminMobileMenu from '@/components/admin/AdminMobileMenu'
 
 export default async function AdminLayout({
   children,
@@ -37,7 +38,7 @@ export default async function AdminLayout({
           keeps the compact 56px bar with the original 36px logo so
           screen real estate is preserved. */}
       <header className="sticky top-0 z-50 border-b border-adm-border bg-adm-bg px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
-        <Link href="/admin" className="flex items-center gap-3 group">
+        <Link href="/admin" className="flex items-center gap-3 group min-w-0">
           <Image
             src="https://nestandquill.b-cdn.net/nestandquill%20brand%20start-03.webp"
             alt="Nest & Quill"
@@ -50,7 +51,7 @@ export default async function AdminLayout({
             Command Center
           </span>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {betaModeEnabled && (
             <Link
               href="/admin/beta-ops"
@@ -65,6 +66,8 @@ export default async function AdminLayout({
             <AdminHeaderToggles />
           </div>
           <AdminLogoutButton />
+          {/* Phone-only drawer with the full sidebar (see AdminMobileMenu). */}
+          <AdminMobileMenu />
         </div>
       </header>
 

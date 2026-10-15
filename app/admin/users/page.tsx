@@ -149,7 +149,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
   }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
@@ -209,9 +209,10 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                   <tbody className="divide-y divide-adm-border">
                     {rows.map((user) => (
                       <tr key={user.id} className="hover:bg-adm-surface/50 transition-colors">
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 max-sm:min-w-[13rem]">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-adm-text font-medium text-sm">{user.email}</span>
+                            {/* Phones: the table scrolls in its box; long emails wrap past 13rem instead of widening it further. */}
+                            <span className="text-adm-text font-medium text-sm max-sm:[overflow-wrap:anywhere]">{user.email}</span>
                             {user.is_admin && (
                               <span className="text-[10px] bg-brand-900 text-brand-400 font-semibold px-1.5 py-0.5 rounded-full">admin</span>
                             )}

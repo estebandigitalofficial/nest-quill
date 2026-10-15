@@ -54,7 +54,7 @@ export default function TemplateEditor({
       <div className="bg-adm-surface border border-adm-border rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-4">
         <h3 className="text-lg font-semibold text-adm-text">{isNew ? 'New Template' : 'Edit Template'}</h3>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="text-xs text-adm-muted block mb-1">Sequence</label>
             <select className="w-full bg-adm-surface border border-adm-border rounded-lg px-3 py-2 text-sm text-adm-muted" value={form.sequence} onChange={(e) => update('sequence', e.target.value)}>

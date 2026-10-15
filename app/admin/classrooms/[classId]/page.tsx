@@ -50,7 +50,7 @@ export default async function AdminClassroomDetailPage({ params }: RouteContext)
     : '/admin/classrooms?filter=archived'
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
       {/* Back — preserves filter context */}
       <Link href={backHref}

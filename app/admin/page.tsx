@@ -227,7 +227,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
   })()
 
   return (
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
 
         {/* ── Command Center overview panel ───────────────────────── */}
         <header className="rounded-lg border border-adm-border bg-adm-surface px-5 py-4">

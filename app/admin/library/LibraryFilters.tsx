@@ -45,7 +45,7 @@ export default function LibraryFilters({ q, status }: Props) {
           type="text"
           defaultValue={q}
           placeholder="Search by name, email, or request ID…"
-          className="flex-1 bg-adm-surface border border-adm-border rounded-xl px-4 py-2.5 text-sm text-adm-text placeholder:text-adm-subtle focus:outline-none focus:border-gray-500 transition-colors"
+          className="flex-1 min-w-0 bg-adm-surface border border-adm-border rounded-xl px-4 py-2.5 text-sm text-adm-text placeholder:text-adm-subtle focus:outline-none focus:border-gray-500 transition-colors"
         />
         <button
           type="submit"

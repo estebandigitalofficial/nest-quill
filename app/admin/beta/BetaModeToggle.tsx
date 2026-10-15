@@ -42,7 +42,7 @@ export default function BetaModeToggle({ initialEnabled }: { initialEnabled: boo
 
   return (
     <>
-      <div className="flex items-center justify-between gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
         <div>
           <p className="text-sm font-semibold text-adm-text">
             Beta Mode is{' '}

@@ -106,7 +106,7 @@ export default async function AdminLibraryPage({ searchParams }: PageProps) {
   const styles = [...new Set(rows.map(r => r.illustration_style).filter(Boolean))] as string[]
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-semibold text-adm-text">Story Library</h1>

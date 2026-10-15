@@ -12,7 +12,7 @@ export default async function AdminEmailDripsPage() {
   ])
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       <div className="mb-8">
         <h1 className="text-xl font-semibold text-adm-text">Email Drip Templates</h1>
         <p className="text-sm text-adm-muted mt-1">
