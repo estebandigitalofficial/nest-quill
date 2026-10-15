@@ -4,9 +4,9 @@ import SiteFooter from '@/components/layout/SiteFooter'
 
 export default function CreateLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="h-dvh bg-parchment flex flex-col">
+    <div className="min-h-dvh md:h-dvh bg-parchment flex flex-col">
       <SiteHeader />
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="flex-1 md:overflow-y-auto">{children}</main>
       <SiteFooter />
     </div>
   )

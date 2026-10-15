@@ -167,9 +167,9 @@ export default function StoryStatusPage({ requestId, isAdmin, betaMode, header, 
 
 function PageShell({ header, footer, children }: { header: ReactNode; footer: ReactNode; children: ReactNode }) {
   return (
-    <div className="h-dvh bg-parchment flex flex-col">
+    <div className="min-h-dvh md:h-dvh bg-parchment flex flex-col">
       {header}
-      <div className="flex-1 overflow-y-auto py-10 px-4">
+      <div className="flex-1 md:overflow-y-auto py-10 px-4">
         <div className="max-w-2xl mx-auto">
           {children}
         </div>
@@ -192,9 +192,9 @@ function LoadingShell({ header, footer, t }: { header: ReactNode; footer: ReactN
 
 function ErrorView({ message, header, footer, t }: { message: string; header: ReactNode; footer: ReactNode; t: Dictionary }) {
   return (
-    <div className="h-dvh bg-parchment flex flex-col">
+    <div className="min-h-dvh md:h-dvh bg-parchment flex flex-col">
       {header}
-      <div className="flex-1 overflow-y-auto flex items-center justify-center px-4">
+      <div className="flex-1 md:overflow-y-auto flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-10 text-center max-w-sm w-full space-y-4">
           <h2 className="text-lg font-serif text-oxford">{t.status.oops}</h2>
           <p className="text-sm text-charcoal-light">{message}</p>

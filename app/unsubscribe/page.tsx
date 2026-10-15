@@ -56,10 +56,10 @@ export default async function UnsubscribePage({ searchParams }: PageProps) {
   const body = !result.ok ? u.invalidBody : result.alreadySuppressed ? u.alreadyBody : u.successBody
 
   return (
-    <div className="h-dvh bg-parchment flex flex-col">
+    <div className="min-h-dvh md:h-dvh bg-parchment flex flex-col">
       <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford whitespace-nowrap">{t.nav.back}</Link>} />
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 md:overflow-y-auto">
         <main className="max-w-xl mx-auto px-4 sm:px-6 py-10 sm:py-16 w-full">
           <div className="bg-white rounded-2xl border border-parchment-dark shadow-sm px-8 py-12 text-center space-y-3" data-unsubscribe-result={result.ok ? 'ok' : 'invalid'}>
             <p className="text-3xl" aria-hidden="true">{result.ok ? '✉️' : '🔗'}</p>

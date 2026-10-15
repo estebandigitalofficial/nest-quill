@@ -21,10 +21,10 @@ export default async function ContactPage() {
   const c = t.contact
 
   return (
-    <div className="h-dvh bg-parchment flex flex-col">
+    <div className="min-h-dvh md:h-dvh bg-parchment flex flex-col">
       <SiteHeader right={<Link href="/" className="text-sm text-charcoal-light hover:text-oxford whitespace-nowrap">{t.nav.back}</Link>} />
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 md:overflow-y-auto">
         <main className="max-w-xl mx-auto px-4 sm:px-6 py-10 sm:py-16 w-full">
           {supportOpen ? (
             <ContactForm />

@@ -48,7 +48,7 @@ export default async function ArchivedStoriesPage() {
   const a = getDictionary(lang).account
 
   return (
-    <div className="h-dvh bg-parchment flex flex-col">
+    <div className="min-h-dvh md:h-dvh bg-parchment flex flex-col">
       <header className="bg-parchment/95 border-b border-parchment-dark backdrop-blur">
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="font-serif text-xl font-semibold text-oxford">
@@ -61,7 +61,7 @@ export default async function ArchivedStoriesPage() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 md:overflow-y-auto">
         <div className="max-w-4xl mx-auto px-6 py-10 space-y-6">
           <div>
             <h2 className="font-serif text-xl text-oxford">{a.archivedTitle}</h2>

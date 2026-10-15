@@ -3,9 +3,9 @@ import SiteFooter from '@/components/layout/SiteFooter'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-dvh bg-parchment flex flex-col">
+    <div className="min-h-dvh md:h-dvh bg-parchment flex flex-col">
       <SiteHeader />
-      <div className="flex-1 overflow-y-auto flex items-center justify-center px-4 py-16">
+      <div className="flex-1 md:overflow-y-auto flex items-center justify-center px-4 py-16">
         {children}
       </div>
       <SiteFooter />
