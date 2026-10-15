@@ -30,7 +30,7 @@ export default function MobileMenu({ flags }: { flags: LaunchFlags }) {
         onClick={() => setOpen(o => !o)}
         aria-label={open ? t.nav.menuClose : t.nav.menuOpen}
         aria-expanded={open}
-        className="md:hidden flex flex-col justify-center items-center gap-1.5 w-10 h-10 -mr-1 text-oxford"
+        className="md:hidden shrink-0 flex flex-col justify-center items-center gap-1.5 w-10 h-10 -mr-1 text-oxford"
       >
         <span className={`block w-5 h-0.5 bg-current transition-transform duration-200 origin-center ${open ? 'rotate-45 translate-y-2' : ''}`} />
         <span className={`block w-5 h-0.5 bg-current transition-opacity duration-200 ${open ? 'opacity-0' : ''}`} />

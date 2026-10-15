@@ -35,7 +35,12 @@ export default async function SiteHeader({ right }: Props) {
           {maintenanceMessage}
         </div>
       )}
-      <div className="max-w-6xl mx-auto px-5 sm:px-6 lg:px-8 h-[60px] flex items-center justify-between gap-2 sm:gap-4">
+      {/* Phones (below sm): 16px gutters, the per-page "right" slot folds away
+          (its Back links duplicate the logo's Home link and the tab bar's Home
+          tab) and the control cluster is shrink-0, so a signed-in customer's
+          header fits a 320px screen without crushing any touch target. Nothing
+          changes from sm up (Esteban, 2026-10-15: desktop header unchanged). */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-[60px] flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand: the same full-colour Nest & Quill graphic the footer shows
             on its light surface (public/brand/logo.webp), as the Home link.
             The file is an 800px square whose artwork (nest, quill and the
@@ -57,8 +62,8 @@ export default async function SiteHeader({ right }: Props) {
           ))}
         </nav>
 
-        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
-          {right && <div className="flex items-center gap-2 sm:gap-4 min-w-0">{right}</div>}
+        <div className="flex items-center gap-1 sm:gap-3 shrink-0">
+          {right && <div className="hidden sm:flex items-center gap-4 min-w-0">{right}</div>}
           <LanguageSwitcher className="shrink-0" />
           <UserControls flags={flags} />
           <MobileMenu flags={flags} />

@@ -103,3 +103,35 @@ test('4. footer logo and wordmark are independent Home links; the operator line 
   assert.match(footer, /footerLinks\(flags\)\.map/)
   assert.equal([...footer.matchAll(/href="\/(account|classroom|homeschool|learning|writer|publish)"/g)].length, 0, 'no extra footer destinations')
 })
+
+test('5. signed-in header fits a 320px phone without clipping or smaller touch targets', () => {
+  // Esteban, 2026-10-15: at 320px the signed-in header (logo, EN|ES pill, three
+  // 36px icon buttons, hamburger) needed 368px and the layout viewport grew
+  // wider than the screen. The fix is responsive spacing and a CSS fold, never
+  // overflow clipping, and nothing changes from sm (640px) up.
+  const header = read('components/layout/SiteHeader.tsx')
+  const bar = header.match(/<div className="max-w-6xl mx-auto ([^"]*)h-\[60px\][^"]*"/)?.[1]
+  assert.ok(bar, 'header bar found')
+  assert.match(bar!, /\bpx-4 sm:px-6 lg:px-8\b/, '16px gutters on phones, desktop gutters unchanged')
+  assert.match(header, /<div className="flex items-center gap-1 sm:gap-3 shrink-0">/, 'control cluster never shrinks its children (no crushed touch targets)')
+  assert.match(header, /\{right && <div className="hidden sm:flex items-center gap-4 min-w-0">\{right\}<\/div>\}/, 'per-page Back links fold away on phones (logo Home link and Home tab remain)')
+  assert.doesNotMatch(header, /overflow-(x-)?(hidden|clip)/, 'no clipping in the header')
+  // Logo and branding untouched.
+  assert.match(header, /className="shrink-0 block h-12 w-20 sm:h-\[52px\] sm:w-\[87px\]"/)
+
+  const controls = read('components/layout/UserControls.tsx')
+  assert.match(controls, /<div ref=\{wrapperRef\} className="flex items-center gap-1 relative shrink-0">/)
+  assert.match(controls, /className="hidden xs:flex"/, 'the Help button folds only below 360px')
+  const fallback = controls.match(/<div className="xs:hidden">[\s\S]*?\{helpLinks\}\s*<\/div>/)?.[0]
+  assert.ok(fallback, 'the account menu carries the Help links while the button is folded')
+  assert.match(fallback!, /\{m\.helpTitle\}/)
+  assert.equal([...controls.matchAll(/\{helpLinks\}/g)].length, 2, 'one list of Help links, rendered in the Help menu and in the fold-away fallback')
+  assert.match(controls, /className=\{`relative w-9 h-9 shrink-0 items-center justify-center rounded-full/, 'icon buttons stay 36px and never shrink')
+  assert.match(read('components/layout/MobileMenu.tsx'), /className="md:hidden shrink-0 flex flex-col justify-center items-center gap-1\.5 w-10 h-10 -mr-1 text-oxford"/, 'hamburger stays 40px and never shrinks')
+  // The xs screen exists, is 360px, and is ordered before sm so it can never
+  // outrank sm/md rules on the same element.
+  const tw = read('tailwind.config.ts')
+  const screens = tw.match(/screens: \{([\s\S]*?)\n    \}/)?.[1]
+  assert.ok(screens, 'screens block found')
+  assert.match(screens!, /^\s*xs: '360px',\s*\n\s*\.\.\.defaultTheme\.screens,/m, 'xs is 360px and listed before the default screens')
+})

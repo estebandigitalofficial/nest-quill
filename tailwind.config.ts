@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss'
+import defaultTheme from 'tailwindcss/defaultTheme'
 
 const config: Config = {
   content: [
@@ -8,10 +9,18 @@ const config: Config = {
   ],
   darkMode: 'class',
   theme: {
+    // Screens are listed in ascending order on purpose: a screen added through
+    // `extend` lands after 2xl in the generated CSS, so `xs:` would then beat
+    // `sm:`/`md:` on the same element. `xs` (360px) separates iPhone SE-class
+    // phones from every other phone; the header folds one control below it.
+    // Arbitrary `min-[360px]:` variants are unavailable while the `ls` raw
+    // screen exists (Tailwind only offers them for simple min-width screens).
+    screens: {
+      xs: '360px',
+      ...defaultTheme.screens,
+      ls: { raw: '(orientation: landscape) and (max-height: 500px)' },
+    },
     extend: {
-      screens: {
-        'ls': { raw: '(orientation: landscape) and (max-height: 500px)' },
-      },
       // Modernized type pairing (design_handoff_nestandquill_modernized),
       // loaded via next/font in app/layout.tsx. Mapped through CSS variables
       // so the whole site adopts Source Serif 4 (headings) + Archivo (body).

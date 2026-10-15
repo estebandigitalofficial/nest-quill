@@ -157,15 +157,35 @@ export default function UserControls({ flags }: { flags: LaunchFlags }) {
   const isEducator = accountType === 'educator'
   const unread = hasUnread(notifications)
 
+  // Below the xs screen (360px, iPhone SE-class) the header bar has no room for a
+  // third 36px icon button next to the logo, language pill and hamburger, so
+  // the Help button folds away and its links are listed inside the account
+  // menu instead (same targets, same labels, no smaller touch targets). From
+  // xs up the three-button cluster is unchanged. Pure CSS: both halves are
+  // always rendered and the width decides which one shows.
+  const helpLinks = (
+    <>
+      {tourAvailable && lang === 'en' && (
+        <DropdownLink href="/create?replayTour=create_story_wizard" onClick={() => setOpen(null)}>
+          {m.replayTour}
+        </DropdownLink>
+      )}
+      <DropdownLink href="/contact" onClick={() => setOpen(null)}>{m.contactSupport}</DropdownLink>
+      <DropdownLink href="/pricing" onClick={() => setOpen(null)}>{m.plans}</DropdownLink>
+      <DropdownLink href="/privacy" onClick={() => setOpen(null)}>{m.privacy}</DropdownLink>
+      <DropdownLink href="/terms" onClick={() => setOpen(null)}>{m.terms}</DropdownLink>
+    </>
+  )
+
   return (
-    <div ref={wrapperRef} className="flex items-center gap-1 relative">
+    <div ref={wrapperRef} className="flex items-center gap-1 relative shrink-0">
       <IconButton label={unread ? m.notificationsUnread : m.notifications} active={open === 'notifications'} onClick={() => toggle('notifications')}>
         <BellIcon />
         {unread && (
           <span aria-hidden className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-500 ring-2 ring-parchment" />
         )}
       </IconButton>
-      <IconButton label={m.help} active={open === 'help'} onClick={() => toggle('help')}>
+      <IconButton label={m.help} active={open === 'help'} onClick={() => toggle('help')} className="hidden xs:flex">
         <HelpIcon />
       </IconButton>
       <IconButton label={m.accountMenu} active={open === 'settings'} onClick={() => toggle('settings')}>
@@ -207,15 +227,7 @@ export default function UserControls({ flags }: { flags: LaunchFlags }) {
 
       {open === 'help' && (
         <Dropdown title={m.helpTitle}>
-          {tourAvailable && lang === 'en' && (
-            <DropdownLink href="/create?replayTour=create_story_wizard" onClick={() => setOpen(null)}>
-              {m.replayTour}
-            </DropdownLink>
-          )}
-          <DropdownLink href="/contact" onClick={() => setOpen(null)}>{m.contactSupport}</DropdownLink>
-          <DropdownLink href="/pricing" onClick={() => setOpen(null)}>{m.plans}</DropdownLink>
-          <DropdownLink href="/privacy" onClick={() => setOpen(null)}>{m.privacy}</DropdownLink>
-          <DropdownLink href="/terms" onClick={() => setOpen(null)}>{m.terms}</DropdownLink>
+          {helpLinks}
         </Dropdown>
       )}
 
@@ -234,6 +246,12 @@ export default function UserControls({ flags }: { flags: LaunchFlags }) {
           {isAdmin && (
             <DropdownLink href="/admin" onClick={() => setOpen(null)}>{m.admin}</DropdownLink>
           )}
+          {/* Help links, only while the Help button itself is folded (below xs). */}
+          <div className="xs:hidden">
+            <div className="border-t border-gray-100 my-1" />
+            <p className="px-4 pt-1 pb-0.5 text-[11px] font-bold text-gray-400 uppercase tracking-widest">{m.helpTitle}</p>
+            {helpLinks}
+          </div>
           <div className="border-t border-gray-100 my-1" />
           <button
             type="button"
@@ -260,12 +278,14 @@ function NotificationRow({ n }: { n: Notification }) {
 }
 
 function IconButton({
-  label, active, onClick, children,
+  label, active, onClick, children, className = 'flex',
 }: {
   label: string
   active: boolean
   onClick: () => void
   children: React.ReactNode
+  /** Display classes; defaults to always-visible `flex`. */
+  className?: string
 }) {
   return (
     <button
@@ -274,7 +294,7 @@ function IconButton({
       aria-label={label}
       aria-haspopup="menu"
       aria-expanded={active}
-      className={`relative w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
+      className={`relative w-9 h-9 shrink-0 items-center justify-center rounded-full transition-colors ${className} ${
         active ? 'bg-oxford/10 text-oxford' : 'text-charcoal-light hover:text-oxford hover:bg-oxford/5'
       }`}
     >
