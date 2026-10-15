@@ -32,7 +32,7 @@ const MOCK = between('if (MOCK_PIPELINE) {', '// ── Step 1: Story text')
 test('S1. the pipeline builds one lease guard bound to its own worker id and routes status writes through it', () => {
   assert.match(INDEX, /const lease = createLeaseGuard\(supabaseLeaseStore\(supabase, requestId, workerId\), \{ workerId, leaseMs: LEASE_MS \}\)/)
   const store = between('function supabaseLeaseStore(', '\n}\n')
-  assert.match(store, /\.update\(values\)\s*\.eq\('id', requestId\)\s*\.eq\('worker_id', workerId\)\s*\.select\('id'\)\s*\.maybeSingle\(\)/)
+  assert.match(store, /\.update\(values\)\s*\.eq\('id', requestId\)\s*\.eq\('worker_id', workerId\)\s*\.gt\('worker_lease_expires_at', nowIso\)\s*\.select\('id'\)\s*\.maybeSingle\(\)/, 'owned writes require worker_id AND an open window in one statement')
   const setStatus = between('async function setStatus(', '\n  }\n', INDEX.indexOf('// ── Helpers'))
   assert.match(setStatus, /await lease\.setStatus\(status, message, progress, extra\)/)
   assert.doesNotMatch(setStatus, /\.from\('story_requests'\)/, 'setStatus must not issue its own unconditioned UPDATE')
@@ -63,6 +63,7 @@ test('S2. no unconditioned story_requests UPDATE remains in the pipeline, the ca
         continue
       }
       assert.match(stmt, new RegExp(`\\.eq\\('worker_id', ${workerVar}\\)`), `${name}: unconditioned story_requests UPDATE:\n${stmt}`)
+      assert.match(stmt, /\.gt\('worker_lease_expires_at', new Date\(\)\.toISOString\(\)\)/, `${name}: owned UPDATE without an open-window condition:\n${stmt}`)
     }
     assert.ok(count >= 1, `${name}: expected at least one guarded story_requests UPDATE`)
   }
@@ -74,8 +75,9 @@ test('S2. no unconditioned story_requests UPDATE remains in the pipeline, the ca
 
 test('S3. completion and failure transitions are owner-only (stale worker cannot complete or fail a story)', () => {
   const complete = between('// ── Complete (exactly once)', 'if (!completedRow) {')
-  assert.match(complete, /status: 'complete'[\s\S]*?\.eq\('worker_id', workerId\)\s*\.neq\('status', 'complete'\)\s*\.select\('id'\)\s*\.maybeSingle\(\)/)
-  assert.match(CATCH, /status: 'failed'[\s\S]*?\.eq\('id', requestId\)\s*\.eq\('worker_id', workerId\)\s*\.select\('id'\)\s*\.maybeSingle\(\)/)
+  const OPEN = "\\.gt\\('worker_lease_expires_at', new Date\\(\\)\\.toISOString\\(\\)\\)"
+  assert.match(complete, new RegExp(`status: 'complete'[\\s\\S]*?\\.eq\\('worker_id', workerId\\)\\s*${OPEN}\\s*\\.neq\\('status', 'complete'\\)\\s*\\.select\\('id'\\)\\s*\\.maybeSingle\\(\\)`))
+  assert.match(CATCH, new RegExp(`status: 'failed'[\\s\\S]*?\\.eq\\('id', requestId\\)\\s*\\.eq\\('worker_id', workerId\\)\\s*${OPEN}\\s*\\.select\\('id'\\)\\s*\\.maybeSingle\\(\\)`))
   // The failure email is sent only after the owner-only UPDATE matched a row.
   const emailAt = CATCH.indexOf('api.resend.com/emails')
   const guardAt = CATCH.indexOf('if (!failedRow) {')
@@ -198,4 +200,41 @@ test('S11. the lease module stays Node-importable (no Deno or Supabase imports)'
   const lease = readFileSync(resolve(import.meta.dirname, 'lease.ts'), 'utf8')
   assert.doesNotMatch(lease, /^\s*import .* from /m)
   assert.doesNotMatch(lease, /Deno\./)
+})
+
+// ── PR #30 review additions ──────────────────────────────────────────────────
+
+test('S12. scene failure writes are ownership-gated and never replace a completed page (pipeline and backfill)', () => {
+  const loop = between('for (const scene of pendingScenes) {', '// ── Cover (Phase 1F)')
+  const imgCatch = loop.slice(loop.indexOf('} catch (imgErr) {'))
+  // Order inside the catch: lost-lease re-throw, then an ownership renewal, then the failure write.
+  const rethrow = imgCatch.indexOf('if (isLeaseLost(imgErr)) throw imgErr')
+  const req = imgCatch.indexOf("await lease.require(`before page ${scene.page_number} failure write`)")
+  const write = imgCatch.indexOf("image_status: 'failed'")
+  assert.ok(rethrow !== -1 && req > rethrow && write > req, 'pipeline failure write must follow the lease checkpoint')
+  const failStmt = imgCatch.slice(write, imgCatch.indexOf('\n\n', write) === -1 ? undefined : imgCatch.indexOf('\n', write + 200))
+  assert.match(failStmt, /\.eq\('request_id', requestId\)\s*\.neq\('image_status', 'complete'\)/)
+
+  const bloop = between('for (const scene of missing) {', '// Cover backfill')
+  const bCatch = bloop.slice(bloop.indexOf('} catch (e) {'))
+  const bLost = bCatch.indexOf('if (isLeaseLost(e)) {')
+  const bHeart = bCatch.indexOf('if (!(await backfillLease.heartbeat())) {')
+  const bWrite = bCatch.indexOf("update({ image_status: 'failed' })")
+  assert.ok(bLost !== -1 && bHeart > bLost && bWrite > bHeart, 'backfill failure write must follow the lease renewal')
+  assert.match(bCatch.slice(bHeart, bWrite), /break/, 'a lost lease stops the backfill loop')
+  assert.match(bCatch.slice(bWrite, bWrite + 200), /\.eq\('request_id', requestId\)\.neq\('image_status', 'complete'\)/)
+})
+
+test('S13. ownership callbacks handed to the cover stage are renewals (open window for the write that follows), not reads', () => {
+  assert.match(INDEX, /const stillOwnsLease = \(\) => lease\.heartbeat\(\)/)
+  assert.match(BACKFILL, /const backfillOwnsLease = \(\) => backfillLease\.heartbeat\(\)/)
+  assert.doesNotMatch(INDEX, /\.stillOwns\(\)/, 'index.ts never relies on a read-only ownership check')
+})
+
+test('S14. the quiz row (written after a long call) is lease-gated and a lost lease is not swallowed as a quiz failure', () => {
+  const quiz = between('// ── Step 1b: Generate quiz', '// ── Step 2')
+  const req = quiz.indexOf("await lease.require('before saving the quiz')")
+  const ins = quiz.indexOf(".from('story_quizzes')")
+  assert.ok(req !== -1 && ins > req)
+  assert.match(quiz, /} catch \(quizErr\) \{\s*if \(isLeaseLost\(quizErr\)\) throw quizErr/)
 })

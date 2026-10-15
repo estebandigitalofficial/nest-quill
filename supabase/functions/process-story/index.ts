@@ -98,25 +98,31 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * The lease guard's two statements bound to the service-role client
- * (3C-7). updateOwned is the ONLY way this file writes story_requests
- * state during a run: it carries `worker_id = <this worker>` so a stale
- * invocation can never touch a row the live worker now owns.
+ * (3C-7). updateOwned carries BOTH lease conditions — `worker_id = <this
+ * worker>` and an open `worker_lease_expires_at` window — so a stale or
+ * expired invocation can never touch a row another worker may now own.
+ * Every other story_requests write in this file (releases, completion,
+ * failure) repeats the same two conditions inline.
  */
 function supabaseLeaseStore(supabase: ReturnType<typeof createClient>, requestId: string, workerId: string): LeaseStore {
   return {
-    async updateOwned(values) {
+    async updateOwned(values, nowIso) {
       const { data, error } = await supabase
         .from('story_requests')
         .update(values)
         .eq('id', requestId)
         .eq('worker_id', workerId)
+        .gt('worker_lease_expires_at', nowIso)
         .select('id')
         .maybeSingle()
       return { written: !!data, error: error ? error.message : null }
     },
-    async readWorkerId() {
-      const { data } = await supabase.from('story_requests').select('worker_id').eq('id', requestId).maybeSingle()
-      return (data?.worker_id as string | null) ?? null
+    async readOwnership() {
+      const { data } = await supabase.from('story_requests').select('worker_id, worker_lease_expires_at').eq('id', requestId).maybeSingle()
+      return {
+        workerId: (data?.worker_id as string | null) ?? null,
+        leaseExpiresAt: (data?.worker_lease_expires_at as string | null) ?? null,
+      }
     },
   }
 }
@@ -776,13 +782,14 @@ Deno.serve(async (req) => {
     // without recording a scene failure.
     const backfillLease = createLeaseGuard(supabaseLeaseStore(supabase, requestId, lockId), { workerId: lockId, leaseMs: BACKFILL_LEASE_MS })
     const backfillHeartbeat = () => backfillLease.heartbeat()
-    const backfillOwnsLease = () => backfillLease.stillOwns()
+    const backfillOwnsLease = () => backfillLease.heartbeat()
     const releaseBackfillLease = async (message: string) => {
       const { data } = await supabase
         .from('story_requests')
         .update({ worker_id: null, worker_lease_expires_at: null, status_message: message })
         .eq('id', requestId)
         .eq('worker_id', lockId)
+        .gt('worker_lease_expires_at', new Date().toISOString())
         .select('id')
         .maybeSingle()
       return !!data
@@ -870,7 +877,7 @@ Deno.serve(async (req) => {
         })
         await supabase.from('story_requests').update({
           status_message: `Generating illustrations… (${completedBefore + generated} of ${totalScenes})`,
-        }).eq('id', requestId).eq('worker_id', lockId)
+        }).eq('id', requestId).eq('worker_id', lockId).gt('worker_lease_expires_at', new Date().toISOString())
       } catch (e) {
         if (isLeaseLost(e)) {
           // Not a scene failure: the row belongs to another backfill now.
@@ -878,9 +885,16 @@ Deno.serve(async (req) => {
           await backfillLog('admin_image_backfill_lease_lost', e instanceof Error ? e.message : String(e), 'warning', { page_number: scene.page_number })
           break
         }
+        // Same ownership rule for the failure write; a lost lease here
+        // stops the loop exactly like one detected before the upload.
+        if (!(await backfillLease.heartbeat())) {
+          await backfillLog('admin_image_backfill_lease_lost', `Lease no longer held (before page ${scene.page_number} failure write)`, 'warning', { page_number: scene.page_number })
+          break
+        }
         failed++
         const msg = e instanceof Error ? e.message : String(e)
-        await supabase.from('story_scenes').update({ image_status: 'failed' }).eq('id', scene.id).eq('request_id', requestId)
+        await supabase.from('story_scenes').update({ image_status: 'failed' })
+          .eq('id', scene.id).eq('request_id', requestId).neq('image_status', 'complete')
         await supabase.from('processing_logs').insert({
           request_id: requestId, level: 'warning', stage: 'admin_image_backfill_failed_scene',
           message: `Page ${scene.page_number}: ${msg}`, metadata: { worker_id: lockId, page_number: scene.page_number },
@@ -1038,8 +1052,9 @@ Deno.serve(async (req) => {
   // persisted or uploaded. A lost lease raises LeaseLostError, which the
   // catch block treats as "stop quietly" rather than as a story failure.
   const lease = createLeaseGuard(supabaseLeaseStore(supabase, requestId, workerId), { workerId, leaseMs: LEASE_MS })
-  // True while this invocation still owns the row.
-  const stillOwnsLease = () => lease.stillOwns()
+  // Ownership callback for the cover stage: a renewal, not a read, so a
+  // true answer also means the window is open for the write that follows.
+  const stillOwnsLease = () => lease.heartbeat()
 
   // Worker start time — used to enforce the time budget
   const workerStart = Date.now()
@@ -1216,6 +1231,7 @@ Deno.serve(async (req) => {
         })
         .eq('id', requestId)
         .eq('worker_id', workerId)
+        .gt('worker_lease_expires_at', new Date().toISOString())
 
       await log('pipeline_complete', 'Mock pipeline complete — no API calls made')
 
@@ -1362,6 +1378,7 @@ Deno.serve(async (req) => {
           .update({ story_plan: plan, generation_usage: { plan: planUsage } })
           .eq('id', requestId)
           .eq('worker_id', workerId)
+          .gt('worker_lease_expires_at', new Date().toISOString())
         const planPersisted = !planErr
         if (planErr) {
           await log('plan_checkpoint_skipped', `story_plan not persisted (${planErr.message}) — apply migration 20240063 to enable plan checkpoints`, 'warning')
@@ -1384,6 +1401,7 @@ Deno.serve(async (req) => {
             })
             .eq('id', requestId)
             .eq('worker_id', workerId)
+            .gt('worker_lease_expires_at', new Date().toISOString())
           await log('continuation_scheduled', `Plan stage used ${Math.round(elapsedAfterPlan / 1000)}s — handing the book stage to a fresh invocation`)
           const dispatch = await dispatchSelf({ requestId, language, mode: 'continue' })
           await log(
@@ -1483,6 +1501,7 @@ Deno.serve(async (req) => {
         .update({ generation_usage: stageUsage })
         .eq('id', requestId)
         .eq('worker_id', workerId)
+        .gt('worker_lease_expires_at', new Date().toISOString())
       if (usageErr) {
         await log('usage_persist_skipped', `generation_usage not persisted (${usageErr.message}) — apply migration 20240063`, 'warning')
       }
@@ -1548,6 +1567,9 @@ Deno.serve(async (req) => {
             configMap,
           )
 
+          // generateQuiz is a long external call: re-assert ownership
+          // before the quiz row is written.
+          await lease.require('before saving the quiz')
           const { error: quizInsertError } = await supabase
             .from('story_quizzes')
             .insert({
@@ -1564,6 +1586,7 @@ Deno.serve(async (req) => {
             await log('generate_quiz', `Quiz generated: ${quizQuestions.length} questions`)
           }
         } catch (quizErr) {
+          if (isLeaseLost(quizErr)) throw quizErr
           const quizMsg = quizErr instanceof Error ? quizErr.message : String(quizErr)
           await log('generate_quiz', `Quiz generation failed (non-fatal): ${quizMsg}`, 'warning')
         }
@@ -1685,6 +1708,7 @@ Deno.serve(async (req) => {
             })
             .eq('id', requestId)
             .eq('worker_id', workerId)
+            .gt('worker_lease_expires_at', new Date().toISOString())
 
           await log('continuation_scheduled', `Worker released — next run resumes from page ${scene.page_number}`)
 
@@ -1779,6 +1803,10 @@ Deno.serve(async (req) => {
           // A lost lease is not an image failure: leave the scene exactly as
           // the current owner has it and let the outer catch stop this run.
           if (isLeaseLost(imgErr)) throw imgErr
+          // The failure write is a story write like any other: it must not
+          // land on a page another worker now owns (throws LeaseLostError
+          // out of this catch into the outer one).
+          await lease.require(`before page ${scene.page_number} failure write`)
           imagesFailed++
           const imgMsg = imgErr instanceof Error ? imgErr.message : String(imgErr)
           console.error(`[process-story] Image failed page ${scene.page_number}:`, imgMsg)
@@ -1827,6 +1855,7 @@ Deno.serve(async (req) => {
           })
           .eq('id', requestId)
           .eq('worker_id', workerId)
+          .gt('worker_lease_expires_at', new Date().toISOString())
         await log('continuation_scheduled', 'Worker released — next run draws the cover and completes')
         const dispatch = await dispatchSelf({ requestId, language, mode: 'continue' })
         await log(
@@ -1874,6 +1903,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', requestId)
       .eq('worker_id', workerId)
+      .gt('worker_lease_expires_at', new Date().toISOString())
       .neq('status', 'complete')
       .select('id')
       .maybeSingle()
@@ -1976,6 +2006,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', requestId)
       .eq('worker_id', workerId)
+      .gt('worker_lease_expires_at', new Date().toISOString())
       .select('id')
       .maybeSingle()
 
