@@ -56,7 +56,7 @@ test('1. homepage is curated around the launch product and never renders deferre
   // (b2) the homepage has no footer of its own: it renders the shared
   // SiteFooter (test 2 pins that footer's link set to lib/launch/scope).
   assert.doesNotMatch(home, /<footer|FOOTER_HREFS/, 'ModernHome renders no footer of its own')
-  assert.match(page, /<SiteFooter tabBar=\{false\} \/>/, 'homepage renders the shared SiteFooter')
+  assert.match(page, /<SiteFooter tabBar=\{false\} surface="light" \/>/, 'homepage renders the shared SiteFooter, light surface')
 
   // (c) the homepage's copy (both languages) names no deferred product.
   for (const lang of ['en', 'es'] as const) {
@@ -97,16 +97,20 @@ test('2-4. desktop nav, mobile nav/tabs and footer hide deferred areas when off'
   assert.match(read('components/layout/SiteFooter.tsx'), /footerLinks\(flags\)\.map/)
   assert.ok(!/href="\/(learning|homeschool|classroom|writer)"/.test(read('components/layout/SiteHeader.tsx')), 'no hard-coded hidden links in header')
   assert.ok(!/href="\/(learning|homeschool|classroom|writer)"/.test(read('components/layout/SiteFooter.tsx')), 'no hard-coded hidden links in footer')
-  // The shared footer is the only public footer: compact, parchment (not
-  // navy), rendered on every width, and it names the current operator.
+  // The shared footer is the only public footer: compact, navy by default
+  // with a light (parchment) surface that only the homepage asks for,
+  // rendered on every width, and it names the current operator.
   const footer = read('components/layout/SiteFooter.tsx')
-  assert.match(footer, /<footer className="bg-parchment /, 'footer surface is parchment')
-  assert.doesNotMatch(footer, /bg-oxford|hidden md:block|brightness-0|Bright Tale/, 'no navy surface, no desktop-only gate, no stale operator')
+  assert.match(footer, /dark: +\{ footer: 'bg-oxford-dark'/, 'default surface is the original navy')
+  assert.match(footer, /light: \{ footer: 'bg-parchment border-t-2 border-oxford\/15'/, 'light surface is parchment')
+  assert.match(footer, /surface = 'dark'/, 'navy unless a page asks for light')
+  assert.doesNotMatch(footer, /hidden md:block|brightness-0|Bright Tale/, 'no desktop-only gate, no inverted CDN logo, no stale operator')
   assert.equal([...footer.matchAll(/<footer/g)].length, 1)
-  for (const f of ['components/legal/LegalDocument.tsx', 'app/pricing/page.tsx', 'app/contact/page.tsx', 'app/(create)/layout.tsx', 'app/page.tsx']) {
-    assert.match(read(f), /<SiteFooter/, `${f} renders the shared footer`)
+  for (const f of ['components/legal/LegalDocument.tsx', 'app/pricing/page.tsx', 'app/contact/page.tsx', 'app/(create)/layout.tsx']) {
+    assert.match(read(f), /<SiteFooter \/>/, `${f} renders the shared footer on its default (navy) surface`)
     assert.doesNotMatch(read(f), /<footer/, `${f} has no footer of its own`)
   }
+  assert.equal([...read('app/page.tsx').matchAll(/surface="light"/g)].length, 1, 'only the homepage takes the light surface')
 })
 
 test('5-6. pricing shows the four launch choices and Educator is never selectable', () => {
