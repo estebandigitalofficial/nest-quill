@@ -203,7 +203,8 @@ test('13. scope limits: no guest_token write, no account deletion, no route or U
   assert.doesNotMatch(sql, /auth\.users|deleteUser|'account'/)
   assert.doesNotMatch(sql, /storage\.objects|storage\.remove/)
   assert.doesNotMatch(sql, /worker_lease|CLAIMABLE|process-story/)
-  // No application code in this change calls the new functions yet.
+  // Only the 3C-2 service module (lib/deletion/) may name the new functions;
+  // deleteFailedStory.test.ts pins that nothing outside it calls the service.
   const appDirs = ['app', 'lib', 'components']
   const walk = (dir: string): string[] => {
     const out: string[] = []
@@ -216,6 +217,7 @@ test('13. scope limits: no guest_token write, no account deletion, no route or U
   }
   for (const dir of appDirs) {
     for (const file of walk(resolve(ROOT, dir))) {
+      if (file.startsWith(resolve(ROOT, 'lib/deletion') + '/')) continue
       assert.doesNotMatch(readFileSync(file, 'utf8'), /delete_failed_story|complete_story_deletion/, `${file} must not call the deletion functions yet`)
     }
   }
