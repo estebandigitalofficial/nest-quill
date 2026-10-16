@@ -257,7 +257,8 @@ test('11. 3C-8 changed only the legal copy: the flag stays unseeded and the 3C-3
   const refs = files.filter(f => !f.endsWith('.test.ts') && readFileSync(f, 'utf8').includes('customer_story_deletion_enabled'))
   // (paths are joined so this test file never contains the literal deletion-module path the importer pins look for)
   const DELETION_DIR = ['lib', 'deletion'].join('/')
-  assert.deepEqual(refs.sort(), [resolve(ROOT, 'app/api/story/[requestId]/route.ts'), resolve(ROOT, DELETION_DIR, 'customerDeleteRoute.ts')].sort(), `flag referenced by ${refs.join(', ')}`)
+  // 3C-4 added the archived page as the one display switch (server read, fallback false).
+  assert.deepEqual(refs.sort(), [resolve(ROOT, 'app/api/story/[requestId]/route.ts'), resolve(ROOT, DELETION_DIR, 'customerDeleteRoute.ts'), resolve(ROOT, 'app/account/archived/page.tsx')].sort(), `flag referenced by ${refs.join(', ')}`)
   for (const f of files.filter(f => /supabase\/migrations\/.*\.sql$/.test(f))) assert.doesNotMatch(readFileSync(f, 'utf8'), /customer_story_deletion_enabled/, f)
   for (const f of files.filter(f => /app\/admin\//.test(f))) assert.doesNotMatch(readFileSync(f, 'utf8'), /customer_story_deletion/, `${f} exposes the flag in admin UI`)
   // (18) 3C-3 route and service, (19) 3C-6 sweep and cron config, (20) migrations: content pinned at PR #35 head 616d5cf.

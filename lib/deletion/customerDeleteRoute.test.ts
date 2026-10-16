@@ -427,29 +427,37 @@ const SOURCE_DIRS = ['app', 'components', 'lib', 'hooks', 'middleware.ts', 'supa
 const SOURCES = SOURCE_DIRS.flatMap((p) => (statSync(p).isDirectory() ? walk(p) : [p]))
 const CODE = SOURCES.filter((p) => /\.(ts|tsx|js|jsx|mjs)$/.test(p))
 
-test('19. no customer UI or caller: nothing sends DELETE to /api/story, the account components know only archive/restore, no legal/docs text advertises deletion', () => {
+test('19. customer UI boundary (revised by 3C-4): the account deletion module is the only client sender of DELETE /api/story; client files never touch the server deletion modules; the flag is referenced only by the route, the module and the archived page', () => {
+  // 3C-4 added the desktop Delete action. Its one request path is
+  // lib/account/storyDeletion.ts (pure) used by the account components; no
+  // other client code sends DELETE to /api/story.
+  const senders = CODE.filter((f) => !f.endsWith('.test.ts') && /method:\s*['"]DELETE['"]/.test(readFileSync(f, 'utf8')) && /\/api\/story\//.test(readFileSync(f, 'utf8')))
+  assert.deepEqual(senders, [resolve(ROOT, 'lib/account/storyDeletion.ts')], `DELETE /api/story is sent by ${senders.join(', ')}`)
   for (const f of CODE) {
     if (f.endsWith('.test.ts')) continue
     const src = readFileSync(f, 'utf8')
-    if (/method:\s*['"]DELETE['"]/.test(src)) assert.doesNotMatch(src, /\/api\/story\//, `${f} sends DELETE to /api/story`)
     if (/['"]use client['"]/.test(src.slice(0, 400))) {
       assert.doesNotMatch(src, /lib\/deletion|customer_story_deletion|handleCustomerStoryDelete/i, `${f} is a client file referencing deletion`)
-      // Customer-facing client files (admin tooling under app/admin and components/admin is not customer UI) never speak of permanent deletion.
-      if (!/\/(app|components)\/admin\//.test(f)) assert.doesNotMatch(src, /permanent(ly)? delet/i, `${f} offers permanent deletion to customers`)
+      // Customer-facing client files that speak of permanent deletion are exactly the 3C-4 account components.
+      if (!/\/(app|components)\/admin\//.test(f) && /permanent(ly)? delet/i.test(src)) {
+        assert.match(f, /components\/account\/(StoryRowActions|DeleteStoryDialog|StoryList|StoryRow)\.tsx$|components\/account\/useStoryDeletion\.ts$/, `${f} offers permanent deletion to customers outside the account UI`)
+      }
     }
   }
   for (const f of ['components/account/StoryRow.tsx', 'components/account/StoryRowActions.tsx', 'components/account/StoryList.tsx']) {
     const src = readFileSync(resolve(ROOT, f), 'utf8')
     assert.match(src, /'archive' \| 'restore'/, `${f} modes`)
-    assert.doesNotMatch(src, /delete|Delete|DELETE|swipe/, `${f} has deletion UI`)
+    // 3C-5 (phone swipe reveal) is not started: no gesture code in the shared row components.
+    assert.doesNotMatch(src, /swipe|touch|pointer|drag|gesture/i, `${f} has gesture UI`)
   }
   for (const f of SOURCES.filter((p) => /\.(md|mdx)$/.test(p))) {
     assert.doesNotMatch(readFileSync(f, 'utf8'), /DELETE \/api\/story|customer_story_deletion_enabled/, `${f} documents the endpoint`)
   }
-  // The flag key is referenced by the route (its header comment), the module and this test only: no admin toggle, no seed row, no migration.
+  // The flag key is referenced by the route (its header comment), the module, the archived page (3C-4 display switch) and tests only: no admin toggle, no seed row, no migration.
   const flagRefs = CODE.filter((p) => !p.endsWith('.test.ts') && readFileSync(p, 'utf8').includes(CUSTOMER_DELETION_FLAG_KEY))
-  assert.deepEqual(flagRefs.sort(), [MODULE, ROUTE].sort(), `flag key referenced by ${flagRefs.join(', ')}`)
+  assert.deepEqual(flagRefs.sort(), [MODULE, ROUTE, resolve(ROOT, 'app/account/archived/page.tsx')].sort(), `flag key referenced by ${flagRefs.join(', ')}`)
   assert.match(deleteSrc, /isSettingEnabled\(CUSTOMER_DELETION_FLAG_KEY, false\)/, 'the route reads the key via the constant with fallback false')
+  assert.match(readFileSync(resolve(ROOT, 'app/account/archived/page.tsx'), 'utf8'), /isSettingEnabled\('customer_story_deletion_enabled', false\)\.catch\(\(\) => false\)/, 'the page reads the key with fallback false and treats a read error as off')
   const migrations = readdirSync(resolve(ROOT, 'supabase/migrations')).filter((f) => f.endsWith('.sql'))
   for (const m of migrations) assert.doesNotMatch(readFileSync(resolve(ROOT, 'supabase/migrations', m), 'utf8'), /customer_story_deletion_enabled/, `${m} seeds the flag`)
 })

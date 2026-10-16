@@ -11,6 +11,7 @@ import { loadThumbs } from '@/components/account/loadThumbs'
 import { PAGE_SIZE } from '@/components/account/pageSize'
 import { getServerLang } from '@/lib/i18n/server'
 import { getDictionary } from '@/lib/i18n'
+import { isSettingEnabled } from '@/lib/settings/gates'
 import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -46,6 +47,13 @@ export default async function ArchivedStoriesPage() {
       : (lastRow.archived_at as string | null) ?? null
   const lang = await getServerLang()
   const a = getDictionary(lang).account
+
+  // 3C-4: the desktop "Delete permanently" action exists only while the
+  // customer_story_deletion_enabled setting is true. A missing row, false, or
+  // a failed read all mean OFF, so nothing is rendered. The DELETE route reads
+  // the same setting again and answers 404 while it is off, so this boolean is
+  // a display switch, not an authorization.
+  const deletionEnabled = await isSettingEnabled('customer_story_deletion_enabled', false).catch(() => false)
 
   return (
     <div className="min-h-dvh md:h-dvh bg-parchment flex flex-col">
@@ -83,6 +91,7 @@ export default async function ArchivedStoriesPage() {
               mode="restore"
               archivedView
               lang={lang}
+              deletionEnabled={deletionEnabled}
             />
           )}
         </div>
