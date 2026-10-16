@@ -1,5 +1,5 @@
 // 3C-2 failed-story deletion service: behaviour over a fake Supabase client
-// plus source contracts (server-only, no production caller, counts allow-list
+// plus source contracts (server-only, sweep is the only caller, counts allow-list
 // pinned to migration 20240073). Never touches a database or a bucket.
 // Run: node --experimental-strip-types --test lib/deletion/deleteFailedStory.test.ts
 import { test } from 'node:test'
@@ -475,16 +475,17 @@ const SOURCE_DIRS = ['app', 'components', 'lib', 'hooks', 'middleware.ts', 'supa
 const SOURCES = SOURCE_DIRS.flatMap((p) => (statSync(p).isDirectory() ? walk(p) : [p]))
 const DELETION_FILES = ['deleteFailedStory.ts', 'storagePaths.ts', 'decision.ts'].map((f) => resolve(ROOT, 'lib/deletion', f))
 
-test('21. no production caller: no route, page, component, worker or cron calls the service or the SQL functions', () => {
+test('21. the only production caller is the 3C-6 reconciliation sweep route; no page, component or worker calls the service or the SQL functions', () => {
   const importers = SOURCES.filter((p) => !p.startsWith(resolve(ROOT, 'lib/deletion')) && /lib\/deletion\/|from '\.\.?\/deletion/.test(readFileSync(p, 'utf8')))
-  assert.deepEqual(importers, [], 'lib/deletion is imported outside itself')
-  const rpcCallers = SOURCES.filter((p) => !DELETION_FILES.includes(p) && !p.endsWith('.test.ts') && /delete_failed_story|complete_story_deletion/.test(readFileSync(p, 'utf8')))
+  assert.deepEqual(importers, [resolve(ROOT, 'app/api/cron/deletion-sweep/route.ts')], 'lib/deletion is imported outside itself by something other than the sweep route')
+  // lib/deletion/ as a whole may name the functions (the 3C-6 sweep documents them; its own test pins that its code never calls them)
+  const rpcCallers = SOURCES.filter((p) => !p.startsWith(resolve(ROOT, 'lib/deletion')) && !p.endsWith('.test.ts') && /delete_failed_story|complete_story_deletion/.test(readFileSync(p, 'utf8')))
   assert.deepEqual(rpcCallers, [], 'the 20240074/20240075 functions are called from a non-deletion module')
   // no customer deletion route exists
   const routes = SOURCES.filter((p) => /app\/api\/.*route\.tsx?$/.test(p) && /export (async )?function DELETE/.test(readFileSync(p, 'utf8')))
   assert.ok(!routes.some((p) => /\/story\//.test(p)), `a DELETE handler exists under /api/story: ${routes.join(', ')}`)
   // this file set changed nothing in the migrations directory
-  assert.equal(readdirSync(resolve(ROOT, 'supabase/migrations')).filter((f) => f.endsWith('.sql')).sort().at(-1), '20240075_deletion_count_durability.sql', 'no new migration in 3C-2')
+  assert.equal(readdirSync(resolve(ROOT, 'supabase/migrations')).filter((f) => f.endsWith('.sql')).sort().at(-1), '20240075_deletion_count_durability.sql', 'no new migration in 3C-2 or 3C-6')
 })
 
 test('22. privileged code is server-only: no client directive, no browser-safe module imports it, admin client never imported here', () => {
