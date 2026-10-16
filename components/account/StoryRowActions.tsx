@@ -9,41 +9,46 @@
 // the row drops out of the current list.
 //
 // 3C-4: on the archived list a FAILED story may additionally offer
-// "Delete permanently" (`deletable`, decided by the parent from the server
-// setting plus archived + failed). It opens DeleteStoryDialog and sends the
-// existing DELETE /api/story/[id] through useStoryDeletion; the list removes
-// the row and shows the outcome. Restore is a normal action, Delete is the
-// destructive one, and neither is clickable while the other is in flight.
-// The Delete button renders from md up only: phones get their own
-// presentation in 3C-5, built on the same hook and dialog.
+// "Delete permanently" (`deletable`, decided by StoryRow from the server
+// setting plus archived + failed). StoryRow owns the deletion flow and the
+// confirmation dialog; this component only renders the triggers:
+//   - desktop (md and up): the red "Delete permanently" text button;
+//   - phones (below md): a "More actions" button that reveals the row's
+//     Delete panel from a plain tap or keypress (3C-5), so nobody has to
+//     slide the row to reach it. Restore is a normal action, Delete is the
+//     destructive one, and neither is clickable while the other is in flight.
 
 import { useRouter } from 'next/navigation'
-import { useRef, useState } from 'react'
+import { useState, type RefObject } from 'react'
 import { useLanguage } from '@/lib/i18n/context'
-import DeleteStoryDialog from './DeleteStoryDialog'
-import { useStoryDeletion } from './useStoryDeletion'
-import { deleteNoticeKey, type RemovedOutcome } from '@/lib/account/storyDeletion'
+import { deleteNoticeKey, type DeleteFlowState } from '@/lib/account/storyDeletion'
 
 interface Props {
   requestId: string
   mode: 'archive' | 'restore'
   /** Offer permanent deletion (archived failed story, setting on). Default false. */
   deletable?: boolean
-  /** The story is no longer listed for this customer; the list drops the row. */
-  onRemoved?: (requestId: string, outcome: RemovedOutcome) => void
+  /** The row's DELETE request is in flight. */
+  deletePending?: boolean
+  /** Last outcome that kept the row (shown next to the actions). */
+  deleteError?: DeleteFlowState['error']
+  /** Open the row's confirmation dialog; receives the element to return focus to. */
+  onDelete?: (trigger: HTMLElement | null) => void
+  /** Phone panel state, for the "More actions" disclosure. */
+  revealed?: boolean
+  onToggleReveal?: () => void
+  moreButtonRef?: RefObject<HTMLButtonElement | null>
 }
 
-export default function StoryRowActions({ requestId, mode, deletable = false, onRemoved }: Props) {
+export default function StoryRowActions({ requestId, mode, deletable = false, deletePending = false, deleteError = null, onDelete, revealed = false, onToggleReveal, moreButtonRef }: Props) {
   const router = useRouter()
   const { t } = useLanguage()
   const a = t.account
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const deleteTrigger = useRef<HTMLButtonElement>(null)
-  const del = useStoryDeletion({ requestId, onRemoved: (id, outcome) => onRemoved?.(id, outcome) })
 
   async function go() {
-    if (del.pending) return
+    if (deletePending) return
     if (mode === 'archive') {
       const ok = window.confirm(a.confirmArchive)
       if (!ok) return
@@ -60,50 +65,53 @@ export default function StoryRowActions({ requestId, mode, deletable = false, on
     router.refresh()
   }
 
-  function cancelDelete() {
-    del.cancel()
-    deleteTrigger.current?.focus()
-  }
-
-  const deleteErrorKey = del.error ? deleteNoticeKey(del.error) : null
+  const deleteErrorKey = deleteError ? deleteNoticeKey(deleteError) : null
   const message = error ?? (deleteErrorKey ? a[deleteErrorKey] : null)
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <button
-        type="button"
-        onClick={go}
-        disabled={busy || del.pending}
-        className={
-          mode === 'archive'
-            ? 'text-[11px] font-semibold text-gray-400 hover:text-red-500 disabled:opacity-50 transition-colors'
-            : 'text-[11px] font-semibold text-brand-600 hover:text-brand-700 disabled:opacity-50 transition-colors'
-        }
-        aria-label={mode === 'archive' ? a.archiveAria : a.restoreAria}
-      >
-        {busy ? '…' : mode === 'archive' ? a.archive : a.restore}
-      </button>
+    <div className="flex items-center gap-1 sm:gap-2">
+      <div className="flex flex-col items-end gap-1">
+        <button
+          type="button"
+          onClick={go}
+          disabled={busy || deletePending}
+          className={
+            mode === 'archive'
+              ? 'text-[11px] font-semibold text-gray-400 hover:text-red-500 disabled:opacity-50 transition-colors'
+              : 'text-[11px] font-semibold text-brand-600 hover:text-brand-700 disabled:opacity-50 transition-colors'
+          }
+          aria-label={mode === 'archive' ? a.archiveAria : a.restoreAria}
+        >
+          {busy ? '…' : mode === 'archive' ? a.archive : a.restore}
+        </button>
+        {deletable && (
+          <button
+            type="button"
+            onClick={e => onDelete?.(e.currentTarget)}
+            disabled={busy || deletePending}
+            aria-haspopup="dialog"
+            aria-label={a.deleteAria}
+            className="hidden md:inline-flex text-[11px] font-semibold text-red-600 hover:text-red-700 disabled:opacity-50 transition-colors"
+          >
+            {deletePending ? a.deletePending : a.deleteForever}
+          </button>
+        )}
+        {/* The deletion outcome is shown here on md and up only; below md StoryRow renders it on its own line. */}
+        {message && <span role="alert" className={`text-[10px] text-red-500 text-right${error ? '' : ' hidden md:inline'}`}>{message}</span>}
+      </div>
       {deletable && (
         <button
-          ref={deleteTrigger}
+          ref={moreButtonRef}
           type="button"
-          onClick={del.open}
-          disabled={busy || del.pending}
-          aria-haspopup="dialog"
-          aria-label={a.deleteAria}
-          className="hidden md:inline-flex text-[11px] font-semibold text-red-600 hover:text-red-700 disabled:opacity-50 transition-colors"
+          onClick={onToggleReveal}
+          disabled={busy || deletePending}
+          aria-expanded={revealed}
+          aria-label={a.moreActions}
+          title={a.moreActions}
+          className="md:hidden inline-flex items-center justify-center min-h-11 min-w-11 -mr-2 rounded-lg text-gray-500 hover:text-oxford hover:bg-gray-50 disabled:opacity-50 transition-colors"
         >
-          {del.pending ? a.deletePending : a.deleteForever}
+          <span aria-hidden="true" className="text-xl leading-none">⋯</span>
         </button>
-      )}
-      {message && <span role="alert" className="text-[10px] text-red-500 text-right">{message}</span>}
-      {deletable && (
-        <DeleteStoryDialog
-          open={del.confirming || del.pending}
-          pending={del.pending}
-          onCancel={cancelDelete}
-          onConfirm={del.confirm}
-        />
       )}
     </div>
   )

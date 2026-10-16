@@ -517,6 +517,7 @@ export const es: Dictionary = {
     deleteNotEligible: 'Este cuento no es elegible para eliminación permanente en este momento.',
     deleteGone: 'Este cuento ya no está disponible.',
     deleteFailed: 'No pudimos eliminar este cuento ahora. Inténtalo de nuevo.',
+    moreActions: 'Más acciones',
     storyOf: 'El cuento de {name}',
     coverAlt: 'Portada del cuento de {name}',
     statuses: { complete: 'Listo', failed: 'Falló', queued: 'En fila', generating_text: 'Escribiendo…', generating_images: 'Ilustrando…', assembling_pdf: 'Armando…' },
