@@ -45,12 +45,22 @@
  * the row. A record that keeps failing shows up in every summary.
  *
  * Concurrency: two sweeps, or a sweep and a customer retry, may hit the same
- * record. delete_failed_story serialises on the deletion_log row (SELECT ...
- * FOR UPDATE) and the partial unique index allows one started/completed
- * record per story, so no second record can appear; complete_story_deletion
- * only flips 'started' → 'completed' and returns false otherwise, so the
+ * record, and nothing locks them apart up front. delete_failed_story takes
+ * FOR UPDATE on the story_requests row only; on the resumed path that row is
+ * already gone, and the deletion_log lookup is a plain SELECT, so both
+ * callers receive resumed = true with the same stored counts and both run
+ * the service's bounded, prefix-constrained discovery, removal and re-list
+ * (removing an already-removed object is a no-op). The single point of
+ * serialisation is complete_story_deletion's
+ *   UPDATE deletion_log SET status = 'completed' ... WHERE id = $1 AND status = 'started'
+ * which is one row-level write: the second UPDATE waits for the first to
+ * commit, re-evaluates its WHERE, matches nothing and returns false, so the
  * loser reports `incomplete` (complete_not_applied) and the next pass sees
- * already_deleted. Both are counted, neither is harmful.
+ * already_deleted. No new deletion_log record can appear from this path
+ * (the INSERT lives on the live-story path, under the story row lock, and
+ * the partial unique index allows one started/completed record per story)
+ * and this module never writes deletion_log itself. Duplicate storage work
+ * is the only cost; both outcomes are counted, neither is harmful.
  *
  * Observability: the summary holds counts, a histogram of failure codes and
  * the elapsed time. It never holds story content, child data, emails,

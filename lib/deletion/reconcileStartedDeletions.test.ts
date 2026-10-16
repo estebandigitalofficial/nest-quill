@@ -306,7 +306,7 @@ test('15. one bad record does not stop the rest of the batch: a throw, an rpc fa
   assert.deepEqual(s.inputs.map((i) => i.requestId), [uuid(1001), uuid(1002), uuid(1003), uuid(1004), uuid(1005)])
 })
 
-test('16. overlapping invocations are safe: the loser sees already_deleted or complete_not_applied and the record is never attempted twice in one pass', async () => {
+test('16. overlapping invocations are safe without a lock on the started record: the loser sees already_deleted or complete_not_applied, and only one started→completed transition exists', async () => {
   // Two sweeps select the same two records. The first completes both; the second's service
   // calls come back as idempotent success and as the complete-not-applied race, respectively.
   const rows = [startedRow(1, 60 * MIN), startedRow(2, 60 * MIN)]
@@ -326,6 +326,15 @@ test('16. overlapping invocations are safe: the loser sees already_deleted or co
   // the sweep never inserts or updates deletion_log, so no second record can come from here
   assert.deepEqual(a.calls.rpc, [])
   assert.deepEqual(b.calls.rpc, [])
+  // The model above matches the merged function bodies: the only FOR UPDATE is on story_requests;
+  // the resumed-path deletion_log lookup is a plain SELECT; and completion is guarded by status = 'started'.
+  const m75 = readFileSync(resolve(ROOT, 'supabase/migrations/20240075_deletion_count_durability.sql'), 'utf8')
+  assert.equal((m75.match(/FOR UPDATE/g) ?? []).length, 1, 'exactly one FOR UPDATE in 20240075')
+  assert.match(m75, /FROM public\.story_requests WHERE id = p_request_id FOR UPDATE;/)
+  const lookup = m75.match(/SELECT id, status, actor_type, actor_id, counts[\s\S]*?;/)?.[0] ?? ''
+  assert.ok(lookup.includes('FROM public.deletion_log'), 'resumed-path lookup found')
+  assert.doesNotMatch(lookup, /FOR UPDATE/, 'the resumed deletion_log lookup is not locked')
+  assert.match(m75, /SET status = 'completed'[\s\S]*?WHERE id = p_log_id AND status = 'started';/)
 })
 
 test('16b. the time budget stops new attempts and reports them as skipped; a selection error attempts nothing', async () => {
