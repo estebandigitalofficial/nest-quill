@@ -519,6 +519,7 @@ export const en = {
     deleteNotEligible: 'This story is not currently eligible for permanent deletion.',
     deleteGone: 'This story is no longer available.',
     deleteFailed: 'We could not delete this story right now. Please try again.',
+    moreActions: 'More actions',
     storyOf: "{name}'s story",
     coverAlt: "Cover for {name}'s story",
     statuses: { complete: 'Complete', failed: 'Failed', queued: 'Queued', generating_text: 'Writing…', generating_images: 'Illustrating…', assembling_pdf: 'Assembling…' } as Record<string, string>,

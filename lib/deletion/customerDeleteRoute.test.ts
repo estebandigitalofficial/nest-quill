@@ -447,9 +447,10 @@ test('19. customer UI boundary (revised by 3C-4): the account deletion module is
   for (const f of ['components/account/StoryRow.tsx', 'components/account/StoryRowActions.tsx', 'components/account/StoryList.tsx']) {
     const src = readFileSync(resolve(ROOT, f), 'utf8')
     assert.match(src, /'archive' \| 'restore'/, `${f} modes`)
-    // 3C-5 (phone swipe reveal) is not started: no gesture code in the shared row components.
-    assert.doesNotMatch(src, /swipe|touch|pointer|drag|gesture/i, `${f} has gesture UI`)
+    // 3C-5: the phone swipe reveal lives in StoryRow (via useSwipeReveal); the list and the action buttons stay gesture-free.
+    if (!f.endsWith('StoryRow.tsx')) assert.doesNotMatch(src, /swipe|touch|pointer|drag|gesture/i, `${f} has gesture UI`)
   }
+  assert.match(readFileSync(resolve(ROOT, 'components/account/StoryRow.tsx'), 'utf8'), /useSwipeReveal/, 'the swipe reveal is the shared hook, not ad-hoc handlers')
   for (const f of SOURCES.filter((p) => /\.(md|mdx)$/.test(p))) {
     assert.doesNotMatch(readFileSync(f, 'utf8'), /DELETE \/api\/story|customer_story_deletion_enabled/, `${f} documents the endpoint`)
   }

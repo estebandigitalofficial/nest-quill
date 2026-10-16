@@ -42,7 +42,9 @@ const ACTIONS = 'components/account/StoryRowActions.tsx'
 const DIALOG = 'components/account/DeleteStoryDialog.tsx'
 const HOOK = 'components/account/useStoryDeletion.ts'
 const LOGIC = 'lib/account/storyDeletion.ts'
-const UI_FILES = [LIST, ROW, ACTIONS, DIALOG, HOOK, LOGIC]
+const SWIPE_HOOK = 'components/account/useSwipeReveal.ts'
+const SWIPE_LOGIC = 'lib/account/swipeReveal.ts'
+const UI_FILES = [LIST, ROW, ACTIONS, DIALOG, HOOK, LOGIC, SWIPE_HOOK, SWIPE_LOGIC]
 // (joined so this file never contains the literal server deletion-module path the importer pins scan for)
 const DELETION_DIR = ['lib', 'deletion'].join('/')
 
@@ -91,7 +93,8 @@ test('1. gate OFF: a false setting offers no Delete, whatever the story looks li
   const row = read(ROW)
   assert.match(row, /const deletable = mode === 'restore' && canOfferStoryDeletion\(\{ enabled: deletionEnabled, status: story\.status, archivedAt: story\.archived_at \}\)/)
   assert.match(read(ACTIONS), /\{deletable && \(\s*<button/, 'the Delete button is rendered only under `deletable`')
-  assert.match(read(ACTIONS), /\{deletable && \(\s*<DeleteStoryDialog/, 'the dialog is mounted only under `deletable`')
+  assert.match(read(ROW), /\{deletable && \(\s*<DeleteStoryDialog/, 'the dialog is mounted only under `deletable` (StoryRow owns it since 3C-5)')
+  assert.match(read(ROW), /\{deletable && \(\s*<div[^>]*className="absolute inset-y-0 right-0 flex md:hidden"/, 'the phone panel exists only under `deletable`')
 })
 
 test('2. missing gate: the archived page reads the setting with fallback false and StoryList/StoryRow default it to false', () => {
@@ -174,8 +177,10 @@ test('9. Delete opens the confirmation, nothing more', () => {
   h.flow.open()
   assert.deepEqual(h.flow.state, { phase: 'confirming', error: null })
   assert.equal(h.calls.length, 0)
-  assert.match(read(ACTIONS), /onClick=\{del\.open\}/)
-  assert.match(read(ACTIONS), /open=\{del\.confirming \|\| del\.pending\}/)
+  assert.match(read(ACTIONS), /onClick=\{e => onDelete\?\.\(e\.currentTarget\)\}/, 'the desktop trigger asks the row to open the dialog')
+  assert.match(read(ROW), /const openDelete = useCallback\(\(from: HTMLElement \| null\) => \{\s*trigger\.current = from\s*swipe\.close\(\)\s*del\.open\(\)/, 'opening the dialog closes any revealed panel first')
+  assert.match(read(ROW), /const dialogOpen = del\.confirming \|\| del\.pending/)
+  assert.match(read(ROW), /open=\{dialogOpen\}/)
   // Opening twice stays confirming; opening while pending changes nothing.
   assert.equal(deleteFlowReducer({ phase: 'confirming', error: null }, { type: 'open' }).phase, 'confirming')
   assert.equal(deleteFlowReducer({ phase: 'pending', error: null }, { type: 'open' }).phase, 'pending')
@@ -190,8 +195,8 @@ test('10. cancel performs no request and closes the dialog; focus returns to the
   await h.flow.confirm()
   assert.equal(h.calls.length, 0)
   assert.deepEqual(h.removed, [])
-  const actions = read(ACTIONS)
-  assert.match(actions, /function cancelDelete\(\) \{\s*del\.cancel\(\)\s*deleteTrigger\.current\?\.focus\(\)/)
+  const rowSrc = read(ROW)
+  assert.match(rowSrc, /const cancelDelete = useCallback\(\(\) => \{\s*del\.cancel\(\)\s*trigger\.current\?\.focus\(\)/, 'focus returns to whichever trigger opened the dialog')
   const dialog = read(DIALOG)
   assert.match(dialog, /if \(e\.key === 'Escape'\)[\s\S]*?if \(!pending\) onCancel\(\)/, 'Escape cancels')
   assert.match(dialog, /onClick=\{\(\) => \{ if \(!pending\) onCancel\(\) \}\}/, 'backdrop click cancels')
@@ -278,15 +283,18 @@ test('16. a duplicate click while pending sends no second request', async () => 
   // The dialog disables both controls while pending.
   const dialog = read(DIALOG)
   assert.equal((dialog.match(/disabled=\{pending\}/g) ?? []).length, 2, 'Cancel and Confirm are disabled while pending')
-  assert.match(read(ACTIONS), /onClick=\{del\.open\}\s*disabled=\{busy \|\| del\.pending\}/, 'the Delete trigger is disabled while pending or while Restore is in flight')
+  assert.match(read(ACTIONS), /onClick=\{e => onDelete\?\.\(e\.currentTarget\)\}\s*disabled=\{busy \|\| deletePending\}/, 'the Delete trigger is disabled while pending or while Restore is in flight')
+  assert.match(read(ROW), /disabled=\{del\.pending \|\| !showPanel\}/, 'the phone panel button is disabled while pending')
+  assert.match(read(ACTIONS), /onClick=\{onToggleReveal\}\s*disabled=\{busy \|\| deletePending\}/, 'More actions is disabled while pending')
 })
 
 test('17. Restore is not actionable while the delete request is pending (and Delete not while Restore is in flight)', () => {
   const src = stripComments(read(ACTIONS))
   const restoreButton = src.slice(src.indexOf('<button'), src.indexOf('</button>'))
   assert.match(restoreButton, /onClick=\{go\}/)
-  assert.match(restoreButton, /disabled=\{busy \|\| del\.pending\}/)
-  assert.match(src, /async function go\(\) \{\s*if \(del\.pending\) return/, 'go() refuses to run during a deletion even if clicked programmatically')
+  assert.match(restoreButton, /disabled=\{busy \|\| deletePending\}/)
+  assert.match(src, /async function go\(\) \{\s*if \(deletePending\) return/, 'go() refuses to run during a deletion even if clicked programmatically')
+  assert.match(read(ROW), /deletePending=\{del\.pending\}/, 'the row passes its pending state to the actions')
 })
 
 // ── Response handling (18-25) ───────────────────────────────────────────────
@@ -346,7 +354,8 @@ test('21. 409 keeps the story, closes the dialog and shows the eligibility messa
   await h.flow.confirm()
   assert.equal(h.calls.length, 2)
   // The row shows the message as an alert next to the actions.
-  assert.match(read(ACTIONS), /const deleteErrorKey = del\.error \? deleteNoticeKey\(del\.error\) : null/)
+  assert.match(read(ACTIONS), /const deleteErrorKey = deleteError \? deleteNoticeKey\(deleteError\) : null/)
+  assert.match(read(ROW), /deleteError=\{del\.error\}/)
   assert.match(read(ACTIONS), /\{message && <span role="alert"/)
 })
 
@@ -439,14 +448,17 @@ test('27. no deletion-record, storage, purchase or ownership eligibility logic i
   assert.doesNotMatch(stripComments(read(LOGIC)), /^import /m)
 })
 
-test('28. no swipe or gesture behaviour was introduced; the Delete button is desktop-only (md and up)', () => {
-  for (const f of UI_FILES) {
-    assert.doesNotMatch(read(f), /swipe|onTouch|onPointer|touch-action|pan-y|drag|gesture|translateX|useMediaQuery|matchMedia/i, `${f} has gesture code`)
+test('28. (revised by 3C-5) gesture code lives only in the swipe modules and StoryRow; the desktop Delete button is unchanged (md and up); the row cannot overflow the page', () => {
+  for (const f of [LIST, ACTIONS, DIALOG, HOOK, LOGIC]) {
+    assert.doesNotMatch(read(f), /swipe|onTouch|onPointer|touch-action|touchAction|pan-y|drag|gesture|translateX|useMediaQuery|matchMedia/i, `${f} has gesture code`)
   }
-  assert.match(read(ACTIONS), /className="hidden md:inline-flex[^"]*text-red-600/, 'the Delete trigger is hidden below md')
-  // The row layout itself is unchanged apart from the two new props.
+  assert.match(read(ACTIONS), /className="hidden md:inline-flex[^"]*text-red-600/, 'the desktop Delete trigger is hidden below md')
+  assert.match(read(ACTIONS), /className="md:hidden inline-flex items-center justify-center min-h-11 min-w-11/, 'the More actions control is phone-only and at least 44px')
+  // The row wrapper clips the sliding content, so a revealed row never widens the page.
   const row = read(ROW)
-  assert.match(row, /<div className="flex items-center gap-3 sm:gap-4 bg-white rounded-2xl border border-gray-100 shadow-sm px-3\.5 sm:px-4 py-3\.5 sm:py-4 hover:border-brand-200 transition-colors">/)
+  assert.match(row, /className="relative rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:border-brand-200 transition-colors"/)
+  assert.match(row, /style=\{\{ transform: `translateX\(\$\{swipe\.offset\}px\)`, touchAction: 'pan-y' \}\}/, 'the content slides by the tracked offset and keeps vertical panning native')
+  assert.match(row, /motion-reduce:transition-none/, 'reduced motion disables the slide transition')
 })
 
 test('29. customer_story_deletion_enabled remains OFF/unseeded: no migration, seed, admin toggle or client reference', () => {
@@ -523,7 +535,7 @@ test('A11y. explicit labels, dialog semantics, text-distinguishable confirm, foc
   assert.match(dialog, /e\.key === 'Tab'/, 'Tab is trapped inside the dialog')
   assert.match(dialog, /aria-busy=\{pending \|\| undefined\}/)
   const actions = read(ACTIONS)
-  assert.match(actions, /\{del\.pending \? a\.deletePending : a\.deleteForever\}/, 'the trigger reads "Deleting…" while pending')
+  assert.match(actions, /\{deletePending \? a\.deletePending : a\.deleteForever\}/, 'the trigger reads "Deleting…" while pending')
   assert.match(actions, /role="alert"/)
   // Confirm and Cancel differ by text in both languages, not by colour alone.
   for (const lang of ['en', 'es'] as const) {
