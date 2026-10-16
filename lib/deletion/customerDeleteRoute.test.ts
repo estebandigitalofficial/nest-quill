@@ -500,8 +500,9 @@ test('25. supabase/functions/process-story is untouched (22 files, combined cont
   assert.equal(h.digest('hex'), '012a4fd51cae342523424ff987e3d355f5c064ba1d35f452bc12fcaa500d9756')
 })
 
-test('26. the 3C-8 legal files (lib/i18n/legal.ts, privacy and terms pages, LegalDocument) are untouched', () => {
-  assert.equal(sha('lib/i18n/legal.ts'), 'f9bfafba82e5a22ac6652e1cc6aeb637faab6d88b1f679fd4386c0ccb5b8f6c7')
+test('26. the legal files are at their expected revision (lib/i18n/legal.ts as updated by 3C-8; privacy and terms pages and LegalDocument untouched)', () => {
+  // 3C-8 (2026-10-16) rewrote the deletion disclosure; lib/i18n/legal.test.ts owns the legal text from here.
+  assert.equal(sha('lib/i18n/legal.ts'), '0e4ccfae77d0ea338f539c24df85ef0f878a1d7c0832301bb44e75b42eea9e2c')
   assert.equal(sha('app/privacy/page.tsx'), '13d488e16745236312aa3434f49c119fd033cda9e58ecc7ccccd5613476ed9b8')
   assert.equal(sha('app/terms/page.tsx'), 'f46063029254657a86e72d0ac2581c5fbffc7753fc4623d7e4bfb0aa37156fd9')
   assert.equal(sha('components/legal/LegalDocument.tsx'), '0a3e14e511d2cf72bf9f11428453f6584e00d52fb50b3a8bc65934777566430a')

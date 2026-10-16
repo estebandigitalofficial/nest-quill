@@ -12,6 +12,14 @@
  * arbitration, retention periods or deletion deadlines without a founder
  * decision (see audits/legal-rewrite-2026-10-15/completion-report.md).
  *
+ * Deletion update 2026-10-16 (3C-8): describes the customer permanent
+ * deletion of ARCHIVED FAILED stories exactly as implemented by
+ * app/api/story/[requestId] DELETE and the deletion service (eligibility checked by
+ * the system, asynchronous clean-up with automatic retry, a minimal deletion
+ * record kept, purchase records kept with the story detached, no automatic
+ * restoration of paid units, no account or completed-story deletion). It
+ * never names internal mechanisms and promises no completion timeline.
+ *
  * The English text is the authoritative policy. The Spanish text is a
  * faithful translation of the same rules — never a different policy — with
  * identical section order and block structure (lib/i18n/i18n.test.ts).
@@ -42,8 +50,8 @@ export interface LegalDoc {
 
 const CONTACT = 'contact@nestandquill.com'
 
-const UPDATED_EN = 'Last updated: October 15, 2026'
-const UPDATED_ES = 'Última actualización: 15 de octubre de 2026'
+const UPDATED_EN = 'Last updated: October 16, 2026'
+const UPDATED_ES = 'Última actualización: 16 de octubre de 2026'
 const OPERATOR_EN = 'Nest & Quill is operated by Digital Official & Huerta Group.'
 const OPERATOR_ES = 'Nest & Quill es operado por Digital Official & Huerta Group.'
 
@@ -137,7 +145,9 @@ const termsEn: LegalDoc = {
     ] },
     { title: 'Archive and Deletion', blocks: [
       { p: 'You can archive stories in your account, which hides them from your library. Archiving is not deletion: an archived story, its text, illustrations and any PDF remain stored, its story link keeps working, and you can restore it.' },
-      { p: 'There is currently no self-service way to permanently delete a story or an account. To ask us to delete a story, your account or other information, contact us. Our Privacy Policy explains how we handle these requests and what information may be kept.' },
+      { p: 'Permanent deletion is a separate action. You can permanently delete a story yourself only when it belongs to your account, its generation failed, you have archived it, and the Service confirms that it is not being worked on and is safe to remove. A permanently deleted story cannot be restored. Finished stories, stories still in progress, guest stories and accounts cannot be deleted this way at this time; to ask us to delete one of those, your account or other information, contact us.' },
+      { p: 'When you permanently delete an eligible story, the story and its generated content are removed from your account and our active records, and its illustrations and any PDF are removed from storage. Part of this clean-up may finish after your request has been accepted; if it cannot be completed right away, the Service retries it automatically. We do not promise a fixed completion time.' },
+      { p: 'Permanently deleting a failed story does not restore a book used from a purchase or subscription period and is not a refund; problems with a paid book are handled as described under “Generation Problems and Refunds”. If the failed story was holding an unused Free book, that Free book may become available again under the Free plan rules. Records of purchases and subscription periods are kept, with the deleted story no longer attached to them. Deleting a story does not close your account. Our Privacy Policy explains what information may be kept.' },
     ] },
     { title: 'AI-Generated Content', blocks: [
       { p: 'Stories and illustrations are generated automatically with artificial intelligence provided by a third-party AI service, and they are not reviewed by a person before delivery. AI-generated content can contain mistakes, inconsistencies or unexpected results. Please review each book before sharing it with a child. We do not guarantee that generated content will be accurate, error-free or suitable for every child.' },
@@ -267,7 +277,9 @@ const termsEs: LegalDoc = {
     ] },
     { title: 'Archivo y eliminación', blocks: [
       { p: 'Puedes archivar cuentos en tu cuenta, lo que los oculta de tu biblioteca. Archivar no es eliminar: un cuento archivado, su texto, sus ilustraciones y cualquier PDF siguen almacenados, su enlace sigue funcionando y puedes restaurarlo.' },
-      { p: 'Actualmente no existe una forma de eliminar de manera permanente un cuento o una cuenta por tu cuenta. Para pedirnos que eliminemos un cuento, tu cuenta u otra información, contáctanos. Nuestra Política de privacidad explica cómo atendemos estas solicitudes y qué información puede conservarse.' },
+      { p: 'La eliminación permanente es una acción distinta. Puedes eliminar de manera permanente un cuento por tu cuenta solo cuando pertenece a tu cuenta, su generación falló, lo has archivado y el Servicio confirma que no se está trabajando en él y que es seguro eliminarlo. Un cuento eliminado de manera permanente no se puede restaurar. Los cuentos terminados, los cuentos en curso, los cuentos de invitado y las cuentas no pueden eliminarse de esta forma por ahora; para pedirnos que eliminemos alguno de ellos, tu cuenta u otra información, contáctanos.' },
+      { p: 'Cuando eliminas de manera permanente un cuento elegible, el cuento y su contenido generado se retiran de tu cuenta y de nuestros registros activos, y sus ilustraciones y cualquier PDF se retiran del almacenamiento. Parte de esta limpieza puede terminar después de que tu solicitud haya sido aceptada; si no puede completarse de inmediato, el Servicio la reintenta automáticamente. No prometemos un plazo fijo para completarla.' },
+      { p: 'Eliminar de manera permanente un cuento fallido no restituye un libro usado de una compra o de un periodo de suscripción y no constituye un reembolso; los problemas con un libro de pago se atienden como se describe en “Problemas de generación y reembolsos”. Si el cuento fallido tenía reservado un libro Free sin usar, ese libro Free puede volver a estar disponible según las reglas del plan Free. Los registros de compras y periodos de suscripción se conservan, y el cuento eliminado deja de estar vinculado a ellos. Eliminar un cuento no cierra tu cuenta. Nuestra Política de privacidad explica qué información puede conservarse.' },
     ] },
     { title: 'Contenido generado por IA', blocks: [
       { p: 'Los cuentos y las ilustraciones se generan automáticamente con inteligencia artificial de un servicio de IA de terceros y no son revisados por una persona antes de entregarse. El contenido generado por IA puede contener errores, incoherencias o resultados inesperados. Revisa cada libro antes de compartirlo con un niño o una niña. No garantizamos que el contenido generado sea preciso, libre de errores o adecuado para todos los niños.' },
@@ -445,13 +457,16 @@ const privacyEn: LegalDoc = {
         'Purchase and subscription records for accounting, tax and dispute purposes',
         'Marketing suppression records, so an unsubscribe keeps working',
         'Security, abuse-prevention and operational records',
+        'A minimal record of each permanent story deletion (which account deleted which story, when, and whether the clean-up finished), for security, integrity, operational and accountability purposes',
         'Information we must keep to meet legal obligations',
       ] },
       { p: 'Copies of information may remain in backups and logs, and in the systems of our providers (including email, payment, AI and infrastructure providers) under their own retention practices. These copies cannot always be removed immediately.' },
     ] },
-    { title: 'Archive and Deletion Requests', blocks: [
+    { title: 'Archive, Deletion and Deletion Requests', blocks: [
       { p: 'Archiving a story hides it from your library. It is not deletion: the story, its text, illustrations and any PDF remain stored, its link keeps working, and you can restore it.' },
-      { p: 'There is currently no self-service way to permanently delete a story or an account. You can ask us to delete a story, your account or other personal information by writing to the contact address below. We will review the request and may need to confirm that it comes from the account holder or the person who created the story. Some information may be kept for the reasons described under “Data Retention”, and copies held in backups or by our providers may not be removable right away.' },
+      { p: 'Permanent deletion is a separate action. You can permanently delete a story yourself only when it belongs to your account, its generation failed, you have archived it, and the Service confirms that it is not being worked on and is safe to remove. When you do, the story request, the information you gave us for that story (including the adult authorization confirmation recorded on it), the generated text, scene descriptions and prompts, and its illustrations and any PDF are removed from our active systems. Part of this clean-up may finish after your request has been accepted, and the Service retries it automatically until it is done. We do not promise a fixed completion time.' },
+      { p: 'We keep a minimal record of the deletion for security, integrity, operational and accountability purposes, as listed under “Data Retention”. Purchase and subscription records are kept for the reasons listed there, with the deleted story no longer attached to them. Copies held in backups, logs or by our providers are handled as described under “Data Retention” and may not be removable right away.' },
+      { p: 'Deleting a story is not account deletion and does not remove other information, such as your account details, your other stories or your purchase records. Finished stories, stories still in progress, guest stories and accounts cannot be deleted this way at this time. You can ask us to delete any story, your account or other personal information by writing to the contact address below. We will review the request and may need to confirm that it comes from the account holder or the person who created the story. Some information may be kept for the reasons described under “Data Retention”.' },
     ] },
     { title: 'Your Choices and Requests', blocks: [
       { p: 'You can:' },
@@ -459,6 +474,7 @@ const privacyEn: LegalDoc = {
         'Unsubscribe from marketing email using the link in any marketing email',
         'Leave out optional story details such as dedications and notes',
         'Clear or block cookies and browser storage in your browser',
+        'Permanently delete a story that belongs to you when it is archived, has failed and is eligible, as described under “Archive, Deletion and Deletion Requests”',
         'Contact us to ask about, correct or delete information we hold about you or a story you created',
       ] },
       { p: 'Depending on where you live, you may have additional privacy rights. Contact us to make a request.' },
@@ -604,13 +620,16 @@ const privacyEs: LegalDoc = {
         'Los registros de compras y suscripciones con fines contables, fiscales y de disputas',
         'Los registros de exclusión de marketing, para que una baja siga funcionando',
         'Los registros de seguridad, prevención de abusos y operación',
+        'Un registro mínimo de cada eliminación permanente de un cuento (qué cuenta eliminó qué cuento, cuándo y si la limpieza terminó), con fines de seguridad, integridad, operación y rendición de cuentas',
         'La información que debemos conservar para cumplir obligaciones legales',
       ] },
       { p: 'Pueden quedar copias de la información en copias de seguridad y registros, y en los sistemas de nuestros proveedores (incluidos los de correo, pagos, IA e infraestructura) conforme a sus propias prácticas de conservación. Esas copias no siempre pueden eliminarse de inmediato.' },
     ] },
-    { title: 'Archivo y solicitudes de eliminación', blocks: [
+    { title: 'Archivo, eliminación y solicitudes de eliminación', blocks: [
       { p: 'Archivar un cuento lo oculta de tu biblioteca. No es eliminarlo: el cuento, su texto, sus ilustraciones y cualquier PDF siguen almacenados, su enlace sigue funcionando y puedes restaurarlo.' },
-      { p: 'Actualmente no existe una forma de eliminar de manera permanente un cuento o una cuenta por tu cuenta. Puedes pedirnos que eliminemos un cuento, tu cuenta u otra información personal escribiendo a la dirección de contacto indicada abajo. Revisaremos la solicitud y es posible que necesitemos confirmar que proviene del titular de la cuenta o de la persona que creó el cuento. Parte de la información puede conservarse por los motivos descritos en “Conservación de los datos”, y las copias en respaldos o en poder de nuestros proveedores pueden no eliminarse de inmediato.' },
+      { p: 'La eliminación permanente es una acción distinta. Puedes eliminar de manera permanente un cuento por tu cuenta solo cuando pertenece a tu cuenta, su generación falló, lo has archivado y el Servicio confirma que no se está trabajando en él y que es seguro eliminarlo. Al hacerlo, la solicitud del cuento, la información que nos diste para ese cuento (incluida la confirmación de autorización de la persona adulta registrada en él), el texto generado, las descripciones de las escenas y las instrucciones (prompts), así como sus ilustraciones y cualquier PDF, se retiran de nuestros sistemas activos. Parte de esta limpieza puede terminar después de que tu solicitud haya sido aceptada, y el Servicio la reintenta automáticamente hasta completarla. No prometemos un plazo fijo para completarla.' },
+      { p: 'Conservamos un registro mínimo de la eliminación con fines de seguridad, integridad, operación y rendición de cuentas, como se indica en “Conservación de los datos”. Los registros de compras y suscripciones se conservan por los motivos indicados allí, y el cuento eliminado deja de estar vinculado a ellos. Las copias en copias de seguridad, registros o en poder de nuestros proveedores se tratan como se describe en “Conservación de los datos” y pueden no eliminarse de inmediato.' },
+      { p: 'Eliminar un cuento no es eliminar la cuenta y no retira otra información, como los datos de tu cuenta, tus otros cuentos o tus registros de compras. Los cuentos terminados, los cuentos en curso, los cuentos de invitado y las cuentas no pueden eliminarse de esta forma por ahora. Puedes pedirnos que eliminemos cualquier cuento, tu cuenta u otra información personal escribiendo a la dirección de contacto indicada abajo. Revisaremos la solicitud y es posible que necesitemos confirmar que proviene del titular de la cuenta o de la persona que creó el cuento. Parte de la información puede conservarse por los motivos descritos en “Conservación de los datos”.' },
     ] },
     { title: 'Tus opciones y solicitudes', blocks: [
       { p: 'Puedes:' },
@@ -618,6 +637,7 @@ const privacyEs: LegalDoc = {
         'Darte de baja del correo de marketing con el enlace incluido en cualquier correo de marketing',
         'Omitir detalles opcionales del cuento, como las dedicatorias y las notas',
         'Borrar o bloquear las cookies y el almacenamiento en tu navegador',
+        'Eliminar de manera permanente un cuento que te pertenece cuando está archivado, falló y es elegible, como se describe en “Archivo, eliminación y solicitudes de eliminación”',
         'Contactarnos para consultar, corregir o eliminar información que tengamos sobre ti o sobre un cuento que creaste',
       ] },
       { p: 'Según el lugar donde vivas, es posible que tengas derechos de privacidad adicionales. Contáctanos para presentar una solicitud.' },
