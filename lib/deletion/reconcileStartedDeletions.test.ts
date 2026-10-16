@@ -397,9 +397,9 @@ test('17. the sweep module contains no storage code: no client.storage, no bucke
   assert.doesNotMatch(routeSrc, /storage|delete_failed_story|complete_story_deletion|\.from\(/)
 })
 
-test('18. no customer DELETE route exists; the sweep route is GET only', () => {
+test('18. the only customer DELETE route under /api/story is the 3C-3 one; the sweep route is GET only', () => {
   const routes = SOURCES.filter((p) => /app\/api\/.*route\.tsx?$/.test(p) && /export (async )?function DELETE/.test(readFileSync(p, 'utf8')))
-  assert.ok(!routes.some((p) => /\/story\//.test(p)), `a DELETE handler exists under /api/story: ${routes.join(', ')}`)
+  assert.deepEqual(routes.filter((p) => /\/story\//.test(p)), [resolve(ROOT, 'app/api/story/[requestId]/route.ts')], `DELETE handlers under /api/story: ${routes.join(', ')}`)
   assert.match(routeSrc, /export async function GET\(/)
   assert.doesNotMatch(routeSrc, /export (async )?function (POST|PUT|PATCH|DELETE)\b/, 'only Vercel Cron GET is served')
   // the route sits under /api/cron like the existing scheduler entry points, and vercel.json schedules it
@@ -412,7 +412,7 @@ test('18. no customer DELETE route exists; the sweep route is GET only', () => {
 
 test('19. no UI was introduced: nothing under components/ or app/(pages) references the sweep or lib/deletion', () => {
   const importers = SOURCES.filter((p) => !p.startsWith(resolve(ROOT, 'lib/deletion')) && /lib\/deletion\/|from '\.\.?\/deletion/.test(readFileSync(p, 'utf8')))
-  assert.deepEqual(importers, [ROUTE], 'only the cron route imports lib/deletion')
+  assert.deepEqual([...importers].sort(), [ROUTE, resolve(ROOT, 'app/api/story/[requestId]/route.ts')].sort(), 'only the cron route and the 3C-3 customer route import lib/deletion')
   const uiFiles = SOURCES.filter((p) => /\.tsx$/.test(p) || p.startsWith(resolve(ROOT, 'components')))
   for (const f of uiFiles) assert.doesNotMatch(readFileSync(f, 'utf8'), /deletion-sweep|reconcileStartedDeletions|deletion_log/, `${f} references the sweep`)
 })

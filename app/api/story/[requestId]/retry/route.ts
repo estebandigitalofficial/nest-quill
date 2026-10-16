@@ -86,7 +86,12 @@ export async function POST(
       storyRequest.retry_count + 1,
     )
 
-    await adminSupabase
+    // 3C-3 retry hardening: the row was read as 'failed' above, but a
+    // permanent deletion (or another state change) may have landed since.
+    // Condition the requeue on the status still being 'failed' and require a
+    // matched row; otherwise answer 404 and never trigger the pipeline for a
+    // story that no longer exists or is no longer failed.
+    const { data: requeued, error: requeueError } = await adminSupabase
       .from('story_requests')
       .update({
         status: 'queued',
@@ -102,6 +107,10 @@ export async function POST(
         retry_after: nextRetryAfter,
       })
       .eq('id', requestId)
+      .eq('status', 'failed')
+      .select('id')
+    if (requeueError) throw requeueError
+    if (!requeued || requeued.length === 0) throw new NotFoundError('Story request')
 
     after(async () => {
       try {
