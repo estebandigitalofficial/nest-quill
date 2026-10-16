@@ -8,6 +8,7 @@ import Link from 'next/link'
 import StoryRowActions from './StoryRowActions'
 import { useLanguage } from '@/lib/i18n/context'
 import { fill } from '@/lib/i18n'
+import { canOfferStoryDeletion, type RemovedOutcome } from '@/lib/account/storyDeletion'
 
 const COVER_COLORS = [
   'bg-brand-100',
@@ -38,11 +39,17 @@ interface Props {
   thumbUrl?: string
   /** archive on the active list, restore on the archived list */
   mode: 'archive' | 'restore'
+  /** 3C-4: server-resolved customer deletion setting; false when missing, off or unreadable. */
+  deletionEnabled?: boolean
+  /** 3C-4: the story is no longer listed for this customer. */
+  onRemoved?: (requestId: string, outcome: RemovedOutcome) => void
 }
 
-export default function StoryRow({ story, thumbUrl, mode }: Props) {
+export default function StoryRow({ story, thumbUrl, mode, deletionEnabled = false, onRemoved }: Props) {
   const { lang, t } = useLanguage()
   const a = t.account
+  // Presentation only: archived + failed + setting on. The server decides eligibility.
+  const deletable = mode === 'restore' && canOfferStoryDeletion({ enabled: deletionEnabled, status: story.status, archivedAt: story.archived_at })
   return (
     <div className="flex items-center gap-3 sm:gap-4 bg-white rounded-2xl border border-gray-100 shadow-sm px-3.5 sm:px-4 py-3.5 sm:py-4 hover:border-brand-200 transition-colors">
       <Link href={`/story/${story.id}`} className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
@@ -67,7 +74,7 @@ export default function StoryRow({ story, thumbUrl, mode }: Props) {
         <span className="text-xs text-gray-400 hidden sm:block">
           {new Date(story.created_at).toLocaleDateString(lang === 'es' ? 'es-US' : 'en-US')}
         </span>
-        <StoryRowActions requestId={story.id} mode={mode} />
+        <StoryRowActions requestId={story.id} mode={mode} deletable={deletable} onRemoved={onRemoved} />
       </div>
     </div>
   )

@@ -4,10 +4,11 @@
 // button. State stays local: each click appends a fresh page from
 // /api/account/stories, dedupes by id, and stops when nextCursor is null.
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import StoryRow from './StoryRow'
 import { useLanguage } from '@/lib/i18n/context'
 import type { Lang } from '@/lib/i18n'
+import { deleteNoticeKey, type RemovedOutcome } from '@/lib/account/storyDeletion'
 
 interface Story {
   id: string
@@ -32,15 +33,29 @@ interface Props {
   archivedView: boolean
   /** Server-resolved language (the client context takes over after hydration). */
   lang?: Lang
+  /**
+   * 3C-4: the customer deletion setting as the server read it. Only the
+   * archived list passes it; false (the default) renders no Delete action.
+   */
+  deletionEnabled?: boolean
 }
 
-export default function StoryList({ initialRows, initialNextCursor, mode, archivedView }: Props) {
+export default function StoryList({ initialRows, initialNextCursor, mode, archivedView, deletionEnabled = false }: Props) {
   const { t } = useLanguage()
   const a = t.account
   const [rows, setRows] = useState<RowEntry[]>(initialRows)
   const [cursor, setCursor] = useState<string | null>(initialNextCursor)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // 3C-4: outcome of the last permanent deletion, announced above the list
+  // once the row is gone ("Story deleted." / cleanup still finishing / no longer available).
+  const [notice, setNotice] = useState<string | null>(null)
+
+  const handleRemoved = useCallback((requestId: string, outcome: RemovedOutcome) => {
+    setRows(prev => prev.filter(r => r.story.id !== requestId))
+    const key = deleteNoticeKey(outcome)
+    setNotice(key ? a[key] : null)
+  }, [a])
 
   async function loadMore() {
     if (!cursor || loading) return
@@ -70,12 +85,19 @@ export default function StoryList({ initialRows, initialNextCursor, mode, archiv
 
   return (
     <div className="space-y-3">
+      <div role="status" aria-live="polite">
+        {notice && (
+          <p className="text-sm text-oxford bg-white border border-gray-100 shadow-sm rounded-lg px-4 py-2 text-center">{notice}</p>
+        )}
+      </div>
       {rows.map(({ story, thumbUrl }) => (
         <StoryRow
           key={story.id}
           story={story}
           thumbUrl={thumbUrl ?? undefined}
           mode={mode}
+          deletionEnabled={deletionEnabled}
+          onRemoved={handleRemoved}
         />
       ))}
 
