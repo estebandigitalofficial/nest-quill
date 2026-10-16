@@ -43,10 +43,14 @@ function createTableBlock(source: string, table: string): string {
 const purchaseColumns = columnsOf(createTableBlock(foundation, 'story_purchases'))
 const periodColumns = columnsOf(createTableBlock(foundation, 'subscription_periods'))
 
-test('the migration is the newest, follows 20240072 and is the only new file', () => {
-  assert.equal(allMigrations.at(-1), NEW_MIGRATION)
-  assert.equal(allMigrations.at(-2), '20240072_story_requests_adult_authorization.sql')
+test('the migration follows 20240072 and is followed only by the 3C-1 deletion migration (20240074)', () => {
+  // 20240073 was the newest file when 3B-1 shipped; 3C-1 (20240074) builds on
+  // it and is pinned by failedStoryDeletion.test.ts. Nothing else may follow.
+  assert.equal(allMigrations.at(-2), NEW_MIGRATION)
+  assert.equal(allMigrations.at(-3), '20240072_story_requests_adult_authorization.sql')
+  assert.equal(allMigrations.at(-1), '20240074_failed_story_deletion.sql')
   assert.equal(allMigrations.filter((f) => f.startsWith('20240073')).length, 1)
+  assert.equal(allMigrations.filter((f) => f.startsWith('20240074')).length, 1)
 })
 
 // 1. story_purchases.user_id becomes nullable.
