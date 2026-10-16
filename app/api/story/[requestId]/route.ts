@@ -3,6 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NotFoundError, toApiError } from '@/lib/utils/errors'
 import { COVER_BUCKET, pickCoverPath } from '@/lib/services/cover'
+import { isSettingEnabled } from '@/lib/settings/gates'
+import { deleteFailedStory, type StoryDeletionClient } from '@/lib/deletion/deleteFailedStory'
+import { CUSTOMER_DELETION_FLAG_KEY, handleCustomerStoryDelete } from '@/lib/deletion/customerDeleteRoute'
 import type { StoryRequest } from '@/types/database'
 import type { StoryContentResponse } from '@/types/story'
 
@@ -113,4 +116,39 @@ export async function GET(
     const { message, code, statusCode } = toApiError(err)
     return NextResponse.json({ message, code }, { status: statusCode })
   }
+}
+
+// DELETE /api/story/[requestId] — 3C-3. The signed-in owner of an ARCHIVED
+// FAILED story asks for its permanent deletion. Everything destructive runs
+// inside the 3C-2 service (lib/deletion/deleteFailedStory.ts) and the
+// 20240074/20240075 SQL functions; this handler supplies only the session
+// user id, the route id and the exposure gate. No body or query parameter is
+// read, so nothing in the request can name a different user.
+//
+// Contract (lib/deletion/customerDeleteRoute.ts): 404 while the
+// `customer_story_deletion_enabled` setting is off or for an unknown /
+// malformed / another customer's id; 401 unauthenticated; 409 not eligible;
+// 200 { ok, state: 'deleted' } for a fresh or repeated deletion; 202
+// { ok, state: 'cleanup_pending' } when the rows are gone but storage
+// cleanup did not finish (the daily 3C-6 sweep completes it); 500 generic.
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ requestId: string }> }
+) {
+  const { requestId } = await params
+  const { status, body } = await handleCustomerStoryDelete(
+    {
+      isEnabled: () => isSettingEnabled(CUSTOMER_DELETION_FLAG_KEY, false),
+      getUserId: async () => {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        return user?.id ?? null
+      },
+      // The any-typed admin client trips TS2589 against the structural service type.
+      deleteStory: (input) => deleteFailedStory(createAdminClient() as unknown as StoryDeletionClient, input),
+      log: (entry) => console.info('[story-delete]', JSON.stringify(entry)),
+    },
+    requestId,
+  )
+  return NextResponse.json(body, { status })
 }

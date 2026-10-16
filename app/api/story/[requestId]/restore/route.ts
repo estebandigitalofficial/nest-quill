@@ -24,12 +24,21 @@ export async function POST(_req: NextRequest, { params }: RouteContext) {
     if (!storyReq) throw new NotFoundError('Story')
     if (storyReq.user_id !== user.id) throw new NotFoundError('Story')
 
-    const { error } = await admin
+    // 3C-3 restore hardening: the UPDATE returns the rows it touched. If the
+    // story was permanently deleted between the ownership read above and this
+    // write (the 20240074 deletion function holds the row lock until its transaction
+    // commits), zero rows match and the customer gets the same 404 as for a
+    // story that never existed — never a false "restored". The reverse order
+    // needs nothing here: once archived_at is cleared, the deletion function's
+    // locked eligibility check returns not_eligible.
+    const { data: restored, error } = await admin
       .from('story_requests')
       .update({ archived_at: null, archived_by: null })
       .eq('id', requestId)
       .eq('user_id', user.id)
+      .select('id')
     if (error) throw error
+    if (!restored || restored.length === 0) throw new NotFoundError('Story')
 
     return NextResponse.json({ ok: true })
   } catch (err) {
