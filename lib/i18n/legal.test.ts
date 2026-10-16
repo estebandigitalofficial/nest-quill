@@ -5,8 +5,11 @@
 // product: locked operator wording, plan numbers from the single source of
 // truth, the share-link and archive disclosures, and the absence of stale or
 // undecided legal positions. Structural EN/ES parity is in i18n.test.ts.
+// Test 10 (3C-8, 2026-10-16) pins the customer permanent-deletion disclosure
+// to the capability app/api/story/[requestId] DELETE actually provides.
 import { test } from 'node:test'
-import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import assert from 'node:assert/strict'
 import { legal, LEGAL_CONTACT, type LegalDoc } from './legal.ts'
@@ -46,10 +49,10 @@ test('1. Operator wording is exactly the locked sentence, with no entity designa
 
 test('2. Last-updated date is the revision date and identical across languages and documents', () => {
   for (const doc of DOCS) {
-    assert.equal(legal.en[doc].updated, 'Last updated: October 15, 2026')
-    assert.equal(legal.es[doc].updated, 'Última actualización: 15 de octubre de 2026')
+    assert.equal(legal.en[doc].updated, 'Last updated: October 16, 2026')
+    assert.equal(legal.es[doc].updated, 'Última actualización: 16 de octubre de 2026')
   }
-  for (const lang of LANGS) assert.doesNotMatch(all(lang), /May 2026|mayo de 2026/)
+  for (const lang of LANGS) assert.doesNotMatch(all(lang), /May 2026|mayo de 2026|October 15|15 de octubre/)
 })
 
 test('3. Plan prices, pages and allowances match TIER_CAPS / PLAN_CONFIG in both languages', () => {
@@ -109,8 +112,9 @@ test('5. Share-link, archive and deletion disclosures describe current behaviour
   assert.match(es, /Archivar no es eliminar/)
   assert.match(en, /Archiving a story does not turn off its link/)
   assert.match(es, /Archivar un cuento no desactiva su enlace/)
-  assert.match(en, /no self-service way to permanently delete a story or an account/)
-  assert.match(es, /no existe una forma de eliminar de manera permanente un cuento o una cuenta/)
+  // 3C-8: the "no self-service deletion" statement is gone (it became false with 3C-3); test 10 pins its replacement.
+  assert.doesNotMatch(en, /no self-service way|There is currently no self-service/)
+  assert.doesNotMatch(es, /no existe una forma de eliminar de manera permanente|por tu cuenta\. Para pedirnos/)
   assert.match(en, /We have not set fixed retention periods/)
   assert.match(es, /No hemos fijado plazos de conservación/)
 })
@@ -136,7 +140,7 @@ test('7. Privacy discloses providers, no raw IP/geo on stories, and marketing vs
 
 test('8. EN and ES carry the same numbers and the same section titles are unique per document', () => {
   for (const doc of DOCS) {
-    const nums = (lang: 'en' | 'es') => (text(legal[lang][doc]).match(/\d+(\.\d+)?/g) ?? []).filter(n => n !== '15' && n !== '2026').sort()
+    const nums = (lang: 'en' | 'es') => (text(legal[lang][doc]).match(/\d+(\.\d+)?/g) ?? []).filter(n => n !== '16' && n !== '2026').sort()
     assert.deepEqual(nums('es'), nums('en'), doc)
     for (const lang of LANGS) {
       const titles = legal[lang][doc].sections.map(s => s.title)
@@ -162,4 +166,116 @@ test('9. Surrounding launch copy: email From name, contact categories, cookie ba
     assert.doesNotMatch(Object.keys(dictionaries[lang].contact.categories).join(' '), /classroom|sponsor/)
     assert.match(dictionaries[lang].cookie.text, lang === 'en' ? /cookies and browser storage/ : /cookies y el almacenamiento del navegador/)
   }
+})
+
+// ── 3C-8: customer permanent deletion of archived failed stories ──────────
+const ROOT = resolve(import.meta.dirname, '../..')
+const sha = (rel: string) => createHash('sha256').update(readFileSync(resolve(ROOT, rel))).digest('hex')
+const DELETION_SECTION = { en: 'Archive, Deletion and Deletion Requests', es: 'Archivo, eliminación y solicitudes de eliminación' } as const
+
+test('10. Deletion disclosure matches the 3C-3 capability in EN and ES Terms and Privacy', () => {
+  const docs = { en: { terms: text(legal.en.terms), privacy: text(legal.en.privacy) }, es: { terms: text(legal.es.terms), privacy: text(legal.es.privacy) } }
+  // (2)-(5) each document describes the narrow capability: own + failed + archived + system confirms it is safe.
+  for (const doc of DOCS) {
+    assert.match(docs.en[doc], /permanently delete a story yourself only when it belongs to your account, its generation failed, you have archived it, and the Service confirms that it is not being worked on and is safe to remove/, `en ${doc}`)
+    assert.match(docs.es[doc], /eliminar de manera permanente un cuento por tu cuenta solo cuando pertenece a tu cuenta, su generación falló, lo has archivado y el Servicio confirma que no se está trabajando en él y que es seguro eliminarlo/, `es ${doc}`)
+    // (6) archive is explicitly distinguished from permanent deletion, and archive keeps data + link + restore.
+    assert.match(docs.en[doc], /Permanent deletion is a separate action/, `en ${doc}`)
+    assert.match(docs.es[doc], /La eliminación permanente es una acción distinta/, `es ${doc}`)
+    // (7)(8)(9) no completed-story, account or guest self-service deletion.
+    assert.match(docs.en[doc], /Finished stories, stories still in progress, guest stories and accounts cannot be deleted this way at this time/, `en ${doc}`)
+    assert.match(docs.es[doc], /Los cuentos terminados, los cuentos en curso, los cuentos de invitado y las cuentas no pueden eliminarse de esta forma por ahora/, `es ${doc}`)
+    // (11) asynchronous clean-up with automatic retry; (10) no fixed completion time.
+    assert.match(docs.en[doc], /Part of this clean-up may finish after your request has been accepted/, `en ${doc}`)
+    assert.match(docs.en[doc], /retries it automatically/, `en ${doc}`)
+    assert.match(docs.en[doc], /We do not promise a fixed completion time/, `en ${doc}`)
+    assert.match(docs.es[doc], /Parte de esta limpieza puede terminar después de que tu solicitud haya sido aceptada/, `es ${doc}`)
+    assert.match(docs.es[doc], /la reintenta automáticamente/, `es ${doc}`)
+    assert.match(docs.es[doc], /No prometemos un plazo fijo para completarla/, `es ${doc}`)
+  }
+  assert.match(docs.en.terms, /Archiving is not deletion/)
+  assert.match(docs.es.terms, /Archivar no es eliminar/)
+  assert.match(docs.en.privacy, /It is not deletion/)
+  assert.match(docs.es.privacy, /No es eliminarlo/)
+  // (6) deletion is not account closure.
+  assert.match(docs.en.terms, /Deleting a story does not close your account/)
+  assert.match(docs.es.terms, /Eliminar un cuento no cierra tu cuenta/)
+  assert.match(docs.en.privacy, /Deleting a story is not account deletion and does not remove other information/)
+  assert.match(docs.es.privacy, /Eliminar un cuento no es eliminar la cuenta y no retira otra información/)
+  // (12) minimal deletion record kept, listed under Data Retention in both languages.
+  assert.match(docs.en.privacy, /A minimal record of each permanent story deletion \(which account deleted which story, when, and whether the clean-up finished\), for security, integrity, operational and accountability purposes/)
+  assert.match(docs.es.privacy, /Un registro mínimo de cada eliminación permanente de un cuento \(qué cuenta eliminó qué cuento, cuándo y si la limpieza terminó\), con fines de seguridad, integridad, operación y rendición de cuentas/)
+  assert.match(docs.en.privacy, /We keep a minimal record of the deletion/)
+  assert.match(docs.es.privacy, /Conservamos un registro mínimo de la eliminación/)
+  // (13) purchase / subscription records remain with the story detached.
+  assert.match(docs.en.terms, /Records of purchases and subscription periods are kept, with the deleted story no longer attached to them/)
+  assert.match(docs.es.terms, /Los registros de compras y periodos de suscripción se conservan, y el cuento eliminado deja de estar vinculado a ellos/)
+  assert.match(docs.en.privacy, /Purchase and subscription records are kept for the reasons listed there, with the deleted story no longer attached to them/)
+  assert.match(docs.es.privacy, /Los registros de compras y suscripciones se conservan por los motivos indicados allí, y el cuento eliminado deja de estar vinculado a ellos/)
+  // (14) paid units are not restored and deletion is not a refund; Free allowance only "may" return.
+  assert.match(docs.en.terms, /does not restore a book used from a purchase or subscription period and is not a refund/)
+  assert.match(docs.es.terms, /no restituye un libro usado de una compra o de un periodo de suscripción y no constituye un reembolso/)
+  assert.match(docs.en.terms, /that Free book may become available again under the Free plan rules/)
+  assert.match(docs.es.terms, /ese libro Free puede volver a estar disponible según las reglas del plan Free/)
+  for (const lang of LANGS) {
+    const t = all(lang)
+    // Automatic restoration or refund appears only under a negation ("is not automatically restored", "no se restituye automáticamente").
+    assert.doesNotMatch(t, /(?<!not )(?<!no )(?<!no se )\b(automatically (restored|refunded|replaced)|se (restituyen?|reembolsan?|reemplazan?) automáticamente)|replacement credit|crédito de reemplazo/i, `${lang} promises automatic restoration`)
+    // (10) no fixed deletion timeline anywhere: no "within N days/hours", no "immediately deleted".
+    assert.doesNotMatch(t, /within \d+ (days?|hours?|business days?)|en (un plazo de )?\d+ (días|horas)|deleted immediately|se elimina de inmediato|instantly|al instante/i, `${lang} fixed deletion timeline`)
+    assert.doesNotMatch(t, /(delete|remove|elimina|retira)[a-z]* (all|every|toda|todos) (your|tu|tus) (data|information|datos|información)/i, `${lang} promises deletion of all data`)
+    // (16) no implementation internals in customer-facing copy.
+    assert.doesNotMatch(t, /deletion_log|delete_failed_story|complete_story_deletion|\bRPC\b|story-images|book-exports|service[ _-]role|cron|reconcil|cascade|worker_id|customer_story_deletion_enabled|app_settings|Supabase Storage bucket/i, `${lang} leaks implementation detail`)
+  }
+  // Privacy "Your choices" lists the capability, scoped to eligible archived failed stories, in both languages.
+  assert.match(docs.en.privacy, /Permanently delete a story that belongs to you when it is archived, has failed and is eligible/)
+  assert.match(docs.es.privacy, /Eliminar de manera permanente un cuento que te pertenece cuando está archivado, falló y es elegible/)
+  // Section titles renamed in step in both languages; the deletion disclosure is one four-block section in each Privacy Policy.
+  for (const lang of LANGS) {
+    const sec = legal[lang].privacy.sections.find(s => s.title === DELETION_SECTION[lang])
+    assert.ok(sec, `${lang} deletion section`)
+    assert.equal(sec!.blocks.length, 4)
+    const terms = legal[lang].terms.sections.find(s => s.title === (lang === 'en' ? 'Archive and Deletion' : 'Archivo y eliminación'))
+    assert.equal(terms!.blocks.length, 4)
+  }
+  // (1)(15) the operator line is untouched by this update.
+  for (const doc of DOCS) assert.equal(legal.en[doc].operator, 'Nest & Quill is operated by Digital Official & Huerta Group.')
+})
+
+test('11. 3C-8 changed only the legal copy: the flag stays unseeded and the 3C-3 route/service, 3C-6 sweep and migrations are untouched', () => {
+  // (17) no app_settings row, migration, seed or admin toggle enables customer_story_deletion_enabled.
+  const walk = (dir: string, out: string[] = []): string[] => {
+    for (const name of readdirSync(dir)) {
+      if (name === 'node_modules' || name === '.next' || name.startsWith('.')) continue
+      const p = resolve(dir, name)
+      if (statSync(p).isDirectory()) walk(p, out)
+      else if (/\.(ts|tsx|sql|json|mjs)$/.test(name)) out.push(p)
+    }
+    return out
+  }
+  const files = ['app', 'components', 'lib', 'supabase'].flatMap(d => walk(resolve(ROOT, d)))
+  const refs = files.filter(f => !f.endsWith('.test.ts') && readFileSync(f, 'utf8').includes('customer_story_deletion_enabled'))
+  // (paths are joined so this test file never contains the literal deletion-module path the importer pins look for)
+  const DELETION_DIR = ['lib', 'deletion'].join('/')
+  assert.deepEqual(refs.sort(), [resolve(ROOT, 'app/api/story/[requestId]/route.ts'), resolve(ROOT, DELETION_DIR, 'customerDeleteRoute.ts')].sort(), `flag referenced by ${refs.join(', ')}`)
+  for (const f of files.filter(f => /supabase\/migrations\/.*\.sql$/.test(f))) assert.doesNotMatch(readFileSync(f, 'utf8'), /customer_story_deletion_enabled/, f)
+  for (const f of files.filter(f => /app\/admin\//.test(f))) assert.doesNotMatch(readFileSync(f, 'utf8'), /customer_story_deletion/, `${f} exposes the flag in admin UI`)
+  // (18) 3C-3 route and service, (19) 3C-6 sweep and cron config, (20) migrations: content pinned at PR #35 head 616d5cf.
+  const pinned: Record<string, string> = {
+    'app/api/story/[requestId]/route.ts': '2c546febba4d839b3d5919bb44c9f970848befa967813a01c5cb0408c3ffee39',
+    'app/api/story/[requestId]/restore/route.ts': '59fe0d859b765326e2d97ce68f89194eb22cfbba5fd1a97a8d359fd5d194a7d5',
+    'app/api/story/[requestId]/retry/route.ts': '88f66560100296e2ac732545dca6f73c7ade4dbf72036b39275586d6bf65bfa9',
+    [`${DELETION_DIR}/customerDeleteRoute.ts`]: '602cb11306e04d1480775b7b0649a2bfbd5ef77c056a9b429dcdcb52cf4217e8',
+    [`${DELETION_DIR}/deleteFailedStory.ts`]: '19ae7d1812ca87c7e3436f9fb878483932a705fe747b908244d371e9be7da8ad',
+    [`${DELETION_DIR}/storagePaths.ts`]: '5c7d29e3c82722d6e4510cc13772acaca8e90d0bc80ef885167304c1a9bbff0a',
+    [`${DELETION_DIR}/decision.ts`]: 'fca73cff902e958ce6db1943c3db2289c281e99f9f3f234708b2199f111a0f3a',
+    [`${DELETION_DIR}/reconcileStartedDeletions.ts`]: '5c03f76721a79c4cb37db9e8fa52efb912f2e7f83b26729d50e7fdd56e61a55b',
+    'app/api/cron/deletion-sweep/route.ts': '1a77481e9d2104fb3a2329bf2a5f05dd7e0ca0455dc3e329291c5a1172adbb67',
+    'vercel.json': 'bf170f51c6a40599535816fe56445c1cc718678d088ab23d8705fc093c9e0da4',
+    'supabase/migrations/20240073_deletion_schema_foundation.sql': '1a75a2f72346b3dc9cda36f6aba9ee56c0f3e20858961f87b55ac88d7c2f2827',
+    'supabase/migrations/20240074_failed_story_deletion.sql': 'dbb996df4f7a502bfd196f5f8fbb9046f89d4457b23d90b85f199ce9fb6427fe',
+    'supabase/migrations/20240075_deletion_count_durability.sql': '437b93cbd4a2f1a2672ad59eb5d65e7c3fba7c71cf318e00256e00c969bfca08',
+  }
+  for (const [rel, hash] of Object.entries(pinned)) assert.equal(sha(rel), hash, `${rel} changed`)
+  assert.equal(readdirSync(resolve(ROOT, 'supabase/migrations')).filter(f => f.endsWith('.sql')).sort().at(-1), '20240075_deletion_count_durability.sql', 'no new migration in 3C-8')
 })
