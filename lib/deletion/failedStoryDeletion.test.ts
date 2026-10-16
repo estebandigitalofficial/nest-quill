@@ -46,9 +46,11 @@ const HARDENED = [
   'admin_revenue_by_period(TIMESTAMPTZ, TIMESTAMPTZ)',
 ]
 
-test('1. 20240074 exists and is the newest migration', () => {
-  assert.equal(allMigrations.at(-1), NEW_MIGRATION)
-  assert.equal(allMigrations.at(-2), '20240073_deletion_schema_foundation.sql')
+test('1. 20240074 exists, follows 20240073 and is superseded only by 20240075 (3C-1b)', () => {
+  const i = allMigrations.indexOf(NEW_MIGRATION)
+  assert.ok(i >= 0)
+  assert.equal(allMigrations[i - 1], '20240073_deletion_schema_foundation.sql')
+  assert.deepEqual(allMigrations.slice(i + 1), ['20240075_deletion_count_durability.sql'])
   assert.equal(allMigrations.filter((f) => f.startsWith('20240074')).length, 1)
 })
 

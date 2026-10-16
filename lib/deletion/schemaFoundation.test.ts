@@ -43,12 +43,15 @@ function createTableBlock(source: string, table: string): string {
 const purchaseColumns = columnsOf(createTableBlock(foundation, 'story_purchases'))
 const periodColumns = columnsOf(createTableBlock(foundation, 'subscription_periods'))
 
-test('the migration follows 20240072 and is followed only by the 3C-1 deletion migration (20240074)', () => {
+test('the migration follows 20240072 and is followed only by the deletion migrations 20240074 (3C-1) and 20240075 (3C-1b)', () => {
   // 20240073 was the newest file when 3B-1 shipped; 3C-1 (20240074) builds on
-  // it and is pinned by failedStoryDeletion.test.ts. Nothing else may follow.
-  assert.equal(allMigrations.at(-2), NEW_MIGRATION)
-  assert.equal(allMigrations.at(-3), '20240072_story_requests_adult_authorization.sql')
-  assert.equal(allMigrations.at(-1), '20240074_failed_story_deletion.sql')
+  // it and 3C-1b (20240075) corrects 3C-1's two functions. Each is pinned by
+  // its own test file (failedStoryDeletion.test.ts, countDurability.test.ts).
+  // Nothing else may follow.
+  assert.equal(allMigrations.at(-3), NEW_MIGRATION)
+  assert.equal(allMigrations.at(-4), '20240072_story_requests_adult_authorization.sql')
+  assert.equal(allMigrations.at(-2), '20240074_failed_story_deletion.sql')
+  assert.equal(allMigrations.at(-1), '20240075_deletion_count_durability.sql')
   assert.equal(allMigrations.filter((f) => f.startsWith('20240073')).length, 1)
   assert.equal(allMigrations.filter((f) => f.startsWith('20240074')).length, 1)
 })
