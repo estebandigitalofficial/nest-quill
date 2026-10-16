@@ -204,7 +204,7 @@ test('13. scope limits: no guest_token write, no account deletion, no route or U
   assert.doesNotMatch(sql, /storage\.objects|storage\.remove/)
   assert.doesNotMatch(sql, /worker_lease|CLAIMABLE|process-story/)
   // Only the 3C-2 service module (lib/deletion/) may name the new functions;
-  // deleteFailedStory.test.ts pins that nothing outside it calls the service.
+  // deleteFailedStory.test.ts pins that the 3C-6 sweep route is the only caller of the service.
   const appDirs = ['app', 'lib', 'components']
   const walk = (dir: string): string[] => {
     const out: string[] = []
