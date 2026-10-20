@@ -21,7 +21,7 @@ import {
   shouldSkipImages,
 } from './policy.ts'
 import { createLeaseGuard, isLeaseLost, type LeaseStore } from './lease.ts'
-import { buildBookPrompt, buildPlanPrompt, deriveAgeBand, personalizationFieldsUsed } from './prompt.ts'
+import { buildBookPrompt, buildPlanPrompt, deriveAgeBand, parsePersonalization, personalizationFieldsUsed } from './prompt.ts'
 import {
   MAX_STAGE_ATTEMPTS,
   buildRepairMessages,
@@ -338,6 +338,9 @@ async function resolveVisualBible(args: {
     childDescription: (row.child_description as string | null) ?? null,
     supportingCharactersText: (row.supporting_characters as string | null) ?? null,
     customNotes: (row.custom_notes as string | null) ?? null,
+    // Explicit child reference (2026-10-20): the parent's choice, read from
+    // the labelled custom_notes line; null for rows without one.
+    childReference: parsePersonalization(row.custom_notes).reference,
     illustrationStyle: String(row.illustration_style),
     styleHint,
     plan,
@@ -354,6 +357,7 @@ async function resolveVisualBible(args: {
     supporting_characters: bible.supporting_characters.length,
     recurring_objects: bible.protagonist.recurring_objects.length,
     parent_visual_cue_count: bible.protagonist.parent_visual_cues.length,
+    child_reference: bible.protagonist.reference ?? null,
     illustration_style: bible.art_direction.illustration_style,
     persisted: !error,
   })

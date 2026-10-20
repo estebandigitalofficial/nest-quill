@@ -235,6 +235,17 @@ export const es: Dictionary = {
       supporting: 'Personajes secundarios',
       supportingHint: 'Hermanos, amigos, mascotas o cualquier persona que quieras incluir.',
       supportingPlaceholder: 'ej. Su hermanito Max y Luna, la gata atigrada',
+      reference: {
+        label: '¿Cómo debemos referirnos a {name} en el cuento?',
+        labelNoName: '¿Cómo debemos referirnos al niño o la niña en el cuento?',
+        hint: 'Usaremos exactamente esta opción en todo el cuento. Nunca lo deducimos del nombre.',
+        options: {
+          he_him: 'Él',
+          she_her: 'Ella',
+          they_them: 'Elle (neutro)',
+          name_only: 'Usar solo su nombre',
+        },
+      },
       adultHeading: 'Sobre ti',
       adultSub: 'Cuéntanos sobre ti: el personaje principal de tu historia.',
       adultName: 'Tu nombre',
@@ -374,7 +385,7 @@ export const es: Dictionary = {
       // Fundamento de privacidad 2: autorización del padre, madre o tutor legal.
       authorizationHeading: 'Antes de crear el cuento',
       authorizationLabel: 'Confirmo que soy una persona adulta y que soy el padre, la madre o el tutor legal del niño o la niña, o que tengo permiso de su padre, madre o tutor legal para proporcionar esta información. También tengo permiso para proporcionar información sobre cualquier otra persona incluida en este cuento.',
-      labels: { plan: 'Plan', child: 'Niño', age: 'Edad', description: 'Descripción', theme: 'Tema', tone: 'Tono', lesson: 'Lección', style: 'Estilo', length: 'Extensión', dedication: 'Dedicatoria', characters: 'Personajes' },
+      labels: { plan: 'Plan', child: 'Niño', age: 'Edad', reference: 'Nos referimos como', description: 'Descripción', theme: 'Tema', tone: 'Tono', lesson: 'Lección', style: 'Estilo', length: 'Extensión', dedication: 'Dedicatoria', characters: 'Personajes' },
     },
     errors: {
       guestLimitTitle: 'Ya usaste tu cuento gratis',
@@ -409,6 +420,7 @@ export const es: Dictionary = {
     childName: 'Escribe el nombre del niño o la niña',
     childNameMax: 'El nombre debe tener 80 caracteres o menos',
     childAge: 'Elige un grupo de edad',
+    childReference: 'Elige cómo debemos referirnos al niño o la niña en el cuento',
     childDescriptionMax: 'La descripción debe tener 400 caracteres o menos',
     storyThemeMin: 'Elige o describe un tema',
     storyThemeMax: 'El tema debe tener 280 caracteres o menos',

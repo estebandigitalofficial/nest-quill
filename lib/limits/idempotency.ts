@@ -48,6 +48,8 @@ export async function deriveStorySubmissionKey(args: {
   storyTheme: string
   planTier: string
   storyLength: number
+  /** Explicit child reference (he_him / she_her / they_them / name_only); absent on legacy clients. */
+  childReference?: string | null
 }): Promise<string> {
   const id = (args.identity ?? args.email ?? 'anon').toLowerCase().trim()
   const payload = [
@@ -57,6 +59,7 @@ export async function deriveStorySubmissionKey(args: {
     args.storyTheme.toLowerCase().trim(),
     args.planTier,
     args.storyLength,
+    args.childReference ?? '',
   ].join('|')
   const buf = new TextEncoder().encode(payload)
   const digest = await crypto.subtle.digest('SHA-256', buf)

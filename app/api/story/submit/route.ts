@@ -16,6 +16,7 @@ import { gateStoryCreation, gateGuestStoryCreation } from '@/lib/settings/gates'
 import { checkStoryRateLimit, checkQueueGate } from '@/lib/limits/rateLimits'
 import { hashIp } from '@/lib/limits/ipHash'
 import { checkAdultAuthorization, adultAuthorizationEvidence } from '@/lib/story/adultAuthorization'
+import { synthesizeChildReferenceLine } from '@/lib/story/childReference'
 import { deriveStorySubmissionKey, reserveIdempotencyKey, finalizeIdempotencyKey } from '@/lib/limits/idempotency'
 import { getAdminContext } from '@/lib/admin/guard'
 import type { SubmitStoryResponse } from '@/types/story'
@@ -123,6 +124,7 @@ export async function POST(request: NextRequest) {
           storyTheme: formData.storyTheme,
           planTier: formData.planTier,
           storyLength: formData.storyLength,
+          childReference: formData.childReference,
         })
     const idem = await reserveIdempotencyKey(idemKey)
     if (idem.isDuplicate && idem.requestId) {
@@ -185,8 +187,8 @@ export async function POST(request: NextRequest) {
     // absent (legacy clients).
     //
     // custom_notes carries labelled lines the worker parses back out
-    // (Character traits / Story conflict / Story goal) followed by the
-    // parent's own note. Conflict and goal travel this way only when the
+    // (Refer to the child as / Character traits / Story conflict / Story
+    // goal) followed by the parent's own note. Conflict and goal travel this way only when the
     // theme sentence does not already contain them (custom-typed theme),
     // so a card the parent picked is never silently dropped.
     const synthesizedTheme = synthesizeTheme({
@@ -203,7 +205,11 @@ export async function POST(request: NextRequest) {
       conflict: formData.conflict,
       goal: formData.goal,
     })
-    const finalCustomNotes = mergeIntoCustomNotes(formData.customNotes, [traitsLine, ...structureLines]) ?? null
+    // The explicit child reference (he/him, she/her, they/them, name only)
+    // travels first: it is the one line the worker must never lose, and it
+    // is the parent's explicit choice, never derived from the name.
+    const referenceLine = synthesizeChildReferenceLine(formData.childReference)
+    const finalCustomNotes = mergeIntoCustomNotes(formData.customNotes, [referenceLine, traitsLine, ...structureLines]) ?? null
 
     const { data: storyRequest, error: insertError } = await adminSupabase
       .from('story_requests')

@@ -22,6 +22,7 @@
 // safety rules. The same facts and rules feed both stages.
 
 import { renderPlanForPrompt, type StoryPlan } from './plan.ts'
+import { CHILD_REFERENCE_LINE_LABEL, childReferenceInstruction, parseChildReferenceToken, type ChildReference } from './childReference.ts'
 
 export type ConfigMap = Record<string, string>
 
@@ -41,6 +42,7 @@ export function deriveAgeBand(childAge?: number): AgeBand {
 // selections the submit route folds in (see lib/services/storyFormSynthesis.ts)
 // plus the parent's own free-text note:
 //
+//   Refer to the child as: she/her
 //   Character traits: brave, curious, quietly stubborn
 //   Story conflict: a fear must be faced and overcome
 //   Story goal: finding the courage inside
@@ -48,12 +50,17 @@ export function deriveAgeBand(childAge?: number): AgeBand {
 //
 // Older rows used "Main character is brave, curious, and clever." for traits;
 // that form is still recognised. Anything unlabelled is the parent's note.
+// "Refer to the child as" (2026-10-20) is the parent's explicit pronoun /
+// name-only choice; rows without it (every story before the feature) parse
+// to null and receive no reference instruction at all.
 
 export interface Personalization {
   traits: string | null
   conflict: string | null
   goal: string | null
   notes: string | null
+  /** Explicit child reference; null when the row carries no selection (never inferred). */
+  reference: ChildReference | null
 }
 
 const MAX_FIELD = 600
@@ -71,13 +78,23 @@ export function sanitizeText(value: unknown, max = MAX_FIELD): string | null {
 }
 
 export function parsePersonalization(customNotes: unknown): Personalization {
-  const out: Personalization = { traits: null, conflict: null, goal: null, notes: null }
+  const out: Personalization = { traits: null, conflict: null, goal: null, notes: null, reference: null }
   if (customNotes === null || customNotes === undefined) return out
   const noteLines: string[] = []
+  const referenceRe = new RegExp(`^${CHILD_REFERENCE_LINE_LABEL}:\\s*(.+)$`, 'i')
   for (const raw of String(customNotes).split(/\r?\n/)) {
     const line = raw.trim()
     if (!line) continue
     let m: RegExpMatchArray | null
+    if ((m = line.match(referenceRe))) {
+      // Only the four known tokens count; an unrecognised value is left as
+      // ordinary note text rather than guessed at. The submit route writes
+      // the selection as the FIRST line, so the first valid line is the
+      // selection and a later look-alike line in the parent's own note can
+      // neither override nor leak into the family notes.
+      const ref = parseChildReferenceToken(m[1])
+      if (ref) { if (!out.reference) out.reference = ref; continue }
+    }
     if ((m = line.match(/^Character traits:\s*(.+)$/i))) { out.traits = sanitizeText(m[1], 200); continue }
     if ((m = line.match(/^Main character is (.+?)\.?$/i))) { out.traits = sanitizeText(m[1], 200); continue }
     if ((m = line.match(/^Story conflict:\s*(.+)$/i))) { out.conflict = sanitizeText(m[1], 200); continue }
@@ -95,6 +112,7 @@ export function personalizationFieldsUsed(request: Record<string, unknown>): str
   const has = (v: unknown) => sanitizeText(v) !== null
   if (has(request.child_name)) used.push('child_name')
   if (Number.isFinite(Number(request.child_age))) used.push('child_age')
+  if (p.reference) used.push('child_reference')
   if (has(request.child_description)) used.push('child_description')
   if (p.traits) used.push('traits')
   if (has(request.supporting_characters)) used.push('supporting_characters')
@@ -248,6 +266,8 @@ interface PromptCore {
     readAloud: string
     craft: string
     imageSeparation: string
+    /** Explicit child reference instruction; null when the row carries no selection. */
+    reference: string | null
   }
   facts: string[]
   guidance: string[]
@@ -398,6 +418,9 @@ This story must naturally weave in educational content about "{learning_topic}" 
     readAloud: READ_ALOUD_BY_BAND[ageBand],
     craft: r(config['story_prose_craft_rules'] ?? DEFAULT_PROSE_CRAFT_RULES),
     imageSeparation: r(config['story_image_separation_rules'] ?? DEFAULT_IMAGE_SEPARATION_RULE),
+    // Filled below once the hero's name is known; not admin-editable (it is
+    // the parent's own choice, not house style).
+    reference: null as string | null,
   }
 
   const spanishNote = language === 'es'
@@ -413,7 +436,12 @@ This story must naturally weave in educational content about "{learning_topic}" 
   const facts: string[] = []
   const fact = (label: string, value: string | null) => { if (value) facts.push(`${label}: ${value}`) }
 
+  // Explicit child reference (2026-10-20): present only when the parent
+  // chose one. Nothing here reads the name or the description to guess.
+  const reference = personalization.reference ? childReferenceInstruction(name, personalization.reference, language) : null
+
   fact(heroLabel, isAdult || !Number.isFinite(ageNum) ? name : `${name}, age ${ageNum}`)
+  if (reference) facts.push(reference.fact)
   fact(`About ${name}`, sanitizeText(child_description, 400))
   fact('Personality', personalization.traits)
   fact('Supporting characters', sanitizeText(supporting_characters, 300))
@@ -429,8 +457,11 @@ This story must naturally weave in educational content about "{learning_topic}" 
   }
   fact('Length', `exactly ${pageCount} pages`)
 
+  if (reference) rule.reference = `${reference.rule} ${reference.imageRule}`
+
   const guidance: string[] = [
     `Required anchors: ${isAdult ? 'the protagonist\'s name' : `${name}'s name and age`}, the theme, the tone and the page count.`,
+    ...(reference ? [`"Refer to ${name} as" is the family's explicit choice of pronouns (or name only) for ${name}: follow it exactly in the text and in every image_description, and never infer anything else from the name.`] : []),
     `Personality and "About ${name}" shape what ${name} notices, chooses and feels — show them through actions in a few key moments, never as a list or a label.`,
     'The central conflict and the goal are the spine of the plot; if either is missing, invent one that suits the theme.',
     'Family notes are creative direction from the family: weave a named favourite thing, person, place or situation into the story where it fits naturally, keep those details accurate, and never quote the note or refer to where it came from.',
@@ -469,6 +500,7 @@ function bookSystemPrompt(core: PromptCore, extraRules: string[] = []): string {
     core.rule.illustration,
     core.rule.noPageNumbers,
     core.rule.personalization,
+    ...(core.rule.reference ? [core.rule.reference] : []),
     ...extraRules,
   ]
   return `${core.role}${core.learningSystemNote}${core.spanishNote}\n\n${core.outputFormat}\n\nRules:\n${rules.map(x => `- ${x}`).join('\n')}`
@@ -505,6 +537,7 @@ export function buildPlanPrompt(request: Record<string, unknown>, config: Config
     core.rule.ending,
     core.r(config['story_plan_rules'] ?? DEFAULT_PLAN_RULES),
     core.rule.personalization,
+    ...(core.rule.reference ? [core.rule.reference] : []),
   ]
   const systemPrompt = `${core.role}${core.learningSystemNote}${core.spanishNote}\n\n${planFormat}\n\nPlanning rules:\n${planRules.map(x => `- ${x}`).join('\n')}`
   const userPrompt = `Plan a ${core.isAdult ? 'story' : "children's storybook"} for the ${core.heroLabel.toLowerCase()} described below. Do not write the page prose yet — produce the plan only.

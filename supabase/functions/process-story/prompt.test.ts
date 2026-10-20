@@ -156,6 +156,6 @@ test('personalizationFieldsUsed reports names only', () => {
 })
 
 test('parsePersonalization tolerates missing and legacy values', () => {
-  assert.deepEqual(parsePersonalization(null), { traits: null, conflict: null, goal: null, notes: null })
-  assert.deepEqual(parsePersonalization('just a note'), { traits: null, conflict: null, goal: null, notes: 'just a note' })
+  assert.deepEqual(parsePersonalization(null), { traits: null, conflict: null, goal: null, notes: null, reference: null })
+  assert.deepEqual(parsePersonalization('just a note'), { traits: null, conflict: null, goal: null, notes: 'just a note', reference: null })
 })

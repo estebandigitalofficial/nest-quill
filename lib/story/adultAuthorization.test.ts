@@ -37,6 +37,7 @@ const VALID_FORM = {
   planTier: 'free',
   childName: 'Theo',
   childAge: 5,
+  childReference: 'he_him',
   storyTheme: 'A brave rabbit who learns to share',
   storyTone: ['adventurous'],
   storyLength: 8,

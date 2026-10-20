@@ -235,6 +235,19 @@ export const en = {
       supporting: 'Supporting characters',
       supportingHint: 'Siblings, friends, pets, or anyone else to weave in.',
       supportingPlaceholder: 'e.g. Her little brother Max, and Luna the tabby cat',
+      // Explicit child reference (2026-10-20). Four options, no "let the
+      // story decide": the choice is the parent's and is never inferred.
+      reference: {
+        label: 'How should we refer to {name} in the story?',
+        labelNoName: 'How should we refer to the child in the story?',
+        hint: "We'll use exactly this throughout the story. We never guess from the name.",
+        options: {
+          he_him: 'He / him',
+          she_her: 'She / her',
+          they_them: 'They / them',
+          name_only: "Use the child's name instead",
+        },
+      },
       adultHeading: 'About you',
       adultSub: 'Tell us about yourself — the main character of your story.',
       adultName: 'Your name',
@@ -376,7 +389,7 @@ export const en = {
       // lib/story/adultAuthorization.ts; bump it when this sentence changes.
       authorizationHeading: 'Before we create the story',
       authorizationLabel: "I confirm that I am an adult and that I am the child's parent or legal guardian, or I have permission from the child's parent or legal guardian to provide this information. I also have permission to provide information about any other people included in this story.",
-      labels: { plan: 'Plan', child: 'Child', age: 'Age', description: 'Description', theme: 'Theme', tone: 'Tone', lesson: 'Lesson', style: 'Style', length: 'Length', dedication: 'Dedication', characters: 'Characters' },
+      labels: { plan: 'Plan', child: 'Child', age: 'Age', reference: 'Referred to as', description: 'Description', theme: 'Theme', tone: 'Tone', lesson: 'Lesson', style: 'Style', length: 'Length', dedication: 'Dedication', characters: 'Characters' },
     },
     errors: {
       guestLimitTitle: "You've used your free story",
@@ -411,6 +424,7 @@ export const en = {
     childName: "Please enter the child's name",
     childNameMax: 'Name must be 80 characters or less',
     childAge: 'Please select an age group',
+    childReference: 'Please choose how we should refer to the child in the story',
     childDescriptionMax: 'Description must be 400 characters or less',
     storyThemeMin: 'Please choose or describe a theme',
     storyThemeMax: 'Theme must be 280 characters or less',

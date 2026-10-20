@@ -4,9 +4,11 @@ import { useState, type ReactNode } from 'react'
 import { useFormContext } from 'react-hook-form'
 import type { StoryFormValues } from '@/lib/validators/story-form'
 import { AGE_TIERS, type AgeTier } from '@/lib/validators/story-form'
+import { CHILD_REFERENCES, type ChildReference } from '@/lib/story/childReference'
 import { useWizardConfig } from '../WizardContext'
 import { cn } from '@/lib/utils/cn'
 import { useLanguage } from '@/lib/i18n/context'
+import { fill } from '@/lib/i18n'
 import { AgeTierCard } from '../cards'
 
 // Age groups shown per tier. childAge is what gets persisted; ageTier is
@@ -45,6 +47,8 @@ export default function ChildStep() {
   } = useFormContext<StoryFormValues>()
 
   const selectedAge = watch('childAge')
+  const childName = (watch('childName') ?? '').trim()
+  const selectedReference = watch('childReference')
   // Launch scope (Phase 2A): children only unless extended audiences are on.
   const { extendedAudiences } = useWizardConfig()
   const tiers = extendedAudiences ? AGE_TIERS : AGE_TIERS.filter(t => t === 'child')
@@ -78,6 +82,12 @@ export default function ChildStep() {
 
   function handleAgeSelect(age: number) {
     setValue('childAge', age, { shouldValidate: true })
+  }
+
+  // Explicit child reference: the parent picks it, the form never defaults
+  // it, and nothing derives it from the name or the description.
+  function handleReferenceSelect(reference: ChildReference) {
+    setValue('childReference', reference, { shouldValidate: true })
   }
 
   function handleConsentConfirm() {
@@ -152,6 +162,38 @@ export default function ChildStep() {
                 <span className="text-[10px] text-gray-400 mt-0.5">
                   {(c.ages as Record<string, string>)[key] ?? ''}
                 </span>
+              </button>
+            )
+          })}
+        </div>
+      </Field>
+
+      {/* How the story refers to the child (2026-10-20). Required, with no
+          pre-selected option and no "let the story decide": the choice is
+          explicit and authoritative, never inferred from the name. */}
+      <Field
+        label={childName ? fill(c.reference.label, { name: childName }) : c.reference.labelNoName}
+        error={errors.childReference?.message}
+        hint={c.reference.hint}
+        required
+      >
+        <div data-tour-id="child-reference" role="radiogroup" className="grid grid-cols-2 gap-2">
+          {CHILD_REFERENCES.map(reference => {
+            const active = selectedReference === reference
+            return (
+              <button
+                key={reference}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => handleReferenceSelect(reference)}
+                className={cn(
+                  'min-w-0 py-3 px-3 rounded-xl border-2 text-center text-sm font-semibold transition-all',
+                  active
+                    ? 'border-brand-500 bg-brand-50 text-brand-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                )}>
+                {c.reference.options[reference]}
               </button>
             )
           })}

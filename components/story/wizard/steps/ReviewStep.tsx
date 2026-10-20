@@ -110,6 +110,7 @@ export default function ReviewStep() {
         <Row label={r.audience} value={values.ageTier ? (cards.ageTier[values.ageTier as AgeTier]?.label ?? AGE_TIER_META[values.ageTier as AgeTier].label) : (values.childAge && values.childAge >= 18 ? r.adult : r.childAudience)} />
         <Row label={values.childAge && values.childAge >= 18 ? r.name : r.labels.child} value={values.childName ?? '—'} />
         <Row label={r.labels.age} value={values.childAge ? (values.childAge >= 18 ? r.adult : `~${values.childAge} ${t.common.years}`) : '—'} />
+        <Row label={r.labels.reference} value={values.childReference ? t.wizard.child.reference.options[values.childReference] : '—'} />
         {values.childDescription && (
           <Row label={r.labels.description} value={values.childDescription} />
         )}
