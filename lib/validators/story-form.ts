@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { CHILD_REFERENCES } from '../story/childReference.ts'
 
 const ILLUSTRATION_STYLES = [
   'watercolor',
@@ -105,6 +106,7 @@ export interface StoryFormMessages {
   childName: string
   childNameMax: string
   childAge: string
+  childReference: string
   childDescriptionMax: string
   storyThemeMin: string
   storyThemeMax: string
@@ -132,6 +134,7 @@ export const STORY_FORM_MESSAGES_EN: StoryFormMessages = {
   childName: "Please enter the child's name",
   childNameMax: 'Name must be 80 characters or less',
   childAge: 'Please select an age group',
+  childReference: 'Please choose how we should refer to the child in the story',
   childDescriptionMax: 'Description must be 400 characters or less',
   storyThemeMin: 'Please choose or describe a theme',
   storyThemeMax: 'Theme must be 280 characters or less',
@@ -172,6 +175,13 @@ export function buildStoryFormSchema(m: StoryFormMessages = STORY_FORM_MESSAGES_
     .int()
     .min(1)
     .max(99),
+
+  // Explicit child reference (2026-10-20): he/him, she/her, they/them or the
+  // child's name only. Required, never defaulted, never inferred from the
+  // name or the description — see lib/story/childReference.ts.
+  childReference: z.enum(CHILD_REFERENCES, {
+    errorMap: () => ({ message: m.childReference }),
+  }),
 
   childDescription: z
     .string()

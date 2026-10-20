@@ -500,13 +500,18 @@ test('24. migrations 20240073/74/75 are untouched and no migration was added', (
   assert.equal(readdirSync(resolve(ROOT, 'supabase/migrations')).filter((f) => f.endsWith('.sql')).sort().at(-1), '20240075_deletion_count_durability.sql')
 })
 
-test('25. supabase/functions/process-story is untouched (22 files, combined content hash)', () => {
+test('25. supabase/functions/process-story is at its expected revision (24 files, combined content hash)', () => {
+  // 3C-3 pinned the worker untouched. The explicit child reference feature
+  // (2026-10-20) legitimately changed prompt.ts, visual.ts, index.ts and added
+  // childReference.ts + its test; supabase/functions/process-story/childReference.test.ts
+  // and lib/story/childReference.test.ts own that behaviour. The deletion
+  // system itself still never touches the worker.
   const dir = resolve(ROOT, 'supabase/functions/process-story')
   const files = walk(dir).sort()
-  assert.equal(files.length, 22)
+  assert.equal(files.length, 24)
   const h = createHash('sha256')
   for (const f of files) h.update(readFileSync(f))
-  assert.equal(h.digest('hex'), '012a4fd51cae342523424ff987e3d355f5c064ba1d35f452bc12fcaa500d9756')
+  assert.equal(h.digest('hex'), 'aaed0b451fe78a73707b1bb9c494a089a9fa87829ca44f1d007217069b2005cc')
 })
 
 test('26. the legal files are at their expected revision (lib/i18n/legal.ts as updated by 3C-8; privacy and terms pages and LegalDocument untouched)', () => {

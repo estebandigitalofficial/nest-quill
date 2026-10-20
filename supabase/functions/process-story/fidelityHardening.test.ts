@@ -119,8 +119,10 @@ test('12. an unselected supporting character is scrubbed from cover composition 
   const p2 = plan([], 'Imani and Mango hunt for a lost kite along the harbour wall.')
   const cover2 = buildCoverPrompt({ bible: b, plan: p2, tones: ['funny'], safetySuffix: SAFETY })
   assert.ok(!/\bOde\b/.test(cover2.prompt)); assert.ok(!cover2.prompt.includes(supportingAnchor(ode(b))))
-  // scrubbing replaces a name with a neutral role, possessives included
-  assert.equal(scrubUnanchoredNames("Grandpa Ode's boat and Grandpa Ode", [ode(b)]), "her grandfather's boat and her grandfather")
+  // scrubbing replaces a name with a neutral role, possessives included; the
+  // role hangs off the hero by name (never "her"/"his" — no gender is assumed)
+  assert.equal(scrubUnanchoredNames("Grandpa Ode's boat and Grandpa Ode", [ode(b)], 'Imani'), "Imani's grandfather's boat and Imani's grandfather")
+  assert.equal(scrubUnanchoredNames("Grandpa Ode's boat", [ode(b)]), "the grandfather's boat")
   const p3 = { ...p, pages: p2.pages }
   const cover3 = buildCoverPrompt({ bible: b, plan: p3, tones: ['funny'], safetySuffix: SAFETY })
   // named in premise with zero beats: still anchored rather than scrubbed

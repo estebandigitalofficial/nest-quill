@@ -26,7 +26,7 @@ import TourRunner from '@/components/tour/TourRunner'
 const STANDARD_STEPS = [PlanStep, ChildStep, StoryStep, StyleStep, ReviewStep]
 const STANDARD_FIELDS: (keyof StoryFormValues)[][] = [
   ['planTier'],
-  ['childName', 'childAge'],
+  ['childName', 'childAge', 'childReference'],
   ['storyTheme', 'storyTone'],
   ['illustrationStyle', 'storyLength'],
   ['userEmail', 'adultAuthorizationConfirmed'],
@@ -36,7 +36,7 @@ const STANDARD_FIELDS: (keyof StoryFormValues)[][] = [
 const LEARNING_STEPS = [PlanStep, ChildStep, StoryStep, LearningStep, StyleStep, ReviewStep]
 const LEARNING_FIELDS: (keyof StoryFormValues)[][] = [
   ['planTier'],
-  ['childName', 'childAge'],
+  ['childName', 'childAge', 'childReference'],
   ['storyTheme', 'storyTone'],
   ['learningSubject', 'learningGrade', 'learningTopic'],
   ['illustrationStyle', 'storyLength'],

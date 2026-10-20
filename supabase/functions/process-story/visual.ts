@@ -23,6 +23,7 @@
 // (temporary state) and its image_description (what happens in the picture).
 
 import type { PlanBeat, StoryPlan } from './plan.ts'
+import { pronounTag, type ChildReference } from './childReference.ts'
 import {
   type Appearance,
   appearanceSummary,
@@ -66,6 +67,12 @@ export interface VisualProtagonist {
   identity?: VisualIdentity
   appearance?: Appearance
   outfit?: VisualOutfit
+  /**
+   * Explicit child reference chosen by the parent (2026-10-20). Absent in
+   * every bible persisted before the feature and in bibles built from rows
+   * without a selection: the anchor then reads exactly as it always did.
+   */
+  reference?: ChildReference
 }
 
 export interface VisualSupporting {
@@ -221,6 +228,8 @@ export interface VisualBibleInput {
   supportingCharactersText?: string | null
   /** Parent/family note (custom_notes); only explicit named objects are read from it. */
   customNotes?: string | null
+  /** Explicit child reference parsed from custom_notes by the caller; null/undefined = no selection. */
+  childReference?: ChildReference | null
   illustrationStyle: string
   styleHint: string
   plan: StoryPlan | null
@@ -360,6 +369,7 @@ export function buildVisualBible(input: VisualBibleInput): VisualBible {
       identity: heroIdentity,
       appearance: app,
       outfit: { explicit: heroOutfit.explicit, invented: heroOutfit.invented },
+      ...(input.childReference ? { reference: input.childReference } : {}),
     },
     supporting_characters: supporting,
     setting: {
@@ -424,13 +434,23 @@ export function protagonistAnchor(b: VisualBible): string {
   const who = species
     ? `${withArticle([build ?? '', ...(p.identity?.markings ?? []).filter(m => !/\s/.test(m)), species].filter(Boolean).join(' '))} (${withArticle(species.toUpperCase())}, never any other kind of animal)${p.approximate_age ? `, ${p.approximate_age} years old` : ''}`
     : (p.approximate_age ? withArticle(`${build ? `${build} ` : ''}${p.approximate_age}-year-old child`) : (build ? withArticle(`${build} main character`) : 'the main character'))
-  parts.push(`${p.name} is ${who}`)
+  // Explicit child reference: the pronoun tag travels with the name so the
+  // scene text and the anchor agree; "name only" adds no pronoun. Either
+  // way the parent's appearance facts stay the only source of looks. Rows
+  // without a selection get the unchanged anchor.
+  parts.push(`${p.name}${pronounTag(p.reference)} is ${who}`)
   const cues = p.parent_visual_cues.filter(c => c !== build)
   if (cues.length) parts.push(`with ${cues.join(', ')}`)
   parts.push(`wearing ${p.canonical_outfit}`)
   if (p.appearance?.props?.length) parts.push(`carrying ${p.appearance.props.join(' and ')}`)
   if (p.recurring_objects.length) parts.push(`(always with: ${p.recurring_objects.join(', ')})`)
-  return `${parts.join(' ')}; keep ${p.name}'s face, hair, build and outfit identical to every other page of this book`
+  // Kept short on purpose: the anchor is clipped from its end when a prompt
+  // runs long (see the ladder in buildImagePrompt), so a long clause here
+  // would cost the continuity sentence before it.
+  const referenceRule = p.reference
+    ? `; ${p.reference === 'name_only' ? 'named only, never a boy or a girl; ' : ''}no gender-typed looks beyond those listed`
+    : ''
+  return `${parts.join(' ')}; keep ${p.name}'s face, hair, build and outfit identical to every other page of this book${referenceRule}`
 }
 
 export function supportingAnchor(s: VisualSupporting): string {
@@ -598,12 +618,15 @@ export function relevantSupportingForCover(bible: VisualBible, plan: StoryPlan |
 /**
  * Remove every mention of supporting characters that are NOT anchored from
  * cover text, replacing the name with a neutral role so the sentence still
- * reads but no un-anchored figure is requested.
+ * reads but no un-anchored figure is requested. The role is attached to the
+ * hero by name ("Sofia's grandmother"), never by a pronoun: this used to say
+ * "her <role>", which assumed the hero's gender (fixed 2026-10-20).
  */
-export function scrubUnanchoredNames(text: string, unanchored: VisualSupporting[]): string {
+export function scrubUnanchoredNames(text: string, unanchored: VisualSupporting[], heroName?: string): string {
   let out = text
+  const owner = heroName?.trim() ? `${heroName.trim()}'s` : 'the'
   for (const s of unanchored) {
-    const role = s.role && /^[a-z\s'-]+$/i.test(s.role) && s.role.split(/\s+/).length <= 3 ? `her ${s.role.replace(/^(?:her|his|their|the)\s+/i, '')}` : 'a companion'
+    const role = s.role && /^[a-z\s'-]+$/i.test(s.role) && s.role.split(/\s+/).length <= 3 ? `${owner} ${s.role.replace(/^(?:her|his|their|the)\s+/i, '')}` : 'a companion'
     out = out.replace(new RegExp(`\\b${s.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:'s)?\\b`, 'gi'), m => (/'s$/i.test(m) ? `${role}'s` : role))
   }
   return out
@@ -646,8 +669,8 @@ export function buildCoverPrompt(args: CoverPromptArgs): { prompt: string; meta:
   const companions = relevantSupportingForCover(b, args.plan, `${rawPremise} ${rawSetting}`)
   const unanchored = b.supporting_characters.filter(s => !companions.includes(s))
   const anchors = [protagonistAnchor(b), ...companions.map(supportingAnchor)]
-  const premise = scrubUnanchoredNames(rawPremise, unanchored)
-  const setting = scrubUnanchoredNames(rawSetting, unanchored)
+  const premise = scrubUnanchoredNames(rawPremise, unanchored, b.protagonist.name)
+  const setting = scrubUnanchoredNames(rawSetting, unanchored, b.protagonist.name)
   const arcStart = (args.plan?.emotional_arc ?? '').split(/→|->|,|;/)[0]?.trim() ?? ''
   const objects = b.protagonist.recurring_objects
 
