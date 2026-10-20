@@ -85,6 +85,12 @@ test('3. the wizard never pre-selects or derives the choice: no default in the f
   assert.match(child, /c\.reference\.options\[reference\]/)
   assert.doesNotMatch(child, /childName\.(match|test|endsWith)|\/a\$\/|\/o\$\//, 'nothing reads the name to guess')
   assert.match(src('components/story/wizard/steps/ReviewStep.tsx'), /r\.labels\.reference/)
+  // drafts and resumed flows: a restored checkout draft without the choice lands on the child
+  // step, and a submit whose error lives on an earlier step jumps there instead of failing silently
+  assert.match(wizard, /isChildReference\(draft\.childReference\) \? \(learning \? LEARNING_STEPS : STANDARD_STEPS\)\.length - 1 : 1/)
+  assert.match(wizard, /handleSubmit\(onSubmit, onInvalid\)/)
+  assert.match(wizard, /STEP_FIELDS\.findIndex\(fields => fields\.some\(f => bad\.has\(f\)\)\)/)
+  assert.doesNotMatch(src('components/story/wizard/steps/ReviewStep.tsx'), /errors\.childReference/, 'the review step does not render that field, so the jump is what makes the error visible')
 })
 
 test('4. storage: the choice is one labelled custom_notes line, first, round-tripping through the worker parser; legacy forms write nothing', () => {

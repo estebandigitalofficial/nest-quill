@@ -92,6 +92,10 @@ test('1. the labelled custom_notes line parses to exactly one of the four select
   assert.equal(odd.reference, null)
   assert.equal(odd.notes, `Refer to the child as: the captain ${NOTE}`)
   assert.equal(parseChildReferenceToken('boy'), null)
+  // the selection is the first line; a look-alike line inside the parent's note cannot override it
+  const twice = parsePersonalization(`${line('she_her')}\nRefer to the child as: he/him\n${NOTE}`)
+  assert.equal(twice.reference, 'she_her')
+  assert.equal(twice.notes, NOTE)
   assert.equal(parseChildReferenceToken('he/him'), 'he_him')
   assert.deepEqual(personalizationFieldsUsed(request(line('they_them'))).includes('child_reference'), true)
   assert.deepEqual(personalizationFieldsUsed(request(NOTE)).includes('child_reference'), false)

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useForm, FormProvider, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { buildStoryFormSchema, type StoryFormValues } from '@/lib/validators/story-form'
+import { isChildReference } from '@/lib/story/childReference'
 import { cn } from '@/lib/utils/cn'
 import { useLanguage } from '@/lib/i18n/context'
 import { errorMessage } from '@/lib/i18n'
@@ -157,7 +158,11 @@ export default function StoryWizard({
     reset({ ...getValues(), ...draft })
     const learning = draft.learningMode === true && learningModeEnabled
     setLearningMode(learning)
-    setStep((learning ? LEARNING_STEPS : STANDARD_STEPS).length - 1)
+    // A draft saved before the child reference existed (or without one) is
+    // still usable: it lands on the child step so the question is answered
+    // there, instead of on the review step where that field is not shown.
+    // The choice is never filled in for the customer.
+    setStep(isChildReference(draft.childReference) ? (learning ? LEARNING_STEPS : STANDARD_STEPS).length - 1 : 1)
     // Mount-only: the query string is what brought us back.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -232,6 +237,16 @@ export default function StoryWizard({
 
   function handleBack() {
     setStep((s) => Math.max(firstVisibleStep, s - 1))
+  }
+
+  // Submit with an invalid field that lives on an earlier step (a restored
+  // draft, or a required field added after the draft was saved): go to the
+  // first step that owns an error so the message is visible, never a silent
+  // no-op on the review step.
+  function onInvalid(invalid: Partial<Record<keyof StoryFormValues, unknown>>) {
+    const bad = new Set(Object.keys(invalid))
+    const idx = STEP_FIELDS.findIndex(fields => fields.some(f => bad.has(f)))
+    if (idx >= 0 && idx !== step) setStep(Math.max(firstVisibleStep, idx))
   }
 
   async function onSubmit(data: StoryFormValues) {
@@ -349,7 +364,7 @@ export default function StoryWizard({
 
       <WizardProgress currentStep={step} totalSteps={STEPS.length} />
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate className="space-y-6">
         <div
           data-tour-id={stepTourId ?? undefined}
           className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-6"

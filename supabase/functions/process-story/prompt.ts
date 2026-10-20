@@ -88,9 +88,12 @@ export function parsePersonalization(customNotes: unknown): Personalization {
     let m: RegExpMatchArray | null
     if ((m = line.match(referenceRe))) {
       // Only the four known tokens count; an unrecognised value is left as
-      // ordinary note text rather than guessed at.
+      // ordinary note text rather than guessed at. The submit route writes
+      // the selection as the FIRST line, so the first valid line is the
+      // selection and a later look-alike line in the parent's own note can
+      // neither override nor leak into the family notes.
       const ref = parseChildReferenceToken(m[1])
-      if (ref) { out.reference = ref; continue }
+      if (ref) { if (!out.reference) out.reference = ref; continue }
     }
     if ((m = line.match(/^Character traits:\s*(.+)$/i))) { out.traits = sanitizeText(m[1], 200); continue }
     if ((m = line.match(/^Main character is (.+?)\.?$/i))) { out.traits = sanitizeText(m[1], 200); continue }
