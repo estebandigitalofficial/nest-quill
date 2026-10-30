@@ -43,6 +43,9 @@ import {
   IMAGES_ENDPOINT,
   buildImageRequest,
   decodeBase64Image,
+  imageFailureTelemetry,
+  imageRequestTelemetry,
+  imageUsageTelemetry,
   parseImageResponse,
   rateLimitDelayMs,
   resolveImageModel,
@@ -51,6 +54,7 @@ import {
   sniffImageFormat,
   storageMetaFor,
   type ImageFormat,
+  type ImageKind,
   type ImageUsage,
 } from './imageProvider.ts'
 import {
@@ -234,6 +238,9 @@ if (IMAGE_MODEL_RESOLVED.source === 'rejected_override') {
 const IMAGE_MODEL = IMAGE_MODEL_RESOLVED.model
 const IMAGE_QUALITY = Deno.env.get('PROCESS_STORY_IMAGE_QUALITY')?.trim() || null
 const IMAGE_COMPRESSION = Deno.env.get('PROCESS_STORY_IMAGE_COMPRESSION')?.trim() || null
+// Request-side facts for telemetry (model, quality, size, format) — derived
+// from the same builder every call uses, computed once; never the prompt.
+const IMAGE_REQUEST_META = imageRequestTelemetry(buildImageRequest('', { model: IMAGE_MODEL, quality: IMAGE_QUALITY, compression: IMAGE_COMPRESSION }))
 
 /**
  * Style hint, age-band hint and safety suffix for this request. The safety
@@ -260,10 +267,31 @@ interface GeneratedImage {
   revisedPrompt: string | null
   model: string
   usage: ImageUsage | null
+  /** Served quality / size / format as the response states them; null when absent. */
+  quality: string | null
+  size: string | null
+  outputFormat: string | null
   /** Sniffed from the bytes, never assumed. */
   format: ImageFormat
   ext: 'jpg' | 'png'
   contentType: 'image/jpeg' | 'image/png'
+}
+
+/**
+ * processing_logs metadata for one successful image call (Phase 0A cost
+ * telemetry): request facts + the provider's usage breakdown, nulls for
+ * anything not returned, plus the legacy `image_tokens` key. Pure.
+ */
+function imageTelemetry(kind: ImageKind, image: GeneratedImage): Record<string, unknown> {
+  return imageUsageTelemetry({
+    kind,
+    requested: IMAGE_REQUEST_META,
+    model: image.model,
+    usage: image.usage,
+    quality: image.quality,
+    size: image.size,
+    outputFormat: image.outputFormat,
+  })
 }
 
 /**
@@ -303,7 +331,7 @@ async function generateImage(prompt: string): Promise<GeneratedImage> {
   const format = sniffImageFormat(bytes)
   if (!format) throw new Error(`Image error: provider returned unrecognised image data (claimed ${parsed.outputFormat ?? 'unknown'})`)
   const meta = storageMetaFor(format)
-  return { bytes, revisedPrompt: parsed.revisedPrompt, model: body.model, usage: parsed.usage, format, ext: meta.ext, contentType: meta.contentType }
+  return { bytes, revisedPrompt: parsed.revisedPrompt, model: body.model, usage: parsed.usage, quality: parsed.quality, size: parsed.size, outputFormat: parsed.outputFormat, format, ext: meta.ext, contentType: meta.contentType }
 }
 
 /**
@@ -468,7 +496,7 @@ async function runCoverStage(args: {
       model: image.model,
       prompt_length: built.meta.prompt_length,
       revised_prompt_captured: image.revisedPrompt !== null,
-      ...(image.usage ? { image_tokens: image.usage.total_tokens ?? image.usage.output_tokens } : {}),
+      ...imageTelemetry('cover', image),
       storage_path: path,
     })
     return 'generated'
@@ -480,6 +508,7 @@ async function runCoverStage(args: {
       attempt: attempts,
       prompt_length: built.meta.prompt_length,
       source: args.source,
+      ...imageFailureTelemetry('cover', IMAGE_REQUEST_META),
     })
     return 'failed'
   }
@@ -882,7 +911,7 @@ Deno.serve(async (req) => {
           page_number: scene.page_number,
           ...built.meta,
           revised_prompt_captured: image.revisedPrompt !== null,
-          ...(image.usage ? { image_tokens: image.usage.total_tokens ?? image.usage.output_tokens } : {}),
+          ...imageTelemetry('page', image),
         })
         await supabase.from('story_requests').update({
           status_message: `Generating illustrations… (${completedBefore + generated} of ${totalScenes})`,
@@ -906,7 +935,7 @@ Deno.serve(async (req) => {
           .eq('id', scene.id).eq('request_id', requestId).neq('image_status', 'complete')
         await supabase.from('processing_logs').insert({
           request_id: requestId, level: 'warning', stage: 'admin_image_backfill_failed_scene',
-          message: `Page ${scene.page_number}: ${msg}`, metadata: { worker_id: lockId, page_number: scene.page_number },
+          message: `Page ${scene.page_number}: ${msg}`, metadata: { worker_id: lockId, page_number: scene.page_number, ...imageFailureTelemetry('page', IMAGE_REQUEST_META) },
         })
       }
     }
@@ -1806,7 +1835,7 @@ Deno.serve(async (req) => {
             storage_path: storagePath,
             ...built.meta,
             revised_prompt_captured: image.revisedPrompt !== null,
-            ...(image.usage ? { image_tokens: image.usage.total_tokens ?? image.usage.output_tokens } : {}),
+            ...imageTelemetry('page', image),
           })
         } catch (imgErr) {
           // A lost lease is not an image failure: leave the scene exactly as
@@ -1828,6 +1857,7 @@ Deno.serve(async (req) => {
             page_number: scene.page_number,
             prompt_length: built.meta.prompt_length,
             character_anchor_count: built.meta.character_anchor_count,
+            ...imageFailureTelemetry('page', IMAGE_REQUEST_META),
           })
         }
       }

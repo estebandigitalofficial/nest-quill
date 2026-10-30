@@ -145,9 +145,20 @@ export function buildImageRequest(prompt: string, opts: ImageRequestOptions = {}
   }
 }
 
+/**
+ * Token usage as the Images API reports it (ImagesResponse.usage):
+ * input_tokens + input_tokens_details { text_tokens, image_tokens },
+ * output_tokens + output_tokens_details { image_tokens, text_tokens },
+ * total_tokens. Every field is null when the response does not carry it;
+ * nothing here is ever estimated.
+ */
 export interface ImageUsage {
   input_tokens: number | null
+  input_text_tokens: number | null
+  input_image_tokens: number | null
   output_tokens: number | null
+  output_image_tokens: number | null
+  output_text_tokens: number | null
   total_tokens: number | null
 }
 
@@ -158,24 +169,199 @@ export interface ParsedImageResponse {
   /** Token usage when the provider reports it; null otherwise. */
   usage: ImageUsage | null
   outputFormat: string | null
+  /** Served quality / size as the response states them (top-level `quality`, `size`); null when absent. */
+  quality: string | null
+  size: string | null
 }
 
 /** Pull the first image out of an ImagesResponse. Throws a descriptive error when absent. */
 export function parseImageResponse(json: unknown): ParsedImageResponse {
-  const j = (json ?? {}) as { data?: Array<{ b64_json?: unknown; revised_prompt?: unknown }>; usage?: Record<string, unknown>; output_format?: unknown }
+  const j = (json ?? {}) as { data?: Array<{ b64_json?: unknown; revised_prompt?: unknown }>; usage?: Record<string, unknown>; output_format?: unknown; quality?: unknown; size?: unknown }
   const first = Array.isArray(j.data) ? j.data[0] : undefined
   const b64 = typeof first?.b64_json === 'string' ? first.b64_json : ''
   if (!b64) throw new Error('Image error: no b64_json in response')
-  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
-  const usage = j.usage && typeof j.usage === 'object'
-    ? { input_tokens: num(j.usage.input_tokens), output_tokens: num(j.usage.output_tokens), total_tokens: num(j.usage.total_tokens) }
-    : null
+  const usage = parseImageUsage(j.usage)
   return {
     b64,
     revisedPrompt: typeof first?.revised_prompt === 'string' && first.revised_prompt.trim() ? first.revised_prompt : null,
-    usage: usage && (usage.input_tokens !== null || usage.output_tokens !== null || usage.total_tokens !== null) ? usage : null,
+    usage,
     outputFormat: typeof j.output_format === 'string' ? j.output_format : null,
+    quality: typeof j.quality === 'string' ? j.quality : null,
+    size: typeof j.size === 'string' ? j.size : null,
   }
+}
+
+const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
+
+/**
+ * Read ImagesResponse.usage with its documented nesting. Absent or
+ * non-numeric fields become null; a usage object with no numeric field at
+ * all is reported as null (no usage), never as zeros.
+ */
+export function parseImageUsage(raw: unknown): ImageUsage | null {
+  if (!raw || typeof raw !== 'object') return null
+  const u = raw as Record<string, unknown>
+  const inD = u.input_tokens_details && typeof u.input_tokens_details === 'object' ? u.input_tokens_details as Record<string, unknown> : {}
+  const outD = u.output_tokens_details && typeof u.output_tokens_details === 'object' ? u.output_tokens_details as Record<string, unknown> : {}
+  const usage: ImageUsage = {
+    input_tokens: num(u.input_tokens),
+    input_text_tokens: num(inD.text_tokens),
+    input_image_tokens: num(inD.image_tokens),
+    output_tokens: num(u.output_tokens),
+    output_image_tokens: num(outD.image_tokens),
+    output_text_tokens: num(outD.text_tokens),
+    total_tokens: num(u.total_tokens),
+  }
+  return Object.values(usage).some(v => v !== null) ? usage : null
+}
+
+// ── Telemetry (processing_logs.metadata) ─────────────────────────────────────
+//
+// One flat, documented shape for every image call the worker logs, so the
+// cost of illustrations can be measured from processing_logs instead of
+// inferred. Values come only from the request body the worker sent and the
+// usage object the provider returned; a field the provider did not report
+// is null. No prompt text, names or personalization ever enters here.
+
+export type ImageKind = 'page' | 'cover'
+
+/** The request-side facts worth logging (never the prompt). */
+export interface ImageRequestTelemetry {
+  image_model: string
+  image_quality_requested: string
+  image_size_requested: string
+  image_output_format_requested: string
+}
+
+export function imageRequestTelemetry(body: ImageRequestBody): ImageRequestTelemetry {
+  return {
+    image_model: body.model,
+    image_quality_requested: body.quality,
+    image_size_requested: body.size,
+    image_output_format_requested: body.output_format,
+  }
+}
+
+/**
+ * Published list prices for gpt-image-2.5 models, USD per 1M tokens, as read
+ * on developers.openai.com/api/docs/pricing on 2026-10-30 (Standard
+ * processing). These are configuration for an ESTIMATE, not an observation:
+ * the invoice from OpenAI is the only record of actual spend. Update
+ * `as_of` whenever the numbers change.
+ */
+export interface ImageRates {
+  as_of: string
+  text_input_per_1m: number
+  image_input_per_1m: number
+  image_output_per_1m: number
+}
+
+export const PUBLISHED_IMAGE_RATES: ImageRates = {
+  as_of: '2026-10-30',
+  text_input_per_1m: 5.0,
+  image_input_per_1m: 8.0,
+  image_output_per_1m: 30.0,
+}
+
+export interface ImageCostEstimate {
+  usd: number
+  /** How the input side was priced: by the reported text/image split, or all as text because the split was absent. */
+  input_basis: 'details' | 'input_tokens_as_text' | 'none'
+  /** How the output side was priced: image-output tokens from the details, or all output tokens as image output. */
+  output_basis: 'details' | 'output_tokens' | 'none'
+  rates_as_of: string
+}
+
+/**
+ * Pure estimate of one image call from reported token counts × configured
+ * published rates. Returns null when neither an input nor an output count is
+ * available (nothing to price). Rounded to 6 decimals.
+ */
+export function estimateImageCostUsd(usage: ImageUsage | null | undefined, rates: ImageRates = PUBLISHED_IMAGE_RATES): ImageCostEstimate | null {
+  if (!usage) return null
+  let usd = 0
+  let input_basis: ImageCostEstimate['input_basis'] = 'none'
+  let output_basis: ImageCostEstimate['output_basis'] = 'none'
+  if (usage.input_text_tokens !== null || usage.input_image_tokens !== null) {
+    usd += ((usage.input_text_tokens ?? 0) * rates.text_input_per_1m + (usage.input_image_tokens ?? 0) * rates.image_input_per_1m) / 1_000_000
+    input_basis = 'details'
+  } else if (usage.input_tokens !== null) {
+    usd += (usage.input_tokens * rates.text_input_per_1m) / 1_000_000
+    input_basis = 'input_tokens_as_text'
+  }
+  if (usage.output_image_tokens !== null) {
+    usd += (usage.output_image_tokens * rates.image_output_per_1m) / 1_000_000
+    output_basis = 'details'
+  } else if (usage.output_tokens !== null) {
+    usd += (usage.output_tokens * rates.image_output_per_1m) / 1_000_000
+    output_basis = 'output_tokens'
+  }
+  if (input_basis === 'none' && output_basis === 'none') return null
+  return { usd: Math.round(usd * 1e6) / 1e6, input_basis, output_basis, rates_as_of: rates.as_of }
+}
+
+/** Every key the telemetry helpers may emit (pinned by tests; no prompt/name fields). */
+export const IMAGE_TELEMETRY_KEYS = [
+  'image_kind', 'image_outcome', 'usage_reported',
+  'image_model', 'image_quality_requested', 'image_size_requested', 'image_output_format_requested',
+  'image_quality', 'image_size', 'image_output_format',
+  'input_tokens', 'input_text_tokens', 'input_image_tokens', 'output_tokens', 'output_image_tokens', 'output_text_tokens', 'total_tokens',
+  'image_tokens', 'cost_estimate_usd', 'cost_estimate_input_basis', 'cost_estimate_output_basis', 'cost_estimate_rates_as_of',
+] as const
+
+export interface ImageSuccessTelemetryArgs {
+  kind: ImageKind
+  requested: ImageRequestTelemetry
+  /** Served model: the model the request named (the Images API does not echo it). */
+  model: string
+  usage: ImageUsage | null
+  quality: string | null
+  size: string | null
+  outputFormat: string | null
+  rates?: ImageRates
+}
+
+/**
+ * Metadata for a successful image call. Keeps the legacy `image_tokens`
+ * (total ?? output, present only when usage was reported) so existing
+ * queries keep working, and adds the full breakdown with nulls for anything
+ * the provider did not return.
+ */
+export function imageUsageTelemetry(a: ImageSuccessTelemetryArgs): Record<string, unknown> {
+  const u = a.usage
+  const est = estimateImageCostUsd(u, a.rates)
+  const legacy = u ? (u.total_tokens ?? u.output_tokens) : null
+  return {
+    image_kind: a.kind,
+    image_outcome: 'success',
+    usage_reported: u !== null,
+    ...a.requested,
+    image_model: a.model,
+    image_quality: a.quality,
+    image_size: a.size,
+    image_output_format: a.outputFormat,
+    input_tokens: u?.input_tokens ?? null,
+    input_text_tokens: u?.input_text_tokens ?? null,
+    input_image_tokens: u?.input_image_tokens ?? null,
+    output_tokens: u?.output_tokens ?? null,
+    output_image_tokens: u?.output_image_tokens ?? null,
+    output_text_tokens: u?.output_text_tokens ?? null,
+    total_tokens: u?.total_tokens ?? null,
+    ...(legacy !== null ? { image_tokens: legacy } : {}),
+    cost_estimate_usd: est?.usd ?? null,
+    cost_estimate_input_basis: est?.input_basis ?? null,
+    cost_estimate_output_basis: est?.output_basis ?? null,
+    cost_estimate_rates_as_of: est?.rates_as_of ?? null,
+  }
+}
+
+/**
+ * Metadata for a failed image attempt: what was requested, that no usage
+ * was reported (a failed call returns no usage object), and the kind.
+ * Tokens are never guessed for failures.
+ */
+export function imageFailureTelemetry(kind: ImageKind, requested: ImageRequestTelemetry): Record<string, unknown> {
+  return { image_kind: kind, image_outcome: 'failed', usage_reported: false, ...requested }
 }
 
 /** Decode base64 (standard alphabet, optional padding) into bytes; rejects empty/invalid input. */
