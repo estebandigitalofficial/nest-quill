@@ -5,8 +5,9 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { PDFDocument } from 'pdf-lib'
 import {
-  CLOSING_FIT, DEDICATION_FIT, PAGE_SIZE, STRINGS, drawBackPage, drawDedicationPage, fitTextBlock, loadFonts, wrapParagraph,
+  CLOSING_FIT, DEDICATION_FIT, PAGE_SIZE, STRINGS, backLayout, dedicationLayout, drawBackPage, drawDedicationPage, fitTextBlock, loadFonts, wrapParagraph,
 } from './decorativePages.ts'
+import * as v1 from './v1/decorativePages.ts'
 
 const HERE = import.meta.dirname
 const ROOT = resolve(HERE, '../../..')
@@ -18,8 +19,9 @@ const MAX_WORD = 'Supercalifragilisticoespialidosoextraordinariamentelargo'.repe
 test('1. prototype stays isolated: production PDF export never imports it and it never imports production pdf.ts', () => {
   const prod = read('lib/services/pdf.ts')
   assert.ok(!prod.includes('decorativePages'), 'lib/services/pdf.ts must not reference the prototype')
-  const proto = read('scripts/prototypes/decorative-pages/decorativePages.ts')
-  assert.ok(!/from ['"][^'"]*services\/pdf(\.ts)?['"]/.test(proto), 'prototype must not import lib/services/pdf.ts')
+  for (const rel of ['scripts/prototypes/decorative-pages/decorativePages.ts', 'scripts/prototypes/decorative-pages/v1/decorativePages.ts']) {
+    assert.ok(!/from ['"][^'"]*services\/pdf(\.ts)?['"]/.test(read(rel)), `${rel} must not import lib/services/pdf.ts`)
+  }
   for (const f of readdirSync(resolve(ROOT, 'app/api'), { recursive: true }) as string[]) {
     if (!f.endsWith('.ts')) continue
     assert.ok(!read(resolve('app/api', f)).includes('prototypes/decorative-pages'), `${f} imports the prototype`)
@@ -66,7 +68,10 @@ test('6. paragraph breaks are honoured and blank lines count toward the height',
   const fonts = await loadFonts(doc)
   const block = fitTextBlock('For Nia.\n\nBecause every great adventure needs a reader as brave as you.', fonts.italic, DEDICATION_FIT)
   assert.equal(block.lines.filter(l => l === '').length, 1)
-  assert.equal(block.height, block.lines.length * block.size * DEDICATION_FIT.lineHeight)
+  // V2: text lines advance by lineHeight, paragraph gaps by the smaller paragraphGap.
+  const textLines = block.lines.filter(l => l !== '').length
+  const expected = textLines * block.size * DEDICATION_FIT.lineHeight + 1 * block.size * (DEDICATION_FIT.paragraphGap ?? DEDICATION_FIT.lineHeight)
+  assert.ok(Math.abs(block.height - expected) < 1e-6, `${block.height} vs ${expected}`)
 })
 
 test('7. Spanish accents and punctuation survive the WinAnsi guard and the pages render', async () => {
@@ -105,4 +110,43 @@ test('10. fixtures are synthetic: no customer name, request id or storage path a
   assert.ok(!/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/i.test(src), 'no UUIDs')
   assert.ok(!/story-images|book-exports|createClient|signedUrl|api\.openai|process\.env/i.test(src), 'no storage, client or provider code')
   assert.ok(!/Paysoneaux/i.test(src), 'no real customer name')
+})
+
+test('11. V2 layouts keep every element inside the frame for the shortest and longest texts (no clipping or overflow)', async () => {
+  const doc = await PDFDocument.create()
+  const fonts = await loadFonts(doc)
+  const FRAME = 26 + 12 // outer rule plus breathing room
+  for (const text of ['For Theo.', LONG_ES.padEnd(300, '…').slice(0, 300), 'For Nia.\n\nBecause.\n\nHappy birthday, little lion, from everyone who loves you more than all the stars in the sky put together.']) {
+    const block = fitTextBlock(text, fonts.italic, DEDICATION_FIT)
+    assert.ok(block.fits)
+    const L = dedicationLayout(block)
+    assert.ok(L.textTop <= L.dividerY - 20, 'text starts below the divider')
+    assert.ok(L.textBottom >= L.featherY + 20, 'feather sits below the text')
+    assert.ok(L.authorY >= FRAME + 20, `author line inside the frame (${L.authorY})`)
+    assert.ok(L.textTop + block.size <= PAGE_SIZE - FRAME)
+    for (const line of block.lines) assert.ok(fonts.italic.widthOfTextAtSize(line, block.size) <= DEDICATION_FIT.maxWidth)
+  }
+  for (const text of [null, 'Gracias.', ('Gracias por acompañar a Pip hasta la última página. ¡Hasta la próxima aventura! ').repeat(4).slice(0, 200)]) {
+    const block = text ? fitTextBlock(text, fonts.italic, CLOSING_FIT) : null
+    if (block) assert.ok(block.fits)
+    const L = backLayout(block)
+    if (block && L.closingTop !== null) {
+      assert.ok(L.closingTop - block.height >= L.dividerY + 20, 'closing message clears the divider')
+      assert.ok(L.closingTop <= L.endY - 30, 'closing message sits under the heading')
+    }
+    assert.ok(L.authorY > L.logoCy + 30, 'author line above the logo')
+    assert.ok(L.siteY >= FRAME + 10 && L.logoCy - 25 > L.siteY, 'signature inside the frame')
+    assert.ok(L.endY + L.endSize <= PAGE_SIZE - FRAME)
+  }
+})
+
+test('12. V2 hierarchy: the back-page logo is smaller than V1 and the closing message larger', async () => {
+  const doc = await PDFDocument.create()
+  const fonts = await loadFonts(doc)
+  assert.ok(backLayout(null).logoWidth < 150, 'V1 drew the wordmark at 150 pt')
+  assert.ok(CLOSING_FIT.maxSize > v1.CLOSING_FIT.maxSize)
+  assert.ok(DEDICATION_FIT.maxSize > v1.DEDICATION_FIT.maxSize)
+  assert.equal(v1.PAGE_SIZE, PAGE_SIZE)
+  const block = fitTextBlock('For Theo, who asks the very best questions.', fonts.italic, DEDICATION_FIT)
+  assert.equal(block.size, DEDICATION_FIT.maxSize)
 })

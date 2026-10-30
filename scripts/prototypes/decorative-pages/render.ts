@@ -1,6 +1,8 @@
 // Phase 0B prototype renderer. Writes sample dedication / back pages as PDFs.
 //
-//   node --experimental-strip-types scripts/prototypes/decorative-pages/render.ts [outDir]
+//   node --experimental-strip-types scripts/prototypes/decorative-pages/render.ts [outDir] [--v1]
+//
+// --v1 renders the frozen Version 1 layouts (./v1) for before/after comparison.
 //
 // Output: one combined proof.pdf (all variants) plus one PDF per variant.
 // Optional PNGs: pdftoppm -r 72 -png <outDir>/proof.pdf <outDir>/proof
@@ -10,10 +12,15 @@
 import { PDFDocument } from 'pdf-lib'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { drawBackPage, drawDedicationPage, loadFonts, type Art, type Lang } from './decorativePages.ts'
+import * as v2 from './decorativePages.ts'
+import * as v1 from './v1/decorativePages.ts'
+import type { Art, Lang } from './decorativePages.ts'
 
 const HERE = import.meta.dirname
-const outDir = resolve(process.argv[2] ?? resolve(HERE, 'out'))
+const args = process.argv.slice(2)
+const useV1 = args.includes('--v1')
+const layouts = useV1 ? v1 : v2
+const outDir = resolve(args.find(a => !a.startsWith('--')) ?? resolve(HERE, 'out'))
 mkdirSync(outDir, { recursive: true })
 
 export const FIXTURES: { id: string; lang: Lang; kind: 'dedication' | 'back'; text: string | null; author: string }[] = [
@@ -49,11 +56,11 @@ async function loadArt(doc: PDFDocument): Promise<Art> {
 
 async function renderOne(fixture: typeof FIXTURES[number]) {
   const doc = await PDFDocument.create()
-  const fonts = await loadFonts(doc)
+  const fonts = await layouts.loadFonts(doc)
   const art = await loadArt(doc)
   const block = fixture.kind === 'dedication'
-    ? drawDedicationPage(doc, fonts, art, { dedication: fixture.text ?? '', authorLine: fixture.author, lang: fixture.lang })
-    : drawBackPage(doc, fonts, art, { closingMessage: fixture.text, authorLine: fixture.author, lang: fixture.lang })
+    ? layouts.drawDedicationPage(doc, fonts, art, { dedication: fixture.text ?? '', authorLine: fixture.author, lang: fixture.lang })
+    : layouts.drawBackPage(doc, fonts, art, { closingMessage: fixture.text, authorLine: fixture.author, lang: fixture.lang })
   return { bytes: await doc.save(), block }
 }
 
@@ -70,7 +77,7 @@ async function main() {
   }
   writeFileSync(resolve(outDir, 'proof.pdf'), await proof.save())
   console.log(report.join('\n'))
-  console.log(`\nwrote ${FIXTURES.length + 1} PDFs to ${outDir}`)
+  console.log(`\n${useV1 ? 'V1' : 'V2'}: wrote ${FIXTURES.length + 1} PDFs to ${outDir}`)
 }
 
 main().catch(err => { console.error(err); process.exit(1) })
