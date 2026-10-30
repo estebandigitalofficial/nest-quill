@@ -4,6 +4,7 @@ import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getOrNull, storeContent, recordUsage } from '@/lib/services/contentLibrary'
+import { UTILITY_MODEL, chatCompletion } from '@/lib/ai/models'
 
 export async function POST(request: NextRequest) {
   const blocked = await gateLearningTools()
@@ -69,15 +70,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an educational assistant for students (grades 1–8). You are explaining to ${ageLabel} in ${gradeLabel}.
+    const res = await chatCompletion({
+      model: UTILITY_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You are an educational assistant for students (grades 1–8). You are explaining to ${ageLabel} in ${gradeLabel}.
 
 Explain concepts in a simple, clear, and age-appropriate way.
 
@@ -108,15 +106,14 @@ Output valid JSON:
   "fun_fact": "one surprising or interesting fact about this topic",
   "try_this": "a simple hands-on activity or thing to try at home"
 }`,
-          },
-          {
-            role: 'user',
-            content: userContent,
-          },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-      }),
+        },
+        {
+          role: 'user',
+          content: userContent,
+        },
+      ],
+      jsonMode: true,
+      temperature: 0.7,
     })
 
     if (!res.ok) {

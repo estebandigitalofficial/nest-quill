@@ -500,18 +500,20 @@ test('24. migrations 20240073/74/75 are untouched and no migration was added', (
   assert.equal(readdirSync(resolve(ROOT, 'supabase/migrations')).filter((f) => f.endsWith('.sql')).sort().at(-1), '20240075_deletion_count_durability.sql')
 })
 
-test('25. supabase/functions/process-story is at its expected revision (24 files, combined content hash)', () => {
+test('25. supabase/functions/process-story is at its expected revision (26 files, combined content hash)', () => {
   // 3C-3 pinned the worker untouched. The explicit child reference feature
   // (2026-10-20) legitimately changed prompt.ts, visual.ts, index.ts and added
   // childReference.ts + its test; supabase/functions/process-story/childReference.test.ts
-  // and lib/story/childReference.test.ts own that behaviour. The deletion
-  // system itself still never touches the worker.
+  // and lib/story/childReference.test.ts own that behaviour. The OpenAI model
+  // retirement migration (2026-10-30) changed index.ts and imageProvider.ts and
+  // added textProvider.ts + its test; textProvider.test.ts and lib/ai/models.test.ts
+  // own that behaviour. The deletion system itself still never touches the worker.
   const dir = resolve(ROOT, 'supabase/functions/process-story')
   const files = walk(dir).sort()
-  assert.equal(files.length, 24)
+  assert.equal(files.length, 26)
   const h = createHash('sha256')
   for (const f of files) h.update(readFileSync(f))
-  assert.equal(h.digest('hex'), 'f7b6063365f1473b40119db4080d3aad805b029f1cb41269001ccfce930265d7')
+  assert.equal(h.digest('hex'), '23f0d3b3a7e8c2b6fc3b46ed661ad9255266a961d54125a64b55cc99a3f22254')
 })
 
 test('26. the legal files are at their expected revision (lib/i18n/legal.ts as updated by 3C-8; privacy and terms pages and LegalDocument untouched)', () => {

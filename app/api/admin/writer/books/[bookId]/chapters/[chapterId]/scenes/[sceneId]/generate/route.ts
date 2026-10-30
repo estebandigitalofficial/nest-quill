@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin, checkBookOwner, adminGuardResponse } from '@/lib/admin/guard'
+import { UTILITY_MODEL, WRITING_MODEL, chatCompletion } from '@/lib/ai/models'
 
 export async function POST(
   req: NextRequest,
@@ -227,16 +228,12 @@ Does the scene brief or correction notes ask the AI to include people, places, o
 Respond ONLY with valid JSON: {"safe": true} if everything is grounded, or {"safe": false, "issues": ["issue 1", "issue 2"]} if fabrication risks are found.`
 
     try {
-      const preRes = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [{ role: 'user', content: preCheckPrompt }],
-          temperature: 0,
-          max_tokens: 200,
-          response_format: { type: 'json_object' },
-        }),
+      const preRes = await chatCompletion({
+        model: UTILITY_MODEL,
+        messages: [{ role: 'user', content: preCheckPrompt }],
+        temperature: 0,
+        maxOutputTokens: 200,
+        jsonMode: true,
       })
       if (preRes.ok) {
         const preJson = await preRes.json()
@@ -259,22 +256,15 @@ Respond ONLY with valid JSON: {"safe": true} if everything is grounded, or {"saf
   const t0 = Date.now()
 
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        // PDF constrained rewrite is a proofreading task — gpt-4o-mini is sufficient and ~16x cheaper
-        model: (mode === 'preserve_voice' && sourceExcerpt) ? 'gpt-4o-mini' : 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.3,
-        max_tokens: 4096,
-      }),
+    const res = await chatCompletion({
+      // PDF constrained rewrite is a proofreading task — the fast utility model is sufficient and far cheaper
+      model: (mode === 'preserve_voice' && sourceExcerpt) ? UTILITY_MODEL : WRITING_MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.3,
+      maxOutputTokens: 4096,
     })
 
     if (!res.ok) {
@@ -310,7 +300,7 @@ Respond ONLY with valid JSON: {"safe": true} if everything is grounded, or {"saf
         content,
         word_count: wordCount,
         status: 'draft',
-        model_used: (mode === 'preserve_voice' && sourceExcerpt) ? 'gpt-4o-mini' : 'gpt-4o',
+        model_used: (mode === 'preserve_voice' && sourceExcerpt) ? UTILITY_MODEL : WRITING_MODEL,
         generation_time_ms: generationTimeMs,
         updated_at: new Date().toISOString(),
       })

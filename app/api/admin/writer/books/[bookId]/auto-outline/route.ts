@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin, checkBookOwner, adminGuardResponse } from '@/lib/admin/guard'
+import { WRITING_MODEL, chatCompletion } from '@/lib/ai/models'
 
 export const maxDuration = 60
 
@@ -102,21 +103,14 @@ Each chapter should have 3-5 scenes. Do not pad with weak scenes to hit a number
 Manuscript:
 ${sourceExcerpt}`
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.4,
-      max_tokens: 8192,
-    }),
+  const res = await chatCompletion({
+    model: WRITING_MODEL,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    temperature: 0.4,
+    maxOutputTokens: 8192,
   })
 
   if (!res.ok) {

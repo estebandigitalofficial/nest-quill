@@ -3,6 +3,7 @@ import { gateLearningTools } from '@/lib/settings/gates'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 import { getSetting } from '@/lib/settings/appSettings'
+import { UTILITY_MODEL, chatCompletion } from '@/lib/ai/models'
 
 export async function POST(request: NextRequest) {
   const blocked = await gateLearningTools()
@@ -42,15 +43,12 @@ export async function POST(request: NextRequest) {
       userContent = `Generate 10 fun trivia questions about: ${topic.trim()} (${gradeLabel})`
     }
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: `You create fun, engaging trivia questions for K-8 students. Mix easy and medium difficulty.
+    const res = await chatCompletion({
+      model: UTILITY_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You create fun, engaging trivia questions for K-8 students. Mix easy and medium difficulty.
 
 Rules:
 - Exactly 10 questions
@@ -70,12 +68,11 @@ Output valid JSON:
     }
   ]
 }`,
-          },
-          { role: 'user', content: userContent },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.8,
-      }),
+        },
+        { role: 'user', content: userContent },
+      ],
+      jsonMode: true,
+      temperature: 0.8,
     })
 
     if (!res.ok) {

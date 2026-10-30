@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { gateLearningTools } from '@/lib/settings/gates'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { getActiveGuardrails } from '@/lib/utils/learningGuardrails'
+import { UTILITY_MODEL, chatCompletion } from '@/lib/ai/models'
 
 export async function POST(request: NextRequest) {
   const blocked = await gateLearningTools()
@@ -18,15 +19,12 @@ export async function POST(request: NextRequest) {
 
     const gradeLabel = grade ? `grade ${grade}` : 'elementary school'
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: `You create reading comprehension questions for ${gradeLabel} students.
+    const res = await chatCompletion({
+      model: UTILITY_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You create reading comprehension questions for ${gradeLabel} students.
 
 Output valid JSON:
 {
@@ -46,15 +44,14 @@ Rules:
 - Mix literal (directly stated) and inferential (reading between the lines) questions
 - correct_index is 0-based
 - ${neutralityRule}`,
-          },
-          {
-            role: 'user',
-            content: `Text to read:\n\n${text.trim()}\n\nGenerate 5 comprehension questions for a ${gradeLabel} student.`,
-          },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.5,
-      }),
+        },
+        {
+          role: 'user',
+          content: `Text to read:\n\n${text.trim()}\n\nGenerate 5 comprehension questions for a ${gradeLabel} student.`,
+        },
+      ],
+      jsonMode: true,
+      temperature: 0.5,
     })
 
     if (!res.ok) {

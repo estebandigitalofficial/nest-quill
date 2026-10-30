@@ -4,6 +4,7 @@ import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getOrNull, storeContent, recordUsage } from '@/lib/services/contentLibrary'
+import { UTILITY_MODEL, chatCompletion } from '@/lib/ai/models'
 
 export async function POST(request: NextRequest) {
   const blocked = await gateLearningTools()
@@ -60,15 +61,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: `You create educational flashcards for ${gradeLabel} students.
+    const res = await chatCompletion({
+      model: UTILITY_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You create educational flashcards for ${gradeLabel} students.
 
 Rules:
 - Generate exactly 10 cards
@@ -83,15 +81,14 @@ Output valid JSON:
     { "front": "term or question", "back": "definition or answer" }
   ]
 }`,
-          },
-          {
-            role: 'user',
-            content: userContent,
-          },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.6,
-      }),
+        },
+        {
+          role: 'user',
+          content: userContent,
+        },
+      ],
+      jsonMode: true,
+      temperature: 0.6,
     })
 
     if (!res.ok) {

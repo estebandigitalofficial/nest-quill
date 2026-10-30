@@ -4,6 +4,7 @@ import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getOrNull, storeContent, recordUsage } from '@/lib/services/contentLibrary'
+import { UTILITY_MODEL, chatCompletion } from '@/lib/ai/models'
 
 export async function POST(request: NextRequest) {
   const blocked = await gateLearningTools()
@@ -29,15 +30,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ problems: cached.content.problems, fromLibrary: true })
     }
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: `You create math practice problems for ${gradeLabel} students.
+    const res = await chatCompletion({
+      model: UTILITY_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: `You create math practice problems for ${gradeLabel} students.
 
 Output valid JSON:
 {
@@ -57,15 +55,14 @@ Rules:
 - Mix difficulty slightly (start easier, end harder)
 - For word problems, use relatable real-life scenarios with kids' names
 - ${neutralityRule}`,
-          },
-          {
-            role: 'user',
-            content: `Generate 8 ${topic} practice problems for a ${gradeLabel} student.`,
-          },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.5,
-      }),
+        },
+        {
+          role: 'user',
+          content: `Generate 8 ${topic} practice problems for a ${gradeLabel} student.`,
+        },
+      ],
+      jsonMode: true,
+      temperature: 0.5,
     })
 
     if (!res.ok) {

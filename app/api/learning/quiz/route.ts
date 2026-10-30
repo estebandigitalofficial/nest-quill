@@ -4,6 +4,7 @@ import { gateLearningTools } from '@/lib/settings/gates'
 import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, getActiveGuardrails } from '@/lib/utils/learningGuardrails'
 import { getOrNull, storeContent, recordUsage } from '@/lib/services/contentLibrary'
+import { UTILITY_MODEL, chatCompletion } from '@/lib/ai/models'
 
 const SYSTEM_PROMPT = (gradeLabel: string, neutralityRule: string) => `You are an educational quiz writer for students in ${gradeLabel}. Create 5 multiple-choice questions.
 
@@ -112,18 +113,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT(gradeLabel, neutralityRule) },
-          { role: 'user', content: userContent },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-      }),
+    const res = await chatCompletion({
+      model: UTILITY_MODEL,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT(gradeLabel, neutralityRule) },
+        { role: 'user', content: userContent },
+      ],
+      jsonMode: true,
+      temperature: 0.7,
     })
 
     if (!res.ok) {
