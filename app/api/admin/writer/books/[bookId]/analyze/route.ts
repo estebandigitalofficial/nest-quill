@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin, checkBookOwner, adminGuardResponse } from '@/lib/admin/guard'
+import { WRITING_MODEL, chatCompletion } from '@/lib/ai/models'
 
 export const maxDuration = 60
 
@@ -101,21 +102,14 @@ Observations about the manuscript's current organization: how it is structured, 
 Manuscript (may include multiple sections from different points in the book):
 ${sample}`
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.2,
-      max_tokens: 1500,
-    }),
+  const res = await chatCompletion({
+    model: WRITING_MODEL,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    temperature: 0.2,
+    maxOutputTokens: 1500,
   })
 
   if (!res.ok) {

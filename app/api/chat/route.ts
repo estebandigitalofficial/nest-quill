@@ -4,6 +4,8 @@ import { classifyTopic, CLARIFY_MESSAGE, REDIRECT_MESSAGE, getActiveGuardrails }
 import { getLaunchFlags } from '@/lib/launch/flags'
 import { launchPricingKnowledge } from '@/lib/chat/launchKnowledge'
 import { assistantIdentityPrompt, assistantIdentitySpanishNote } from '@/lib/assistant/identity'
+import { CHAT_ASSISTANT_MODEL, chatParams } from '@/lib/ai/models'
+import { compatibilityFallback } from '@/lib/ai/textProvider'
 
 // Launch scope (Phase 2A): the assistant describes only what is publicly available.
 // Identity (Quilliam) comes from lib/assistant/identity.ts; commercial facts
@@ -83,13 +85,29 @@ export async function POST(req: NextRequest) {
   const baseContent = neutralityRule ? SYSTEM_PROMPT_BASE + '\n\n' + neutralityRule : SYSTEM_PROMPT_BASE
   const systemPrompt = language === 'es' ? baseContent + SPANISH_SYSTEM_NOTE : baseContent
 
-  const stream = await getOpenAI().chat.completions.create({
-    model: 'gpt-4o-mini',
+  // Model and request shape come from lib/ai/models (reasoning_effort none,
+  // max_completion_tokens, temperature). If the API rejects one optional
+  // parameter for this model, retry once without it rather than failing the chat.
+  const params = chatParams({
+    model: CHAT_ASSISTANT_MODEL,
     messages: [{ role: 'system', content: systemPrompt }, ...messages],
     stream: true,
-    max_tokens: 600,
+    maxOutputTokens: 600,
     temperature: 0.7,
   })
+  type StreamParams = Parameters<OpenAI['chat']['completions']['create']>[0] & { stream: true }
+  const create = (p: typeof params) => getOpenAI().chat.completions.create(p as StreamParams)
+  let stream: Awaited<ReturnType<typeof create>>
+  try {
+    stream = await create(params)
+  } catch (err) {
+    const fb = err instanceof OpenAI.BadRequestError
+      ? compatibilityFallback(err.status, JSON.stringify({ error: err.error }), params)
+      : null
+    if (!fb) throw err
+    console.warn(`[chat] '${fb.dropped}' rejected for ${params.model}; retried without it`)
+    stream = await create(fb.body)
+  }
 
   const readable = new ReadableStream({
     async start(controller) {

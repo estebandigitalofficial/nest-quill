@@ -81,7 +81,10 @@ Output valid JSON:
       Authorization: `Bearer ${OPENAI_KEY}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      // Mirrors lib/ai/models.ts UTILITY_MODEL (this script cannot import TS).
+      // gpt-4o-mini leaves the API on 2027-01-14; gpt-6-luna is OpenAI's replacement.
+      model: 'gpt-6-luna',
+      reasoning_effort: 'none',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },

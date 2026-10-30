@@ -6,6 +6,7 @@ import {
   validateActivityPayload,
   type ActivityType,
 } from '@/lib/services/postStoryActivities'
+import { UTILITY_MODEL, chatCompletion } from '@/lib/ai/models'
 
 type RouteContext = { params: Promise<{ requestId: string; type: string }> }
 
@@ -76,18 +77,14 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ message: 'Activity generation is unavailable right now.' }, { status: 503 })
     }
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: prompt.system },
-          { role: 'user',   content: prompt.user },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.5,
-      }),
+    const res = await chatCompletion({
+      model: UTILITY_MODEL,
+      messages: [
+        { role: 'system', content: prompt.system },
+        { role: 'user',   content: prompt.user },
+      ],
+      jsonMode: true,
+      temperature: 0.5,
     })
 
     if (!res.ok) {

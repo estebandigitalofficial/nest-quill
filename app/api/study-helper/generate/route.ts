@@ -4,6 +4,7 @@ import { checkLearningRateLimit } from '@/lib/utils/rateLimiter'
 import { buildPrompts, VALID_ACTIVITY_MODES, ActivityMode } from '@/lib/services/materialActivity'
 import { getSetting } from '@/lib/settings/appSettings'
 import { getActiveGuardrails } from '@/lib/utils/learningGuardrails'
+import { UTILITY_MODEL, chatCompletion } from '@/lib/ai/models'
 
 export async function POST(request: NextRequest) {
   // Parse body first so we can check assignmentId before rate limiting
@@ -61,18 +62,14 @@ export async function POST(request: NextRequest) {
     const gradeLabel = grade ? `grade ${grade}` : 'elementary school'
     const { system, user: userPrompt } = buildPrompts(mode as ActivityMode, material, gradeLabel, neutralityRule)
 
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: userPrompt },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.6,
-      }),
+    const res = await chatCompletion({
+      model: UTILITY_MODEL,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: userPrompt },
+      ],
+      jsonMode: true,
+      temperature: 0.6,
     })
 
     if (!res.ok) {

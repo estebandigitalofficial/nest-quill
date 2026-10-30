@@ -46,7 +46,7 @@ export default async function AdminBetaPage() {
           <ul className="space-y-2 text-sm text-adm-muted">
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>
-              <span className="min-w-0">Story text generation (GPT-4o) — full AI writing</span>
+              <span className="min-w-0">Story text generation (OpenAI text model) — full AI writing</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500 mt-0.5">✓</span>

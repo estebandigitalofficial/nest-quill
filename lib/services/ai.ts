@@ -1,6 +1,12 @@
 import OpenAI from 'openai'
 import type { StoryRequest } from '@/types/database'
 import type { GeneratedStoryJSON } from '@/types/story'
+import { WRITING_MODEL, chatParams } from '@/lib/ai/models'
+
+// Legacy single-stage story generator. Nothing imports it today: production
+// story text is produced by supabase/functions/process-story. Kept callable;
+// it takes its model and request shape from lib/ai/models like every other
+// OpenAI call in the app.
 
 let _openai: OpenAI | null = null
 function getOpenAI(): OpenAI {
@@ -77,14 +83,17 @@ Rules:
     .join('\n')
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
-    response_format: { type: 'json_object' },
-    temperature: 0.8,
-  })
+    ...chatParams({
+      model: WRITING_MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      jsonMode: true,
+      temperature: 0.8,
+    }),
+    stream: false,
+  } as Parameters<typeof openai.chat.completions.create>[0] & { stream: false })
 
   const content = response.choices[0].message.content
   if (!content) throw new Error('OpenAI returned empty response')

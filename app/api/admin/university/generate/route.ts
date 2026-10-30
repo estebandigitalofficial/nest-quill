@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAdminContext } from '@/lib/admin/guard'
+import { UTILITY_MODEL, chatCompletion } from '@/lib/ai/models'
 
 // GET — count how many items still need content generated
 export async function GET() {
@@ -203,22 +204,15 @@ Output valid JSON:
       return null
   }
 
-  // Use gpt-4o-mini for bulk generation (faster + cheaper)
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.5,
-    }),
+  // Bulk generation uses the fast utility model (cheaper); see lib/ai/models.ts
+  const res = await chatCompletion({
+    model: UTILITY_MODEL,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+    jsonMode: true,
+    temperature: 0.5,
   })
 
   if (!res.ok) {

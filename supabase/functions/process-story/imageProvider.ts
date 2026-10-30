@@ -19,6 +19,35 @@ export const IMAGES_ENDPOINT = 'https://api.openai.com/v1/images/generations'
  */
 export const DEFAULT_IMAGE_MODEL = 'gpt-image-2.5-flare'
 
+/**
+ * Image model IDs retired or scheduled for retirement from the API per
+ * developers.openai.com/api/docs/deprecations (read 2026-10-30):
+ * dall-e-2 / dall-e-3 (2026-05-12), gpt-image-1 (2026-10-23),
+ * gpt-image-1-mini, gpt-image-1.5* and chatgpt-image-latest (2026-12-01).
+ * Prefix-matched so dated snapshots are caught too. An override naming one
+ * of these falls back to DEFAULT_IMAGE_MODEL instead of reaching the API.
+ */
+export const RETIRED_IMAGE_MODEL_PREFIXES: readonly string[] = ['dall-e', 'gpt-image-1', 'chatgpt-image-latest']
+
+export function isRetiredImageModel(model: string | null | undefined): boolean {
+  const v = (model ?? '').trim().toLowerCase()
+  return !!v && RETIRED_IMAGE_MODEL_PREFIXES.some(p => v.startsWith(p))
+}
+
+export interface ResolvedImageModel {
+  model: string
+  source: 'default' | 'override' | 'rejected_override'
+  rejected?: string
+}
+
+/** Non-empty override wins unless it names a retired model; unknown IDs pass so a newer model needs no redeploy. */
+export function resolveImageModel(override: string | null | undefined): ResolvedImageModel {
+  const v = (override ?? '').trim()
+  if (!v) return { model: DEFAULT_IMAGE_MODEL, source: 'default' }
+  if (isRetiredImageModel(v)) return { model: DEFAULT_IMAGE_MODEL, source: 'rejected_override', rejected: v }
+  return { model: v, source: 'override' }
+}
+
 /** Default rendering quality for GPT Image models (low | medium | high | xhigh | max | auto). */
 export const DEFAULT_IMAGE_QUALITY = 'medium'
 
@@ -104,9 +133,8 @@ export interface ImageRequestBody {
  * base64) nor `style` (dall-e-3 only).
  */
 export function buildImageRequest(prompt: string, opts: ImageRequestOptions = {}): ImageRequestBody {
-  const model = (opts.model ?? '').trim() || DEFAULT_IMAGE_MODEL
   return {
-    model,
+    model: resolveImageModel(opts.model).model,
     prompt,
     n: 1,
     size: normalizeSize(opts.size),

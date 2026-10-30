@@ -34,12 +34,18 @@ import {
 import { assessBookQuality } from './quality.ts'
 import { storyFailedEmail } from './emailLayout.ts'
 import {
-  DEFAULT_IMAGE_MODEL,
+  buildChatRequest,
+  parseChatResponse,
+  postChatCompletion,
+  resolveTextModel,
+} from './textProvider.ts'
+import {
   IMAGES_ENDPOINT,
   buildImageRequest,
   decodeBase64Image,
   parseImageResponse,
   rateLimitDelayMs,
+  resolveImageModel,
   isCurrentFormatPath,
   sceneStoragePath,
   sniffImageFormat,
@@ -186,47 +192,46 @@ type ConfigMap = Record<string, string>
 interface OpenAIUsage { prompt_tokens: number | null; completion_tokens: number | null; total_tokens: number | null }
 interface OpenAIResult { content: string; usage: OpenAIUsage; model: string }
 
-const TEXT_MODEL = 'gpt-4o'
+// Text model: default and retired-model guard live in textProvider.ts (one
+// place, mirrored in lib/ai/textProvider.ts). The PROCESS_STORY_TEXT_MODEL
+// worker secret switches models without a redeploy, but a retired ID is
+// refused and the default used instead (logged once at boot).
+const TEXT_MODEL_RESOLVED = resolveTextModel(Deno.env.get('PROCESS_STORY_TEXT_MODEL'))
+if (TEXT_MODEL_RESOLVED.source === 'rejected_override') {
+  console.warn(`PROCESS_STORY_TEXT_MODEL names a retired model (${TEXT_MODEL_RESOLVED.rejected}); using ${TEXT_MODEL_RESOLVED.model}`)
+}
+const TEXT_MODEL = TEXT_MODEL_RESOLVED.model
 
 /**
  * JSON-mode chat completion. Returns the content plus the usage block the
  * API reports (prompt_tokens / completion_tokens / total_tokens) so each
  * generation stage can be measured; nulls when the API omits usage.
+ * The request shape (reasoning_effort none, temperature, JSON mode) is
+ * built by textProvider.ts, which also retries once without a parameter
+ * the API reports as unsupported for the chosen model.
  */
 async function callOpenAI(messages: object[], model = TEXT_MODEL, temperature = 0.8): Promise<OpenAIResult> {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      response_format: { type: 'json_object' },
-      temperature,
-    }),
-  })
+  const body = buildChatRequest({ model, messages: messages as { role: string; content: unknown }[], temperature, jsonMode: true })
+  const { res, dropped } = await postChatCompletion(fetch, OPENAI_API_KEY, body)
+  if (dropped) console.warn(`OpenAI rejected '${dropped}' for ${model}; retried without it`)
 
   if (!res.ok) {
     const err = await res.text()
     throw new Error(`OpenAI error ${res.status}: ${err}`)
   }
 
-  const json = await res.json()
-  const u = json.usage ?? {}
-  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
-  return {
-    content: json.choices?.[0]?.message?.content ?? '',
-    usage: { prompt_tokens: num(u.prompt_tokens), completion_tokens: num(u.completion_tokens), total_tokens: num(u.total_tokens) },
-    model: typeof json.model === 'string' ? json.model : model,
-  }
+  return parseChatResponse(await res.json(), model)
 }
 
 
 // Image provider settings live in imageProvider.ts (one place); the worker
 // secrets below let an operator switch model/quality without a redeploy.
-const IMAGE_MODEL = Deno.env.get('PROCESS_STORY_IMAGE_MODEL')?.trim() || DEFAULT_IMAGE_MODEL
+// A retired image model in PROCESS_STORY_IMAGE_MODEL is refused the same way.
+const IMAGE_MODEL_RESOLVED = resolveImageModel(Deno.env.get('PROCESS_STORY_IMAGE_MODEL'))
+if (IMAGE_MODEL_RESOLVED.source === 'rejected_override') {
+  console.warn(`PROCESS_STORY_IMAGE_MODEL names a retired model (${IMAGE_MODEL_RESOLVED.rejected}); using ${IMAGE_MODEL_RESOLVED.model}`)
+}
+const IMAGE_MODEL = IMAGE_MODEL_RESOLVED.model
 const IMAGE_QUALITY = Deno.env.get('PROCESS_STORY_IMAGE_QUALITY')?.trim() || null
 const IMAGE_COMPRESSION = Deno.env.get('PROCESS_STORY_IMAGE_COMPRESSION')?.trim() || null
 

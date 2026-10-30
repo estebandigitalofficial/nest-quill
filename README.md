@@ -13,8 +13,8 @@ An AI-powered educational platform for K–12 students, homeschool families, and
 | Database | Supabase (Postgres + RLS) |
 | Auth | Supabase Auth |
 | Storage | Supabase Storage |
-| AI — text | OpenAI GPT-4o (plan + prose), GPT-4o-mini (learning tools) |
-| AI — images | OpenAI gpt-image, via Edge Function (DALL-E retired) |
+| AI — text | OpenAI gpt-6.1-terra (plan + prose, Writer Studio), gpt-6-luna (Quilliam, learning tools); defaults in lib/ai/textProvider.ts |
+| AI — images | OpenAI gpt-image-2.5-flare, via Edge Function (DALL-E and gpt-image-1 retired) |
 | PDF generation | pdf-lib (Edge Function) + @react-pdf/renderer |
 | Email | Resend |
 | Payments | Stripe — scaffolded (`lib/stripe/`), not yet wired; gated by `NEXT_PUBLIC_PAYMENTS_ENABLED` |
