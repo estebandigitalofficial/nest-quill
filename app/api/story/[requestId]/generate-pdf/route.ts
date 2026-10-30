@@ -24,7 +24,7 @@ export async function POST(
   try {
     const { data: storyReq, error: reqErr } = await adminSupabase
       .from('story_requests')
-      .select('plan_tier, closing_message, status, completed_at, entitlement_source, pdf_entitled')
+      .select('plan_tier, closing_message, locale, status, completed_at, entitlement_source, pdf_entitled')
       .eq('id', requestId)
       .single()
 
@@ -116,6 +116,8 @@ export async function POST(
         signedImageUrls,
         coverImageUrl,
         closingMessage: (storyReq as unknown as { closing_message: string | null }).closing_message ?? undefined,
+        // Story language: the persisted locale (same source the worker uses), never a browser guess.
+        locale: (storyReq as unknown as { locale: string | null }).locale,
       })
 
       const storagePath = `${requestId}/storybook.pdf`

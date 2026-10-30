@@ -9,9 +9,10 @@ const ROOT = resolve(import.meta.dirname, '../..')
 const read = (rel: string) => readFileSync(resolve(ROOT, rel), 'utf8')
 
 test('4. the end page no longer carries a dingbat the standard fonts cannot encode', () => {
-  const src = read('lib/services/pdf.ts')
-  assert.ok(!src.includes('✦'), 'pdf.ts must not contain ✦')
-  assert.match(src, /const endText = PDF_END_TEXT/)
+  for (const rel of ['lib/services/pdf.ts', 'lib/services/pdfDecorations.ts']) assert.ok(!read(rel).includes('✦'), `${rel} must not contain ✦`)
+  // Phase 0C: the heading comes from the localised decoration strings; English still uses PDF_END_TEXT.
+  assert.match(read('lib/services/pdfDecorations.ts'), /theEnd: PDF_END_TEXT/)
+  assert.match(read('lib/services/pdfDecorations.ts'), /theEnd: 'Fin'/)
   assert.equal(PDF_END_TEXT, 'The End')
 })
 
