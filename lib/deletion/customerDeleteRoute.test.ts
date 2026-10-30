@@ -507,13 +507,16 @@ test('25. supabase/functions/process-story is at its expected revision (26 files
   // and lib/story/childReference.test.ts own that behaviour. The OpenAI model
   // retirement migration (2026-10-30) changed index.ts and imageProvider.ts and
   // added textProvider.ts + its test; textProvider.test.ts and lib/ai/models.test.ts
-  // own that behaviour. The deletion system itself still never touches the worker.
+  // own that behaviour. Phase 0A image cost telemetry (2026-10-30) changed
+  // index.ts, imageProvider.ts and imageProvider.test.ts (log metadata only);
+  // imageProvider.test.ts 13-18 own that behaviour. The deletion system
+  // itself still never touches the worker.
   const dir = resolve(ROOT, 'supabase/functions/process-story')
   const files = walk(dir).sort()
   assert.equal(files.length, 26)
   const h = createHash('sha256')
   for (const f of files) h.update(readFileSync(f))
-  assert.equal(h.digest('hex'), '23f0d3b3a7e8c2b6fc3b46ed661ad9255266a961d54125a64b55cc99a3f22254')
+  assert.equal(h.digest('hex'), 'd5343fdfb0ba80991a0f260d96be5670f17fef0feb4a4bb6ac2de728b31aae17')
 })
 
 test('26. the legal files are at their expected revision (lib/i18n/legal.ts as updated by 3C-8; privacy and terms pages and LegalDocument untouched)', () => {
