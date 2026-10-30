@@ -173,16 +173,38 @@ export function parseOpenAIError(text: string | null | undefined): { message: st
   }
 }
 
+/** Codes / wording OpenAI uses for "this model does not take that parameter". Anything else is a real request error. */
+const UNSUPPORTED_CODES = new Set(['unsupported_parameter', 'unsupported_value'])
+const UNSUPPORTED_WORDING = /unsupported|not supported|is not allowed|does not support/i
+
+export interface CompatibilityFallback {
+  body: ChatRequestBody
+  /** The parameter the API rejected. */
+  dropped: DroppableParam
+  /** Parameters removed alongside it because they only make sense together (see below). */
+  alsoDropped: DroppableParam[]
+}
+
 /**
  * When a 400 says one optional parameter is unsupported for this model,
  * return the same body without it so the caller can retry ONCE. Returns
- * null for every other failure (auth, 429, 5xx, prompt/content errors) so
- * those keep their existing handling. The dropped parameter is reported so
- * it can be logged.
+ * null for every other failure (auth, 404 unknown model, 429, 5xx, prompt or
+ * content errors, a 400 about `model` or `messages`, a 400 about a value
+ * that is merely out of range) so those keep their existing handling.
+ *
+ * Coupling rule: `temperature` is only accepted while `reasoning_effort` is
+ * `none`. So when the API rejects `reasoning_effort` itself, `temperature`
+ * goes with it in the same retry; otherwise a reasoning model would fall
+ * back to its default effort and reject `temperature` on the second call,
+ * spending the one retry for nothing. The retry still carries
+ * `max_completion_tokens` where the caller set one, which bounds any
+ * reasoning tokens the default effort may now produce.
  */
-export function compatibilityFallback(status: number, errorText: string | null | undefined, body: ChatRequestBody): { body: ChatRequestBody; dropped: DroppableParam } | null {
+export function compatibilityFallback(status: number, errorText: string | null | undefined, body: ChatRequestBody): CompatibilityFallback | null {
   if (status !== 400) return null
   const err = parseOpenAIError(errorText)
+  const unsupported = (err.code !== null && UNSUPPORTED_CODES.has(err.code)) || UNSUPPORTED_WORDING.test(err.message)
+  if (!unsupported) return null
   let param = err.param
   if (!param) {
     const m = /unsupported (?:parameter|value):\s*'([a-z_.]+)'/i.exec(err.message)
@@ -194,7 +216,48 @@ export function compatibilityFallback(status: number, errorText: string | null |
   if (!(top in body)) return null
   const next: ChatRequestBody = { ...body }
   delete next[top]
-  return { body: next, dropped: top }
+  const alsoDropped: DroppableParam[] = []
+  if (top === 'reasoning_effort' && 'temperature' in next) {
+    delete next.temperature
+    alsoDropped.push('temperature')
+  }
+  return { body: next, dropped: top, alsoDropped }
+}
+
+// ── Per-process compatibility memory ─────────────────────────────────────────
+// A worker run makes several text calls (plan, repairs, book); the app's
+// serverless instance serves many chats. Once a model has rejected a
+// parameter, later calls in the same process omit it up front instead of
+// paying a failed round trip each time. Nothing is persisted; a fresh
+// process starts from the documented request shape again.
+
+const knownIncompatibilities = new Map<string, Set<DroppableParam>>()
+
+export function recordIncompatibility(model: string, params: readonly DroppableParam[]): void {
+  const set = knownIncompatibilities.get(model) ?? new Set<DroppableParam>()
+  for (const p of params) set.add(p)
+  knownIncompatibilities.set(model, set)
+}
+
+export function knownIncompatibilitiesFor(model: string): DroppableParam[] {
+  return [...(knownIncompatibilities.get(model) ?? [])]
+}
+
+/** Tests only: forget everything learned in this process. */
+export function resetCompatibilityMemory(): void {
+  knownIncompatibilities.clear()
+}
+
+/** Remove parameters this process already saw the model reject; returns the same object when nothing applies. */
+export function applyKnownIncompatibilities(body: ChatRequestBody): ChatRequestBody {
+  const known = knownIncompatibilities.get(body.model)
+  if (!known || known.size === 0) return body
+  const next: ChatRequestBody = { ...body }
+  let changed = false
+  for (const p of known) {
+    if (p in next) { delete next[p]; changed = true }
+  }
+  return changed ? next : body
 }
 
 export interface ChatUsage {
@@ -229,8 +292,10 @@ export interface PostChatResult {
   res: Response
   /** The body actually sent (after a compatibility retry, the trimmed one). */
   body: ChatRequestBody
-  /** Set when one parameter was dropped and the request retried. */
+  /** Set when one parameter was dropped and the request retried in this call. */
   dropped: DroppableParam | null
+  /** Parameters omitted up front because an earlier call in this process saw the model reject them. */
+  omitted: DroppableParam[]
 }
 
 /**
@@ -245,11 +310,15 @@ export async function postChatCompletion(fetchImpl: FetchLike, apiKey: string, b
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify(b),
   })
-  const first = await send(body)
-  if (first.ok || first.status !== 400) return { res: first, body, dropped: null }
+  const prepared = applyKnownIncompatibilities(body)
+  const omitted = prepared === body ? [] : knownIncompatibilitiesFor(body.model).filter(p => p in body)
+  const first = await send(prepared)
+  if (first.ok || first.status !== 400) return { res: first, body: prepared, dropped: null, omitted }
   const text = await first.clone().text().catch(() => '')
-  const fb = compatibilityFallback(first.status, text, body)
-  if (!fb) return { res: first, body, dropped: null }
+  const fb = compatibilityFallback(first.status, text, prepared)
+  if (!fb) return { res: first, body: prepared, dropped: null, omitted }
   const second = await send(fb.body)
-  return { res: second, body: fb.body, dropped: fb.dropped }
+  // Only a resolved 400 proves the parameter was the problem; remember it for this process.
+  if (second.status !== 400) recordIncompatibility(body.model, [fb.dropped, ...fb.alsoDropped])
+  return { res: second, body: fb.body, dropped: fb.dropped, omitted }
 }

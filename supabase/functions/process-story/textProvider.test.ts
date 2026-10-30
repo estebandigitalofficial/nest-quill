@@ -18,8 +18,13 @@ import {
   parseOpenAIError,
   postChatCompletion,
   resolveTextModel,
+  applyKnownIncompatibilities,
+  knownIncompatibilitiesFor,
+  recordIncompatibility,
+  resetCompatibilityMemory,
   type ChatRequestBody,
 } from './textProvider.ts'
+import { validateBook, validateStoryPlan } from './plan.ts'
 import { buildBookPrompt, buildPlanPrompt } from './prompt.ts'
 import { safeParseJson, sumUsage } from './plan.ts'
 import { DEFAULT_IMAGE_MODEL, buildImageRequest, isRetiredImageModel, resolveImageModel } from './imageProvider.ts'
@@ -112,7 +117,7 @@ test('7. compatibility fallback drops exactly the optional parameter the API nam
   assert.equal(v?.dropped, 'temperature')
   const rf = compatibilityFallback(400, '{"error":{"message":"Invalid parameter: \'response_format\' of type \'json_object\' is not supported with this model.","param":"response_format","code":null}}', body)
   assert.equal(rf?.dropped, 'response_format'); assert.ok(rf && !('response_format' in rf.body))
-  const nested = compatibilityFallback(400, '{"error":{"message":"x","param":"response_format.type"}}', body)
+  const nested = compatibilityFallback(400, '{"error":{"message":"json_object is not supported with this model","param":"response_format.type"}}', body)
   assert.equal(nested?.dropped, 'response_format', 'nested param paths resolve to the top-level key')
   const re = compatibilityFallback(400, '{"error":{"message":"Unsupported parameter: \'reasoning_effort\' is not supported with this model."}}', body)
   assert.equal(re?.dropped, 'reasoning_effort', 'param inferred from the message when the field is absent')
@@ -148,6 +153,7 @@ function mockFetch(responses: Array<{ status: number; body: unknown }>) {
 }
 
 test('9. postChatCompletion: success is one call to the endpoint with the bearer key and the exact body', async () => {
+  resetCompatibilityMemory()
   const { fetchImpl, calls } = mockFetch([{ status: 200, body: { choices: [{ message: { content: '{}' } }] } }])
   const body = buildChatRequest({ model: 'gpt-6.1-terra', messages: [{ role: 'user', content: 'hi' }], temperature: 0.8, jsonMode: true })
   const out = await postChatCompletion(fetchImpl, 'sk-test', body)
@@ -159,6 +165,7 @@ test('9. postChatCompletion: success is one call to the endpoint with the bearer
 })
 
 test('10. postChatCompletion: a 400 naming an unsupported parameter is retried once without it; the second answer is returned as-is', async () => {
+  resetCompatibilityMemory()
   const err = { error: { message: "Unsupported parameter: 'temperature' is not supported with this model.", param: 'temperature', code: 'unsupported_parameter' } }
   const ok = { choices: [{ message: { content: '{"ok":true}' } }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } }
   const { fetchImpl, calls } = mockFetch([{ status: 400, body: err }, { status: 200, body: ok }])
@@ -171,6 +178,7 @@ test('10. postChatCompletion: a 400 naming an unsupported parameter is retried o
   assert.equal(parseChatResponse(await out.res.json(), 'm').content, '{"ok":true}')
 
   // Second failure is surfaced, not retried again.
+  resetCompatibilityMemory()
   const twice = mockFetch([{ status: 400, body: err }, { status: 400, body: { error: { message: "Unsupported parameter: 'response_format'", param: 'response_format' } } }])
   const out2 = await postChatCompletion(twice.fetchImpl, 'k', body)
   assert.equal(twice.calls.length, 2); assert.equal(out2.res.status, 400); assert.equal(out2.dropped, 'temperature')
@@ -178,6 +186,7 @@ test('10. postChatCompletion: a 400 naming an unsupported parameter is retried o
 })
 
 test('11. postChatCompletion: 401/429/500 and non-parameter 400s are returned untouched with no retry', async () => {
+  resetCompatibilityMemory()
   const body = buildChatRequest({ model: 'gpt-6-luna', messages: [{ role: 'user', content: 'hi' }], temperature: 0.7 })
   for (const [status, b] of [[401, { error: { message: 'bad key' } }], [429, { error: { message: 'rate' } }], [500, 'boom'], [400, { error: { message: 'bad messages', param: 'messages' } }]] as Array<[number, unknown]>) {
     const { fetchImpl, calls } = mockFetch([{ status, body: b }])
@@ -255,4 +264,116 @@ test('15. image model guard: retired image models in the worker secret or any ca
   assert.equal(DEFAULT_IMAGE_MODEL, 'gpt-image-2.5-flare', 'current catalogue model; preserved on purpose')
   assert.match(INDEX, /const IMAGE_MODEL_RESOLVED = resolveImageModel\(Deno\.env\.get\('PROCESS_STORY_IMAGE_MODEL'\)\)/)
   assert.match(INDEX, /const IMAGE_MODEL = IMAGE_MODEL_RESOLVED\.model/)
+})
+
+// ── Hardening round (PR #41 follow-up) ───────────────────────────────────────
+
+test('16. only "unsupported" 400s qualify: out-of-range values, unknown model, bad messages, 404s never trigger a parameter drop', () => {
+  const body: ChatRequestBody = { model: 'gpt-6.1-terra', messages: [], reasoning_effort: 'none', temperature: 0.8, response_format: { type: 'json_object' }, max_completion_tokens: 900 }
+  // Same param, but the value is out of range → a real request bug, keep the parameter and surface the error.
+  assert.equal(compatibilityFallback(400, '{"error":{"message":"Invalid value: 3 is greater than the maximum of 2 for temperature","param":"temperature","code":"decimal_above_max_value"}}', body), null)
+  assert.equal(compatibilityFallback(400, '{"error":{"message":"Invalid \'max_completion_tokens\': integer below minimum value.","param":"max_completion_tokens","code":"integer_below_min_value"}}', body), null)
+  // Unknown or retired model: OpenAI answers 404 model_not_found or a 400 about `model`; neither is ours to retry.
+  assert.equal(compatibilityFallback(404, '{"error":{"message":"The model `gpt-4o` does not exist or you do not have access to it.","param":null,"code":"model_not_found"}}', body), null)
+  assert.equal(compatibilityFallback(400, '{"error":{"message":"Unsupported model: gpt-4o has been deprecated","param":"model","code":"unsupported_parameter"}}', body), null)
+  assert.equal(compatibilityFallback(400, '{"error":{"message":"Invalid value for role","param":"messages[0].role","code":"invalid_value"}}', body), null)
+  // Auth, quota, rate limit, server, content policy: untouched.
+  for (const [st, b] of [[401, '{"error":{"message":"Incorrect API key provided","code":"invalid_api_key","param":"temperature"}}'], [403, '{"error":{"message":"unsupported_country_region_territory","code":"unsupported_country_region_territory"}}'], [429, '{"error":{"message":"You exceeded your current quota","code":"insufficient_quota","param":"temperature"}}'], [500, 'Unsupported parameter: \'temperature\''], [503, '{"error":{"message":"The engine is currently overloaded"}}']] as Array<[number, string]>) {
+    assert.equal(compatibilityFallback(st, b, body), null, `status ${st}`)
+  }
+  // A 400 with "unsupported" wording but no recognisable parameter: nothing to drop.
+  assert.equal(compatibilityFallback(400, '{"error":{"message":"Unsupported parameter: \'foo\'","param":"foo","code":"unsupported_parameter"}}', body), null)
+  assert.equal(compatibilityFallback(400, '{"error":{"message":"This model does not support images","code":"unsupported_parameter"}}', body), null)
+  assert.equal(compatibilityFallback(400, '', body), null)
+  assert.equal(compatibilityFallback(400, '<html>Bad Request</html>', body), null)
+})
+
+test('17. dropping reasoning_effort also drops temperature, so the retry cannot fail on the coupled parameter', () => {
+  const body: ChatRequestBody = { model: 'gpt-6-luna', messages: [], reasoning_effort: 'none', temperature: 0.7, max_completion_tokens: 600, stream: true }
+  const fb = compatibilityFallback(400, '{"error":{"message":"Unsupported value: \'none\' is not supported with this model.","param":"reasoning_effort","code":"unsupported_value"}}', body)
+  assert.ok(fb)
+  assert.equal(fb.dropped, 'reasoning_effort')
+  assert.deepEqual(fb.alsoDropped, ['temperature'])
+  assert.deepEqual(fb.body, { model: 'gpt-6-luna', messages: [], max_completion_tokens: 600, stream: true }, 'max_completion_tokens stays to bound any reasoning tokens; stream stays')
+  // Dropping temperature alone leaves reasoning_effort none in place (no hidden reasoning tokens appear).
+  const t = compatibilityFallback(400, '{"error":{"message":"Unsupported parameter: \'temperature\'","param":"temperature","code":"unsupported_parameter"}}', body)
+  assert.equal(t?.body.reasoning_effort, 'none'); assert.deepEqual(t?.alsoDropped, [])
+  // Without temperature there is nothing to couple.
+  const noTemp = compatibilityFallback(400, '{"error":{"message":"x","param":"reasoning_effort","code":"unsupported_parameter"}}', { model: 'm', messages: [], reasoning_effort: 'none' })
+  assert.deepEqual(noTemp, { body: { model: 'm', messages: [] }, dropped: 'reasoning_effort', alsoDropped: [] })
+})
+
+test('18. compatibility memory: a confirmed rejection is remembered per model and applied up front; failures are not remembered', async () => {
+  resetCompatibilityMemory()
+  const err = { error: { message: "Unsupported parameter: 'response_format' is not supported with this model.", param: 'response_format', code: 'unsupported_parameter' } }
+  const ok = { choices: [{ message: { content: '{"ok":true}' } }] }
+  const body = buildChatRequest({ model: 'gpt-6.1-terra', messages: [{ role: 'user', content: 'JSON please' }], temperature: 0.8, jsonMode: true })
+  const m1 = mockFetch([{ status: 400, body: err }, { status: 200, body: ok }])
+  const out1 = await postChatCompletion(m1.fetchImpl, 'k', body)
+  assert.equal(out1.dropped, 'response_format'); assert.deepEqual(out1.omitted, [])
+  assert.deepEqual(knownIncompatibilitiesFor('gpt-6.1-terra'), ['response_format'])
+  assert.deepEqual(knownIncompatibilitiesFor('gpt-6-luna'), [], 'keyed by model')
+  // Next call in the same process: one request, already without response_format, temperature still present.
+  const m2 = mockFetch([{ status: 200, body: ok }])
+  const out2 = await postChatCompletion(m2.fetchImpl, 'k', body)
+  assert.equal(m2.calls.length, 1); assert.equal(out2.dropped, null); assert.deepEqual(out2.omitted, ['response_format'])
+  assert.ok(!('response_format' in m2.calls[0].body)); assert.equal(m2.calls[0].body.temperature, 0.8); assert.equal(m2.calls[0].body.reasoning_effort, 'none')
+  // Other models are untouched.
+  const luna = buildChatRequest({ model: 'gpt-6-luna', messages: [{ role: 'user', content: 'hi' }], jsonMode: true })
+  assert.equal(applyKnownIncompatibilities(luna), luna, 'same object when nothing applies')
+  // A retry that still fails does not teach anything.
+  resetCompatibilityMemory()
+  const m3 = mockFetch([{ status: 400, body: err }, { status: 400, body: { error: { message: 'still bad', param: 'messages' } } }])
+  await postChatCompletion(m3.fetchImpl, 'k', body)
+  assert.deepEqual(knownIncompatibilitiesFor('gpt-6.1-terra'), [], 'a second 400 is not proof the parameter was the problem')
+  // A 429 on the retry still proves the 400 was about the parameter.
+  const m4 = mockFetch([{ status: 400, body: err }, { status: 429, body: { error: { message: 'rate' } } }])
+  const out4 = await postChatCompletion(m4.fetchImpl, 'k', body)
+  assert.equal(out4.res.status, 429); assert.deepEqual(knownIncompatibilitiesFor('gpt-6.1-terra'), ['response_format'])
+  recordIncompatibility('gpt-6.1-terra', ['reasoning_effort', 'temperature'])
+  assert.deepEqual(knownIncompatibilitiesFor('gpt-6.1-terra').sort(), ['reasoning_effort', 'response_format', 'temperature'])
+  resetCompatibilityMemory()
+  assert.deepEqual(knownIncompatibilitiesFor('gpt-6.1-terra'), [])
+})
+
+test('19. story JSON stays fully validated when JSON mode is dropped: prose-wrapped or fenced output is parsed, then every structural rule still applies', () => {
+  // What generateJsonWithRepair does after callOpenAI: safeParseJson → validateStoryPlan / validateBook → repair prompt on failure.
+  const plan = { title: 'The Snowy Village', premise: 'Theo helps a lost lantern find its way home before the first snowfall.', protagonist: { name: 'Theo', characterization: 'Curious and kind.', want: 'To light the village square.' }, supporting_characters: [], setting: 'A snowy mountain village', central_conflict: 'The lantern is lost in the snow.', goal: 'Find the lantern.', emotional_arc: 'Worry to pride', beginning_state: 'Dark square', escalation: 'Snow gets heavier', climax: 'Theo climbs the bell tower', resolution: 'The lantern is lit', ending_state: 'Bright square', lesson: 'Kindness lights the way',
+    pages: Array.from({ length: 8 }, (_, i) => ({ page: i + 1, phase: i === 0 ? 'setup' : i === 1 ? 'inciting' : i === 6 ? 'climax' : i === 7 ? 'resolution' : i === 3 ? 'complication' : 'development', beat: `On page ${i + 1} Theo does something that follows from the page before.`, purpose: 'Advance the search for the lantern.', development: i % 2 ? 'Theo grows braver.' : '', continuity: 'The lantern is still missing.' })) }
+  const wrapped = `Here is the plan you asked for:\n\`\`\`json\n${JSON.stringify(plan)}\n\`\`\`\nLet me know if you want changes.`
+  const parsed = safeParseJson(wrapped)
+  assert.ok(parsed.ok)
+  const valid = validateStoryPlan(parsed.value, 8)
+  assert.equal(valid.ok, true, JSON.stringify(valid))
+  // The same validator rejects a structurally wrong plan whether or not JSON mode produced it.
+  const broken = safeParseJson(`\`\`\`json\n${JSON.stringify({ ...plan, pages: plan.pages.slice(0, 5) })}\n\`\`\``)
+  assert.ok(broken.ok)
+  assert.equal(validateStoryPlan(broken.value, 8).ok, false, 'page count is still enforced')
+  assert.equal(validateStoryPlan({ title: 'x' }, 8).ok, false)
+  // Book stage: prose-wrapped JSON parses; validateBook still enforces page count, text and image descriptions.
+  const book = { title: 'The Snowy Village', pages: Array.from({ length: 8 }, (_, i) => ({ page: i + 1, text: `Theo walked through the snow on page ${i + 1}. The lantern glowed softly ahead of him.`, image_description: `Theo in a red scarf walking through a snowy village street, page ${i + 1}, soft watercolor.` })) }
+  const bookParsed = safeParseJson(`Sure! ${JSON.stringify(book)} Hope this helps.`)
+  assert.ok(bookParsed.ok)
+  const bookValid = validateBook(bookParsed.value, 8, plan as never)
+  assert.equal(bookValid.ok, true, JSON.stringify(bookValid))
+  assert.equal(validateBook({ ...book, pages: book.pages.slice(0, 7) }, 8, plan as never).ok, false)
+  // And output that is not JSON at all is a validation failure (→ repair prompt), never silently accepted.
+  assert.equal(safeParseJson('Once upon a time there was no JSON here.').ok, false)
+  // The worker's repair loop is intact around all of this.
+  assert.match(INDEX, /while \(attempts < MAX_STAGE_ATTEMPTS\)/)
+  assert.match(INDEX, /convo = buildRepairMessages\(convo, res\.content, lastErrors, label\)/)
+  assert.match(INDEX, /const parsed = safeParseJson\(res\.content\)/)
+})
+
+test('20. Quilliam streaming: the fallback happens before any stream is consumed, keeps stream:true, and memory is applied on later turns', () => {
+  const route = readFileSync(resolve(import.meta.dirname, '..', '..', '..', 'app', 'api', 'chat', 'route.ts'), 'utf8')
+  assert.match(route, /applyKnownIncompatibilities\(chatParams\(\{/)
+  assert.match(route, /err instanceof OpenAI\.BadRequestError/)
+  assert.match(route, /stream = await create\(fb\.body\)/)
+  assert.match(route, /recordIncompatibility\(params\.model, \[fb\.dropped, \.\.\.fb\.alsoDropped\]\)/)
+  // The ReadableStream that pipes deltas to the client is created only after `stream` is resolved.
+  assert.ok(route.indexOf('stream = await create(fb.body)') < route.lastIndexOf('const readable = new ReadableStream('), 'retry resolves before the response stream is built')
+  const params: ChatRequestBody = { model: 'gpt-6-luna', messages: [], reasoning_effort: 'none', temperature: 0.7, max_completion_tokens: 600, stream: true }
+  const fb = compatibilityFallback(400, JSON.stringify({ error: { message: "Unsupported parameter: 'temperature' is not supported with this model.", type: 'invalid_request_error', param: 'temperature', code: 'unsupported_parameter' } }), params)
+  assert.ok(fb); assert.equal(fb.body.stream, true); assert.equal(fb.body.max_completion_tokens, 600)
 })

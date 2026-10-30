@@ -513,7 +513,7 @@ test('25. supabase/functions/process-story is at its expected revision (26 files
   assert.equal(files.length, 26)
   const h = createHash('sha256')
   for (const f of files) h.update(readFileSync(f))
-  assert.equal(h.digest('hex'), 'b7b9a78298eb85fd2e6872e4b02eb9b2b462ac131903600a9d0e83d448d9954b')
+  assert.equal(h.digest('hex'), '23f0d3b3a7e8c2b6fc3b46ed661ad9255266a961d54125a64b55cc99a3f22254')
 })
 
 test('26. the legal files are at their expected revision (lib/i18n/legal.ts as updated by 3C-8; privacy and terms pages and LegalDocument untouched)', () => {
