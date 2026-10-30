@@ -1,7 +1,9 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import type { GeneratedStory, StoryScene } from '@/types/database'
-import { PDF_END_TEXT, toWinAnsiSafe } from './pdfText'
-import { sniffImageFormat } from './imageBytes'
+import { toWinAnsiSafe } from './pdfText.ts'
+import { sniffImageFormat } from './imageBytes.ts'
+import { drawBackPage, drawDedicationPage, pdfLangFrom } from './pdfDecorations.ts'
+import { loadDecorationArt } from './pdfDecorationAssets.ts'
 
 /** Embed by sniffed format (new JPEG assets, legacy PNG assets); unknown bytes are rejected. */
 async function embedImageBytes(doc: PDFDocument, bytes: Uint8Array) {
@@ -28,6 +30,8 @@ export interface PDFGenerationInput {
   /** Signed URL of the generated cover artwork (Phase 1F). Omit for the typographic cover. */
   coverImageUrl?: string | null
   closingMessage?: string
+  /** Story language from story_requests.locale ('en' | 'es'); anything else renders English. Drives "The End" / "Fin" and the page labels. */
+  locale?: string | null
 }
 
 export interface PDFGenerationResult {
@@ -164,20 +168,15 @@ export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGen
     cover.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: 8, color: BRAND_GOLD })
   }
 
-  // ── Dedication page ────────────────────────────────────────────────────────
+  // ── Dedication page (Phase 0C decorative layout) ──────────────────────────
+  // Optional, as before: only when the story carries a dedication. The text
+  // keeps its paragraph breaks, auto-sizes to fit (300 characters at 15–16 pt)
+  // and can never overflow the column (over-long words are split).
+  const lang = pdfLangFrom(input.locale)
+  const decorFonts = { serif: fontSerif, italic: fontSerifItalic }
+  const decorArt = await loadDecorationArt(doc)
   if (story.dedication) {
-    const dedPage = doc.addPage([PAGE_SIZE, PAGE_SIZE])
-    dedPage.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: PAGE_SIZE, color: CREAM })
-
-    const dedLines = wrapText(story.dedication, fontSerifItalic, 14, PAGE_SIZE - MARGIN * 4)
-    const dedBlockH = dedLines.length * 14 * 1.6
-    let dedY = PAGE_SIZE / 2 + dedBlockH / 2
-
-    for (const line of dedLines) {
-      const w = fontSerifItalic.widthOfTextAtSize(line, 14)
-      dedPage.drawText(line, { x: (PAGE_SIZE - w) / 2, y: dedY, size: 14, font: fontSerifItalic, color: GRAY })
-      dedY -= 14 * 1.6
-    }
+    drawDedicationPage(doc, decorFonts, decorArt, { dedication: story.dedication, authorLine: story.author_line, lang })
   }
 
   // ── Story pages ────────────────────────────────────────────────────────────
@@ -211,43 +210,11 @@ export async function generateBookPDF(input: PDFGenerationInput): Promise<PDFGen
     }
   }
 
-  // ── Back page ──────────────────────────────────────────────────────────────
-  const backPage = doc.addPage([PAGE_SIZE, PAGE_SIZE])
-  backPage.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: PAGE_SIZE, color: CREAM })
-  backPage.drawRectangle({ x: 0, y: PAGE_SIZE - 8, width: PAGE_SIZE, height: 8, color: BRAND_GOLD })
-  backPage.drawRectangle({ x: 0, y: 0, width: PAGE_SIZE, height: 8, color: BRAND_GOLD })
-
-  // Plain text: the standard fonts cannot encode decorative dingbats.
-  const endText = PDF_END_TEXT
-  const endW = fontSerifItalic.widthOfTextAtSize(endText, 20)
-  const endY = closingMessage ? PAGE_SIZE * 0.65 : PAGE_SIZE / 2 + 10
-  backPage.drawText(endText, {
-    x: (PAGE_SIZE - endW) / 2,
-    y: endY,
-    size: 20,
-    font: fontSerifItalic,
-    color: BRAND_GOLD,
-  })
-
-  if (closingMessage) {
-    const msgLines = wrapText(closingMessage, fontSerifItalic, 13, PAGE_SIZE - MARGIN * 4)
-    let msgY = endY - 32
-    for (const line of msgLines) {
-      const w = fontSerifItalic.widthOfTextAtSize(line, 13)
-      backPage.drawText(line, { x: (PAGE_SIZE - w) / 2, y: msgY, size: 13, font: fontSerifItalic, color: GRAY })
-      msgY -= 13 * 1.6
-    }
-  }
-
-  const brandText = story.author_line ?? 'A Nest & Quill Original'
-  const brandW = fontSerif.widthOfTextAtSize(brandText, 11)
-  backPage.drawText(brandText, {
-    x: (PAGE_SIZE - brandW) / 2,
-    y: MARGIN + 10,
-    size: 11,
-    font: fontSerif,
-    color: GRAY,
-  })
+  // ── Back page (Phase 0C decorative layout) ────────────────────────────────
+  // "The End" in English books, "Fin" in Spanish ones; the optional closing
+  // message (≤ 200 characters) sits beneath the heading; the author line is
+  // the story's own; the Nest & Quill wordmark is a small publisher signature.
+  drawBackPage(doc, decorFonts, decorArt, { closingMessage, authorLine: story.author_line, lang })
 
   const pdfBytes = await doc.save()
   const buffer = Buffer.from(pdfBytes)
